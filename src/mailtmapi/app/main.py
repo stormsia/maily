@@ -1,9 +1,11 @@
 from __future__ import annotations
 
+import asyncio
 from contextlib import asynccontextmanager
 from pathlib import Path
 
 from fastapi import FastAPI
+from fastapi.staticfiles import StaticFiles
 from sqlalchemy.ext.asyncio import AsyncEngine
 
 from ..db.engine import SessionFactory, make_engine
@@ -15,7 +17,9 @@ from ..providers.mailtm import MailTM
 from ..providers.registry import ProviderRegistry
 from ..providers.tempmail_plus import TempMailPlus
 from ..settings import Settings, get_settings
+from .services.retention import retention_worker, run_sweep
 from .errors import register_errors
+from .routers.admin import router as admin_router
 from .routers.gmail import public as gmail_public
 from .routers.gmail import router as gmail_router
 from .routers.health import router as health_router
@@ -55,6 +59,13 @@ async def lifespan(app: FastAPI):
         token_uri=settings.gmail_token_uri,
         auth_uri=settings.gmail_auth_uri,
     )
+    if not cid:
+        from .services import gmail_config as gcfg
+
+        async with factory() as session:
+            db_creds = await gcfg.get_creds(session, secret)
+        if db_creds:
+            oauth.configure(*db_creds)
     gmail = GmailProvider(store, oauth, http)
     registry = ProviderRegistry([gmail, MailTM(http=http), TempMailPlus(http=http)])
     app.state.engine = engine
@@ -64,9 +75,21 @@ async def lifespan(app: FastAPI):
     app.state.gmail = gmail
     app.state.oauth = oauth
     app.state.oauth_states = {}
+
+    sweep_task = asyncio.create_task(
+        retention_worker(
+            lambda: run_sweep(factory, registry, settings),
+            settings.retention_interval_seconds,
+        )
+    )
     try:
         yield
     finally:
+        sweep_task.cancel()
+        try:
+            await sweep_task
+        except asyncio.CancelledError:
+            pass
         await registry.close()
         await http.close()
         await engine.dispose()
@@ -83,6 +106,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(gmail_router)
     app.include_router(mailboxes_router)
     app.include_router(messages_router)
+    app.include_router(admin_router)
+    static_dir = Path(__file__).resolve().parents[1] / "static"
+    if static_dir.is_dir():
+        app.mount("/", StaticFiles(directory=static_dir, html=True), name="static")
     return app
 
 

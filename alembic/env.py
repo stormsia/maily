@@ -16,7 +16,7 @@ target_metadata = Base.metadata
 
 
 def _sync_url() -> str:
-    url = Settings().database_url
+    url = config.get_main_option("sqlalchemy.url") or Settings().database_url
     if url.startswith("sqlite+aiosqlite"):
         url = url.replace("sqlite+aiosqlite", "sqlite", 1)
     config.set_main_option("sqlalchemy.url", url)

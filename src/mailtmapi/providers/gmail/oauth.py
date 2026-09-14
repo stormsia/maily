@@ -35,6 +35,11 @@ class GmailOAuth:
         self._auth_uri = auth_uri
         self._scopes = list(scopes)
 
+    def configure(self, client_id: str, client_secret: str) -> None:
+        """Swap credentials in place (used when creds are set from the admin UI)."""
+        self._client_id = client_id
+        self._client_secret = client_secret
+
     def auth_url(self, redirect_uri: str, state: str) -> str:
         params = {
             "client_id": self._client_id,

@@ -14,3 +14,5 @@ mailtm.key
 .pytest_cache/
 dist/
 *.egg-info/
+.playwright-mcp/
+*.png

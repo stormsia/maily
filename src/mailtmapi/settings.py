@@ -28,6 +28,8 @@ class Settings(BaseSettings):
     gmail_auth_uri: str = "https://accounts.google.com/o/oauth2/v2/auth"
     gmail_token_uri: str = "https://oauth2.googleapis.com/token"
     secret_key_path: Path = Field(default=Path("mailtm.key"))
+    retention_interval_seconds: int = 60
+    retention_interval_seconds: int = 60
 
     def resolved_secret_key(self) -> str:
         if self.secret_key:

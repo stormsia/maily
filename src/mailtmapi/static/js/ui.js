@@ -1,0 +1,209 @@
+/* mailtmapi admin — shared UI: DOM helpers, toasts, modals, formatting. */
+
+export function refreshIcons() {
+  if (window.lucide?.createIcons) window.lucide.createIcons();
+}
+
+/** Escape a string for safe HTML interpolation. */
+export function esc(value) {
+  return String(value ?? "").replace(/[&<>"']/g, (c) => ({
+    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
+  }[c]));
+}
+
+/** Tiny element builder: h("div", { class: "x", onclick }, children...). */
+export function h(tag, attrs = {}, ...children) {
+  const el = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs)) {
+    if (v == null || v === false) continue;
+    if (k === "class") el.className = v;
+    else if (k === "html") el.innerHTML = v;
+    else if (k.startsWith("on") && typeof v === "function") el.addEventListener(k.slice(2), v);
+    else if (k === "dataset") Object.assign(el.dataset, v);
+    else if (v === true) el.setAttribute(k, "");
+    else el.setAttribute(k, String(v));
+  }
+  for (const child of children.flat()) {
+    if (child == null) continue;
+    el.append(child.nodeType ? child : document.createTextNode(String(child)));
+  }
+  return el;
+}
+
+/* ---------- time ---------- */
+export function timeAgo(iso) {
+  if (!iso) return "—";
+  const t = new Date(iso).getTime();
+  if (Number.isNaN(t)) return "—";
+  const s = Math.max(1, Math.floor((Date.now() - t) / 1000));
+  if (s < 60) return `${s}s ago`;
+  const m = Math.floor(s / 60);
+  if (m < 60) return `${m}m ago`;
+  const hh = Math.floor(m / 60);
+  if (hh < 24) return `${hh}h ago`;
+  const d = Math.floor(hh / 24);
+  if (d < 30) return `${d}d ago`;
+  return new Date(t).toLocaleDateString();
+}
+
+export function fmtDate(iso) {
+  if (!iso) return "—";
+  const d = new Date(iso);
+  return Number.isNaN(d) ? "—" : d.toLocaleString();
+}
+
+/* ---------- clipboard ---------- */
+export async function copyText(text, label = "Copied to clipboard") {
+  try {
+    await navigator.clipboard.writeText(text);
+  } catch {
+    const ta = document.createElement("textarea");
+    ta.value = text;
+    document.body.append(ta);
+    ta.select();
+    document.execCommand("copy");
+    ta.remove();
+  }
+  toast(label, "ok", "copy");
+}
+
+/* ---------- toasts ---------- */
+const ICONS = { ok: "check-circle-2", err: "alert-circle", info: "info" };
+
+export function toast(message, type = "info", icon) {
+  const root = document.getElementById("toast-root");
+  const el = h("div", { class: `toast toast--${type}`, role: "status" },
+    h("i", { "data-lucide": icon || ICONS[type] || "info" }),
+    h("span", {}, message));
+  root.append(el);
+  refreshIcons();
+  setTimeout(() => {
+    el.classList.add("out");
+    setTimeout(() => el.remove(), 240);
+  }, 3600);
+}
+
+/* ---------- modals ---------- */
+const modalRoot = () => document.getElementById("modal-root");
+let lastFocus = null;
+
+export function openModal({ title, sub = "", body, actions = [], wide = false }) {
+  closeModal(true);
+  lastFocus = document.activeElement;
+  const overlay = h("div", { class: "modal-overlay" });
+  const dialog = h("div", { class: `modal${wide ? " modal--wide" : ""}`, role: "dialog", "aria-modal": "true", "aria-label": title });
+  const head = h("div", { class: "modal-head" },
+    h("div", {}, h("h3", {}, title), sub ? h("p", {}, sub) : null),
+    h("button", { class: "icon-btn", "aria-label": "Close dialog", onclick: () => closeModal() }, h("i", { "data-lucide": "x" })));
+  const bodyEl = h("div", { class: "modal-body" });
+  if (typeof body === "string") bodyEl.innerHTML = body;
+  else if (body?.nodeType) bodyEl.append(body);
+  const foot = h("div", { class: "modal-foot" });
+  for (const a of actions) {
+    if (a.spacer) { foot.append(h("span", { class: "spacer" })); continue; }
+    foot.append(h("button", {
+      class: `btn ${a.kind || "btn-ghost"}`,
+      onclick: async (e) => {
+        try {
+          if (a.onClick) await a.onClick(e);
+        } catch {
+          return; // handler signalled "keep open" (e.g. validation failed)
+        }
+        if (!a.keepOpen && !a.noClose) closeModal();
+      },
+    }, a.label));
+  }
+  dialog.append(head, bodyEl);
+  if (actions.length) dialog.append(foot);
+  overlay.append(dialog);
+  overlay.addEventListener("mousedown", (e) => { if (e.target === overlay) closeModal(); });
+  modalRoot().append(overlay);
+  refreshIcons();
+  const focusable = dialog.querySelector("input, select, textarea, button.btn");
+  (focusable || dialog.querySelector(".icon-btn"))?.focus();
+  return { overlay, dialog, body: bodyEl, close: () => closeModal() };
+}
+
+export function closeModal(silent = false) {
+  const root = modalRoot();
+  if (!root.firstChild && silent) return;
+  root.innerHTML = "";
+  if (!silent && lastFocus?.focus) lastFocus.focus();
+  lastFocus = null;
+}
+
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape" && modalRoot().firstChild) closeModal();
+});
+
+/** Confirm dialog. Resolves true when confirmed, false on cancel/dismiss. */
+export function confirmDialog({ title, message, confirmLabel = "Delete", danger = true }) {
+  return new Promise((resolve) => {
+    let settled = false;
+    const done = (v) => { if (!settled) { settled = true; closeModal(); resolve(v); } };
+    const m = openModal({
+      title,
+      body: h("p", { class: "muted" }, message),
+      actions: [
+        { label: "Cancel", noClose: true, onClick: () => done(false) },
+        { label: confirmLabel, kind: danger ? "btn-danger" : "btn-primary", noClose: true, onClick: () => done(true) },
+      ],
+    });
+    m.overlay.addEventListener("mousedown", (e) => {
+      if (e.target === m.overlay) done(false);
+    }, { once: true });
+  });
+}
+
+/* ---------- states ---------- */
+export function emptyState({ icon = "inbox", title, copy, actionLabel, onAction }) {
+  const el = h("div", { class: "empty" },
+    h("div", { class: "empty-icon" }, h("i", { "data-lucide": icon })),
+    h("h3", {}, title),
+    h("p", {}, copy));
+  if (actionLabel) el.append(h("button", { class: "btn btn-primary", onclick: onAction }, actionLabel));
+  queueMicrotask(refreshIcons);
+  return el;
+}
+
+export function errorBox(message, onRetry) {
+  const el = h("div", { class: "error-box" },
+    h("i", { "data-lucide": "alert-triangle" }),
+    h("div", {},
+      h("div", {}, message),
+      onRetry ? h("button", { class: "btn btn-ghost btn-sm mt-4", onclick: onRetry }, "Try again") : null));
+  queueMicrotask(refreshIcons);
+  return el;
+}
+
+export function skeletonCards(n = 5, height = "132px") {
+  const wrap = h("div", { class: "grid grid--stats" });
+  for (let i = 0; i < n; i++) wrap.append(h("div", { class: "skeleton", style: `height:${height}` }));
+  return wrap;
+}
+
+export function skeletonRows(n = 6) {
+  const wrap = h("div", { class: "grid", style: "gap:8px" });
+  for (let i = 0; i < n; i++) wrap.append(h("div", { class: "skeleton", style: "height:64px" }));
+  return wrap;
+}
+
+/* ---------- inline address w/ copy ---------- */
+export function addressCell(address) {
+  const btn = h("button", {
+    class: "copy-mini", "aria-label": `Copy ${address}`, title: "Copy address",
+    onclick: (e) => { e.stopPropagation(); copyText(address, "Address copied"); },
+  }, h("i", { "data-lucide": "copy" }));
+  queueMicrotask(refreshIcons);
+  return h("span", { class: "addr" }, address, btn);
+}
+
+export function providerBadge(slug) {
+  const known = ["gmail", "mail.tm", "tempmail.plus"];
+  const cls = slug === "gmail" ? "badge badge--cyan" : known.includes(slug) ? "badge" : "badge badge--dim";
+  return h("span", { class: cls }, slug);
+}
+
+export function statusPill(active) {
+  return h("span", { class: `pill ${active ? "pill--on" : "pill--off"}` }, active ? "active" : "inactive");
+}

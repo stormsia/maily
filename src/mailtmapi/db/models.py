@@ -79,3 +79,24 @@ class Message(Base):
     cached_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
 
     mailbox: Mapped[Mailbox] = relationship(back_populates="messages")
+
+
+class Retention(Base):
+    __tablename__ = "retention"
+
+    provider: Mapped[str] = mapped_column(String(64), primary_key=True)
+    mailbox_ttl_hours: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    message_ttl_hours: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime, server_default=func.now(), onupdate=func.now()
+    )
+
+
+class AppSetting(Base):
+    __tablename__ = "app_settings"
+
+    key: Mapped[str] = mapped_column(String(64), primary_key=True)
+    value: Mapped[str] = mapped_column(Text)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime, server_default=func.now(), onupdate=func.now()
+    )

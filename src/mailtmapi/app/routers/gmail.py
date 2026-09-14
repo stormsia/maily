@@ -25,6 +25,27 @@ def _oauth(request: Request) -> GmailOAuth:
     return request.app.state.oauth
 
 
+async def _redirect_uri(request: Request, settings) -> str:
+    from ..services import gmail_config as gcfg
+
+    async with request.app.state.session_factory() as session:
+        return await gcfg.get_redirect_uri(session, settings.gmail_redirect_uri())
+
+
+async def _resolve_creds(request: Request, settings) -> tuple[str, str] | None:
+    """Env creds win; otherwise fall back to dashboard-stored creds (configures oauth)."""
+    from ..services import gmail_config as gcfg
+
+    secret = settings.resolved_secret_key()
+    async with request.app.state.session_factory() as session:
+        found = await gcfg.resolved(settings, session, secret)
+    if found is None:
+        return None
+    cid, csec, _ = found
+    request.app.state.oauth.configure(cid, csec)
+    return cid, csec
+
+
 def _store(request: Request) -> GmailParentStore:
     return request.app.state.gmail._store
 
@@ -67,13 +88,11 @@ async def _upsert_parent(request: Request, tokens: dict) -> GmailParent:
 
 @router.post("/oauth/start", response_model=OAuthStartOut)
 async def oauth_start(request: Request, settings: SettingsDep) -> OAuthStartOut:
-    try:
-        settings.gmail_client()
-    except RuntimeError as exc:
-        raise HTTPException(400, str(exc)) from exc
+    if await _resolve_creds(request, settings) is None:
+        raise HTTPException(400, "Gmail OAuth credentials are not configured yet — set them up on the dashboard.")
     state = secrets.token_urlsafe(16)
     request.app.state.oauth_states[state] = time.time()
-    url = _oauth(request).auth_url(settings.gmail_redirect_uri(), state)
+    url = _oauth(request).auth_url(await _redirect_uri(request, settings), state)
     return OAuthStartOut(auth_url=url, state=state)
 
 
@@ -85,7 +104,7 @@ async def oauth_callback(request: Request, settings: SettingsDep, code: str = ""
     states.pop(state, None)
     if not code:
         return PlainTextResponse("missing code", status_code=400)
-    tokens = await _oauth(request).exchange_code(code, settings.gmail_redirect_uri())
+    tokens = await _oauth(request).exchange_code(code, await _redirect_uri(request, settings))
     await _upsert_parent(request, tokens)
     return HTMLResponse("ok, you can close this tab")
 

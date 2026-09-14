@@ -79,3 +79,42 @@ class ImportGmailIn(BaseModel):
 class OAuthStartOut(BaseModel):
     auth_url: str
     state: str
+
+
+class GmailCredsIn(BaseModel):
+    client_id: str
+    client_secret: str
+    redirect_uri: str | None = None
+
+
+class GmailCredsOut(BaseModel):
+    configured: bool
+    source: str
+    client_id: str | None = None
+    redirect_uri: str = ""
+
+
+class RetentionIn(BaseModel):
+    mailbox_ttl_hours: int | None = None
+    message_ttl_hours: int | None = None
+
+
+class RetentionOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    provider: str
+    mailbox_ttl_hours: int | None = None
+    message_ttl_hours: int | None = None
+
+
+class RetentionIn(BaseModel):
+    mailbox_ttl_hours: int | None = None
+    message_ttl_hours: int | None = None
+
+
+class RetentionOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    provider: str
+    mailbox_ttl_hours: int | None = None
+    message_ttl_hours: int | None = None

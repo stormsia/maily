@@ -1,0 +1,11 @@
+__pycache__/
+*.py[cod]
+*.db
+*.db-wal
+*.db-shm
+credentials.json
+gmail_token.json
+*.tmp
+.env
+venv/
+.venv/

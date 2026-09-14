@@ -1,0 +1,68 @@
+from __future__ import annotations
+
+import httpx
+import pytest
+
+from mailtmapi.exceptions import MailAPIError, MailNotFoundError
+from mailtmapi.sdk import MailTMAPI
+
+
+def _client(handler) -> httpx.AsyncClient:
+    return httpx.AsyncClient(
+        base_url="http://test",
+        transport=httpx.MockTransport(handler),
+    )
+
+
+@pytest.mark.asyncio
+async def test_wait_for_message_polls_until_hit():
+    calls = {"n": 0}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        calls["n"] += 1
+        assert request.url.path == "/v1/mailboxes/1/messages"
+        if calls["n"] < 3:
+            return httpx.Response(200, json=[])
+        return httpx.Response(
+            200,
+            json=[{"id": 9, "subject": "Code", "from_address": "a@b.c"}],
+        )
+
+    client = _client(handler)
+    api = MailTMAPI(client=client)
+    try:
+        msg = await api.wait_for_message(1, timeout=5, interval=0.01)
+        assert msg["id"] == 9
+        assert calls["n"] == 3
+    finally:
+        await api.close()
+
+
+@pytest.mark.asyncio
+async def test_wait_for_message_times_out():
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(200, json=[])
+
+    client = _client(handler)
+    api = MailTMAPI(client=client)
+    try:
+        with pytest.raises(MailNotFoundError):
+            await api.wait_for_message(1, timeout=0.05, interval=0.01)
+    finally:
+        await api.close()
+
+
+@pytest.mark.asyncio
+async def test_error_mapping_raises_mail_api_error():
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(404, json={"detail": "mailbox 404 not found"})
+
+    client = _client(handler)
+    api = MailTMAPI(client=client)
+    try:
+        with pytest.raises(MailAPIError) as exc:
+            await api.mailbox(404)
+        assert exc.value.status_code == 404
+        assert "mailbox 404 not found" in str(exc.value)
+    finally:
+        await api.close()

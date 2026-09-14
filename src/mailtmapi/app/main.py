@@ -1,0 +1,102 @@
+from __future__ import annotations
+
+from contextlib import asynccontextmanager
+from pathlib import Path
+
+from fastapi import FastAPI
+from sqlalchemy.ext.asyncio import AsyncEngine
+
+from ..db.engine import SessionFactory, make_engine
+from ..http import HttpClient
+from ..providers.gmail.db_store import DbGmailStore
+from ..providers.gmail.oauth import GmailOAuth
+from ..providers.gmail.service import GmailProvider
+from ..providers.mailtm import MailTM
+from ..providers.registry import ProviderRegistry
+from ..providers.tempmail_plus import TempMailPlus
+from ..settings import Settings, get_settings
+from .errors import register_errors
+from .routers.gmail import public as gmail_public
+from .routers.gmail import router as gmail_router
+from .routers.health import router as health_router
+from .routers.mailboxes import router as mailboxes_router
+from .routers.messages import router as messages_router
+from .routers.providers import router as providers_router
+
+
+def _run_migrations(url: str) -> None:
+    from alembic import command
+    from alembic.config import Config
+
+    cfg = Config()
+    root = Path(__file__).resolve().parents[3]
+    cfg.set_main_option("script_location", str(root / "alembic"))
+    cfg.set_main_option("sqlalchemy.url", url.replace("sqlite+aiosqlite", "sqlite"))
+    command.upgrade(cfg, "head")
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    settings: Settings = app.state.settings
+    engine: AsyncEngine = make_engine(settings.database_url)
+    _run_migrations(settings.database_url)
+    factory = SessionFactory(engine)
+    http = HttpClient(proxy=settings.proxy)
+    secret = settings.resolved_secret_key()
+    store = DbGmailStore(factory, secret)
+    try:
+        cid, csec = settings.gmail_client()
+    except RuntimeError:
+        cid, csec = "", ""
+    oauth = GmailOAuth(
+        cid,
+        csec,
+        http,
+        token_uri=settings.gmail_token_uri,
+        auth_uri=settings.gmail_auth_uri,
+    )
+    gmail = GmailProvider(store, oauth, http)
+    registry = ProviderRegistry([gmail, MailTM(http=http), TempMailPlus(http=http)])
+    app.state.engine = engine
+    app.state.session_factory = factory
+    app.state.registry = registry
+    app.state.http = http
+    app.state.gmail = gmail
+    app.state.oauth = oauth
+    app.state.oauth_states = {}
+    try:
+        yield
+    finally:
+        await registry.close()
+        await http.close()
+        await engine.dispose()
+
+
+def create_app(settings: Settings | None = None) -> FastAPI:
+    settings = settings or get_settings()
+    app = FastAPI(title="mailtmapi", lifespan=lifespan)
+    app.state.settings = settings
+    register_errors(app)
+    app.include_router(health_router)
+    app.include_router(gmail_public)
+    app.include_router(providers_router)
+    app.include_router(gmail_router)
+    app.include_router(mailboxes_router)
+    app.include_router(messages_router)
+    return app
+
+
+def run() -> None:
+    import uvicorn
+
+    settings = get_settings()
+    uvicorn.run(
+        "mailtmapi.app.main:create_app",
+        factory=True,
+        host=settings.host,
+        port=settings.port,
+    )
+
+
+if __name__ == "__main__":
+    run()

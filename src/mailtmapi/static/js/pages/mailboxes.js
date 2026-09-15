@@ -26,6 +26,8 @@ export async function openCreateMailbox(onCreated) {
     h("label", {}, "Domain"), h("select", {}, h("option", {}, "Loading…")));
   const domainSel = domainField.querySelector("select");
   const addressInput = h("input", { placeholder: "leave blank for random", autocomplete: "off", spellcheck: "false" });
+  const addrSuffix = h("span", { class: "addr-suffix" }, "");
+  const addrWrap = h("div", { class: "field-addr" }, addressInput, addrSuffix);
   const passwordInput = h("input", { type: "password", placeholder: "leave blank to auto-generate", autocomplete: "new-password" });
   const parentField = h("div", { class: "field" },
     h("label", {}, "Parent Gmail account"), h("select", {}));
@@ -66,6 +68,14 @@ export async function openCreateMailbox(onCreated) {
         parentSel.append(h("option", { value: "" }, "Could not load accounts"));
       }
     }
+    updateAddrSuffix();
+  }
+  domainSel.addEventListener("change", updateAddrSuffix);
+
+  /** Show "@domain" next to the typed local part when a domain is picked. */
+  function updateAddrSuffix() {
+    const prov = providers.find((p) => p.slug === providerSel.value);
+    addrSuffix.textContent = prov?.kind === "domain" && domainSel.value ? `@${domainSel.value}` : "";
   }
   providerSel.addEventListener("change", loadTargets);
   loadTargets();
@@ -75,7 +85,7 @@ export async function openCreateMailbox(onCreated) {
     domainField,
     parentField,
     h("div", { class: "field-row" },
-      h("div", { class: "field" }, h("label", {}, "Address ", h("span", { class: "opt" }, "(optional)")), addressInput),
+      h("div", { class: "field" }, h("label", {}, "Address ", h("span", { class: "opt" }, "(optional)")), addrWrap),
       h("div", { class: "field" }, h("label", {}, "Password ", h("span", { class: "opt" }, "(optional)")), passwordInput)));
 
   openModal({
@@ -91,7 +101,10 @@ export async function openCreateMailbox(onCreated) {
           btn.disabled = true;
           const prov = providers.find((p) => p.slug === providerSel.value);
           const body = { provider: providerSel.value };
-          if (addressInput.value.trim()) body.address = addressInput.value.trim();
+          const local = addressInput.value.trim();
+          if (local) {
+            body.address = local.includes("@") ? local : (prov?.kind === "domain" && domainSel.value ? `${local}@${domainSel.value}` : local);
+          }
           if (passwordInput.value) body.password = passwordInput.value;
           if (prov?.kind === "domain" && domainSel.value) body.domain = domainSel.value;
           if (prov?.kind === "parent" && parentSel.value && /^\d+$/.test(parentSel.value)) {

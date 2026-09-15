@@ -233,6 +233,7 @@ button { cursor: pointer; }
   white-space: nowrap;
 }
 .badge--cyan { border-color: rgba(63, 224, 197, 0.4); background: var(--cyan-soft); color: #8df0dd; }
+.badge--auto { border-color: hsl(var(--badge-hue) 65% 62% / 0.38); background: hsl(var(--badge-hue) 65% 62% / 0.12); color: hsl(var(--badge-hue) 70% 78%); }
 .badge--dim { border-color: var(--border); background: rgba(255, 255, 255, 0.04); color: var(--muted); }
 .pill { display: inline-flex; align-items: center; gap: 6px; font-size: var(--fs-12); font-weight: 600; padding: 3px 11px; border-radius: var(--r-pill); white-space: nowrap; }
 .pill::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
@@ -349,6 +350,12 @@ table.table { width: 100%; border-collapse: collapse; font-size: var(--fs-14); m
 .pass-wrap { position: relative; }
 .pass-wrap .icon-btn { position: absolute; right: 6px; top: 50%; transform: translateY(-50%); width: 30px; height: 30px; border: none; background: none; }
 .pass-wrap input { padding-right: 42px; }
+/* address input + domain suffix in one bordered field */
+.field-addr { display: flex; align-items: center; gap: 6px; padding: 0 13px; border-radius: var(--r-md); background: rgba(255, 255, 255, 0.035); border: 1px solid var(--border); transition: border-color var(--t-fast), box-shadow var(--t-fast); }
+.field-addr input { flex: 1; min-width: 0; width: auto; padding: 10px 0; border: none; background: none; }
+.field-addr input:focus { outline: none; box-shadow: none; }
+.field-addr:focus-within { border-color: var(--accent-line); box-shadow: 0 0 0 3px rgba(124, 108, 255, 0.18); }
+.field-addr .addr-suffix { color: var(--faint); font-family: var(--font-mono); font-size: var(--fs-12); white-space: nowrap; }
 
 /* ---------- Modals ---------- */
 .modal-root:empty { display: none; }

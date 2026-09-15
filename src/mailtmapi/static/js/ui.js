@@ -198,10 +198,13 @@ export function addressCell(address) {
   return h("span", { class: "addr" }, address, btn);
 }
 
+/* Deterministic slug → hue (palette harmonized with design tokens). */
+const BADGE_HUES = [262, 172, 152, 40, 5, 214, 330, 24];
+
 export function providerBadge(slug) {
-  const known = ["gmail", "mail.tm", "tempmail.plus"];
-  const cls = slug === "gmail" ? "badge badge--cyan" : known.includes(slug) ? "badge" : "badge badge--dim";
-  return h("span", { class: cls }, slug);
+  const hash = [...slug].reduce((h, c) => (h * 31 + c.charCodeAt(0)) >>> 0, 0);
+  const hue = BADGE_HUES[hash % BADGE_HUES.length];
+  return h("span", { class: "badge badge--auto", style: `--badge-hue:${hue}` }, slug);
 }
 
 export function statusPill(active) {

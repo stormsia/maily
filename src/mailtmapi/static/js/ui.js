@@ -156,8 +156,8 @@ export function confirmDialog({ title, message, confirmLabel = "Delete", danger 
 }
 
 /* ---------- states ---------- */
-export function emptyState({ icon = "inbox", title, copy, actionLabel, onAction }) {
-  const el = h("div", { class: "empty" },
+export function emptyState({ icon = "inbox", title, copy, actionLabel, onAction, inline = false } = {}) {
+  const el = h("div", { class: `empty${inline ? " empty--inline" : ""}` },
     h("div", { class: "empty-icon" }, h("i", { "data-lucide": icon })),
     h("h3", {}, title),
     h("p", {}, copy));
@@ -201,10 +201,13 @@ export function addressCell(address) {
 /* Deterministic slug → hue (palette harmonized with design tokens). */
 const BADGE_HUES = [262, 172, 152, 40, 5, 214, 330, 24];
 
+export function slugHue(slug) {
+  const hash = [...(slug || "")].reduce((h, c) => (h * 31 + c.charCodeAt(0)) >>> 0, 0);
+  return BADGE_HUES[hash % BADGE_HUES.length];
+}
+
 export function providerBadge(slug) {
-  const hash = [...slug].reduce((h, c) => (h * 31 + c.charCodeAt(0)) >>> 0, 0);
-  const hue = BADGE_HUES[hash % BADGE_HUES.length];
-  return h("span", { class: "badge badge--auto", style: `--badge-hue:${hue}` }, slug);
+  return h("span", { class: "badge badge--auto", style: `--badge-hue:${slugHue(slug)}` }, slug);
 }
 
 export function statusPill(active) {

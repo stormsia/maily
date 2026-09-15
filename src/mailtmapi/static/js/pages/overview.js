@@ -1,14 +1,31 @@
 /* Overview page: status, stat cards, provider donut, 7-day trend, retention strip. */
 import { api } from "../api.js";
-import { h, esc, toast, refreshIcons, errorBox, skeletonCards } from "../ui.js";
+import { h, esc, toast, refreshIcons, errorBox, skeletonCards, slugHue } from "../ui.js";
 
 let charts = [];
+let resizeHandler = null;
 
 function disposeCharts() {
   for (const c of charts) { try { c.dispose(); } catch { /* already gone */ } }
   charts = [];
 }
-export function cleanup() { disposeCharts(); }
+export function cleanup() {
+  disposeCharts();
+  if (resizeHandler) { window.removeEventListener("resize", resizeHandler); resizeHandler = null; }
+}
+
+/* One debounced resize listener for every live chart, removed on cleanup. */
+function bindResize() {
+  if (resizeHandler) window.removeEventListener("resize", resizeHandler);
+  let t = null;
+  resizeHandler = () => {
+    clearTimeout(t);
+    t = setTimeout(() => {
+      for (const c of charts) { try { c.resize(); } catch { /* disposed */ } }
+    }, 150);
+  };
+  window.addEventListener("resize", resizeHandler);
+}
 
 const STATS = [
   { key: "mbTotal", label: "Mailboxes · total", icon: "inbox", tone: "" },
@@ -26,30 +43,34 @@ function statCard(s, values) {
     h("div", { class: "stat-value" }, String(values[s.key] ?? "—")));
 }
 
-function mountDonut(el, byProvider) {
+function mountDonut(el, entries) {
   if (!window.echarts) {
     el.replaceWith(h("div", { class: "chart-fallback" }, "Charts unavailable offline — data is listed below."));
     return;
   }
-  const entries = Object.entries(byProvider || {});
+  const total = entries.reduce((a, [, v]) => a + (v.messages_total ?? 0), 0);
   const chart = window.echarts.init(el, null, { renderer: "canvas" });
   charts.push(chart);
   chart.setOption({
     backgroundColor: "transparent",
-    color: ["#7c6cff", "#3fe0c5", "#ffbf4d", "#ff7d7d", "#5aa9ff", "#c792ea"],
     tooltip: { trigger: "item", backgroundColor: "#1d2434", borderColor: "rgba(255,255,255,.12)", textStyle: { color: "#eceef4", fontFamily: "JetBrains Mono" } },
     legend: { bottom: 0, textStyle: { color: "#9aa3b6", fontSize: 11, fontFamily: "JetBrains Mono" }, icon: "circle", itemWidth: 8, itemHeight: 8 },
+    graphic: [
+      { type: "text", left: "center", top: "36%", style: { text: String(total), textAlign: "center", fill: "#eceef4", font: "600 26px 'JetBrains Mono', monospace" } },
+      { type: "text", left: "center", top: "50%", style: { text: "messages", textAlign: "center", fill: "#666e82", font: "500 11px Inter" } },
+    ],
     series: [{
       type: "pie", radius: ["58%", "80%"], center: ["50%", "44%"],
       avoidLabelOverlap: true, label: { show: false },
       itemStyle: { borderColor: "#121722", borderWidth: 3, borderRadius: 6 },
       emphasis: { scale: true, scaleSize: 4 },
-      data: entries.length
-        ? entries.map(([name, v]) => ({ name, value: v.messages_total ?? 0 }))
-        : [{ name: "no data", value: 1 }],
+      // Same hue the provider's badge uses, so colors match everywhere.
+      data: entries.map(([name, v]) => ({
+        name, value: v.messages_total ?? 0,
+        itemStyle: { color: `hsl(${slugHue(name)} 62% 56%)` },
+      })),
     }],
   });
-  window.addEventListener("resize", () => chart.resize(), { once: true });
 }
 
 function mountTrend(el, days) {
@@ -83,7 +104,6 @@ function mountTrend(el, days) {
       emphasis: { itemStyle: { color: "#a79dff" } },
     }],
   });
-  window.addEventListener("resize", () => chart.resize(), { once: true });
 }
 
 function ttlText(v) {
@@ -92,6 +112,7 @@ function ttlText(v) {
 
 export async function render(root) {
   disposeCharts();
+  bindResize();
   root.innerHTML = "";
   root.append(skeletonCards(5), h("div", { class: "grid grid--2 mt-4" },
     h("div", { class: "skeleton", style: "height:360px" }),
@@ -129,14 +150,15 @@ export async function render(root) {
   root.append(grid);
 
   // charts row
+  const entries = Object.entries(byProvider);
   const donutBox = h("div", { class: "chart-box", role: "img", "aria-label": "Messages per provider" });
   const trendBox = h("div", { class: "chart-box", role: "img", "aria-label": "Messages received, last 7 days" });
   root.append(h("div", { class: "grid grid--2 mt-4" },
     h("div", { class: "card chart-card" },
       h("div", { class: "chart-title" }, "Provider split"),
       h("div", { class: "chart-sub" }, "Share of stored messages by provider"),
-      donutBox,
-      h("div", { class: "prov-grid" }, ...Object.entries(byProvider).map(([slug, v]) =>
+      entries.length ? donutBox : h("div", { class: "chart-fallback" }, "No provider data yet — the chart will appear here."),
+      h("div", { class: "prov-grid" }, ...entries.map(([slug, v]) =>
         h("div", { class: "card prov-card" },
           h("div", { class: "prov-card-top" },
             h("span", { class: "prov-name" }, slug),
@@ -149,7 +171,7 @@ export async function render(root) {
       h("div", { class: "chart-sub" }, days.length ? "Messages stored per day" : "No activity recorded yet"),
       days.length ? trendBox : h("div", { class: "chart-fallback" }, "No messages in the last 7 days — the chart will appear here."))));
 
-  mountDonut(donutBox, byProvider);
+  if (entries.length) mountDonut(donutBox, entries);
   if (days.length) mountTrend(trendBox, days);
 
   // retention strip
@@ -180,6 +202,7 @@ export async function render(root) {
   async function runSweep(e) {
     const btn = e.currentTarget;
     btn.disabled = true;
+    btn.classList.add("is-loading");
     try {
       const res = await api.runRetention();
       toast(`Sweep done — deleted ${res.mailboxes_deleted ?? 0} mailboxes, ${res.messages_deleted ?? 0} messages.`, "ok", "timer");
@@ -187,6 +210,7 @@ export async function render(root) {
     } catch (err) {
       toast(err.detail || "Sweep failed.", "err");
       btn.disabled = false;
+      btn.classList.remove("is-loading");
     }
   }
 }

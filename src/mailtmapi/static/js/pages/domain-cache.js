@@ -53,7 +53,7 @@ export async function render(root) {
   /* toolbar */
   const refreshBtn = h("button", { class: "btn btn-primary", onclick: runRefresh },
     h("i", { "data-lucide": "refresh-cw" }), h("span", {}, "Refresh now"));
-  root.append(h("div", { class: "toolbar", style: "margin-top:0" },
+  root.append(h("div", { class: "toolbar toolbar--top" },
     h("p", { class: "muted", style: "flex:1;min-width:220px" },
       caching
         ? `Provider domain lists are cached locally for mailbox creation. Automatic refresh runs every ${minutes} minute${minutes === 1 ? "" : "s"}.`
@@ -112,6 +112,7 @@ export async function render(root) {
   async function runRefresh(e) {
     const btn = e.currentTarget;
     btn.disabled = true;
+    btn.classList.add("is-loading");
     try {
       const res = await api.runDomainCache();
       const refreshed = res.refreshed || [];
@@ -124,6 +125,7 @@ export async function render(root) {
     } catch (err) {
       toast(err.detail || "Refresh failed.", "err");
       btn.disabled = false;
+      btn.classList.remove("is-loading");
     }
   }
 
@@ -134,6 +136,7 @@ export async function render(root) {
       return;
     }
     saveBtn.disabled = true;
+    saveBtn.classList.add("is-loading");
     try {
       await api.saveDomainCache({ enabled: enabledInput.checked, interval_seconds: mins * 60 });
       toast("Domain cache settings saved.", "ok", "check-circle-2");
@@ -141,6 +144,7 @@ export async function render(root) {
     } catch (e) {
       toast(e.detail || "Could not save settings.", "err");
       saveBtn.disabled = false;
+      saveBtn.classList.remove("is-loading");
     }
   }
 }

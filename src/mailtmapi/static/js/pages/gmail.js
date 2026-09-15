@@ -301,6 +301,7 @@ export async function render(root) {
     async function saveAndConnect(e) {
       const btn = e.currentTarget;
       btn.disabled = true;
+      btn.classList.add("is-loading");
       stepEl.querySelector(".wz-error")?.remove();
       try {
         const body = { client_id: state.clientId.trim(), client_secret: state.secret };
@@ -310,6 +311,7 @@ export async function render(root) {
       } catch (err) {
         showError(err.detail || "Could not save credentials.");
         btn.disabled = false;
+        btn.classList.remove("is-loading");
         refreshIcons();
         return; // wizard stays open
       }
@@ -320,6 +322,7 @@ export async function render(root) {
       } catch (err) {
         showError(err.detail || "Could not start OAuth — check the Client ID and Secret.");
         btn.disabled = false;
+        btn.classList.remove("is-loading");
         refreshIcons();
         return; // wizard stays open
       }
@@ -344,6 +347,7 @@ export async function render(root) {
   async function connect(e) {
     const btn = e.currentTarget;
     btn.disabled = true;
+    btn.classList.add("is-loading");
     try {
       const { auth_url } = await api.gmailOAuthStart();
       window.open(auth_url, "_blank", "noopener");
@@ -357,6 +361,7 @@ export async function render(root) {
       }
     } finally {
       btn.disabled = false;
+      btn.classList.remove("is-loading");
     }
   }
 

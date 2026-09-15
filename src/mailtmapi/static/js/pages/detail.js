@@ -240,6 +240,7 @@ export async function render(root, id) {
           icon: "mouse-pointer-click",
           title: "Select a message",
           copy: "Pick anything on the left to read it here.",
+          inline: true,
         }),
       );
       return;

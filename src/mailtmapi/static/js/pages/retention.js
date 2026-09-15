@@ -36,7 +36,7 @@ export async function render(root) {
   root.innerHTML = "";
   const sweepBtn = h("button", { class: "btn btn-primary", onclick: runSweep },
     h("i", { "data-lucide": "timer" }), h("span", {}, "Run sweep now"));
-  root.append(h("div", { class: "toolbar", style: "margin-top:0" },
+  root.append(h("div", { class: "toolbar toolbar--top" },
     h("p", { class: "muted", style: "flex:1;min-width:220px" },
       "Automatic cleanup for old mailboxes and messages. Empty fields mean disabled."),
     sweepBtn));
@@ -69,6 +69,7 @@ export async function render(root) {
         return;
       }
       saveBtn.disabled = true;
+      saveBtn.classList.add("is-loading");
       try {
         await api.saveRetention(slug, { mailbox_ttl_hours: mb, message_ttl_hours: ms });
         toast(`Retention saved for ${slug}.`, "ok", "check-circle-2");
@@ -76,6 +77,7 @@ export async function render(root) {
       } catch (e) {
         toast(e.detail || "Could not save.", "err");
         saveBtn.disabled = false;
+        saveBtn.classList.remove("is-loading");
       }
     } }, "Save");
     const disableBtn = h("button", { class: "btn btn-ghost btn-sm", onclick: async () => {
@@ -112,6 +114,7 @@ export async function render(root) {
   async function runSweep(e) {
     const btn = e.currentTarget;
     btn.disabled = true;
+    btn.classList.add("is-loading");
     try {
       const res = await api.runRetention();
       toast(`Deleted ${res.mailboxes_deleted ?? 0} mailboxes, ${res.messages_deleted ?? 0} messages.`, "ok", "timer");
@@ -119,6 +122,7 @@ export async function render(root) {
       toast(err.detail || "Sweep failed.", "err");
     } finally {
       btn.disabled = false;
+      btn.classList.remove("is-loading");
     }
   }
 }

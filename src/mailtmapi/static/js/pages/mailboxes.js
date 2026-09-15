@@ -99,6 +99,7 @@ export async function openCreateMailbox(onCreated) {
         onClick: async (e) => {
           const btn = e.currentTarget;
           btn.disabled = true;
+          btn.classList.add("is-loading");
           const prov = providers.find((p) => p.slug === providerSel.value);
           const body = { provider: providerSel.value };
           const local = addressInput.value.trim();
@@ -117,6 +118,7 @@ export async function openCreateMailbox(onCreated) {
           } catch (err) {
             toast(err.detail || "Could not create mailbox.", "err");
             btn.disabled = false;
+            btn.classList.remove("is-loading");
             throw err; // keeps the modal open (openModal only closes on success)
           }
         },

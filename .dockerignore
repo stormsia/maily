@@ -1,0 +1,17 @@
+# локальное окружение и секреты — не в образ
+.git
+.venv
+__pycache__
+*.pyc
+.pytest_cache
+.playwright-mcp
+tests
+*.db
+*.db-wal
+*.db-shm
+mailtm.key
+overview.png
+
+# мусор от редакторов/ОС
+.DS_Store
+Thumbs.db

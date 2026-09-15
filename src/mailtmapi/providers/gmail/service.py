@@ -180,7 +180,7 @@ class GmailProvider:
     async def list_messages(self, mailbox: MailboxInfo, page: int = 1) -> list[MessageSummary]:
         parent = await self._resolve_parent(mailbox)
         alias = mailbox.address or mailbox.token
-        params: dict = {"q": f'to:("{alias}")', "maxResults": 100}
+        params: dict = {"q": f'to:("{alias}") in:anywhere -in:trash', "maxResults": 100}
         if page > 1:
             stored = self._page_tokens.get(alias)
             if not stored:

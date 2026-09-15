@@ -1,0 +1,28 @@
+# mailtmapi — минимальный compose: одна служба + named volume для /data.
+# Проброс настроек через .env в корне проекта (compose подхватывает автоматически).
+# Пример .env:
+#   MAILTM_API_KEY=sk-...
+#   MAILTM_GMAIL_CLIENT_ID=...
+#   MAILTM_GMAIL_CLIENT_SECRET=...
+
+name: mailtmapi
+
+services:
+  mailtmapi:
+    build: .
+    image: mailtmapi:latest
+    restart: unless-stopped
+    init: true
+    security_opt:
+      - no-new-privileges:true
+    ports:
+      - "${MAILTM_PORT:-8477}:8477"
+    environment:
+      MAILTM_API_KEY: "${MAILTM_API_KEY:-}"
+      MAILTM_GMAIL_CLIENT_ID: "${MAILTM_GMAIL_CLIENT_ID:-}"
+      MAILTM_GMAIL_CLIENT_SECRET: "${MAILTM_GMAIL_CLIENT_SECRET:-}"
+    volumes:
+      - mailtmapi_data:/data
+
+volumes:
+  mailtmapi_data:

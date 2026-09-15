@@ -19,6 +19,7 @@ from ..providers.registry import ProviderRegistry
 from ..providers.tempmail_io import TempMailIO
 from ..providers.tempmail_plus import TempMailPlus
 from ..settings import Settings, get_settings
+from .services import domain_cache as dc
 from .services.retention import retention_worker, run_sweep
 from .errors import register_errors
 from .routers.admin import router as admin_router
@@ -92,12 +93,18 @@ async def lifespan(app: FastAPI):
             settings.retention_interval_seconds,
         )
     )
+    cache_task = asyncio.create_task(dc.domain_cache_worker(factory, registry, settings))
     try:
         yield
     finally:
         sweep_task.cancel()
         try:
             await sweep_task
+        except asyncio.CancelledError:
+            pass
+        cache_task.cancel()
+        try:
+            await cache_task
         except asyncio.CancelledError:
             pass
         await registry.close()

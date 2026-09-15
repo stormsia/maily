@@ -100,3 +100,14 @@ class AppSetting(Base):
     updated_at: Mapped[datetime] = mapped_column(
         DateTime, server_default=func.now(), onupdate=func.now()
     )
+
+
+class DomainCache(Base):
+    __tablename__ = "domain_cache"
+
+    provider: Mapped[str] = mapped_column(String(64), primary_key=True)
+    domains_json: Mapped[str] = mapped_column(Text)  # JSON list of domain strings
+    error: Mapped[str | None] = mapped_column(Text, nullable=True)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime, server_default=func.now(), onupdate=func.now()
+    )

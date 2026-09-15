@@ -493,6 +493,28 @@ pre.code {
 .note .lucide { margin-top: 1px; }
 .note--cyan { background: var(--cyan-soft); border-color: rgba(63, 224, 197, 0.3); color: #a9ecdf; }
 
+/* ---------- Domain cache page ---------- */
+.pill--danger { background: var(--danger-soft); color: #ffb3b3; }
+.ret-card-pills { display: flex; align-items: center; gap: 6px; flex-shrink: 0; flex-wrap: wrap; justify-content: flex-end; }
+.cache-meta { display: flex; align-items: baseline; gap: 6px; font-size: var(--fs-12); color: var(--faint); }
+.cache-meta .mono { color: var(--muted); font-size: var(--fs-12); }
+.cache-settings { display: flex; align-items: flex-end; gap: var(--s-5); flex-wrap: wrap; }
+.cache-toggle { display: flex; align-items: center; gap: var(--s-2); font-size: var(--fs-13); font-weight: 600; color: var(--muted); align-self: flex-end; cursor: pointer; }
+.switch { position: relative; display: inline-flex; flex-shrink: 0; cursor: pointer; }
+.switch input { position: absolute; inset: 0; opacity: 0; margin: 0; cursor: pointer; }
+.switch-track {
+  position: relative; display: block; width: 38px; height: 22px; border-radius: var(--r-pill);
+  background: rgba(255, 255, 255, 0.08); border: 1px solid var(--border);
+  transition: background var(--t-fast), border-color var(--t-fast);
+}
+.switch-knob {
+  position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 50%;
+  background: var(--muted); transition: transform var(--t-med), background var(--t-fast);
+}
+.switch input:checked + .switch-track { background: var(--ok-soft); border-color: rgba(65, 217, 154, 0.5); }
+.switch input:checked + .switch-track .switch-knob { transform: translateX(16px); background: var(--ok); }
+.switch input:focus-visible + .switch-track { box-shadow: 0 0 0 3px rgba(124, 108, 255, 0.25); }
+
 /* ---------- Gmail page ---------- */
 .connect-card { padding: var(--s-8) var(--s-6); text-align: center; overflow: hidden; position: relative; }
 .connect-card::before { content: ""; position: absolute; top: 0; left: 10%; right: 10%; height: 2px; background: linear-gradient(90deg, transparent, var(--accent), transparent); }

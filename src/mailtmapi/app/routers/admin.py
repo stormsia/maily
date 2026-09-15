@@ -8,7 +8,8 @@ from sqlalchemy import case, func, select
 from ...db.models import AppSetting, GmailAccount, Mailbox, Message
 from ...exceptions import MailNotFoundError
 from ..deps import RegistryDep, SessionDep, SettingsDep, require_api_key
-from ..schemas import GmailCredsIn, GmailCredsOut, RetentionIn, RetentionOut
+from ..schemas import DomainCacheIn, DomainCacheOut, GmailCredsIn, GmailCredsOut, RetentionIn, RetentionOut
+from ..services import domain_cache as dc
 from ..services import gmail_config as gcfg
 from ..services import retention as svc
 
@@ -130,6 +131,43 @@ async def run_retention_sweep(
     settings: SettingsDep,
 ) -> dict:
     return await svc.run_sweep(request.app.state.session_factory, registry, settings)
+
+
+@router.get("/domain-cache", response_model=DomainCacheOut)
+async def get_domain_cache(
+    session: SessionDep,
+    registry: RegistryDep,
+    settings: SettingsDep,
+) -> DomainCacheOut:
+    cfg = await dc.get_settings(session, settings)
+    return DomainCacheOut(
+        enabled=cfg["enabled"],
+        interval_seconds=cfg["interval_seconds"],
+        providers=await dc.cache_status(session, registry, settings),
+    )
+
+
+@router.put("/domain-cache", response_model=DomainCacheOut)
+async def set_domain_cache(
+    body: DomainCacheIn,
+    session: SessionDep,
+    registry: RegistryDep,
+    settings: SettingsDep,
+) -> DomainCacheOut:
+    cfg = await dc.set_settings(
+        session, settings, enabled=body.enabled, interval_seconds=body.interval_seconds
+    )
+    await session.commit()
+    return DomainCacheOut(
+        enabled=cfg["enabled"],
+        interval_seconds=cfg["interval_seconds"],
+        providers=await dc.cache_status(session, registry, settings),
+    )
+
+
+@router.post("/domain-cache/run")
+async def run_domain_cache(request: Request, registry: RegistryDep) -> dict:
+    return await dc.refresh_cache(request.app.state.session_factory, registry)
 
 
 @router.get("/gmail/creds", response_model=GmailCredsOut)

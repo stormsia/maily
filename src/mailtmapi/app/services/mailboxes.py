@@ -11,6 +11,7 @@ from ...exceptions import MailNotFoundError, MailValidationError
 from ...providers.base import MailboxInfo, MailboxSpec, MessageSummary
 from ...providers.registry import ProviderRegistry
 from ...settings import Settings
+from . import domain_cache as dc
 
 
 def to_mailbox_info(row: Mailbox, secret: str) -> MailboxInfo:
@@ -60,13 +61,7 @@ async def create_mailbox(
 ) -> Mailbox:
     slug = provider
     if not slug and domain:
-        for p in registry.all():
-            for t in await p.list_targets():
-                if t.label.lower() == domain.lower():
-                    slug = p.slug
-                    break
-            if slug:
-                break
+        slug = await dc.find_provider_for_domain(session, registry, settings, domain)
     if not slug:
         providers = registry.all()
         if not providers:

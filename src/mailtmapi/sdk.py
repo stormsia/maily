@@ -134,6 +134,24 @@ class MailTMAPI:
     async def sync_gmail_account(self, parent_id: int) -> dict:
         return await self._request("POST", f"/v1/gmail/accounts/{parent_id}/sync")
 
+    # --- admin / domain cache ---
+
+    async def domain_cache_settings(self) -> dict:
+        return await self._request("GET", "/v1/admin/domain-cache")
+
+    async def save_domain_cache_settings(
+        self, *, enabled: bool | None = None, interval_seconds: int | None = None
+    ) -> dict:
+        payload = {
+            k: v
+            for k, v in {"enabled": enabled, "interval_seconds": interval_seconds}.items()
+            if v is not None
+        }
+        return await self._request("PUT", "/v1/admin/domain-cache", json=payload)
+
+    async def refresh_domain_cache(self) -> dict:
+        return await self._request("POST", "/v1/admin/domain-cache/run")
+
     # --- polling ---
 
     async def wait_for_message(

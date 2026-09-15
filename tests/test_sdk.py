@@ -66,3 +66,22 @@ async def test_error_mapping_raises_mail_api_error():
         assert "mailbox 404 not found" in str(exc.value)
     finally:
         await api.close()
+
+
+@pytest.mark.asyncio
+async def test_refresh_domain_cache_posts_and_parses():
+    def handler(request: httpx.Request) -> httpx.Response:
+        assert request.method == "POST"
+        assert request.url.path == "/v1/admin/domain-cache/run"
+        return httpx.Response(
+            200,
+            json={"refreshed": ["mail.tm"], "failed": []},
+        )
+
+    client = _client(handler)
+    api = MailTMAPI(client=client)
+    try:
+        result = await api.refresh_domain_cache()
+        assert result == {"refreshed": ["mail.tm"], "failed": []}
+    finally:
+        await api.close()

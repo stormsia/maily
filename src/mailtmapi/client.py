@@ -48,6 +48,9 @@ __all__ = [
     "GmailCreds",
     "Retention",
     "SweepResult",
+    "DomainCacheProvider",
+    "DomainCache",
+    "DomainCacheRun",
 ]
 
 _URL_RE = re.compile(
@@ -155,6 +158,25 @@ class Retention(_Base):
 class SweepResult(_Base):
     mailboxes_deleted: int = 0
     messages_deleted: int = 0
+
+
+class DomainCacheProvider(_Base):
+    provider: str
+    kind: str = "domain"
+    domains_count: int = 0
+    updated_at: Any = None
+    error: str | None = None
+
+
+class DomainCache(_Base):
+    enabled: bool = True
+    interval_seconds: int = 1800
+    providers: list[DomainCacheProvider] = []
+
+
+class DomainCacheRun(_Base):
+    refreshed: list[str] = []
+    failed: list[str] = []
 
 
 # --------------------------------------------------------------------------- #
@@ -554,7 +576,7 @@ class GmailAPI:
 
 
 class AdminAPI:
-    """Админка: статистика, retention (TTL-очистка), Gmail-креды."""
+    """Админка: статистика, retention (TTL-очистка), кэш доменов, Gmail-креды."""
 
     def __init__(self, transport: _Transport) -> None:
         self._t = transport
@@ -596,6 +618,37 @@ class AdminAPI:
         """Прогнать очистку сейчас: удалить просроченные ящики и письма."""
         return SweepResult.model_validate(
             await self._t.request("POST", "/v1/admin/retention/run")
+        )
+
+    async def domain_cache(self) -> DomainCache:
+        """Текущее состояние кэша доменов (включён ли, интервал, провайдеры)."""
+        return DomainCache.model_validate(
+            await self._t.request("GET", "/v1/admin/domain-cache")
+        )
+
+    async def domain_cache_save(
+        self,
+        *,
+        enabled: bool | None = None,
+        interval_seconds: int | None = None,
+    ) -> DomainCache:
+        """Обновить настройки кэша доменов (хотя бы один параметр нужен)."""
+        payload = {
+            k: v
+            for k, v in {
+                "enabled": enabled,
+                "interval_seconds": interval_seconds,
+            }.items()
+            if v is not None
+        }
+        return DomainCache.model_validate(
+            await self._t.request("PUT", "/v1/admin/domain-cache", json=payload)
+        )
+
+    async def domain_cache_run(self) -> DomainCacheRun:
+        """Принудительно обновить кэш доменов сейчас."""
+        return DomainCacheRun.model_validate(
+            await self._t.request("POST", "/v1/admin/domain-cache/run")
         )
 
     async def gmail_creds(self) -> GmailCreds:

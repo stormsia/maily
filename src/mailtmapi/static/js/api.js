@@ -126,6 +126,11 @@ export const api = {
       method: "DELETE",
     }),
   runRetention: () => request("/v1/admin/retention/run", { method: "POST" }),
+  domainCache: () => request("/v1/admin/domain-cache"),
+  saveDomainCache: (body) =>
+    request("/v1/admin/domain-cache", { method: "PUT", body }),
+  runDomainCache: () =>
+    request("/v1/admin/domain-cache/run", { method: "POST" }),
   gmailOAuthStart: () => request("/v1/gmail/oauth/start", { method: "POST" }),
   gmailCreds: () => request("/v1/admin/gmail/creds"),
   saveGmailCreds: (body) =>

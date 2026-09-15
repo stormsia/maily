@@ -5,6 +5,7 @@ import { render as renderOverview, cleanup as cleanupOverview } from "./pages/ov
 import { render as renderMailboxes, openCreateMailbox } from "./pages/mailboxes.js";
 import { render as renderDetail } from "./pages/detail.js";
 import { render as renderRetention } from "./pages/retention.js";
+import { render as renderDomainCache } from "./pages/domain-cache.js";
 import { render as renderGmail } from "./pages/gmail.js";
 
 const root = document.getElementById("app");
@@ -16,6 +17,7 @@ const TITLES = {
   mailboxes: ["Mailboxes", "Admin console", "Create, search and manage temporary addresses."],
   detail: ["Mailbox", "Mailboxes", "Messages for one address."],
   retention: ["Retention", "Admin console", "Automatic cleanup rules per provider."],
+  "domain-cache": ["Domain cache", "Admin console", "Cached provider domains and refresh schedule."],
   gmail: ["Gmail", "Admin console", "Connect Google accounts for +alias mailboxes."],
 };
 
@@ -142,6 +144,7 @@ function parseHash() {
   if (parts[0] === "mailboxes" && parts[1]) return { name: "detail", id: decodeURIComponent(parts[1]) };
   if (parts[0] === "mailboxes") return { name: "mailboxes" };
   if (parts[0] === "retention") return { name: "retention" };
+  if (parts[0] === "domain-cache") return { name: "domain-cache" };
   if (parts[0] === "gmail") return { name: "gmail" };
   return { name: "overview" };
 }
@@ -168,6 +171,7 @@ async function route() {
     else if (r.name === "mailboxes") await renderMailboxes(root);
     else if (r.name === "detail") await renderDetail(root, r.id);
     else if (r.name === "retention") await renderRetention(root);
+    else if (r.name === "domain-cache") await renderDomainCache(root);
     else if (r.name === "gmail") await renderGmail(root);
   } catch (e) {
     root.innerHTML = "";

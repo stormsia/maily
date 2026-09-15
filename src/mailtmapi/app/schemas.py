@@ -107,14 +107,20 @@ class RetentionOut(BaseModel):
     message_ttl_hours: int | None = None
 
 
-class RetentionIn(BaseModel):
-    mailbox_ttl_hours: int | None = None
-    message_ttl_hours: int | None = None
-
-
-class RetentionOut(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
-
+class DomainCacheProviderOut(BaseModel):
     provider: str
-    mailbox_ttl_hours: int | None = None
-    message_ttl_hours: int | None = None
+    kind: str
+    domains_count: int = 0
+    updated_at: datetime | None = None
+    error: str | None = None
+
+
+class DomainCacheOut(BaseModel):
+    enabled: bool
+    interval_seconds: int
+    providers: list[DomainCacheProviderOut] = []
+
+
+class DomainCacheIn(BaseModel):
+    enabled: bool | None = None
+    interval_seconds: int | None = None

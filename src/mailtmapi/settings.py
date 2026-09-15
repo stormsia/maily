@@ -30,6 +30,8 @@ class Settings(BaseSettings):
     secret_key_path: Path = Field(default=Path("mailtm.key"))
     retention_interval_seconds: int = 60
     retention_interval_seconds: int = 60
+    domain_cache_enabled: bool = True
+    domain_cache_interval_seconds: int = 1800
 
     def resolved_secret_key(self) -> str:
         if self.secret_key:

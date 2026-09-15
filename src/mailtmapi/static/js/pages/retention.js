@@ -105,7 +105,7 @@ export async function render(root) {
   root.append(h("div", { class: "note" },
     h("i", { "data-lucide": "info" }),
     h("span", {},
-      "Mailboxes are deleted {mailbox TTL}h after creation; messages {message TTL}h after receipt. ",
+      "Mailboxes are deleted automatically after their TTL expires; messages after theirs. ",
       "Provider-side deletion is best-effort — local records are always removed.")));
   refreshIcons();
 

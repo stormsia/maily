@@ -1,6 +1,6 @@
 /* Gmail page: OAuth connect card + account list (sync / delete). */
 import { api } from "../api.js";
-import { h, toast, refreshIcons, openModal, confirmDialog, emptyState, errorBox, skeletonRows } from "../ui.js";
+import { h, toast, refreshIcons, openModal, confirmDialog, emptyState, errorBox, skeletonRows, copyText } from "../ui.js";
 
 function statusBadge(status) {
   const s = (status || "").toLowerCase();
@@ -10,12 +10,30 @@ function statusBadge(status) {
   return h("span", { class: cls }, status || "unknown");
 }
 
+/* Guided setup wizard — Google Cloud OAuth client walkthrough. */
+const WIZ_URLS = {
+  console: "https://console.cloud.google.com",
+  library: "https://console.developers.google.com/apis/library",
+  branding: "https://console.developers.google.com/auth/branding",
+  audience: "https://console.developers.google.com/auth/audience",
+  clients: "https://console.developers.google.com/auth/clients",
+};
+const WIZ_STEPS = [
+  { label: "Project", title: "Create a project and enable the Gmail API",
+    lead: "Done once per server — the project is the container for your OAuth client and API access." },
+  { label: "Consent", title: "Set up the Google Auth platform",
+    lead: "Google blocks brand-new OAuth clients until the consent screen is configured." },
+  { label: "Client", title: "Create a Web application OAuth client",
+    lead: "The Client ID and Client Secret are shown exactly once — keep them for step 4." },
+  { label: "Credentials", title: "Paste the client credentials", lead: "" },
+  { label: "Connect", title: "Save and connect your Google account",
+    lead: "Credentials are stored on this server, then the Google consent screen opens in a new tab." },
+];
+
 export async function render(root) {
   root.innerHTML = "";
 
-  const connectBtn = h("button", { class: "btn btn-primary", onclick: connect },
-    h("i", { "data-lucide": "plug-zap" }), h("span", {}, "Connect Gmail"));
-  const actionsRow = h("div", { style: "display:flex;gap:8px;justify-content:center;flex-wrap:wrap" }, connectBtn);
+  const actionsRow = h("div", { style: "display:flex;gap:8px;justify-content:center;flex-wrap:wrap" });
   const credsLine = h("div", { class: "small muted", style: "margin-bottom:12px;min-height:20px" });
   const card = h("div", { class: "card connect-card" },
     h("h2", {}, "Bring your own Gmail"),
@@ -45,107 +63,282 @@ export async function render(root) {
   drawCreds();
   draw();
 
+  /** Connect button (primary once configured, ghost otherwise). */
+  function connectBtn(kind = "btn-primary") {
+    return h("button", { class: `btn ${kind}`, onclick: connect },
+      h("i", { "data-lucide": "plug-zap" }), h("span", {}, "Connect Gmail"));
+  }
+
   /** Status line + setup/edit affordances on the connect card. */
   function drawCreds() {
     credsLine.innerHTML = "";
-    actionsRow.querySelectorAll("[data-creds-btn]").forEach((b) => b.remove());
-    if (!creds) { refreshIcons(); return; }
+    actionsRow.innerHTML = "";
+    if (!creds) { actionsRow.append(connectBtn()); refreshIcons(); return; }
     if (creds.source === "none") {
       credsLine.append(
         h("span", { class: "pill pill--warn" }, "OAuth not configured"));
-      actionsRow.append(h("button", {
-        class: "btn btn-ghost", "data-creds-btn": "1", onclick: () => openSetupDialog(),
-      }, "Set up OAuth"));
+      actionsRow.append(
+        h("button", {
+          class: "btn btn-primary", title: "Step-by-step walkthrough of the Google Cloud Console",
+          onclick: () => openWizard(1),
+        }, h("i", { "data-lucide": "sparkles" }), h("span", {}, "Guided setup")),
+        h("button", {
+          class: "btn btn-ghost", title: "Already created an OAuth client? Jump straight to the credentials step.",
+          onclick: () => openWizard(4),
+        }, h("span", {}, "Set up OAuth")),
+        connectBtn("btn-ghost"));
     } else if (creds.source === "db") {
       credsLine.append("OAuth configured · ",
         h("span", { class: "mono" }, creds.client_id || "—"));
-      actionsRow.append(h("button", {
-        class: "btn btn-ghost btn-sm", "data-creds-btn": "1", onclick: () => openSetupDialog(),
-      }, "Edit"));
+      actionsRow.append(
+        connectBtn(),
+        h("button", {
+          class: "btn btn-ghost btn-sm", onclick: () => openWizard(4),
+        }, h("span", {}, "Edit")));
     } else {
       credsLine.append("OAuth configured via server environment",
         h("div", { class: "field-hint", style: "margin-top:2px" },
           "Managed by MAILTM_GMAIL_CLIENT_ID / MAILTM_GMAIL_SECRET — not editable here."));
+      actionsRow.append(connectBtn());
     }
     refreshIcons();
   }
 
-  /** "Gmail OAuth setup" dialog: Client ID / Secret / Redirect URI → PUT creds. */
-  function openSetupDialog() {
-    const idInput = h("input", {
-      value: creds?.source === "db" ? (creds.client_id || "") : "",
-      placeholder: "123…apps.googleusercontent.com",
-      autocomplete: "off", spellcheck: "false", "aria-label": "Client ID",
-      style: "font-family:var(--font-mono)",
-    });
-    const secretInput = h("input", {
-      type: "password", placeholder: "Client secret", autocomplete: "new-password",
-      "aria-label": "Client secret",
-    });
-    const toggle = h("button", {
-      class: "icon-btn", type: "button", "aria-label": "Show or hide client secret", title: "Show / hide",
-      onclick: () => {
-        const show = secretInput.type === "password";
-        secretInput.type = show ? "text" : "password";
-        toggle.querySelector("i, svg")?.setAttribute("data-lucide", show ? "eye-off" : "eye");
-        refreshIcons();
-        secretInput.focus();
-      },
-    }, h("i", { "data-lucide": "eye" }));
-    const uriInput = h("input", {
-      value: creds?.redirect_uri || "",
-      placeholder: "http://127.0.0.1:8477/v1/gmail/oauth/callback",
-      autocomplete: "off", spellcheck: "false", "aria-label": "Redirect URI",
-      style: "font-family:var(--font-mono)",
-    });
-    const form = h("div", {},
-      h("p", { class: "muted", style: "margin-bottom:16px" },
-        "Paste the credentials of your Google Cloud OAuth client. Only your Client ID is shown again later — the secret is stored encrypted on this server."),
-      h("div", { class: "field" }, h("label", {}, "Client ID"), idInput),
-      h("div", { class: "field" }, h("label", {}, "Client Secret"),
-        h("div", { class: "pass-wrap" }, secretInput, toggle)),
-      h("div", { class: "field", style: "margin-bottom:0" }, h("label", {}, "Redirect URI"),
-        uriInput,
-        h("p", { class: "field-hint" },
-          "Register this exact URI as an authorized redirect URI in your Google Cloud OAuth client.")));
+  /** "Gmail OAuth setup" wizard: guided walkthrough of the Google Cloud
+   *  Console (5 steps), credential entry and save+connect. */
+  function openWizard(startStep = 1) {
+    const state = {
+      clientId: creds?.source === "db" ? creds.client_id || "" : "",
+      secret: "",
+      redirectUri: creds?.redirect_uri || `${location.origin}/v1/gmail/oauth/callback`,
+    };
+    let step = Math.min(WIZ_STEPS.length, Math.max(1, startStep));
+    let dir = 1;
 
-    let saveBtn = null;
-    const valid = () => idInput.value.trim() !== "" && secretInput.value !== "";
+    const wrap = h("div", { class: "wizard" });
+    const progress = h("div", { class: "wizard-progress", role: "list" });
+    const stepEl = h("div", { class: "wizard-step" });
+    wrap.append(progress, stepEl);
+
     const m = openModal({
       title: "Gmail OAuth setup",
-      sub: "Google Cloud OAuth client credentials",
-      body: form,
-      actions: [
-        { label: "Cancel" },
-        {
-          label: "Save", kind: "btn-primary",
-          onClick: async (e) => {
-            const btn = e.currentTarget;
-            btn.disabled = true;
-            const body = {
-              client_id: idInput.value.trim(),
-              client_secret: secretInput.value,
-            };
-            if (uriInput.value.trim()) body.redirect_uri = uriInput.value.trim();
-            try {
-              creds = await api.saveGmailCreds(body);
-              toast("OAuth credentials saved.", "ok", "check-circle-2");
-              drawCreds();
-            } catch (err) {
-              m.body.querySelector(".error-box")?.remove();
-              m.body.prepend(errorBox(err.detail || "Could not save credentials."));
-              refreshIcons();
-              btn.disabled = false;
-              throw err; // keeps the dialog open
-            }
-          },
-        },
-      ],
+      sub: "Guided setup · Google Cloud OAuth client",
+      body: wrap,
+      wide: true,
     });
-    saveBtn = m.dialog.querySelector(".modal-foot .btn-primary");
-    saveBtn.disabled = !valid();
-    idInput.addEventListener("input", () => { saveBtn.disabled = !valid(); });
-    secretInput.addEventListener("input", () => { saveBtn.disabled = !valid(); });
+
+    const valid = () => state.clientId.trim() !== "" && state.secret !== "";
+    const extLink = (label, url) => h("a", { class: "wz-link-a", href: url, target: "_blank", rel: "noopener" },
+      label, h("i", { "data-lucide": "arrow-up-right" }));
+    const linkRow = (label, url, hint) => h("div", { class: "wz-link" },
+      h("span", { class: "wz-link-ic" }, h("i", { "data-lucide": "external-link" })),
+      h("div", {}, extLink(label, url), h("p", { class: "wz-link-hint" }, hint)));
+
+    function renderProgress() {
+      progress.innerHTML = "";
+      WIZ_STEPS.forEach((s, i) => {
+        const n = i + 1;
+        if (i > 0) progress.append(h("span", { class: `wz-line${n <= step ? " done" : ""}` }));
+        const node = n < step
+          ? h("button", { class: "wizard-node done", type: "button", role: "listitem",
+              "aria-label": `Go to step ${n}: ${s.label}`, title: `Back to ${s.label}`,
+              onclick: () => goTo(n) },
+              h("span", { class: "wz-dot" }, h("i", { "data-lucide": "check" })),
+              h("span", { class: "wz-label" }, s.label))
+          : h("span", { class: `wizard-node ${n === step ? "current" : "todo"}`, role: "listitem",
+              "aria-current": n === step ? "step" : undefined },
+              h("span", { class: "wz-dot" }, String(n)),
+              h("span", { class: "wz-label" }, s.label));
+        progress.append(node);
+      });
+    }
+
+    function renderStep() {
+      stepEl.innerHTML = "";
+      stepEl.style.setProperty("--wz-dir", dir);
+      stepEl.append(stepHead());
+
+      if (step === 1) {
+        stepEl.append(
+          linkRow("Create a project", WIZ_URLS.console,
+            "Open the Google Cloud Console and create a project — or pick an existing one."),
+          linkRow("Enable the Gmail API", WIZ_URLS.library,
+            "In the API library: search “Gmail API” → Enable."),
+          h("div", { class: "wz-tip" }, h("i", { "data-lucide": "info" }),
+            h("span", {}, "Check the project shown in the console header before every step here — enabling the API in one project and creating the OAuth client in another is the classic mistake.")));
+        stepEl.append(foot(null, nextBtn()));
+      } else if (step === 2) {
+        stepEl.append(
+          linkRow("Configure the consent screen", WIZ_URLS.branding,
+            "“Get Started” → set an App name and a User support email."),
+          linkRow("Audience & test users", WIZ_URLS.audience,
+            "User type: External. Add yourself to Test users — the quota is 100 and a test user keeps its slot forever."),
+          h("div", { class: "wz-tip" }, h("i", { "data-lucide": "info" }),
+            h("span", {}, "Scopes: the app only needs gmail.modify (read + labels + trash). Nothing extra to set under Audience → Data Access.")),
+          h("div", { class: "wz-warn" }, h("i", { "data-lucide": "alert-triangle" }),
+            h("span", {}, h("b", {}, "Testing mode expires every 7 days: "),
+              "test-user authorization and the refresh token both lapse, so the account must be reconnected weekly. Publishing the app (requires a homepage, privacy policy and Google verification) removes the limit.")));
+        stepEl.append(foot(backBtn(), nextBtn()));
+      } else if (step === 3) {
+        stepEl.append(
+          linkRow("Create the OAuth client", WIZ_URLS.clients,
+            "“Create client” → Application type: Web application → name it (e.g. “mailtmapi”)."),
+          h("div", { class: "field", style: "margin-bottom:0" },
+            h("label", {}, "Authorized redirect URI"),
+            h("div", { class: "wz-uri" },
+              h("code", {}, state.redirectUri),
+              h("button", { class: "copy-mini", type: "button", "aria-label": "Copy redirect URI", title: "Copy",
+                onclick: () => copyText(state.redirectUri, "Redirect URI copied") },
+                h("i", { "data-lucide": "copy" }))),
+            h("p", { class: "field-hint", style: "margin-top:6px" },
+              "Add this exact URI under Authorized redirect URIs → “Add URI”.")),
+          h("div", { class: "wz-warn" }, h("i", { "data-lucide": "alert-triangle" }),
+            h("span", {}, "The match must be exact — scheme, case, trailing slash. Any difference fails with redirect_uri_mismatch during authorization. https is mandatory, except for localhost / 127.0.0.1.")),
+          h("p", { class: "wz-field-note" },
+            "Click “Create”. The “OAuth client created” popup shows the Client ID and Client Secret — the secret is displayed only once, so copy both before closing it."));
+        stepEl.append(foot(backBtn(), nextBtn()));
+      } else if (step === 4) {
+        const idInput = h("input", {
+          value: state.clientId,
+          placeholder: "123…apps.googleusercontent.com",
+          autocomplete: "off", spellcheck: "false", "aria-label": "Client ID",
+          style: "font-family:var(--font-mono)",
+        });
+        const secretInput = h("input", {
+          type: "password", value: state.secret, placeholder: "Client secret",
+          autocomplete: "new-password", "aria-label": "Client secret",
+        });
+        const toggle = h("button", {
+          class: "icon-btn", type: "button", "aria-label": "Show or hide client secret", title: "Show / hide",
+          onclick: () => {
+            const show = secretInput.type === "password";
+            secretInput.type = show ? "text" : "password";
+            toggle.querySelector("i, svg")?.setAttribute("data-lucide", show ? "eye-off" : "eye");
+            refreshIcons();
+            secretInput.focus();
+          },
+        }, h("i", { "data-lucide": "eye" }));
+        const uriInput = h("input", {
+          value: state.redirectUri,
+          placeholder: "http://127.0.0.1:8477/v1/gmail/oauth/callback",
+          autocomplete: "off", spellcheck: "false", "aria-label": "Redirect URI",
+          style: "font-family:var(--font-mono)",
+        });
+        const nxt = nextBtn();
+        const sync = () => {
+          state.clientId = idInput.value;
+          state.secret = secretInput.value;
+          state.redirectUri = uriInput.value;
+          nxt.disabled = !valid();
+        };
+        idInput.addEventListener("input", sync);
+        secretInput.addEventListener("input", sync);
+        uriInput.addEventListener("input", sync);
+        stepEl.append(
+          h("div", { class: "field" }, h("label", {}, "Client ID"), idInput),
+          h("div", { class: "field" }, h("label", {}, "Client Secret"),
+            h("div", { class: "pass-wrap" }, secretInput, toggle)),
+          h("div", { class: "field", style: "margin-bottom:0" },
+            h("label", {}, "Redirect URI"), uriInput,
+            h("p", { class: "field-hint" },
+              "Must exactly match the URI you added under Authorized redirect URIs. The secret is stored on the server encrypted.")));
+        nxt.disabled = !valid();
+        stepEl.append(foot(backBtn(), nxt));
+        idInput.focus();
+      } else {
+        stepEl.append(
+          h("p", {}, "Save & Connect writes the credentials (encrypted) to this server, then opens Google's consent screen in a new tab."),
+          creds?.source === "db" ? h("p", { class: "wz-field-note" }, "Existing credentials will be replaced.") : null,
+          h("div", { class: "wz-tip" }, h("i", { "data-lucide": "external-link" }),
+            h("span", {}, "After approving, come back here and refresh the page — the account appears in the Connected accounts list.")));
+        const saveEl = h("button", {
+          class: "btn btn-primary", type: "button", disabled: !valid(), onclick: saveAndConnect,
+        }, h("i", { "data-lucide": "plug-zap" }), h("span", {}, "Save & Connect"));
+        stepEl.append(foot(
+          backBtn(),
+          h("div", { style: "display:flex;gap:8px" },
+            h("button", { class: "btn btn-ghost", type: "button", onclick: () => m.close() }, "Cancel"),
+            saveEl)));
+        saveEl.focus();
+      }
+      refreshIcons();
+      if (step <= 3) stepEl.querySelector(".btn-primary")?.focus();
+    }
+
+    function stepHead() {
+      const s = WIZ_STEPS[step - 1];
+      return h("div", { class: "wizard-step-head" },
+        h("span", { class: "wz-step-no" }, `Step ${step} of ${WIZ_STEPS.length}`),
+        h("h4", {}, s.title),
+        s.lead ? h("p", {}, s.lead) : null);
+    }
+
+    const backBtn = () => h("button", { class: "btn btn-ghost", type: "button", onclick: () => goTo(step - 1) },
+      h("i", { "data-lucide": "arrow-left" }), h("span", {}, "Back"));
+    const nextBtn = () => h("button", { class: "btn btn-primary", type: "button", onclick: () => goTo(step + 1) },
+      h("span", {}, "Next"), h("i", { "data-lucide": "arrow-right" }));
+
+    const foot = (back, right) => h("div", { class: "wizard-foot" },
+      back || h("span", {}),
+      h("span", { class: "spacer" }),
+      right);
+
+    function showError(msg) {
+      stepEl.querySelector(".wz-error")?.remove();
+      stepEl.prepend(h("div", { class: "error-box wz-error" },
+        h("i", { "data-lucide": "alert-triangle" }), h("span", {}, msg)));
+    }
+
+    function goTo(n) {
+      if (n < 1 || n > WIZ_STEPS.length) return;
+      if (n === WIZ_STEPS.length && !valid()) return; // can't skip to Connect without creds
+      dir = n < step ? -1 : 1;
+      step = n;
+      renderProgress();
+      renderStep();
+    }
+
+    async function saveAndConnect(e) {
+      const btn = e.currentTarget;
+      btn.disabled = true;
+      stepEl.querySelector(".wz-error")?.remove();
+      try {
+        const body = { client_id: state.clientId.trim(), client_secret: state.secret };
+        if (state.redirectUri.trim()) body.redirect_uri = state.redirectUri.trim();
+        creds = await api.saveGmailCreds(body);
+        toast("OAuth credentials saved.", "ok", "check-circle-2");
+      } catch (err) {
+        showError(err.detail || "Could not save credentials.");
+        btn.disabled = false;
+        refreshIcons();
+        return; // wizard stays open
+      }
+      try {
+        const { auth_url } = await api.gmailOAuthStart();
+        window.open(auth_url, "_blank", "noopener");
+        toast("Google consent opened in a new tab — approve it, then come back and refresh.", "info", "external-link");
+      } catch (err) {
+        showError(err.detail || "Could not start OAuth — check the Client ID and Secret.");
+        btn.disabled = false;
+        refreshIcons();
+        return; // wizard stays open
+      }
+      drawCreds();
+      m.close();
+    }
+
+    // Enter in any wizard input advances (step 4 → 5, 5 → save).
+    m.dialog.addEventListener("keydown", (e) => {
+      if (e.key !== "Enter") return;
+      const t = e.target;
+      if (!(t instanceof HTMLInputElement) || !stepEl.contains(t)) return;
+      e.preventDefault();
+      if (step === 4) goTo(5);
+      else if (step === 5) stepEl.querySelector(".btn-primary")?.click();
+    });
+
+    renderProgress();
+    renderStep();
   }
 
   async function connect(e) {
@@ -158,7 +351,7 @@ export async function render(root) {
     } catch (err) {
       if (err.status === 400) {
         // CredentialsError-like: OAuth credentials not configured yet.
-        openSetupDialog();
+        openWizard(creds?.source === "db" ? 4 : 1);
       } else {
         toast(err.detail || "Could not start OAuth.", "err");
       }

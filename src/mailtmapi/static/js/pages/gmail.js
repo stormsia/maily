@@ -218,22 +218,24 @@ export async function render(root) {
             secretInput.focus();
           },
         }, h("i", { "data-lucide": "eye" }));
+        // Redirect URI is fixed — must match the one shown in step 3 and
+        // registered in Google; editing it causes redirect_uri_mismatch.
         const uriInput = h("input", {
           value: state.redirectUri,
+          readonly: true,
           placeholder: "http://127.0.0.1:8477/v1/gmail/oauth/callback",
           autocomplete: "off", spellcheck: "false", "aria-label": "Redirect URI",
+          title: "Set by this server — matches step 3",
           style: "font-family:var(--font-mono)",
         });
         const nxt = nextBtn();
         const sync = () => {
           state.clientId = idInput.value;
           state.secret = secretInput.value;
-          state.redirectUri = uriInput.value;
           nxt.disabled = !valid();
         };
         idInput.addEventListener("input", sync);
         secretInput.addEventListener("input", sync);
-        uriInput.addEventListener("input", sync);
         stepEl.append(
           h("div", { class: "field" }, h("label", {}, "Client ID"), idInput),
           h("div", { class: "field" }, h("label", {}, "Client Secret"),
@@ -241,7 +243,7 @@ export async function render(root) {
           h("div", { class: "field", style: "margin-bottom:0" },
             h("label", {}, "Redirect URI"), uriInput,
             h("p", { class: "field-hint" },
-              "Must exactly match the URI you added under Authorized redirect URIs. The secret is stored on the server encrypted.")));
+              "Locked to the URI from step 3 — add it under Authorized redirect URIs in Google exactly as shown. The secret is stored on the server encrypted.")));
         nxt.disabled = !valid();
         stepEl.append(foot(backBtn(), nxt));
         idInput.focus();

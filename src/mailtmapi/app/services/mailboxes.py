@@ -106,10 +106,11 @@ async def upsert_messages(
                 message_api_id=s.id,
             )
             session.add(existing)
-        existing.subject = s.subject
-        existing.from_address = s.from_.address
-        existing.from_name = s.from_.name
-        existing.seen = s.seen
+        existing.subject = s.subject or ""
+        existing.from_address = s.from_.address or ""
+        existing.from_name = s.from_.name or ""
+        if s.seen:  # provider flag never downgrades a locally-marked read
+            existing.seen = True
         existing.has_attachments = s.has_attachments
         existing.size = s.size
         existing.received_at = s.received_at

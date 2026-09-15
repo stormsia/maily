@@ -57,10 +57,11 @@ async def get_message(
     if cached is None:
         cached = Message(mailbox_id=row.id, provider=row.provider, message_api_id=msg_id)
         session.add(cached)
-    cached.subject = detail.subject
-    cached.from_address = detail.from_.address
-    cached.from_name = detail.from_.name
-    cached.seen = detail.seen
+    cached.subject = detail.subject or ""
+    cached.from_address = detail.from_.address or ""
+    cached.from_name = detail.from_.name or ""
+    if detail.seen:  # provider flag never downgrades a locally-marked read
+        cached.seen = True
     cached.has_attachments = detail.has_attachments
     cached.size = detail.size
     cached.received_at = detail.received_at
@@ -131,4 +132,4 @@ async def get_source(
     row = await svc.get_mailbox(session, mailbox_id)
     prov = registry.get(row.provider)
     src = await prov.get_source(svc.to_mailbox_info(row, settings.resolved_secret_key()), msg_id)
-    return SourceOut(id=src.id, data=src.data, download_url=src.download_url)
+    return SourceOut(id=src.id, data=src.data, download_url=src.download_url or "")

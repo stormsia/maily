@@ -25,6 +25,12 @@ def to_mailbox_info(row: Mailbox, secret: str) -> MailboxInfo:
     )
 
 
+def _is_valid_address(address: str) -> bool:
+    """local@domain — единственный формат, который попадает в БД."""
+    parts = address.split("@")
+    return len(parts) == 2 and all(parts)
+
+
 async def get_mailbox(session: AsyncSession, mailbox_id: int) -> Mailbox:
     row = await session.get(Mailbox, mailbox_id)
     if row is None or row.is_deleted:
@@ -70,6 +76,10 @@ async def create_mailbox(
     info = await prov.create_mailbox(
         MailboxSpec(address=address, domain=domain, parent_id=parent_id, password=password)
     )
+    if not _is_valid_address(info.address):
+        raise MailValidationError(
+            f"provider {slug!r} returned invalid address {info.address!r}; expected local@domain"
+        )
     secret = settings.resolved_secret_key()
     row = Mailbox(
         provider=info.provider,

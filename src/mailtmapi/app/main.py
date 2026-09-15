@@ -14,6 +14,7 @@ from ..providers.gmail.db_store import DbGmailStore
 from ..providers.gmail.oauth import GmailOAuth
 from ..providers.gmail.service import GmailProvider
 from ..providers.mailtm import MailTM
+from ..providers.noopmail_org import NoopMail
 from ..providers.registry import ProviderRegistry
 from ..providers.tempmail_io import TempMailIO
 from ..providers.tempmail_plus import TempMailPlus
@@ -69,7 +70,13 @@ async def lifespan(app: FastAPI):
             oauth.configure(*db_creds)
     gmail = GmailProvider(store, oauth, http)
     registry = ProviderRegistry(
-        [gmail, MailTM(http=http), TempMailPlus(http=http), TempMailIO(http=http)]
+        [
+            gmail,
+            MailTM(http=http),
+            TempMailPlus(http=http),
+            TempMailIO(http=http),
+            NoopMail(http=http),
+        ]
     )
     app.state.engine = engine
     app.state.session_factory = factory

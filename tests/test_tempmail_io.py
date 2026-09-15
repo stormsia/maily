@@ -86,6 +86,30 @@ async def test_create_mailbox_posts_name_and_domain():
 
 
 @pytest.mark.asyncio
+async def test_create_mailbox_with_domain_in_spec():
+    def handler(request: httpx.Request) -> httpx.Response:
+        assert request.url.path == "/api/v3/email/new"
+        assert request.method == "POST"
+        body = json.loads(request.content)
+        assert len(body["name"]) == 10
+        assert body["domain"] == "yzcalo.com"
+        return httpx.Response(
+            200,
+            json={"email": "randomuser@yzcalo.com", "token": "tok-1"},
+        )
+
+    http = _http(handler)
+    provider = TempMailIO(http)
+    try:
+        box = await provider.create_mailbox(MailboxSpec(domain="yzcalo.com"))
+        assert box.address == "randomuser@yzcalo.com"
+        assert box.token == "tok-1"
+        assert box.provider_account_id == "randomuser@yzcalo.com"
+    finally:
+        await http.close()
+
+
+@pytest.mark.asyncio
 async def test_create_mailbox_without_token_raises_validation_error():
     def handler(request: httpx.Request) -> httpx.Response:
         return httpx.Response(200, json={"email": "al234tf05o@yzcalo.com"})

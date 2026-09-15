@@ -167,21 +167,22 @@ class TempMailIO:
         ]
 
     async def create_mailbox(self, spec: MailboxSpec) -> MailboxInfo:
-        if spec.address:
-            name, sep, domain = spec.address.partition("@")
-            if not sep or not domain:
-                raise MailValidationError(
-                    f"temp-mail.io: address {spec.address!r} is not name@domain",
-                    status_code=400,
-                )
-        else:
-            name = random_string(10)
+        address = spec.address
+        if not address:
             domain = spec.domain
             if not domain:
                 targets = await self.list_targets()
                 if not targets:
                     raise MailValidationError("temp-mail.io: no domains available", status_code=400)
                 domain = targets[0].label
+            address = f"{random_string(10)}@{domain}"
+        # API /email/new принимает name+domain по отдельности.
+        name, sep, domain = address.partition("@")
+        if not sep or not domain:
+            raise MailValidationError(
+                f"temp-mail.io: address {address!r} is not name@domain",
+                status_code=400,
+            )
         data = await self._post_json(
             f"{self.BASE_URL}/api/v3/email/new",
             body={"name": name, "domain": domain},
@@ -191,7 +192,7 @@ class TempMailIO:
                 "temp-mail.io: failed to create mailbox (no token in response)",
                 status_code=400,
             )
-        address = str(data.get("email") or "") or f"{name}@{domain}"
+        address = str(data.get("email") or "") or address
         return MailboxInfo(
             provider=self.slug,
             address=address,

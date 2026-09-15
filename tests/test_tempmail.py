@@ -66,6 +66,25 @@ async def test_create_mailbox_validates_inbox():
 
 
 @pytest.mark.asyncio
+async def test_create_mailbox_with_domain_in_spec():
+    def handler(request: httpx.Request) -> httpx.Response:
+        assert request.url.path == "/api/mails"
+        email = request.url.params["email"]
+        assert email.endswith("@mailto.plus")
+        assert request.url.params["limit"] == "1"
+        return httpx.Response(200, json={"mail_list": [], "count": 0, "first_id": 0})
+
+    http = _http(handler)
+    provider = TempMailPlus(http)
+    try:
+        box = await provider.create_mailbox(MailboxSpec(domain="mailto.plus"))
+        assert box.address.endswith("@mailto.plus")
+        assert box.token == box.address
+    finally:
+        await http.close()
+
+
+@pytest.mark.asyncio
 async def test_create_mailbox_rejects_err():
     def handler(request: httpx.Request) -> httpx.Response:
         return httpx.Response(200, json={"err": {"msg": "invalid domain"}})

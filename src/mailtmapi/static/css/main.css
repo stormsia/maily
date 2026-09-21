@@ -327,6 +327,29 @@ html { scrollbar-color: rgba(255, 255, 255, 0.16) transparent; scrollbar-width: 
 .prov-nums b { font-family: var(--font-mono); font-size: var(--fs-20); font-weight: 600; }
 .prov-nums span { font-size: var(--fs-11); color: var(--faint); text-transform: uppercase; letter-spacing: 0.08em; }
 
+/* provider health list (overview) */
+.health-list { display: flex; flex-direction: column; }
+.health-row {
+  display: flex; align-items: center; gap: var(--s-3); flex-wrap: wrap;
+  padding: var(--s-3) 0; border-bottom: 1px solid var(--border-soft);
+}
+.health-row:last-child { border-bottom: none; }
+.health-row-main { display: flex; align-items: center; gap: var(--s-2); margin-right: auto; }
+.health-meta {
+  display: flex; align-items: baseline; gap: 6px;
+  font-family: var(--font-mono); font-size: var(--fs-12); color: var(--faint);
+}
+.health-err {
+  flex-basis: 100%; font-size: var(--fs-12); color: #ff9d9d;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%;
+}
+.mini-link {
+  margin-top: var(--s-3); display: inline-flex; align-items: center; gap: 6px;
+  color: var(--accent); font-size: var(--fs-12); font-weight: 600;
+}
+.mini-link .lucide { width: 14px; height: 14px; }
+.mini-link:hover { color: var(--accent-deep); text-decoration: underline; }
+
 /* retention strip */
 .strip { display: flex; align-items: center; gap: var(--s-3); flex-wrap: wrap; padding: var(--s-4) var(--s-5); }
 .strip-text { font-size: var(--fs-13); color: var(--muted); flex: 1; min-width: 200px; }

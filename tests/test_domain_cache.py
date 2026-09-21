@@ -2,13 +2,15 @@ from __future__ import annotations
 
 import json
 import sqlite3
+import time
+from datetime import datetime
 
 from fastapi.testclient import TestClient
-from tests.helpers import StubProvider, make_targets
 
 from mailtmapi.app.main import create_app
 from mailtmapi.providers.registry import ProviderRegistry
 from mailtmapi.settings import Settings
+from tests.helpers import StubProvider, make_targets
 
 SECRET = "test-secret"
 
@@ -99,6 +101,37 @@ def test_targets_served_from_cache(tmp_path):
         ]
         # served from DB cache, provider not called again
         assert good.list_targets_calls == 1
+
+
+def test_run_stores_and_bumps_last_refresh(tmp_path):
+    # domain_cache_enabled=False: the background worker does nothing, so the
+    # controlled POST /run calls below are the only writer on the sqlite file
+    # (otherwise the worker's first refresh can race the test's writes).
+    db = tmp_path / "test.db"
+    app = create_app(
+        Settings(
+            database_url=f"sqlite+aiosqlite:///{db}",
+            secret_key=SECRET,
+            _env_file=None,
+            domain_cache_enabled=False,
+        )
+    )
+    with TestClient(app) as client:
+        good = StubProvider("good", make_targets("good", "a.com"))
+        client.app.state.registry = ProviderRegistry([good])
+
+        client.post("/v1/admin/domain-cache/run")
+        first = client.get("/v1/admin/domain-cache").json()
+        t1 = {p["provider"]: p["updated_at"] for p in first["providers"]}["good"]
+        assert t1 is not None  # the refresh timestamp is persisted
+
+        # Refresh again with identical data: updated_at must still move forward
+        # (a naive onupdate-only column would stay stale when nothing changes).
+        time.sleep(1.1)
+        client.post("/v1/admin/domain-cache/run")
+        t2 = {p["provider"]: p["updated_at"] for p in client.get("/v1/admin/domain-cache").json()["providers"]}["good"]
+
+        assert datetime.fromisoformat(t2) > datetime.fromisoformat(t1)
 
 
 def test_mailbox_create_domain_resolution(tmp_path):

@@ -5,6 +5,7 @@ import json
 import logging
 import time
 from contextlib import suppress
+from datetime import datetime, timezone
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -72,6 +73,11 @@ async def set_settings(
     return await get_settings(session, settings)
 
 
+def _utcnow_naive() -> datetime:
+    """UTC now without tzinfo, matching what func.now() (CURRENT_TIMESTAMP) stores."""
+    return datetime.now(timezone.utc).replace(tzinfo=None)
+
+
 async def _store(session, slug: str, targets: list[Target]) -> None:
     row = await session.get(DomainCache, slug)
     if row is None:
@@ -79,6 +85,10 @@ async def _store(session, slug: str, targets: list[Target]) -> None:
         session.add(row)
     row.domains_json = json.dumps([t.label for t in targets])
     row.error = None
+    # Force a timestamp bump even when the domain list didn't change — the
+    # column's onupdate only fires on an actual UPDATE, and identical data
+    # would otherwise keep a stale "last refresh" forever.
+    row.updated_at = _utcnow_naive()
 
 
 async def list_domain_targets(
@@ -133,6 +143,8 @@ async def refresh_cache(
                     row = DomainCache(provider=p.slug, domains_json="")
                     session.add(row)
                 row.error = str(exc)
+                # Record the failed attempt so monitoring sees a recent date.
+                row.updated_at = _utcnow_naive()
         await session.commit()
     return {"refreshed": refreshed, "failed": failed}
 

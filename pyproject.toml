@@ -33,7 +33,10 @@ packages = ["src/mailtmapi"]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
-pythonpath = ["src"]
+# "src" makes the package importable; "." (repo root) makes `tests` importable
+# as a package (`tests.helpers`) even when pytest is invoked as a bare script
+# instead of `python -m pytest`.
+pythonpath = ["src", "."]
 
 [tool.ruff]
 target-version = "py310"

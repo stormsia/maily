@@ -112,25 +112,23 @@ function healthCard(health) {
   if (!entries.length) return null;
   const rows = entries.map(([slug, m]) => {
     const bad = Boolean(m && m.error);
-    return h("div", { class: "card prov-card" },
-      h("div", { class: "prov-card-top" },
+    return h("div", { class: "health-row" },
+      h("div", { class: "health-row-main" },
         h("span", { class: "prov-name mono" }, slug),
-        h("span", { class: `pill ${bad ? "pill--danger" : "pill--on"}`, title: m && m.error ? m.error : undefined },
+        h("span", { class: `pill ${bad ? "pill--danger" : "pill--on"}` },
           bad ? "error" : "ok")),
-      h("div", { class: "prov-nums" },
-        h("div", {}, h("b", {}, String(m?.domains ?? 0)), h("span", {}, "domains cached")),
-        h("div", {}, h("b", {}, timeAgo(m?.last_refresh)), h("span", {}, "last refresh"))),
-      bad ? h("div", { class: "cache-error", title: m.error, role: "status" },
-        h("span", { class: "cache-error-label" }, "refresh failed:"), " ",
-        h("span", { class: "cache-error-msg" }, m.error)) : null);
+      h("div", { class: "health-meta" },
+        h("span", {}, `${m?.domains ?? 0} domains`),
+        h("span", {}, "·"),
+        h("span", {}, `refresh ${timeAgo(m?.last_refresh)}`)),
+      bad ? h("div", { class: "health-err", title: m.error }, m.error) : null);
   });
-  return h("div", { class: "card mt-4" },
+  return h("div", { class: "card chart-card mt-4" },
     h("div", { class: "chart-title" }, "Provider health"),
-    h("div", { class: "chart-sub" }, "Last successful domain cache refresh per provider"),
-    h("div", { class: "prov-grid mt-4" }, ...rows),
-    h("div", { class: "chart-sub mt-2" },
-      h("a", { href: "#/domain-cache" }, "Manage domain cache refresh"),
-      h("i", { "data-lucide": "arrow-up-right", class: "inline-icon" })));
+    h("div", { class: "chart-sub" }, "Domain cache refresh state per provider"),
+    h("div", { class: "health-list mt-4" }, ...rows),
+    h("a", { class: "mini-link", href: "#/domain-cache" },
+      "Manage domain cache", h("i", { "data-lucide": "arrow-up-right" })));
 }
 
 function ttlText(v) {

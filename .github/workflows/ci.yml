@@ -25,7 +25,10 @@ jobs:
         # Test suite is hermetic by design: every Settings(...) in the tests
         # passes _env_file=None so a developer's local .env (MAILTM_API_KEY,
         # proxies, ...) can never leak into CI runs.
-        run: pytest -q
+        # `python -m pytest` over bare `pytest`: guarantees the repo root is on
+        # sys.path so `from tests.helpers import ...` resolves (tests is a
+        # package via tests/__init__.py).
+        run: python -m pytest -q
       - name: JS syntax check
         # Static ES modules, no build step / package.json. node --check parses
         # each file as ESM (missing semicolons/typos fail here).

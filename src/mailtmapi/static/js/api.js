@@ -78,14 +78,16 @@ async function request(path, { method = "GET", body, retried = false } = {}) {
     );
   }
   if (res.status === 401) {
-    const reason = res.headers.get("x-mailtm-error");
-    // A 401 from a provider (e.g. expired Gmail token) is NOT an API-key
-    // problem — show its real message instead of triggering the key prompt.
+    const { detail, data } = await parseError(res);
+    // Machine-readable reason: body `code` first (structured errors), header
+    // as a fallback for older servers. A 401 from a provider (e.g. expired
+    // Gmail token, code "provider_auth") is NOT an API-key problem — show its
+    // real message instead of triggering the key prompt.
+    const reason = (data && data.code) || res.headers.get("x-mailtm-error");
     if (reason === "api_key" && !retried) {
       const saved = await onAuthRequired();
       if (saved) return request(path, { method, body, retried: true });
     }
-    const { detail, data } = await parseError(res);
     const err = new ApiError(401, detail);
     if (reason === "provider_auth") err.providerAuth = true;
     copyExtra(err, data);

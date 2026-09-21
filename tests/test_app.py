@@ -23,8 +23,21 @@ def _app(tmp_path: Path, **kwargs) -> TestClient:
 
 def test_app_builds_and_health_ok(tmp_path):
     with _app(tmp_path) as client:
-        assert client.get("/health").status_code == 200
-        assert client.get("/health").json() == {"status": "ok"}
+        res = client.get("/health")
+        assert res.status_code == 200
+        body = res.json()
+        assert body["status"] == "ok"
+        # brief provider/domain-cache degradation view for monitoring
+        assert isinstance(body["domain_cache"], dict)
+
+
+def test_health_includes_domain_cache_status(tmp_path):
+    with _app(tmp_path) as client:
+        body = client.get("/health").json()
+        # every domain-provider is present, values are shaped
+        for _slug, meta in body["domain_cache"].items():
+            assert set(meta) == {"last_refresh", "domains", "error"}
+            assert isinstance(meta["domains"], int)
 
 
 def test_api_key_enforced_when_set(tmp_path):
@@ -43,6 +56,42 @@ def test_api_key_401_is_tagged(tmp_path):
         res = client.get("/v1/providers")
         assert res.status_code == 401
         assert res.headers.get("x-mailtm-error") == "api_key"
+        # structured code in the body (not only the header)
+        assert res.json().get("code") == "api_key"
+
+
+def test_validation_error_has_code(tmp_path):
+    with _app(tmp_path, api_key="sekret") as client:
+        res = client.put(
+            "/v1/admin/retention/stub",
+            json={"mailbox_ttl_hours": "not-an-int"},
+            headers={"X-API-Key": "sekret"},
+        )
+        assert res.status_code == 422
+        assert res.json().get("code") == "validation_error"
+
+
+def test_cross_origin_api_is_rejected(tmp_path):
+    with _app(tmp_path) as client:
+        # no Origin (curl, tests, server-to-server) or same-origin → allowed
+        assert client.get("/v1/providers").status_code == 200
+        assert (
+            client.get(
+                "/v1/providers", headers={"Origin": "http://testserver"}
+            ).status_code
+            == 200
+        )
+        # foreign origin is refused outright, even though /v1 is key-protected
+        res = client.get("/v1/providers", headers={"Origin": "http://evil.example"})
+        assert res.status_code == 403
+        assert res.json().get("code") == "cross_origin"
+        # sandboxed/opaque origins ("null") are not trusted
+        assert (
+            client.get(
+                "/v1/providers", headers={"Origin": "null"}
+            ).status_code
+            == 403
+        )
 
 
 def test_provider_auth_401_is_tagged_distinctly():

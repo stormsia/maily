@@ -22,8 +22,13 @@ jobs:
       - name: mypy
         run: mypy src
       - name: Pytest
+        # Test suite is hermetic by design: every Settings(...) in the tests
+        # passes _env_file=None so a developer's local .env (MAILTM_API_KEY,
+        # proxies, ...) can never leak into CI runs.
         run: pytest -q
       - name: JS syntax check
+        # Static ES modules, no build step / package.json. node --check parses
+        # each file as ESM (missing semicolons/typos fail here).
         run: |
           for f in src/mailtmapi/static/js/*.js src/mailtmapi/static/js/pages/*.js; do
             node --input-type=module --check < "$f"

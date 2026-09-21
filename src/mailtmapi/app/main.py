@@ -20,6 +20,7 @@ from ..providers.tempmail_io import TempMailIO
 from ..providers.tempmail_plus import TempMailPlus
 from ..settings import Settings, get_settings
 from .errors import register_errors
+from .middleware.origin import OriginGuard
 from .routers.admin import router as admin_router
 from .routers.gmail import public as gmail_public
 from .routers.gmail import router as gmail_router
@@ -125,6 +126,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(mailboxes_router)
     app.include_router(messages_router)
     app.include_router(admin_router)
+    app.add_middleware(OriginGuard)
     static_dir = Path(__file__).resolve().parents[1] / "static"
     if static_dir.is_dir():
         app.mount("/", StaticFiles(directory=static_dir, html=True), name="static")

@@ -1,6 +1,6 @@
 /* Overview page: status, stat cards, provider donut, 7-day trend, retention strip. */
 import { api } from "../api.js";
-import { h, esc, toast, refreshIcons, errorBox, skeletonCards, slugHue } from "../ui.js";
+import { h, esc, toast, refreshIcons, errorBox, skeletonCards, slugHue, timeAgo } from "../ui.js";
 
 let charts = [];
 let resizeHandler = null;
@@ -106,6 +106,33 @@ function mountTrend(el, days) {
   });
 }
 
+function healthCard(health) {
+  const cache = (health && health.domain_cache) || {};
+  const entries = Object.entries(cache);
+  if (!entries.length) return null;
+  const rows = entries.map(([slug, m]) => {
+    const bad = Boolean(m && m.error);
+    return h("div", { class: "card prov-card" },
+      h("div", { class: "prov-card-top" },
+        h("span", { class: "prov-name mono" }, slug),
+        h("span", { class: `pill ${bad ? "pill--danger" : "pill--on"}`, title: m && m.error ? m.error : undefined },
+          bad ? "error" : "ok")),
+      h("div", { class: "prov-nums" },
+        h("div", {}, h("b", {}, String(m?.domains ?? 0)), h("span", {}, "domains cached")),
+        h("div", {}, h("b", {}, timeAgo(m?.last_refresh)), h("span", {}, "last refresh"))),
+      bad ? h("div", { class: "cache-error", title: m.error, role: "status" },
+        h("span", { class: "cache-error-label" }, "refresh failed:"), " ",
+        h("span", { class: "cache-error-msg" }, m.error)) : null);
+  });
+  return h("div", { class: "card mt-4" },
+    h("div", { class: "chart-title" }, "Provider health"),
+    h("div", { class: "chart-sub" }, "Last successful domain cache refresh per provider"),
+    h("div", { class: "prov-grid mt-4" }, ...rows),
+    h("div", { class: "chart-sub mt-2" },
+      h("a", { href: "#/domain-cache" }, "Manage domain cache refresh"),
+      h("i", { "data-lucide": "arrow-up-right", class: "inline-icon" })));
+}
+
 function ttlText(v) {
   return v == null ? "disabled" : `${v}h`;
 }
@@ -118,11 +145,12 @@ export async function render(root) {
     h("div", { class: "skeleton", style: "height:360px" }),
     h("div", { class: "skeleton", style: "height:360px" })));
 
-  let stats, retention;
+  let stats, retention, health;
   try {
-    [stats, retention] = await Promise.all([
+    [stats, retention, health] = await Promise.all([
       api.stats(),
       api.retention().catch(() => []),
+      api.health().catch(() => null),
     ]);
   } catch (e) {
     root.innerHTML = "";
@@ -148,6 +176,9 @@ export async function render(root) {
   const grid = h("div", { class: "grid grid--stats" });
   for (const s of STATS) grid.append(statCard(s, values));
   root.append(grid);
+
+  const hCard = healthCard(health);
+  if (hCard) root.append(hCard);
 
   // charts row
   const entries = Object.entries(byProvider);

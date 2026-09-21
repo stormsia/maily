@@ -246,7 +246,19 @@ Retention lets you automatically delete old mailboxes and messages per provider:
 ```bash
 pip install -e ".[dev]"
 pytest            # run the test suite
+ruff check src tests
+mypy src
 ```
+
+CI (`.github/workflows/ci.yml`) runs exactly the same commands plus a
+`node --check` syntax pass for the static JS (there is no build step /
+`package.json`).
+
+The test suite is hermetic: **every** `Settings(...)` in `tests/` passes
+`_env_file=None`, so a local `.env` (`MAILTM_API_KEY`, proxy, …) can never
+leak into test runs and cause spurious 401s / network calls. Keep it that way
+in new tests. Shared provider stubs live in `tests/helpers.py` — don't copy
+`StubProvider` into new test files.
 
 Project layout:
 

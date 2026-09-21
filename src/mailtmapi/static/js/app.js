@@ -30,23 +30,41 @@ async function ping() {
   const pillSm = document.getElementById("health-pill-sm");
   const dotSm = document.getElementById("health-dot-sm");
   const textSm = document.getElementById("health-text-sm");
+  let degraded = null;
   try {
-    await api.health();
-    pill?.classList.remove("off");
-    pill?.classList.add("on");
-    if (text) text.textContent = "online";
-    pillSm?.classList.remove("off");
-    pillSm?.classList.add("on");
-    if (dotSm) { dotSm.style.background = "var(--ok)"; dotSm.style.boxShadow = "0 0 10px rgba(65,217,154,.9)"; }
-    if (textSm) textSm.textContent = `online · ${location.host}`;
+    const body = await api.health();
+    // Extended health: domain_cache -> {last_refresh, domains, error}.
+    const cache = (body && body.domain_cache) || {};
+    const failing = Object.entries(cache).filter(([, m]) => m && m.error).map(([slug]) => slug);
+    degraded = failing.length ? failing : null;
+    if (!degraded) {
+      pill?.classList.remove("off", "warn");
+      pill?.classList.add("on");
+      if (text) { text.textContent = "online"; text.removeAttribute("title"); }
+      pillSm?.classList.remove("off", "warn");
+      pillSm?.classList.add("on");
+      if (dotSm) { dotSm.style.background = "var(--ok)"; dotSm.style.boxShadow = "0 0 10px rgba(65,217,154,.9)"; }
+      if (textSm) { textSm.textContent = `online · ${location.host}`; textSm.removeAttribute("title"); }
+    }
   } catch {
-    pill?.classList.remove("on");
+    degraded = null;
+    pill?.classList.remove("on", "warn");
     pill?.classList.add("off");
-    if (text) text.textContent = "offline";
-    pillSm?.classList.remove("on");
+    if (text) { text.textContent = "offline"; text.title = ""; }
+    pillSm?.classList.remove("on", "warn");
     pillSm?.classList.add("off");
     if (dotSm) { dotSm.style.background = "var(--danger)"; dotSm.style.boxShadow = "0 0 10px rgba(255,125,125,.8)"; }
-    if (textSm) textSm.textContent = `offline · ${location.host}`;
+    if (textSm) { textSm.textContent = `offline · ${location.host}`; textSm.title = ""; }
+  }
+  if (degraded) {
+    const hint = `Domain cache refresh failing: ${degraded.join(", ")}`;
+    pill?.classList.remove("on", "off");
+    pill?.classList.add("warn");
+    if (text) { text.textContent = "degraded"; text.title = hint; }
+    pillSm?.classList.remove("on", "off");
+    pillSm?.classList.add("warn");
+    if (dotSm) { dotSm.style.background = "var(--warn)"; dotSm.style.boxShadow = "0 0 10px rgba(255,190,90,.9)"; }
+    if (textSm) { textSm.textContent = `degraded · ${location.host}`; textSm.title = hint; }
   }
   try {
     const cfg = await api.config();

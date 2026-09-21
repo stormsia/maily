@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 from fastapi import FastAPI, Request
+from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
+from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from ..exceptions import (
     MailAPIError,
@@ -26,6 +28,24 @@ def _json(
 
 
 def register_errors(app: FastAPI) -> None:
+    @app.exception_handler(StarletteHTTPException)
+    async def _http(_req: Request, exc: StarletteHTTPException) -> JSONResponse:
+        # Generic HTTPException (raise HTTPException(...) in routers / deps).
+        # The API-key 401 (X-MailTM-Error: api_key) gets a machine-readable
+        # `code` so the UI no longer depends on headers or detail strings only.
+        headers = dict(exc.headers or {})
+        body: dict[str, str] = {"detail": str(exc.detail)}
+        if headers.get("X-MailTM-Error") == "api_key":
+            body["code"] = "api_key"
+        return JSONResponse(body, status_code=exc.status_code, headers=headers)
+
+    @app.exception_handler(RequestValidationError)
+    async def _validation(_req: Request, exc: RequestValidationError) -> JSONResponse:
+        return JSONResponse(
+            {"detail": exc.errors(), "code": "validation_error"},
+            status_code=422,
+        )
+
     @app.exception_handler(MailNotFoundError)
     async def _not_found(_req: Request, exc: MailNotFoundError) -> JSONResponse:
         return _json(404, str(exc), code="not_found")

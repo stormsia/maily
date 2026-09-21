@@ -116,16 +116,20 @@ export async function render(root) {
     try {
       const res = await api.runDomainCache();
       const refreshed = res.refreshed || [];
-      const failed = res.failed || [];
-      const msg = failed.length
-        ? `Refreshed ${refreshed.length} provider${refreshed.length === 1 ? "" : "s"}, ${failed.length} failed.`
-        : `Refreshed ${refreshed.length} provider${refreshed.length === 1 ? "" : "s"}.`;
-      toast(msg, failed.length ? "err" : "ok", "refresh-cw");
-      render(root);
+      toast(`Refreshed ${refreshed.length} provider${refreshed.length === 1 ? "" : "s"}.`, "ok", "refresh-cw");
     } catch (err) {
-      toast(err.detail || "Refresh failed.", "err");
+      const names = err.failed?.length ? err.failed.join(", ") : "";
+      toast(
+        names
+          ? `Refresh failed for: ${names}`
+          : err.detail || "Refresh failed.",
+        "err",
+        "refresh-cw",
+      );
+    } finally {
       btn.disabled = false;
       btn.classList.remove("is-loading");
+      render(root);
     }
   }
 

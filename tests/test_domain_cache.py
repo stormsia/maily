@@ -65,7 +65,9 @@ class StubProvider:
 
 def _app(tmp_path) -> TestClient:
     db = tmp_path / "test.db"
-    app = create_app(Settings(database_url=f"sqlite+aiosqlite:///{db}", secret_key=SECRET))
+    app = create_app(
+        Settings(database_url=f"sqlite+aiosqlite:///{db}", secret_key=SECRET, _env_file=None)
+    )
     return TestClient(app)
 
 
@@ -109,8 +111,11 @@ def test_run_populates_cache_and_reports_failures(tmp_path):
         client.app.state.registry = ProviderRegistry([good, bad])
 
         r = client.post("/v1/admin/domain-cache/run")
-        assert r.status_code == 200
-        assert r.json() == {"refreshed": ["good"], "failed": ["bad"]}
+        assert r.status_code == 502
+        body = r.json()
+        assert body["refreshed"] == ["good"]
+        assert body["failed"] == ["bad"]
+        assert isinstance(body["detail"], str) and body["detail"]
 
         body = client.get("/v1/admin/domain-cache").json()
         by_provider = {p["provider"]: p for p in body["providers"]}

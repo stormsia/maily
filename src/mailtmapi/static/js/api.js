@@ -36,14 +36,25 @@ export function setAuthRequiredHandler(fn) {
   onAuthRequired = fn;
 }
 
-async function parseError(res) {
-  try {
-    const data = await res.json();
-    if (typeof data?.detail === "string" && data.detail) return data.detail;
-  } catch {
-    /* non-JSON error body */
+/* Structured extras from an error body (e.g. failed/refreshed lists). */
+function copyExtra(err, data) {
+  if (!data) return;
+  for (const k of ["failed", "refreshed"]) {
+    if (Array.isArray(data[k])) err[k] = data[k];
   }
-  return `${res.status} ${res.statusText}`.trim();
+}
+
+async function parseError(res) {
+  let data;
+  try {
+    data = await res.json();
+  } catch {
+    data = null;
+  }
+  const detail =
+    (data && typeof data.detail === "string" && data.detail) ||
+    `${res.status} ${res.statusText}`.trim();
+  return { detail, data: data && typeof data === "object" ? data : null };
 }
 
 async function request(path, { method = "GET", body, retried = false } = {}) {
@@ -64,13 +75,27 @@ async function request(path, { method = "GET", body, retried = false } = {}) {
       `Cannot reach the server — is it running on ${location.host}?`,
     );
   }
-  if (res.status === 401 && !retried) {
-    const saved = await onAuthRequired();
-    if (saved) return request(path, { method, body, retried: true });
-    throw new ApiError(401, "Unauthorized — an API key is required.");
+  if (res.status === 401) {
+    const reason = res.headers.get("x-mailtm-error");
+    // A 401 from a provider (e.g. expired Gmail token) is NOT an API-key
+    // problem — show its real message instead of triggering the key prompt.
+    if (reason === "api_key" && !retried) {
+      const saved = await onAuthRequired();
+      if (saved) return request(path, { method, body, retried: true });
+    }
+    const { detail, data } = await parseError(res);
+    const err = new ApiError(401, detail);
+    if (reason === "provider_auth") err.providerAuth = true;
+    copyExtra(err, data);
+    throw err;
   }
   if (res.status === 204) return null;
-  if (!res.ok) throw new ApiError(res.status, await parseError(res));
+  if (!res.ok) {
+    const { detail, data } = await parseError(res);
+    const err = new ApiError(res.status, detail);
+    copyExtra(err, data);
+    throw err;
+  }
   const text = await res.text();
   return text ? JSON.parse(text) : null;
 }

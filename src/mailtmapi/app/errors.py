@@ -13,8 +13,8 @@ from ..exceptions import (
 )
 
 
-def _json(status: int, detail: str) -> JSONResponse:
-    return JSONResponse({"detail": detail}, status_code=status)
+def _json(status: int, detail: str, headers: dict[str, str] | None = None) -> JSONResponse:
+    return JSONResponse({"detail": detail}, status_code=status, headers=headers)
 
 
 def register_errors(app: FastAPI) -> None:
@@ -28,7 +28,13 @@ def register_errors(app: FastAPI) -> None:
 
     @app.exception_handler(MailAuthError)
     async def _auth(_req: Request, exc: MailAuthError) -> JSONResponse:
-        return _json(401, str(exc))
+        # 401 collides with the API-key check; the header lets the UI tell
+        # "Google rejected the account token" apart from "server needs a key".
+        return _json(
+            401,
+            str(exc),
+            headers={"X-MailTM-Error": "provider_auth"},
+        )
 
     @app.exception_handler(MailConflictError)
     async def _conflict(_req: Request, exc: MailConflictError) -> JSONResponse:

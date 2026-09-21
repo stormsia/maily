@@ -71,7 +71,11 @@ class StubMailProvider:
 def _client(tmp_path: Path) -> TestClient:
     db = tmp_path / "test.db"
     app = create_app(
-        Settings(database_url=f"sqlite+aiosqlite:///{db}", secret_key=SECRET)
+        Settings(
+            database_url=f"sqlite+aiosqlite:///{db}",
+            secret_key=SECRET,
+            _env_file=None,
+        )
     )
     return TestClient(app)
 

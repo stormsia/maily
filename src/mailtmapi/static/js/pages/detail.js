@@ -55,6 +55,52 @@ function msgItem(msg, selected, onOpen) {
   return el;
 }
 
+/* Provider-auth failure (e.g. expired Gmail token): make the cause visible
+ * and point to the reconnect flow instead of a generic error. */
+function providerAuthBox(e, onRetry) {
+  const gmail = e?.provider === "gmail";
+  return h(
+    "div",
+    { class: "error-box" },
+    h("i", { "data-lucide": "alert-triangle" }),
+    h(
+      "div",
+      { style: "width:100%" },
+      h(
+        "div",
+        { style: "font-weight:700" },
+        gmail ? "Gmail account access expired" : "Provider account auth failed",
+      ),
+      h("div", {}, e?.detail || "The connected account is no longer authorized."),
+      gmail
+        ? h(
+            "p",
+            { class: "field-hint", style: "margin-top:6px;color:inherit" },
+            "Google rejected the account token (expired or revoked). Reconnect the account below, then refresh.",
+          )
+        : null,
+      h(
+        "div",
+        { style: "display:flex;gap:8px;margin-top:12px;flex-wrap:wrap" },
+        onRetry
+          ? h(
+              "button",
+              { class: "btn btn-ghost btn-sm", onclick: onRetry },
+              "Try again",
+            )
+          : null,
+        gmail
+          ? h(
+              "a",
+              { class: "btn btn-primary btn-sm", href: "#/gmail" },
+              "Reconnect Gmail account",
+            )
+          : null,
+      ),
+    ),
+  );
+}
+
 export async function render(root, id) {
   root.innerHTML = "";
   root.append(skeletonRows(3));
@@ -170,13 +216,17 @@ export async function render(root, id) {
     } catch (e) {
       loadingMsgs = false;
       listEl.innerHTML = "";
-      listEl.append(
-        errorBox(
-          e.detail ||
-            "Could not load messages (provider fetch can be slow — try again).",
-          refreshList,
-        ),
-      );
+      if (e.providerAuth) {
+        listEl.append(providerAuthBox({ ...e, provider: mailbox.provider }, refreshList));
+      } else {
+        listEl.append(
+          errorBox(
+            e.detail ||
+              "Could not load messages (provider fetch can be slow — try again).",
+            refreshList,
+          ),
+        );
+      }
       refreshIcons();
       return;
     }
@@ -228,7 +278,10 @@ export async function render(root, id) {
       drawList();
       drawReading({ msg: full });
     } catch (e) {
-      drawReading({ error: e.detail || "Could not open message." });
+      drawReading({
+        error: e.detail || "Could not open message.",
+        providerAuth: e.providerAuth,
+      });
     }
   }
 
@@ -251,7 +304,11 @@ export async function render(root, id) {
       return;
     }
     if (state.error) {
-      readCol.append(errorBox(state.error));
+      if (state.providerAuth) {
+        readCol.append(providerAuthBox({ detail: state.error, provider: mailbox.provider }));
+      } else {
+        readCol.append(errorBox(state.error));
+      }
       refreshIcons();
       return;
     }

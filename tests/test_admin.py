@@ -62,7 +62,13 @@ class StubProvider:
 
 def _app(tmp_path) -> TestClient:
     db = tmp_path / "test.db"
-    app = create_app(Settings(database_url=f"sqlite+aiosqlite:///{db}", secret_key=SECRET))
+    app = create_app(
+        Settings(
+            database_url=f"sqlite+aiosqlite:///{db}",
+            secret_key=SECRET,
+            _env_file=None,
+        )
+    )
     return TestClient(app)
 
 
@@ -246,6 +252,7 @@ def test_gmail_creds_env_wins(tmp_path):
             secret_key=SECRET,
             gmail_client_id="env-cid",
             gmail_client_secret="env-csec",
+            _env_file=None,
         )
     )
     with TestClient(app) as client:

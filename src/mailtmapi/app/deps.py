@@ -41,7 +41,14 @@ async def require_api_key(
     if not provided and authorization and authorization.lower().startswith("bearer "):
         provided = authorization[7:].strip()
     if not provided or not secrets.compare_digest(provided, expected):
-        raise HTTPException(status_code=401, detail="invalid api key")
+        # Header lets the UI distinguish this 401 from a provider-auth 401
+        # (Gmail token expired → MailAuthError) which must NOT trigger the
+        # API-key prompt.
+        raise HTTPException(
+            status_code=401,
+            detail="invalid api key",
+            headers={"X-MailTM-Error": "api_key"},
+        )
 
 
 SettingsDep = Annotated[Settings, Depends(get_settings)]

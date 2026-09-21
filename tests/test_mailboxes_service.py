@@ -65,7 +65,11 @@ class FakeSession:
 async def _create(address: str, session: FakeSession | None = None) -> svc.Mailbox:
     session = session or FakeSession()
     registry = ProviderRegistry([StubProvider(address)])
-    settings = Settings(secret_key=SECRET, database_url="sqlite+aiosqlite:///:memory:")
+    settings = Settings(
+        secret_key=SECRET,
+        database_url="sqlite+aiosqlite:///:memory:",
+        _env_file=None,
+    )
     return await svc.create_mailbox(
         session,
         registry,

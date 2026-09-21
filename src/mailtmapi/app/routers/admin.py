@@ -3,6 +3,7 @@ from __future__ import annotations
 from datetime import timedelta
 
 from fastapi import APIRouter, Depends, Request
+from fastapi.responses import JSONResponse
 from sqlalchemy import case, func, select
 
 from ...db.models import GmailAccount, Mailbox, Message
@@ -179,9 +180,20 @@ async def set_domain_cache(
     )
 
 
-@router.post("/domain-cache/run")
-async def run_domain_cache(request: Request, registry: RegistryDep) -> dict:
-    return await dc.refresh_cache(request.app.state.session_factory, registry)
+@router.post("/domain-cache/run", response_model=None)
+async def run_domain_cache(request: Request, registry: RegistryDep) -> dict | JSONResponse:
+    result = await dc.refresh_cache(request.app.state.session_factory, registry)
+    if result["failed"]:
+        # A partial refresh is still a failed run — signal it, don't claim 200.
+        return JSONResponse(
+            status_code=502,
+            content={
+                "detail": "Domain cache refresh failed for: " + ", ".join(result["failed"]),
+                "refreshed": result["refreshed"],
+                "failed": result["failed"],
+            },
+        )
+    return result
 
 
 @router.get("/gmail/creds", response_model=GmailCredsOut)

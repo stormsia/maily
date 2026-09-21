@@ -410,7 +410,14 @@ export async function render(root) {
       await api.gmailSync(a.id);
       toast(`Synced ${a.email}.`, "ok", "refresh-cw");
     } catch (err) {
-      toast(err.detail || "Sync failed.", "err");
+      if (err.providerAuth) {
+        toast(
+          `Auth for ${a.email} expired or was revoked — reconnect the account. ${err.detail || ""}`,
+          "err",
+        );
+      } else {
+        toast(err.detail || "Sync failed.", "err");
+      }
     } finally {
       btn.disabled = false;
       if (icon) icon.classList.remove("spin");

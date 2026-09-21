@@ -1,19 +1,15 @@
 from __future__ import annotations
 
-import asyncio
-import logging
-import re
-import time
-from datetime import datetime
+from contextlib import suppress
 from typing import Any
 from urllib.parse import quote
 
 from ...exceptions import MailAPIError, MailNotFoundError, MailValidationError
 from ...http import HttpClient
 from ...utils.misc import random_string
-from ...utils.retry import async_retry
 from ..base import (
     Attachment,
+    HttpProvider,
     MailboxInfo,
     MailboxSpec,
     MessageDetail,
@@ -21,9 +17,10 @@ from ..base import (
     MessageSummary,
     Party,
     Target,
+    TargetKind,
+    parse_from_value,
+    parse_iso,
 )
-
-logger = logging.getLogger(__name__)
 
 _CACHE_TTL = 600.0
 _HEADERS = {
@@ -32,29 +29,9 @@ _HEADERS = {
     "Content-Type": "application/json",
     "Application-Name": "web",
     "Application-Version": "4.0.0",
-    "X-CORS-Header": "iaWg3pchvFx48fY",
     "Referer": "https://temp-mail.io/",
     "Origin": "https://temp-mail.io",
 }
-
-_FROM_RE = re.compile(r"<([^>]+)>")
-
-
-def _parse_from(value: str) -> Party:
-    m = _FROM_RE.search(value)
-    if not m:
-        return Party(address=value, name=None)
-    name = value[: m.start()].strip().strip('"').strip().strip("'").strip()
-    return Party(name=name or None, address=m.group(1).strip())
-
-
-def _parse_iso(value: Any) -> datetime | None:
-    if not value:
-        return None
-    try:
-        return datetime.fromisoformat(str(value).replace("Z", "+00:00"))
-    except (ValueError, TypeError):
-        return None
 
 
 def _summary(raw: dict[str, Any]) -> MessageSummary:
@@ -63,13 +40,13 @@ def _summary(raw: dict[str, Any]) -> MessageSummary:
     return MessageSummary(
         id=str(raw.get("id") or ""),
         subject=str(raw.get("subject") or ""),
-        from_=_parse_from(str(raw.get("from") or "")),
+        from_=parse_from_value(str(raw.get("from") or "")),
         to=[Party(address=str(raw.get("to") or ""))],
         intro=body_text.split("\n", 1)[0][:200] if body_text else "",
         seen=False,
         has_attachments=bool(raw.get("attachments")),
         size=len(body_text) + len(body_html),
-        received_at=_parse_iso(raw.get("created_at")),
+        received_at=parse_iso(raw.get("created_at")),
     )
 
 
@@ -87,7 +64,7 @@ def _detail(raw: dict[str, Any]) -> MessageDetail:
                 filename=str(a.get("filename") or ""),
                 content_type=str(a.get("content_type") or ""),
                 size=int(a.get("size") or 0),
-                download_url=None,
+                download_url="",
             )
         )
     return MessageDetail(
@@ -106,9 +83,11 @@ def _detail(raw: dict[str, Any]) -> MessageDetail:
     )
 
 
-class TempMailIO:
+class TempMailIO(HttpProvider):
     slug = "temp-mail.io"
-    kind = "domain"
+    kind: TargetKind = "domain"
+    cache_ttl = _CACHE_TTL
+    default_headers = _HEADERS
     BASE_URL = "https://api.internal.temp-mail.io"
 
     def __init__(
@@ -116,45 +95,18 @@ class TempMailIO:
         http: HttpClient | None = None,
         proxy: str | None = None,
     ) -> None:
-        self._owns_http = http is None
-        self._http = http or HttpClient(proxy=proxy, headers=_HEADERS)
-        self._targets: list[Target] = []
-        self._targets_at = 0.0
-        self._lock = asyncio.Lock()
+        super().__init__(http=http, proxy=proxy)
+        self._cors_token = ""
 
-    async def close(self) -> None:
-        if self._owns_http:
-            await self._http.close()
+    def set_headers(self, headers: dict[str, str]) -> None:
+        self._cors_token = headers.get("X-CORS-Header") or ""
 
-    @async_retry()
-    async def _get_json(self, url: str) -> Any:
-        resp = await self._http.get(url, headers=_HEADERS)
-        try:
-            return resp.json()
-        except ValueError:
-            return None
+    def _headers(self) -> dict[str, str]:
+        headers = dict(self.default_headers)
+        if self._cors_token:
+            headers["X-CORS-Header"] = self._cors_token
+        return headers
 
-    @async_retry()
-    async def _post_json(self, url: str, body: dict[str, Any]) -> Any:
-        resp = await self._http.post(url, json=body, headers=_HEADERS)
-        try:
-            return resp.json()
-        except ValueError:
-            return None
-
-    async def list_targets(self) -> list[Target]:
-        now = time.monotonic()
-        if self._targets and now - self._targets_at < _CACHE_TTL:
-            return list(self._targets)
-        async with self._lock:
-            if self._targets and time.monotonic() - self._targets_at < _CACHE_TTL:
-                return list(self._targets)
-            targets = await self._fetch_targets()
-            self._targets = targets
-            self._targets_at = time.monotonic()
-            return list(targets)
-
-    @async_retry()
     async def _fetch_targets(self) -> list[Target]:
         data = await self._get_json(f"{self.BASE_URL}/api/v4/domains")
         domains = data.get("domains") if isinstance(data, dict) else None
@@ -176,7 +128,6 @@ class TempMailIO:
                     raise MailValidationError("temp-mail.io: no domains available", status_code=400)
                 domain = targets[0].label
             address = f"{random_string(10)}@{domain}"
-        # API /email/new принимает name+domain по отдельности.
         name, sep, domain = address.partition("@")
         if not sep or not domain:
             raise MailValidationError(
@@ -203,14 +154,12 @@ class TempMailIO:
 
     async def delete_mailbox(self, mailbox: MailboxInfo) -> bool:
         email = quote(mailbox.address, safe="@")
-        try:
+        with suppress(MailNotFoundError):
             await self._http.delete(
                 f"{self.BASE_URL}/api/v3/email/{email}",
                 json={"token": mailbox.token},
-                headers=_HEADERS,
+                headers=self._headers(),
             )
-        except MailNotFoundError:
-            pass
         return True
 
     async def list_messages(self, mailbox: MailboxInfo, page: int = 1) -> list[MessageSummary]:
@@ -230,14 +179,12 @@ class TempMailIO:
         return _detail(data)
 
     async def delete_message(self, mailbox: MailboxInfo, message_id: str) -> bool:
-        try:
+        with suppress(MailNotFoundError):
             await self._http.delete(
                 f"{self.BASE_URL}/api/v3/message/{message_id}",
                 json={"token": mailbox.token},
-                headers=_HEADERS,
+                headers=self._headers(),
             )
-        except MailNotFoundError:
-            pass
         return True
 
     async def mark_read(self, mailbox: MailboxInfo, message_id: str) -> bool:
@@ -252,4 +199,4 @@ class TempMailIO:
                 f"temp-mail.io: source for message {message_id!r} not found",
                 status_code=404,
             )
-        return MessageSource(id=message_id, data=str(data["data"]), download_url=None)
+        return MessageSource(id=message_id, data=str(data["data"]), download_url="")

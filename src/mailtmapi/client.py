@@ -8,9 +8,10 @@
     ├── mailboxes      — MailboxesAPI    ящики: create / list / get / delete
     ├── messages       — MessagesAPI     письма: list / get / read / delete / source / wait_for
     ├── gmail          — GmailAPI        OAuth-подключение аккаунтов
-    └── admin          — AdminAPI        stats / retention / gmail creds
+    └── admin          — AdminAPI        stats / retention / domain cache / gmail creds
 
 Транспорт (_Transport) общий: httpx.AsyncClient + X-API-Key + loguru + ошибки.
+Модели ответов — единый источник истины в mailtmapi.schemas.
 
 Пример:
 
@@ -23,14 +24,33 @@
 from __future__ import annotations
 
 import asyncio
+import builtins
 import re
 import time
-from typing import Any, Callable
+from collections.abc import Callable
+from typing import Any
 from urllib.parse import quote
 
 import httpx
 from loguru import logger
-from pydantic import BaseModel, ConfigDict
+
+from .schemas import (
+    DomainCacheOut,
+    DomainCacheProviderOut,
+    DomainCacheRun,
+    GmailAccountOut,
+    GmailCredsOut,
+    HealthOut,
+    MailboxOut,
+    MessageDetailOut,
+    MessageOut,
+    OAuthStartOut,
+    ProviderOut,
+    RetentionOut,
+    SourceOut,
+    SweepResult,
+    TargetOut,
+)
 
 __all__ = [
     "MailTMAPI",
@@ -53,6 +73,19 @@ __all__ = [
     "DomainCacheRun",
 ]
 
+Provider = ProviderOut
+Target = TargetOut
+Mailbox = MailboxOut
+MessageSummary = MessageOut
+MessageDetail = MessageDetailOut
+MessageSource = SourceOut
+GmailAccount = GmailAccountOut
+OAuthStart = OAuthStartOut
+GmailCreds = GmailCredsOut
+Retention = RetentionOut
+DomainCacheProvider = DomainCacheProviderOut
+DomainCache = DomainCacheOut
+
 _URL_RE = re.compile(
     r"https?://[^\s<>\"')\]]+",
     re.IGNORECASE,
@@ -73,110 +106,6 @@ class ApiError(ClientError):
         self.status_code = status_code
         self.detail = detail or (f"HTTP {status_code}" if status_code else "request failed")
         super().__init__(self.detail)
-
-
-# --------------------------------------------------------------------------- #
-# Модели ответов
-# --------------------------------------------------------------------------- #
-class _Base(BaseModel):
-    model_config = ConfigDict(extra="ignore")
-
-
-class HealthOut(_Base):
-    status: str = ""
-
-
-class Provider(_Base):
-    slug: str
-    kind: str
-
-
-class Target(_Base):
-    id: str
-    kind: str
-    provider: str
-    label: str
-
-
-class Mailbox(_Base):
-    id: int
-    provider: str
-    address: str
-    parent_id: int | None = None
-    is_active: bool
-    created_at: Any = None
-
-
-class MessageSummary(_Base):
-    id: int
-    message_api_id: str
-    subject: str = ""
-    from_address: str = ""
-    from_name: str = ""
-    seen: bool = False
-    has_attachments: bool = False
-    size: int = 0
-    received_at: Any = None
-
-
-class MessageDetail(MessageSummary):
-    text: str = ""
-    html: list[str] = []
-
-
-class MessageSource(_Base):
-    id: str
-    data: str
-    download_url: str = ""
-
-
-class GmailAccount(_Base):
-    id: int
-    email: str
-    status: str
-    send_as: list[str] = []
-
-
-class OAuthStart(_Base):
-    auth_url: str
-    state: str
-
-
-class GmailCreds(_Base):
-    configured: bool
-    source: str
-    client_id: str | None = None
-    redirect_uri: str = ""
-
-
-class Retention(_Base):
-    provider: str
-    mailbox_ttl_hours: int | None = None
-    message_ttl_hours: int | None = None
-
-
-class SweepResult(_Base):
-    mailboxes_deleted: int = 0
-    messages_deleted: int = 0
-
-
-class DomainCacheProvider(_Base):
-    provider: str
-    kind: str = "domain"
-    domains_count: int = 0
-    updated_at: Any = None
-    error: str | None = None
-
-
-class DomainCache(_Base):
-    enabled: bool = True
-    interval_seconds: int = 1800
-    providers: list[DomainCacheProvider] = []
-
-
-class DomainCacheRun(_Base):
-    refreshed: list[str] = []
-    failed: list[str] = []
 
 
 # --------------------------------------------------------------------------- #
@@ -227,7 +156,9 @@ class _Transport:
         elapsed = (time.perf_counter() - started) * 1000
         if resp.status_code >= 400:
             detail = _extract_detail(resp)
-            logger.warning("{} {} -> {} ({:.0f}ms): {}", method, path, resp.status_code, elapsed, detail)
+            logger.warning(
+                "{} {} -> {} ({:.0f}ms): {}", method, path, resp.status_code, elapsed, detail
+            )
             raise ApiError(resp.status_code, detail)
         logger.debug("{} {} -> {} ({:.0f}ms)", method, path, resp.status_code, elapsed)
         if resp.status_code == 204:
@@ -238,7 +169,7 @@ class _Transport:
         if self._owns_client:
             await self._client.aclose()
 
-    async def __aenter__(self) -> "_Transport":
+    async def __aenter__(self) -> _Transport:
         return self
 
     async def __aexit__(self, *_exc: Any) -> None:
@@ -281,10 +212,13 @@ class ProvidersAPI:
         """Все доступные провайдеры."""
         return [Provider.model_validate(p) for p in await self._t.request("GET", "/v1/providers")]
 
-    async def targets(self, provider: str | None = None) -> list[Target]:
+    async def targets(self, provider: str | None = None) -> builtins.list[Target]:
         """Цели создания ящика: домены (domain-провайдеры) или Gmail-аккаунты."""
         params = {"provider": provider} if provider else None
-        return [Target.model_validate(t) for t in await self._t.request("GET", "/v1/targets", params=params)]
+        return [
+            Target.model_validate(t)
+            for t in await self._t.request("GET", "/v1/targets", params=params)
+        ]
 
 
 class MailboxesAPI:
@@ -331,12 +265,14 @@ class MailboxesAPI:
         ]
 
     async def get(self, mailbox_id: int) -> Mailbox:
-        return Mailbox.model_validate(await self._t.request("GET", f"/v1/mailboxes/{mailbox_id}"))
+        return Mailbox.model_validate(
+            await self._t.request("GET", f"/v1/mailboxes/{mailbox_id}")
+        )
 
     async def by_address(self, email: str) -> Mailbox:
         """Найти ящик по полному адресу."""
         return Mailbox.model_validate(
-            await self._t.request("GET", f"/v1/mailboxes/by-address/{quote(email)}")
+            await self._t.request("GET", f"/v1/mailboxes/by-address/{quote(email, safe='')}")
         )
 
     async def delete(self, mailbox_id: int) -> None:
@@ -362,26 +298,28 @@ class MessagesAPI:
     async def get(self, mailbox_id: int, message_id: str) -> MessageDetail:
         """Полное письмо с текстом и HTML."""
         return MessageDetail.model_validate(
-            await self._t.request("GET", f"/v1/mailboxes/{mailbox_id}/messages/{quote(message_id)}")
+            await self._t.request(
+                "GET", f"/v1/mailboxes/{mailbox_id}/messages/{quote(message_id, safe='')}"
+            )
         )
 
     async def mark_read(self, mailbox_id: int, message_id: str) -> MessageSummary:
         return MessageSummary.model_validate(
             await self._t.request(
-                "POST", f"/v1/mailboxes/{mailbox_id}/messages/{quote(message_id)}/read"
+                "POST", f"/v1/mailboxes/{mailbox_id}/messages/{quote(message_id, safe='')}/read"
             )
         )
 
     async def delete(self, mailbox_id: int, message_id: str) -> None:
         await self._t.request(
-            "DELETE", f"/v1/mailboxes/{mailbox_id}/messages/{quote(message_id)}"
+            "DELETE", f"/v1/mailboxes/{mailbox_id}/messages/{quote(message_id, safe='')}"
         )
 
     async def source(self, mailbox_id: int, message_id: str) -> MessageSource:
         """Сырые исходники письма."""
         return MessageSource.model_validate(
             await self._t.request(
-                "GET", f"/v1/mailboxes/{mailbox_id}/messages/{quote(message_id)}/source"
+                "GET", f"/v1/mailboxes/{mailbox_id}/messages/{quote(message_id, safe='')}/source"
             )
         )
 
@@ -415,7 +353,7 @@ class MessagesAPI:
         mailbox_id: int,
         *,
         sender_domain: str | None = None,
-        url_contain: list[str] | None = None,
+        url_contain: builtins.list[str] | None = None,
         digit_code_mask: str | None = None,
         timeout: float = 60.0,
         check_interval: float = 5.0,
@@ -436,16 +374,13 @@ class MessagesAPI:
         if check_interval <= 0:
             raise ValueError("check_interval must be > 0")
 
-        keywords = [
-            keyword.casefold()
-            for keyword in (url_contain or [])
-            if keyword
-        ]
+        keywords: list[str] = []
+        for keyword in url_contain or []:
+            if keyword:
+                keywords.append(keyword.casefold())
         try:
             code_pattern = (
-                re.compile(digit_code_mask, re.IGNORECASE)
-                if digit_code_mask
-                else None
+                re.compile(digit_code_mask, re.IGNORECASE) if digit_code_mask else None
             )
         except re.error as exc:
             raise ValueError(
@@ -491,8 +426,7 @@ class MessagesAPI:
                     (
                         url
                         for url in urls
-                        if not keywords
-                        or any(kw in url.casefold() for kw in keywords)
+                        if not keywords or any(kw in url.casefold() for kw in keywords)
                     ),
                     None,
                 )
@@ -502,9 +436,7 @@ class MessagesAPI:
                     match = code_pattern.search(body)
                     if match:
                         confirmation_code = (
-                            match.group(1)
-                            if match.lastindex
-                            else match.group(0)
+                            match.group(1) if match.lastindex else match.group(0)
                         )
 
                 if confirmation_link is None and confirmation_code is None:
@@ -608,11 +540,15 @@ class AdminAPI:
             if v is not None
         }
         return Retention.model_validate(
-            await self._t.request("PUT", f"/v1/admin/retention/{quote(provider)}", json=payload)
+            await self._t.request(
+                "PUT", f"/v1/admin/retention/{quote(provider, safe='')}", json=payload
+            )
         )
 
     async def retention_disable(self, provider: str) -> None:
-        await self._t.request("DELETE", f"/v1/admin/retention/{quote(provider)}")
+        await self._t.request(
+            "DELETE", f"/v1/admin/retention/{quote(provider, safe='')}"
+        )
 
     async def retention_run(self) -> SweepResult:
         """Прогнать очистку сейчас: удалить просроченные ящики и письма."""
@@ -709,8 +645,100 @@ class MailTMAPI:
     async def close(self) -> None:
         await self._transport.close()
 
-    async def __aenter__(self) -> "MailTMAPI":
+    async def __aenter__(self) -> MailTMAPI:
         return self
 
     async def __aexit__(self, *_exc: Any) -> None:
         await self.close()
+
+    # --- SDK-совместимые плоские методы (deprecated, используй секции выше) ---
+
+    async def create_mailbox(
+        self,
+        *,
+        provider: str | None = None,
+        domain: str | None = None,
+        parent_id: int | None = None,
+        address: str | None = None,
+        password: str | None = None,
+    ) -> Mailbox:
+        return await self.mailboxes.create(
+            provider=provider,
+            domain=domain,
+            parent_id=parent_id,
+            address=address,
+            password=password,
+        )
+
+    async def list_mailboxes(
+        self, provider: str | None = None, active: bool | None = None
+    ) -> list[Mailbox]:
+        return await self.mailboxes.list(provider=provider, active=active)
+
+    async def mailbox(self, mailbox_id: int) -> Mailbox:
+        return await self.mailboxes.get(mailbox_id)
+
+    async def mailbox_by_address(self, email: str) -> Mailbox:
+        return await self.mailboxes.by_address(email)
+
+    async def delete_mailbox(self, mailbox_id: int) -> None:
+        await self.mailboxes.delete(mailbox_id)
+
+    async def list_messages(self, mailbox_id: int, page: int = 1) -> list[MessageSummary]:
+        return await self.messages.list(mailbox_id, page=page)
+
+    async def get_message(self, mailbox_id: int, message_id: str) -> MessageDetail:
+        return await self.messages.get(mailbox_id, message_id)
+
+    async def mark_read(self, mailbox_id: int, message_id: str) -> MessageSummary:
+        return await self.messages.mark_read(mailbox_id, message_id)
+
+    async def delete_message(self, mailbox_id: int, message_id: str) -> None:
+        await self.messages.delete(mailbox_id, message_id)
+
+    async def get_source(self, mailbox_id: int, message_id: str) -> MessageSource:
+        return await self.messages.source(mailbox_id, message_id)
+
+    async def gmail_oauth_start(self) -> OAuthStart:
+        return await self.gmail.oauth_start()
+
+    async def gmail_import_account(
+        self, *, refresh_token: str | None = None, token_json: Any = None
+    ) -> GmailAccount:
+        return await self.gmail.import_account(
+            refresh_token=refresh_token, token_json=token_json
+        )
+
+    async def list_gmail_accounts(self) -> list[GmailAccount]:
+        return await self.gmail.accounts()
+
+    async def delete_gmail_account(self, parent_id: int) -> None:
+        await self.gmail.delete_account(parent_id)
+
+    async def sync_gmail_account(self, parent_id: int) -> GmailAccount:
+        return await self.gmail.sync(parent_id)
+
+    async def domain_cache_settings(self) -> DomainCache:
+        return await self.admin.domain_cache()
+
+    async def save_domain_cache_settings(
+        self, *, enabled: bool | None = None, interval_seconds: int | None = None
+    ) -> DomainCache:
+        return await self.admin.domain_cache_save(
+            enabled=enabled, interval_seconds=interval_seconds
+        )
+
+    async def refresh_domain_cache(self) -> DomainCacheRun:
+        return await self.admin.domain_cache_run()
+
+    async def wait_for_message(
+        self,
+        mailbox_id: int,
+        *,
+        timeout: float = 120.0,
+        interval: float = 2.0,
+        predicate: Callable[[MessageSummary], bool] | None = None,
+    ) -> MessageSummary:
+        return await self.messages.wait_for(
+            mailbox_id, timeout=timeout, interval=interval, predicate=predicate
+        )

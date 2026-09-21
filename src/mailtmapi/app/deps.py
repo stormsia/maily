@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import secrets
+from collections.abc import AsyncIterator
 from typing import Annotated
 
 from fastapi import Depends, Header, HTTPException, Request
@@ -17,7 +19,7 @@ def get_registry(request: Request) -> ProviderRegistry:
     return request.app.state.registry
 
 
-async def get_session(request: Request) -> AsyncSession:
+async def get_session(request: Request) -> AsyncIterator[AsyncSession]:
     factory = request.app.state.session_factory
     async with factory() as session:
         try:
@@ -38,7 +40,7 @@ async def require_api_key(
     provided = x_api_key
     if not provided and authorization and authorization.lower().startswith("bearer "):
         provided = authorization[7:].strip()
-    if provided != expected:
+    if not provided or not secrets.compare_digest(provided, expected):
         raise HTTPException(status_code=401, detail="invalid api key")
 
 

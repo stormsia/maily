@@ -111,3 +111,16 @@ class DomainCache(Base):
     updated_at: Mapped[datetime] = mapped_column(
         DateTime, server_default=func.now(), onupdate=func.now()
     )
+
+
+class ProviderHeaders(Base):
+    """Dynamically discovered provider request headers (e.g. temp-mail.io X-CORS-Header)."""
+
+    __tablename__ = "provider_headers"
+
+    provider: Mapped[str] = mapped_column(String(64), primary_key=True)
+    headers_json: Mapped[str] = mapped_column(Text)  # JSON object of header name -> value
+    error: Mapped[str | None] = mapped_column(Text, nullable=True)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime, server_default=func.now(), onupdate=func.now()
+    )

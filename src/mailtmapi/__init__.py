@@ -1,5 +1,5 @@
 """Local multi-provider mail API."""
 
-from .sdk import MailTMAPI
+from .client import MailTMAPI
 
 __all__ = ["MailTMAPI"]

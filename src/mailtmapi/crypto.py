@@ -2,8 +2,21 @@ from __future__ import annotations
 
 import base64
 import hashlib
+import logging
 
 from cryptography.fernet import Fernet, InvalidToken
+
+logger = logging.getLogger("mailtmapi.crypto")
+
+
+def is_fernet_key(secret: str) -> bool:
+    if not secret:
+        return False
+    try:
+        Fernet(secret.encode())
+        return True
+    except (ValueError, TypeError):
+        return False
 
 
 def _fernet(secret: str) -> Fernet:
@@ -12,6 +25,10 @@ def _fernet(secret: str) -> Fernet:
         return Fernet(raw)
     except (ValueError, TypeError):
         digest = hashlib.sha256(raw).digest()
+        logger.warning(
+            "secret is not a valid Fernet key; deriving a key via sha256(secret). "
+            "This is deterministic, but prefer a Fernet key (cryptography.fernet.Fernet.generate_key())."
+        )
         return Fernet(base64.urlsafe_b64encode(digest))
 
 

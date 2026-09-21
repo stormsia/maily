@@ -3,6 +3,7 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
+from contextlib import suppress
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -38,10 +39,8 @@ async def get_settings(session, settings: Settings) -> dict:
         enabled = row.value == "1"
     row = await session.get(AppSetting, _KEY_INTERVAL)
     if row is not None:
-        try:
+        with suppress(ValueError):
             interval_seconds = int(row.value)
-        except ValueError:
-            pass
     return {"enabled": enabled, "interval_seconds": interval_seconds}
 
 

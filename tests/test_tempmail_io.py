@@ -293,6 +293,6 @@ async def test_get_source_uses_source_code_endpoint():
         src = await provider.get_source(_mailbox(), "abc")
         assert src.id == "abc"
         assert src.data == "From: a@b.c\nSubject: hi\n"
-        assert src.download_url is None
+        assert src.download_url == ""
     finally:
         await http.close()

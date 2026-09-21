@@ -5,10 +5,18 @@ from datetime import timedelta
 from fastapi import APIRouter, Depends, Request
 from sqlalchemy import case, func, select
 
-from ...db.models import AppSetting, GmailAccount, Mailbox, Message
+from ...db.models import GmailAccount, Mailbox, Message
 from ...exceptions import MailNotFoundError
 from ..deps import RegistryDep, SessionDep, SettingsDep, require_api_key
-from ..schemas import DomainCacheIn, DomainCacheOut, GmailCredsIn, GmailCredsOut, RetentionIn, RetentionOut
+from ..schemas import (
+    DomainCacheIn,
+    DomainCacheOut,
+    DomainCacheProviderOut,
+    GmailCredsIn,
+    GmailCredsOut,
+    RetentionIn,
+    RetentionOut,
+)
 from ..services import domain_cache as dc
 from ..services import gmail_config as gcfg
 from ..services import retention as svc
@@ -143,7 +151,10 @@ async def get_domain_cache(
     return DomainCacheOut(
         enabled=cfg["enabled"],
         interval_seconds=cfg["interval_seconds"],
-        providers=await dc.cache_status(session, registry, settings),
+        providers=[
+            DomainCacheProviderOut.model_validate(p)
+            for p in await dc.cache_status(session, registry, settings)
+        ],
     )
 
 
@@ -161,7 +172,10 @@ async def set_domain_cache(
     return DomainCacheOut(
         enabled=cfg["enabled"],
         interval_seconds=cfg["interval_seconds"],
-        providers=await dc.cache_status(session, registry, settings),
+        providers=[
+            DomainCacheProviderOut.model_validate(p)
+            for p in await dc.cache_status(session, registry, settings)
+        ],
     )
 
 
@@ -179,13 +193,13 @@ async def get_gmail_creds(
     secret = settings.resolved_secret_key()
     found = await gcfg.resolved(settings, session, secret)
     if found is None:
-        return GmailCredsOut(configured=False, source="none", redirect_uri=settings.gmail_redirect_uri())
+        return GmailCredsOut(configured=False, source="none", redirect_uri=settings.default_gmail_redirect_uri())
     cid, _, source = found
     return GmailCredsOut(
         configured=True,
         source=source,
         client_id=cid,
-        redirect_uri=await gcfg.get_redirect_uri(session, settings.gmail_redirect_uri()),
+        redirect_uri=await gcfg.get_redirect_uri(session, settings.default_gmail_redirect_uri()),
     )
 
 
@@ -214,7 +228,7 @@ async def save_gmail_creds(
         configured=True,
         source="db",
         client_id=cid,
-        redirect_uri=await gcfg.get_redirect_uri(session, settings.gmail_redirect_uri()),
+        redirect_uri=await gcfg.get_redirect_uri(session, settings.default_gmail_redirect_uri()),
     )
 
 

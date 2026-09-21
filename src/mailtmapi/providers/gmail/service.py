@@ -13,6 +13,7 @@ from mailtmapi.providers.base import (
     MessageSource,
     MessageSummary,
     Target,
+    TargetKind,
 )
 from mailtmapi.utils.misc import random_string
 from mailtmapi.utils.retry import async_retry
@@ -28,7 +29,7 @@ _API_BASE = "https://gmail.googleapis.com/gmail/v1/users/me"
 
 class GmailProvider:
     slug = "gmail"
-    kind = "parent"
+    kind: TargetKind = "parent"
 
     def __init__(
         self,
@@ -130,7 +131,13 @@ class GmailProvider:
         except MailAPIError as exc:
             logger.warning("gmail: could not list sendAs aliases (%s); using profile only", exc)
         seen: set[str] = set()
-        parent.send_as = [b for b in bases if not (b.lower() in seen or seen.add(b.lower()))]
+        deduped: list[str] = []
+        for b in bases:
+            key = b.lower()
+            if key not in seen:
+                seen.add(key)
+                deduped.append(b)
+        parent.send_as = deduped
         if parent.id:
             await self._store.update(parent)
         return parent.send_as
@@ -212,7 +219,8 @@ class GmailProvider:
             if isinstance(result, Exception):
                 logger.warning("Failed to fetch message detail: %s", result)
                 continue
-            out.append(raw_to_summary(result))
+            if isinstance(result, dict):
+                out.append(raw_to_summary(result))
         return out
 
     @async_retry(max_attempts=3)

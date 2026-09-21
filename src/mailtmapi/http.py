@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from contextlib import suppress
 from typing import Any
 
 import httpx
@@ -39,10 +40,8 @@ def _raise_for_status(response: httpx.Response) -> None:
         retry_after = None
         raw = response.headers.get("Retry-After")
         if raw:
-            try:
+            with suppress(ValueError):
                 retry_after = float(raw)
-            except ValueError:
-                pass
         raise MailRateLimitError(detail, retry_after=retry_after, status_code=code, response_data=body)
     if code in (409, 422):
         raise MailConflictError(detail, status_code=code, response_data=body)

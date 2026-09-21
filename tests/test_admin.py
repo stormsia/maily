@@ -9,8 +9,14 @@ from fastapi.testclient import TestClient
 from mailtmapi.app.main import create_app
 from mailtmapi.app.services.retention import utcnow_naive
 from mailtmapi.crypto import encrypt
-from mailtmapi.db.models import Mailbox, Message, Retention
-from mailtmapi.providers.base import MailboxInfo, MailboxSpec, MessageDetail, MessageSource, MessageSummary, Target
+from mailtmapi.providers.base import (
+    MailboxInfo,
+    MailboxSpec,
+    MessageDetail,
+    MessageSource,
+    MessageSummary,
+    Target,
+)
 from mailtmapi.providers.registry import ProviderRegistry
 from mailtmapi.settings import Settings
 

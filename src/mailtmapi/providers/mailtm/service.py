@@ -1,16 +1,14 @@
 from __future__ import annotations
 
-import asyncio
-import time
-from datetime import datetime
+import re
 from typing import Any
 
 from ...exceptions import MailValidationError
-from ...http import HttpClient
 from ...utils.misc import random_password, random_string
 from ...utils.retry import async_retry
 from ..base import (
     Attachment,
+    HttpProvider,
     MailboxInfo,
     MailboxSpec,
     MessageDetail,
@@ -18,9 +16,13 @@ from ..base import (
     MessageSummary,
     Party,
     Target,
+    TargetKind,
+    parse_iso,
 )
 
 _CACHE_TTL = 300.0
+
+_URL_RE = re.compile(r"https?://[^\s]+", re.IGNORECASE)
 
 
 def _party(raw: Any) -> Party:
@@ -35,15 +37,6 @@ def _parties(raw: Any) -> list[Party]:
     return [_party(p) for p in raw]
 
 
-def _parse_iso(value: Any) -> datetime | None:
-    if not value:
-        return None
-    try:
-        return datetime.fromisoformat(str(value).replace("Z", "+00:00"))
-    except ValueError:
-        return None
-
-
 def _summary(raw: dict[str, Any]) -> MessageSummary:
     return MessageSummary(
         id=str(raw.get("id") or ""),
@@ -54,7 +47,7 @@ def _summary(raw: dict[str, Any]) -> MessageSummary:
         seen=bool(raw.get("seen")),
         has_attachments=bool(raw.get("hasAttachments")),
         size=int(raw.get("size") or 0),
-        received_at=_parse_iso(raw.get("createdAt")),
+        received_at=parse_iso(raw.get("createdAt")),
     )
 
 
@@ -92,38 +85,15 @@ def _detail(raw: dict[str, Any]) -> MessageDetail:
     )
 
 
-class MailTM:
+class MailTM(HttpProvider):
     slug = "mail.tm"
-    kind = "domain"
+    kind: TargetKind = "domain"
+    cache_ttl = _CACHE_TTL
     API_URL = "https://api.mail.tm"
-
-    def __init__(self, http: HttpClient | None = None, proxy: str | None = None) -> None:
-        self._owns_http = http is None
-        self._http = http or HttpClient(proxy=proxy)
-        self._targets: list[Target] = []
-        self._targets_at = 0.0
-        self._lock = asyncio.Lock()
-
-    async def close(self) -> None:
-        if self._owns_http:
-            await self._http.close()
 
     def _auth(self, mailbox: MailboxInfo) -> dict[str, str]:
         return {"Authorization": f"Bearer {mailbox.token}"}
 
-    async def list_targets(self) -> list[Target]:
-        now = time.monotonic()
-        if self._targets and now - self._targets_at < _CACHE_TTL:
-            return list(self._targets)
-        async with self._lock:
-            if self._targets and time.monotonic() - self._targets_at < _CACHE_TTL:
-                return list(self._targets)
-            targets = await self._fetch_targets()
-            self._targets = targets
-            self._targets_at = time.monotonic()
-            return list(targets)
-
-    @async_retry()
     async def _fetch_targets(self) -> list[Target]:
         data = (await self._http.get(f"{self.API_URL}/domains")).json()
         targets: list[Target] = []

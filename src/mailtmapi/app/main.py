@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import asyncio
-from contextlib import asynccontextmanager
+from contextlib import asynccontextmanager, suppress
 from pathlib import Path
 
 from fastapi import FastAPI
@@ -19,8 +19,6 @@ from ..providers.registry import ProviderRegistry
 from ..providers.tempmail_io import TempMailIO
 from ..providers.tempmail_plus import TempMailPlus
 from ..settings import Settings, get_settings
-from .services import domain_cache as dc
-from .services.retention import retention_worker, run_sweep
 from .errors import register_errors
 from .routers.admin import router as admin_router
 from .routers.gmail import public as gmail_public
@@ -29,6 +27,9 @@ from .routers.health import router as health_router
 from .routers.mailboxes import router as mailboxes_router
 from .routers.messages import router as messages_router
 from .routers.providers import router as providers_router
+from .services import domain_cache as dc
+from .services import provider_headers as ph
+from .services.retention import retention_worker, run_sweep
 
 
 def _run_migrations(url: str) -> None:
@@ -79,6 +80,7 @@ async def lifespan(app: FastAPI):
             NoopMail(http=http),
         ]
     )
+    await ph.bootstrap(factory, http, registry, settings)
     app.state.engine = engine
     app.state.session_factory = factory
     app.state.registry = registry
@@ -94,19 +96,18 @@ async def lifespan(app: FastAPI):
         )
     )
     cache_task = asyncio.create_task(dc.domain_cache_worker(factory, registry, settings))
+    headers_task = asyncio.create_task(ph.provider_headers_worker(factory, http, registry, settings))
     try:
         yield
     finally:
-        sweep_task.cancel()
-        try:
+        for task in (sweep_task, cache_task, headers_task):
+            task.cancel()
+        with suppress(asyncio.CancelledError):
             await sweep_task
-        except asyncio.CancelledError:
-            pass
-        cache_task.cancel()
-        try:
+        with suppress(asyncio.CancelledError):
             await cache_task
-        except asyncio.CancelledError:
-            pass
+        with suppress(asyncio.CancelledError):
+            await headers_task
         await registry.close()
         await http.close()
         await engine.dispose()

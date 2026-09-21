@@ -10,11 +10,20 @@ from ...exceptions import MailValidationError
 from ...providers.gmail.oauth import GmailOAuth
 from ...providers.gmail.service import GmailProvider
 from ...providers.gmail.store import GmailParent, GmailParentStore
+from ...settings import Settings
 from ..deps import SettingsDep, require_api_key
 from ..schemas import GmailAccountOut, ImportGmailIn, OAuthStartOut
 
 router = APIRouter(prefix="/v1/gmail", dependencies=[Depends(require_api_key)])
 public = APIRouter(prefix="/v1/gmail")
+
+_OAUTH_STATE_TTL = 10 * 60
+
+
+def _purge_stale_oauth_states(states: dict, now: float) -> None:
+    expired = [s for s, ts in states.items() if now - ts > _OAUTH_STATE_TTL]
+    for s in expired:
+        states.pop(s, None)
 
 
 def _gmail(request: Request) -> GmailProvider:
@@ -25,14 +34,14 @@ def _oauth(request: Request) -> GmailOAuth:
     return request.app.state.oauth
 
 
-async def _redirect_uri(request: Request, settings) -> str:
+async def _redirect_uri(request: Request, settings: Settings) -> str:
     from ..services import gmail_config as gcfg
 
     async with request.app.state.session_factory() as session:
-        return await gcfg.get_redirect_uri(session, settings.gmail_redirect_uri())
+        return await gcfg.get_redirect_uri(session, settings.default_gmail_redirect_uri())
 
 
-async def _resolve_creds(request: Request, settings) -> tuple[str, str] | None:
+async def _resolve_creds(request: Request, settings: Settings) -> tuple[str, str] | None:
     """Env creds win; otherwise fall back to dashboard-stored creds (configures oauth)."""
     from ..services import gmail_config as gcfg
 
@@ -90,8 +99,10 @@ async def _upsert_parent(request: Request, tokens: dict) -> GmailParent:
 async def oauth_start(request: Request, settings: SettingsDep) -> OAuthStartOut:
     if await _resolve_creds(request, settings) is None:
         raise HTTPException(400, "Gmail OAuth credentials are not configured yet — set them up on the dashboard.")
+    states: dict = request.app.state.oauth_states
+    _purge_stale_oauth_states(states, time.time())
     state = secrets.token_urlsafe(16)
-    request.app.state.oauth_states[state] = time.time()
+    states[state] = time.time()
     url = _oauth(request).auth_url(await _redirect_uri(request, settings), state)
     return OAuthStartOut(auth_url=url, state=state)
 
@@ -99,8 +110,13 @@ async def oauth_start(request: Request, settings: SettingsDep) -> OAuthStartOut:
 @public.get("/oauth/callback")
 async def oauth_callback(request: Request, settings: SettingsDep, code: str = "", state: str = ""):
     states: dict = request.app.state.oauth_states
-    if not state or state not in states:
+    _purge_stale_oauth_states(states, time.time())
+    issued = states.get(state)
+    if issued is None:
         return PlainTextResponse("invalid oauth state", status_code=400)
+    if time.time() - issued > _OAUTH_STATE_TTL:
+        states.pop(state, None)
+        return PlainTextResponse("oauth state expired", status_code=400)
     states.pop(state, None)
     if not code:
         return PlainTextResponse("missing code", status_code=400)

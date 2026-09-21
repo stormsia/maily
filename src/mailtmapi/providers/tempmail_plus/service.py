@@ -1,12 +1,9 @@
 from __future__ import annotations
 
-import asyncio
 import logging
 import re
-import time
 from datetime import datetime
 from typing import Any
-from urllib.parse import urlencode
 
 from ...exceptions import MailAPIError, MailNotFoundError, MailValidationError
 from ...http import HttpClient
@@ -14,6 +11,7 @@ from ...utils.misc import random_string
 from ...utils.retry import async_retry
 from ..base import (
     Attachment,
+    HttpProvider,
     MailboxInfo,
     MailboxSpec,
     MessageDetail,
@@ -21,6 +19,7 @@ from ..base import (
     MessageSummary,
     Party,
     Target,
+    TargetKind,
 )
 
 logger = logging.getLogger(__name__)
@@ -118,9 +117,11 @@ def _detail(raw: dict[str, Any], address: str) -> MessageDetail:
     )
 
 
-class TempMailPlus:
+class TempMailPlus(HttpProvider):
     slug = "tempmail.plus"
-    kind = "domain"
+    kind: TargetKind = "domain"
+    cache_ttl = _CACHE_TTL
+    default_headers = _HEADERS
     BASE_URL = "https://tempmail.plus"
     API_URL = "https://tempmail.plus/api"
 
@@ -130,59 +131,20 @@ class TempMailPlus:
         proxy: str | None = None,
         epin: str = "",
     ) -> None:
-        self._owns_http = http is None
-        self._http = http or HttpClient(proxy=proxy, headers=_HEADERS)
+        super().__init__(http=http, proxy=proxy)
         self._epin = epin
-        self._targets: list[Target] = []
-        self._targets_at = 0.0
-        self._lock = asyncio.Lock()
-
-    async def close(self) -> None:
-        if self._owns_http:
-            await self._http.close()
 
     def _params(self, email: str, **extra: Any) -> dict[str, Any]:
         return {"email": email, "epin": self._epin, **extra}
 
     @async_retry()
     async def _get_json(self, url: str, params: dict[str, Any] | None = None) -> dict:
-        return (await self._http.get(url, params=params, headers=_HEADERS)).json()
+        return (await self._http.get(url, params=params, headers=self._headers())).json()
 
-    @async_retry()
-    async def _delete_json(self, url: str, data: dict[str, str] | None = None) -> dict:
-        headers = dict(_HEADERS)
-        content = None
-        if data:
-            content = urlencode(data)
-            headers["Content-Type"] = "application/x-www-form-urlencoded; charset=UTF-8"
-        resp = await self._http.delete(
-            url,
-            content=content.encode() if content else None,
-            headers=headers,
-        )
-        try:
-            body = resp.json()
-        except Exception:
-            return {}
-        return body if isinstance(body, dict) else {}
-
-    async def list_targets(self) -> list[Target]:
-        now = time.monotonic()
-        if self._targets and now - self._targets_at < _CACHE_TTL:
-            return list(self._targets)
-        async with self._lock:
-            if self._targets and time.monotonic() - self._targets_at < _CACHE_TTL:
-                return list(self._targets)
-            targets = await self._fetch_targets()
-            self._targets = targets
-            self._targets_at = time.monotonic()
-            return list(targets)
-
-    @async_retry()
     async def _fetch_targets(self) -> list[Target]:
         resp = await self._http.get(
             f"{self.BASE_URL}/en/",
-            headers={**_HEADERS, "Accept": "text/html,application/xhtml+xml", "X-Requested-With": ""},
+            headers={**self._headers(), "Accept": "text/html,application/xhtml+xml", "X-Requested-With": ""},
         )
         domains = _parse_domains_from_html(resp.text)
         if not domains:

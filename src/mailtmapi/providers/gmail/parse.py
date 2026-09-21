@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import base64
 import email.utils
+from contextlib import suppress
 from datetime import datetime, timezone
 
 from mailtmapi.providers.base import Attachment, MessageDetail, MessageSource, MessageSummary, Party
@@ -92,10 +93,8 @@ def extract_headers(payload: dict) -> dict:
     date_dt: datetime | None = None
     date_raw = header_map.get("date", "")
     if date_raw:
-        try:
+        with suppress(Exception):
             date_dt = email.utils.parsedate_to_datetime(date_raw)
-        except Exception:
-            pass
 
     return {
         "from": Party(name=from_name, address=from_email),

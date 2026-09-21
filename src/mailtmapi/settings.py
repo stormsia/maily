@@ -1,12 +1,16 @@
 from __future__ import annotations
 
 import json
+import logging
+import os
 from functools import lru_cache
 from pathlib import Path
 
 from cryptography.fernet import Fernet
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+logger = logging.getLogger("mailtmapi.settings")
 
 
 class Settings(BaseSettings):
@@ -27,11 +31,14 @@ class Settings(BaseSettings):
     gmail_credentials_path: str = ""
     gmail_auth_uri: str = "https://accounts.google.com/o/oauth2/v2/auth"
     gmail_token_uri: str = "https://oauth2.googleapis.com/token"
+    gmail_redirect_uri: str = ""
     secret_key_path: Path = Field(default=Path("mailtm.key"))
-    retention_interval_seconds: int = 60
     retention_interval_seconds: int = 60
     domain_cache_enabled: bool = True
     domain_cache_interval_seconds: int = 1800
+    tempmail_io_origin: str = "https://temp-mail.io/"
+    tempmail_io_cors_header: str = ""
+    provider_headers_ttl_seconds: int = 21600
 
     def resolved_secret_key(self) -> str:
         if self.secret_key:
@@ -39,7 +46,16 @@ class Settings(BaseSettings):
         if self.secret_key_path.exists():
             return self.secret_key_path.read_text(encoding="utf-8").strip()
         key = Fernet.generate_key().decode()
-        self.secret_key_path.write_text(key, encoding="utf-8")
+        try:
+            self.secret_key_path.write_text(key, encoding="utf-8")
+            os.chmod(self.secret_key_path, 0o600)
+        except OSError as exc:
+            logger.warning("could not persist generated secret key to %s: %s", self.secret_key_path, exc)
+        logger.warning(
+            "generated a new encryption key at %s — keep this file safe and persisted "
+            "across restarts, otherwise stored credentials cannot be decrypted",
+            self.secret_key_path,
+        )
         return key
 
     def gmail_client(self) -> tuple[str, str]:
@@ -51,8 +67,8 @@ class Settings(BaseSettings):
             return installed["client_id"], installed["client_secret"]
         raise RuntimeError("Set MAILTM_GMAIL_CLIENT_ID/SECRET or MAILTM_GMAIL_CREDENTIALS_PATH")
 
-    def gmail_redirect_uri(self) -> str:
-        return f"http://{self.host}:{self.port}/v1/gmail/oauth/callback"
+    def default_gmail_redirect_uri(self) -> str:
+        return self.gmail_redirect_uri or f"http://{self.host}:{self.port}/v1/gmail/oauth/callback"
 
 
 @lru_cache

@@ -1,18 +1,14 @@
 from __future__ import annotations
 
-import asyncio
 import base64
 import logging
-import re
-import time
-from datetime import datetime
 from typing import Any
 
 from ...exceptions import MailAPIError, MailNotFoundError, MailValidationError
-from ...http import HttpClient
 from ...utils.misc import random_string
 from ...utils.retry import async_retry
 from ..base import (
+    HttpProvider,
     MailboxInfo,
     MailboxSpec,
     MessageDetail,
@@ -20,6 +16,9 @@ from ..base import (
     MessageSummary,
     Party,
     Target,
+    TargetKind,
+    parse_from_value,
+    parse_iso,
 )
 
 logger = logging.getLogger(__name__)
@@ -35,25 +34,6 @@ _HEADERS = {
     "Origin": "https://noopmail.org",
 }
 
-_FROM_RE = re.compile(r"<([^>]+)>")
-
-
-def _parse_from(value: str) -> Party:
-    m = _FROM_RE.search(value)
-    if not m:
-        return Party(address=value, name=None)
-    name = value[: m.start()].strip().strip('"').strip().strip("'").strip()
-    return Party(name=name or None, address=m.group(1).strip())
-
-
-def _parse_iso(value: Any) -> datetime | None:
-    if not value:
-        return None
-    try:
-        return datetime.fromisoformat(str(value).replace("Z", "+00:00"))
-    except (ValueError, TypeError):
-        return None
-
 
 def _summary(raw: dict[str, Any]) -> MessageSummary:
     text = str(raw.get("text") or "")
@@ -61,13 +41,13 @@ def _summary(raw: dict[str, Any]) -> MessageSummary:
     return MessageSummary(
         id=str(raw.get("id") or ""),
         subject=str(raw.get("subject") or ""),
-        from_=_parse_from(str(raw.get("from") or "")),
+        from_=parse_from_value(str(raw.get("from") or "")),
         to=[Party(address=str(raw.get("to") or ""))],
         intro=text.split("\n", 1)[0][:200] if text else "",
         seen=False,
         has_attachments=bool(raw.get("hasAttm")),
         size=len(text) + len(html),
-        received_at=_parse_iso(raw.get("date")),
+        received_at=parse_iso(raw.get("date")),
     )
 
 
@@ -91,7 +71,7 @@ def _detail(raw: dict[str, Any]) -> MessageDetail:
     )
 
 
-class NoopMail:
+class NoopMail(HttpProvider):
     """Провайдер noopmail.org.
 
     noopmail.org защищён Cloudflare; для работы в бою требуются куки
@@ -101,53 +81,11 @@ class NoopMail:
     """
 
     slug = "noopmail.org"
-    kind = "domain"
+    kind: TargetKind = "domain"
+    cache_ttl = _CACHE_TTL
+    default_headers = _HEADERS
     BASE_URL = "https://noopmail.org"
 
-    def __init__(
-        self,
-        http: HttpClient | None = None,
-        proxy: str | None = None,
-    ) -> None:
-        self._owns_http = http is None
-        self._http = http or HttpClient(proxy=proxy, headers=_HEADERS)
-        self._targets: list[Target] = []
-        self._targets_at = 0.0
-        self._lock = asyncio.Lock()
-
-    async def close(self) -> None:
-        if self._owns_http:
-            await self._http.close()
-
-    @async_retry()
-    async def _get_json(self, url: str) -> Any:
-        resp = await self._http.get(url, headers=_HEADERS)
-        try:
-            return resp.json()
-        except ValueError:
-            return None
-
-    @async_retry()
-    async def _post_json(self, url: str, body: dict[str, Any]) -> Any:
-        resp = await self._http.post(url, json=body, headers=_HEADERS)
-        try:
-            return resp.json()
-        except ValueError:
-            return None
-
-    async def list_targets(self) -> list[Target]:
-        now = time.monotonic()
-        if self._targets and now - self._targets_at < _CACHE_TTL:
-            return list(self._targets)
-        async with self._lock:
-            if self._targets and time.monotonic() - self._targets_at < _CACHE_TTL:
-                return list(self._targets)
-            targets = await self._fetch_targets()
-            self._targets = targets
-            self._targets_at = time.monotonic()
-            return list(targets)
-
-    @async_retry()
     async def _fetch_targets(self) -> list[Target]:
         seen: set[str] = set()
         dupes = 0
@@ -219,7 +157,7 @@ class NoopMail:
             url = f"{self.BASE_URL}/api/i/{message_id}"
             if m_id:
                 url += f"/{m_id}"
-            await self._http.delete(url, headers=_HEADERS)
+            await self._http.delete(url, headers=self._headers())
         except MailNotFoundError:
             pass
         return True
@@ -246,7 +184,7 @@ class NoopMail:
 
     @async_retry()
     async def _get_raw(self, url: str) -> str:
-        resp = await self._http.get(url, headers=_HEADERS)
+        resp = await self._http.get(url, headers=self._headers())
         try:
             payload = resp.json()
         except ValueError:

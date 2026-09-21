@@ -33,6 +33,7 @@ class MailboxOut(_Base):
     parent_id: int | None = None
     is_active: bool
     created_at: datetime | None = None
+    parent_status: str | None = None
 
 
 class MessageOut(_Base):

@@ -3,8 +3,9 @@ from __future__ import annotations
 import asyncio
 import logging
 import time
+from contextlib import suppress
 
-from mailtmapi.exceptions import MailAPIError, MailValidationError
+from mailtmapi.exceptions import MailAPIError, MailAuthError, MailValidationError
 from mailtmapi.http import HttpClient
 from mailtmapi.providers.base import (
     MailboxInfo,
@@ -58,7 +59,18 @@ class GmailProvider:
                 and parent.access_expires_at > time.time() + 60
             ):
                 return parent.access_token
-            tokens = await self._oauth.refresh(parent.refresh_token)
+            try:
+                tokens = await self._oauth.refresh(parent.refresh_token)
+            except MailAuthError:
+                # Refresh token was rejected (revoked, or test-mode lapse).
+                # Flag the account expired so the dashboard can prompt to
+                # reconnect — active mailboxes keep working against the cache,
+                # but no new mailboxes are picked from it.
+                parent.status = "expired"
+                if parent.id:
+                    with suppress(Exception):
+                        await self._store.update(parent)
+                raise
             parent.access_token = tokens["access_token"]
             parent.access_expires_at = tokens["expires_at"]
             if tokens.get("refresh_token"):

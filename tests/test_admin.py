@@ -5,59 +5,15 @@ from datetime import timedelta
 from pathlib import Path
 
 from fastapi.testclient import TestClient
+from tests.helpers import StubProvider
 
 from mailtmapi.app.main import create_app
 from mailtmapi.app.services.retention import utcnow_naive
 from mailtmapi.crypto import encrypt
-from mailtmapi.providers.base import (
-    MailboxInfo,
-    MailboxSpec,
-    MessageDetail,
-    MessageSource,
-    MessageSummary,
-    Target,
-)
 from mailtmapi.providers.registry import ProviderRegistry
 from mailtmapi.settings import Settings
 
 SECRET = "test-secret"
-
-
-class StubProvider:
-    slug = "stub"
-    kind = "domain"
-
-    def __init__(self) -> None:
-        self.delete_mailbox_calls: list[str] = []
-        self.delete_message_calls: list[str] = []
-
-    async def close(self) -> None: ...
-
-    async def list_targets(self) -> list[Target]:
-        return []
-
-    async def create_mailbox(self, spec: MailboxSpec) -> MailboxInfo:
-        return MailboxInfo(provider=self.slug, address="stub@x", token="tok")
-
-    async def delete_mailbox(self, mailbox: MailboxInfo) -> bool:
-        self.delete_mailbox_calls.append(mailbox.address)
-        return True
-
-    async def list_messages(self, mailbox: MailboxInfo, page: int = 1) -> list[MessageSummary]:
-        return []
-
-    async def get_message(self, mailbox: MailboxInfo, message_id: str) -> MessageDetail:
-        return MessageDetail(id=message_id)
-
-    async def delete_message(self, mailbox: MailboxInfo, message_id: str) -> bool:
-        self.delete_message_calls.append(message_id)
-        return True
-
-    async def mark_read(self, mailbox: MailboxInfo, message_id: str) -> bool:
-        return True
-
-    async def get_source(self, mailbox: MailboxInfo, message_id: str) -> MessageSource:
-        return MessageSource(id=message_id, data="")
 
 
 def _app(tmp_path) -> TestClient:

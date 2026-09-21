@@ -387,6 +387,11 @@ export async function render(root) {
         h("i", { "data-lucide": "refresh-cw" }));
       const delBtn = h("button", { class: "icon-btn danger", title: "Remove account", "aria-label": `Remove ${a.email}`, onclick: (e) => deleteOne(e, a) },
         h("i", { "data-lucide": "trash-2" }));
+      const needsReauth = !["active", "connected", "ok"].includes((a.status || "").toLowerCase());
+      const reauthBtn = needsReauth
+        ? h("button", { class: "icon-btn warn", title: `Reconnect ${a.email} — access expired`, "aria-label": `Reconnect ${a.email}`, onclick: () => reconnectAccount(a) },
+            h("i", { "data-lucide": "plug-zap" }))
+        : null;
       list.append(h("div", { class: "card acct" },
         h("div", { class: "acct-avatar", "aria-hidden": "true" }, initial),
         h("div", { class: "acct-main" },
@@ -395,10 +400,24 @@ export async function render(root) {
             ? h("div", { class: "sendas" }, ...a.send_as.map((s) => h("span", { class: "chip" }, s)))
             : h("div", { class: "small muted mt-4" }, "no send-as aliases")),
         statusBadge(a.status),
-        h("div", { class: "acct-actions" }, syncBtn, delBtn)));
+        h("div", { class: "acct-actions" }, reauthBtn, syncBtn, delBtn)));
     }
     listWrap.append(list);
     refreshIcons();
+  }
+
+  async function reconnectAccount(a) {
+    try {
+      const { auth_url } = await api.gmailOAuthStart();
+      window.open(auth_url, "_blank", "noopener");
+      toast("Google consent opened in a new tab — approve it, then refresh.", "info", "external-link");
+    } catch (err) {
+      if (err.status === 400) {
+        openWizard(creds?.source === "db" ? 4 : 1);
+      } else {
+        toast(err.detail || "Could not start OAuth.", "err");
+      }
+    }
   }
 
   async function syncOne(e, a) {

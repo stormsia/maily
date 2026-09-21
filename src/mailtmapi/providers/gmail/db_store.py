@@ -69,6 +69,11 @@ class DbGmailStore:
             ).scalars().all()
             return [self._row_to_parent(r) for r in rows]
 
+    async def list_all(self) -> list[GmailParent]:
+        async with self._factory() as s:
+            rows = (await s.execute(select(GmailAccount))).scalars().all()
+            return [self._row_to_parent(r) for r in rows]
+
     async def get(self, parent_id: int) -> GmailParent:
         async with self._factory() as s:
             row = await s.get(GmailAccount, parent_id)

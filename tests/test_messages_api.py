@@ -1,71 +1,15 @@
 from __future__ import annotations
 
-from datetime import datetime, timezone
 from pathlib import Path
 
 from fastapi.testclient import TestClient
+from tests.helpers import StubProvider
 
 from mailtmapi.app.main import create_app
-from mailtmapi.providers.base import (
-    MailboxInfo,
-    MailboxSpec,
-    MessageDetail,
-    MessageSource,
-    MessageSummary,
-    Party,
-    Target,
-)
 from mailtmapi.providers.registry import ProviderRegistry
 from mailtmapi.settings import Settings
 
 SECRET = "test-secret"
-
-STAMP = datetime(2026, 1, 2, 3, 4, 5, tzinfo=timezone.utc)
-
-
-class StubMailProvider:
-    slug = "stub"
-    kind = "domain"
-
-    async def close(self) -> None: ...
-
-    async def list_targets(self) -> list[Target]:
-        return []
-
-    async def create_mailbox(self, spec: MailboxSpec) -> MailboxInfo:
-        return MailboxInfo(provider=self.slug, address="stub@x", token="tok")
-
-    async def delete_mailbox(self, mailbox: MailboxInfo) -> bool:
-        return True
-
-    async def list_messages(self, mailbox: MailboxInfo, page: int = 1) -> list[MessageSummary]:
-        return [
-            MessageSummary(
-                id="m1",
-                subject="Hello",
-                from_=Party(address="a@b.c", name="Alice"),
-                received_at=STAMP,
-            )
-        ]
-
-    async def get_message(self, mailbox: MailboxInfo, message_id: str) -> MessageDetail:
-        return MessageDetail(
-            id=message_id,
-            subject="Hello",
-            from_=Party(address="a@b.c", name="Alice"),
-            text="body text",
-            html=["<p>body text</p>"],
-            received_at=STAMP,
-        )
-
-    async def delete_message(self, mailbox: MailboxInfo, message_id: str) -> bool:
-        return True
-
-    async def mark_read(self, mailbox: MailboxInfo, message_id: str) -> bool:
-        return True
-
-    async def get_source(self, mailbox: MailboxInfo, message_id: str) -> MessageSource:
-        return MessageSource(id=message_id, data="From: a@b.c\nSubject: x\n")
 
 
 def _client(tmp_path: Path) -> TestClient:
@@ -81,7 +25,7 @@ def _client(tmp_path: Path) -> TestClient:
 
 
 def _create_mailbox(client: TestClient) -> int:
-    client.app.state.registry = ProviderRegistry([StubMailProvider()])
+    client.app.state.registry = ProviderRegistry([StubProvider()])
     r = client.post("/v1/mailboxes", json={"provider": "stub"})
     assert r.status_code == 200
     return r.json()["id"]

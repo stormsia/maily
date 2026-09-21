@@ -17,6 +17,17 @@ import {
 } from "../ui.js";
 
 const PAGE_SIZE_HINT = 20;
+const POLL_MS = 30000;
+
+let pollTimer = null;
+
+/** Stop background polling (page torn down or auth died). */
+export function cleanup() {
+  if (pollTimer) {
+    clearInterval(pollTimer);
+    pollTimer = null;
+  }
+}
 
 function msgItem(msg, selected, onOpen) {
   const el = h(
@@ -102,6 +113,7 @@ function providerAuthBox(e, onRetry) {
 }
 
 export async function render(root, id) {
+  cleanup();
   root.innerHTML = "";
   root.append(skeletonRows(3));
 
@@ -144,6 +156,10 @@ export async function render(root, id) {
         { style: "display:flex;gap:8px;align-items:center;flex-wrap:wrap" },
         providerBadge(mailbox.provider),
         statusPill(mailbox.is_active),
+        mailbox.parent_status && mailbox.parent_status !== "active"
+          ? h("a", { class: "pill pill--warn", href: "#/gmail", title: "The Gmail account that owns this mailbox lost access — reconnect it." },
+              "account auth expired", h("i", { "data-lucide": "plug-zap" }))
+          : null,
       ),
       h("div", { class: "detail-addr mt-4" }, mailbox.address),
     ),
@@ -217,6 +233,7 @@ export async function render(root, id) {
       loadingMsgs = false;
       listEl.innerHTML = "";
       if (e.providerAuth) {
+        cleanup(); // don't hammer an account whose auth is dead
         listEl.append(providerAuthBox({ ...e, provider: mailbox.provider }, refreshList));
       } else {
         listEl.append(
@@ -343,6 +360,7 @@ export async function render(root, id) {
         const frame = h("iframe", {
           title: "Message HTML",
           sandbox: "",
+          referrerpolicy: "no-referrer",
           style:
             "width:100%;min-height:320px;border:1px solid var(--border);border-radius:12px;background:#fff",
         });
@@ -500,4 +518,12 @@ export async function render(root, id) {
   }
 
   refreshList();
+  pollTimer = setInterval(() => {
+    if (loadingMsgs) return;
+    if (!document.body.contains(root)) {
+      cleanup();
+      return;
+    }
+    refreshList();
+  }, POLL_MS);
 }

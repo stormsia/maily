@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, Request
 from sqlalchemy import select
 
 from ...db.models import Mailbox
@@ -10,6 +10,29 @@ from ..schemas import CreateMailboxIn, MailboxOut
 from ..services import mailboxes as svc
 
 router = APIRouter(prefix="/v1/mailboxes", dependencies=[Depends(require_api_key)])
+
+
+async def _parent_statuses(request: Request, rows: list[Mailbox]) -> dict[int, str]:
+    """Gmail account status per parent_id ('' status = unknown / not a gmail parent)."""
+    parents = {row.parent_id for row in rows if row.provider == "gmail" and row.parent_id is not None}
+    if not parents:
+        return {}
+    try:
+        store = request.app.state.gmail._store  # type: ignore[attr-defined]
+    except AttributeError:
+        return {}
+    statuses: dict[int, str] = {}
+    for parent in await store.list_all():
+        if parent.id in parents:
+            statuses[parent.id] = parent.status
+    return statuses
+
+
+def _with_status(row: Mailbox, statuses: dict[int, str]) -> MailboxOut:
+    out = MailboxOut.model_validate(row)
+    if row.provider == "gmail" and row.parent_id is not None:
+        out.parent_status = statuses.get(row.parent_id)
+    return out
 
 
 @router.post("", response_model=MailboxOut)
@@ -36,26 +59,33 @@ async def create(
 
 @router.get("", response_model=list[MailboxOut])
 async def list_mailboxes(
+    request: Request,
     session: SessionDep,
     provider: str | None = Query(None),
     active: bool = Query(True),
-) -> list[Mailbox]:
+) -> list[MailboxOut]:
     q = select(Mailbox)
     if provider:
         q = q.where(Mailbox.provider == provider)
     if active:
         q = q.where(Mailbox.is_active.is_(True), Mailbox.is_deleted.is_(False))
-    return list((await session.execute(q.order_by(Mailbox.id.desc()))).scalars().all())
+    rows = list((await session.execute(q.order_by(Mailbox.id.desc()))).scalars().all())
+    statuses = await _parent_statuses(request, rows)
+    return [_with_status(r, statuses) for r in rows]
 
 
 @router.get("/by-address/{email}", response_model=MailboxOut)
-async def by_address(email: str, session: SessionDep) -> Mailbox:
-    return await svc.get_mailbox_by_address(session, email)
+async def by_address(email: str, request: Request, session: SessionDep) -> MailboxOut:
+    row = await svc.get_mailbox_by_address(session, email)
+    statuses = await _parent_statuses(request, [row])
+    return _with_status(row, statuses)
 
 
 @router.get("/{mailbox_id}", response_model=MailboxOut)
-async def get_one(mailbox_id: int, session: SessionDep) -> Mailbox:
-    return await svc.get_mailbox(session, mailbox_id)
+async def get_one(mailbox_id: int, request: Request, session: SessionDep) -> MailboxOut:
+    row = await svc.get_mailbox(session, mailbox_id)
+    statuses = await _parent_statuses(request, [row])
+    return _with_status(row, statuses)
 
 
 @router.delete("/{mailbox_id}", status_code=204)

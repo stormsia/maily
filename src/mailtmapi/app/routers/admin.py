@@ -189,6 +189,7 @@ async def run_domain_cache(request: Request, registry: RegistryDep) -> dict | JS
             status_code=502,
             content={
                 "detail": "Domain cache refresh failed for: " + ", ".join(result["failed"]),
+                "code": "upstream",
                 "refreshed": result["refreshed"],
                 "failed": result["failed"],
             },

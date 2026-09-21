@@ -27,6 +27,7 @@ export class ApiError extends Error {
     super(detail || `Request failed (${status})`);
     this.status = status;
     this.detail = detail || `Request failed (${status})`;
+    this.code = null;
   }
 }
 
@@ -36,12 +37,13 @@ export function setAuthRequiredHandler(fn) {
   onAuthRequired = fn;
 }
 
-/* Structured extras from an error body (e.g. failed/refreshed lists). */
+/* Structured extras from an error body (e.g. failed/refreshed lists, code). */
 function copyExtra(err, data) {
   if (!data) return;
   for (const k of ["failed", "refreshed"]) {
     if (Array.isArray(data[k])) err[k] = data[k];
   }
+  if (typeof data.code === "string") err.code = data.code;
 }
 
 async function parseError(res) {
@@ -102,6 +104,7 @@ async function request(path, { method = "GET", body, retried = false } = {}) {
 
 export const api = {
   health: () => request("/health"),
+  config: () => request("/v1/config"),
   providers: () => request("/v1/providers"),
   targets: (provider) =>
     request(`/v1/targets?provider=${encodeURIComponent(provider)}`),

@@ -11,15 +11,19 @@ function fmtUpdated(iso) {
 function providerCard(slug, c, caching) {
   const statusPill = h("span", { class: `pill ${caching ? "pill--on" : "pill--off"}` },
     caching ? "caching" : "off");
-  const errorPill = c?.error
-    ? h("span", { class: "pill pill--danger", title: c.error, role: "status" }, "refresh failed")
+  const errorText = c?.error
+    ? h("div", { class: "cache-error", title: c.error, role: "status" },
+        h("span", { class: "cache-error-label" }, "refresh failed:"),
+        " ",
+        h("span", { class: "cache-error-msg" }, c.error))
     : null;
   return h("div", { class: "card ret-card" },
     h("div", { class: "ret-card-top" },
       h("span", { class: "prov-name mono" }, slug),
-      h("span", { class: "ret-card-pills" }, errorPill, statusPill)),
+      h("span", { class: "ret-card-pills" }, statusPill)),
     h("div", { class: "prov-nums" },
       h("div", {}, h("b", {}, String(c?.domains_count ?? 0)), h("span", {}, "domains cached"))),
+    errorText,
     h("div", { class: "cache-meta" },
       h("span", {}, "Last refresh: "),
       h("span", { class: "mono" }, fmtUpdated(c?.updated_at))));

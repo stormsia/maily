@@ -188,9 +188,15 @@ export async function render(root) {
         h("i", { "data-lucide": "arrow-right" }));
       const delBtn = h("button", { class: "icon-btn danger", "aria-label": `Delete ${m.address}`, title: "Delete", onclick: (e) => deleteOne(e, m) },
         h("i", { "data-lucide": "trash-2" }));
+      const provCell = h("td", { style: "display:flex;gap:6px;align-items:center;flex-wrap:wrap" },
+        providerBadge(m.provider));
+      if (m.provider === "gmail" && m.parent_status && m.parent_status !== "active") {
+        provCell.append(h("a", { class: "pill pill--warn", href: "#/gmail", title: "The Gmail account that owns this mailbox lost access — reconnect it." },
+          "reauth"));
+      }
       tr.append(
         h("td", {}, addressCell(m.address)),
-        h("td", {}, providerBadge(m.provider)),
+        provCell,
         h("td", {}, statusPill(m.is_active)),
         h("td", { class: "muted small mono" }, fmtDate(m.created_at)),
         h("td", {}, h("div", { class: "row-actions" }, openBtn, delBtn)));

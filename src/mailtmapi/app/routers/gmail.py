@@ -145,7 +145,8 @@ async def import_account(request: Request, body: ImportGmailIn) -> GmailAccountO
 
 @router.get("/accounts", response_model=list[GmailAccountOut])
 async def list_accounts(request: Request) -> list[GmailAccountOut]:
-    return [_out(p) for p in await _store(request).list_active()]
+    # list_all: show expired accounts too so reconnection is possible.
+    return [_out(p) for p in await _store(request).list_all()]
 
 
 @router.delete("/accounts/{parent_id}", status_code=204)

@@ -4,63 +4,13 @@ import json
 import sqlite3
 
 from fastapi.testclient import TestClient
+from tests.helpers import StubProvider, make_targets
 
 from mailtmapi.app.main import create_app
-from mailtmapi.providers.base import (
-    MailboxInfo,
-    MailboxSpec,
-    MessageDetail,
-    MessageSource,
-    MessageSummary,
-    Target,
-)
 from mailtmapi.providers.registry import ProviderRegistry
 from mailtmapi.settings import Settings
 
 SECRET = "test-secret"
-
-
-def _targets(slug: str, *labels: str) -> list[Target]:
-    return [Target(id=label, kind="domain", provider=slug, label=label) for label in labels]
-
-
-class StubProvider:
-    kind = "domain"
-
-    def __init__(self, slug: str, targets: list[Target], fail: bool = False) -> None:
-        self.slug = slug
-        self._targets = targets
-        self.fail = fail
-        self.list_targets_calls = 0
-
-    async def close(self) -> None: ...
-
-    async def list_targets(self) -> list[Target]:
-        self.list_targets_calls += 1
-        if self.fail:
-            raise RuntimeError("boom")
-        return list(self._targets)
-
-    async def create_mailbox(self, spec: MailboxSpec) -> MailboxInfo:
-        return MailboxInfo(provider=self.slug, address=f"user@{spec.domain or 'x.com'}", token="tok")
-
-    async def delete_mailbox(self, mailbox: MailboxInfo) -> bool:
-        return True
-
-    async def list_messages(self, mailbox: MailboxInfo, page: int = 1) -> list[MessageSummary]:
-        return []
-
-    async def get_message(self, mailbox: MailboxInfo, message_id: str) -> MessageDetail:
-        return MessageDetail(id=message_id)
-
-    async def delete_message(self, mailbox: MailboxInfo, message_id: str) -> bool:
-        return True
-
-    async def mark_read(self, mailbox: MailboxInfo, message_id: str) -> bool:
-        return True
-
-    async def get_source(self, mailbox: MailboxInfo, message_id: str) -> MessageSource:
-        return MessageSource(id=message_id, data="")
 
 
 def _app(tmp_path) -> TestClient:
@@ -86,7 +36,7 @@ def test_put_settings_validation(tmp_path):
 
 def test_get_default_settings(tmp_path):
     with _app(tmp_path) as client:
-        good = StubProvider("good", _targets("good", "a.com"))
+        good = StubProvider("good", make_targets("good", "a.com"))
         client.app.state.registry = ProviderRegistry([good])
 
         body = client.get("/v1/admin/domain-cache").json()
@@ -106,8 +56,8 @@ def test_get_default_settings(tmp_path):
 
 def test_run_populates_cache_and_reports_failures(tmp_path):
     with _app(tmp_path) as client:
-        good = StubProvider("good", _targets("good", "a.com", "b.com"))
-        bad = StubProvider("bad", _targets("bad", "x.com"), fail=True)
+        good = StubProvider("good", make_targets("good", "a.com", "b.com"))
+        bad = StubProvider("bad", make_targets("bad", "x.com"), fail=True)
         client.app.state.registry = ProviderRegistry([good, bad])
 
         r = client.post("/v1/admin/domain-cache/run")
@@ -135,7 +85,7 @@ def test_run_populates_cache_and_reports_failures(tmp_path):
 
 def test_targets_served_from_cache(tmp_path):
     with _app(tmp_path) as client:
-        good = StubProvider("good", _targets("good", "a.com"))
+        good = StubProvider("good", make_targets("good", "a.com"))
         client.app.state.registry = ProviderRegistry([good])
 
         r = client.post("/v1/admin/domain-cache/run")
@@ -153,7 +103,7 @@ def test_targets_served_from_cache(tmp_path):
 
 def test_mailbox_create_domain_resolution(tmp_path):
     with _app(tmp_path) as client:
-        good = StubProvider("good", _targets("good", "a.com"))
+        good = StubProvider("good", make_targets("good", "a.com"))
         client.app.state.registry = ProviderRegistry([good])
         client.post("/v1/admin/domain-cache/run")
         assert good.list_targets_calls == 1
@@ -166,7 +116,7 @@ def test_mailbox_create_domain_resolution(tmp_path):
         assert good.list_targets_calls == 1
 
         # cache miss: falls back to live scan of the provider
-        good._targets = _targets("good", "a.com", "c.com")
+        good._targets = make_targets("good", "a.com", "c.com")
         r = client.post("/v1/mailboxes", json={"domain": "c.com"})
         assert r.status_code == 200
         assert r.json()["provider"] == "good"
@@ -176,7 +126,7 @@ def test_mailbox_create_domain_resolution(tmp_path):
 
 def test_cache_disabled_serves_live(tmp_path):
     with _app(tmp_path) as client:
-        good = StubProvider("good", _targets("good", "a.com"))
+        good = StubProvider("good", make_targets("good", "a.com"))
         client.app.state.registry = ProviderRegistry([good])
 
         r = client.put("/v1/admin/domain-cache", json={"enabled": False})

@@ -23,7 +23,7 @@ const TITLES = {
 
 let currentCleanup = null;
 
-/* ---------- health ---------- */
+/* ---------- health + auth-mode banner ---------- */
 async function ping() {
   const pill = document.getElementById("health-pill");
   const text = document.getElementById("health-text");
@@ -47,6 +47,13 @@ async function ping() {
     pillSm?.classList.add("off");
     if (dotSm) { dotSm.style.background = "var(--danger)"; dotSm.style.boxShadow = "0 0 10px rgba(255,125,125,.8)"; }
     if (textSm) textSm.textContent = `offline · ${location.host}`;
+  }
+  try {
+    const cfg = await api.config();
+    const warn = document.getElementById("key-warning");
+    if (warn) warn.hidden = !!cfg.api_key_required;
+  } catch {
+    /* server too old / unreachable: keep banner state unset */
   }
 }
 

@@ -20,6 +20,7 @@ class GmailParent:
 
 class GmailParentStore(Protocol):
     async def list_active(self) -> list[GmailParent]: ...
+    async def list_all(self) -> list[GmailParent]: ...
     async def get(self, parent_id: int) -> GmailParent: ...
     async def get_by_email(self, email: str) -> GmailParent | None: ...
     async def update(self, parent: GmailParent) -> None: ...
@@ -34,6 +35,9 @@ class MemoryGmailStore:
 
     async def list_active(self) -> list[GmailParent]:
         return [p for p in self._parents.values() if p.status == "active"]
+
+    async def list_all(self) -> list[GmailParent]:
+        return list(self._parents.values())
 
     async def get(self, parent_id: int) -> GmailParent:
         try:

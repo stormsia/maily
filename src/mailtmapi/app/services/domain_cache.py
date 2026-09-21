@@ -3,6 +3,7 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
+import time
 from contextlib import suppress
 
 from sqlalchemy import select
@@ -107,12 +108,18 @@ async def list_domain_targets(
     return out
 
 
-async def refresh_cache(factory: AsyncSessionFactory[AsyncSession], registry: ProviderRegistry) -> dict:
+async def refresh_cache(
+    factory: AsyncSessionFactory[AsyncSession],
+    registry: ProviderRegistry,
+    skip: set[str] | None = None,
+) -> dict:
     refreshed: list[str] = []
     failed: list[str] = []
     async with factory() as session:
         for p in registry.all():
             if p.kind != "domain":
+                continue
+            if skip and p.slug in skip:
                 continue
             try:
                 targets = await p.list_targets()
@@ -183,6 +190,9 @@ async def domain_cache_worker(
     registry: ProviderRegistry,
     settings: Settings,
 ) -> None:
+    # Back off providers that keep failing (e.g. SSL issues): skip re-touching
+    # them for an hour so the worker doesn't hammer a dead endpoint every run.
+    backoff_until: dict[str, float] = {}
     while True:
         interval = settings.domain_cache_interval_seconds
         try:
@@ -190,7 +200,11 @@ async def domain_cache_worker(
                 cfg = await get_settings(session, settings)
             interval = cfg["interval_seconds"]
             if cfg["enabled"]:
-                await refresh_cache(factory, registry)
+                now = time.time()
+                backoff_until = {slug: ts for slug, ts in backoff_until.items() if ts > now}
+                result = await refresh_cache(factory, registry, skip=set(backoff_until))
+                for slug in result["failed"]:
+                    backoff_until[slug] = now + 3600
         except Exception:  # noqa: BLE001 - worker must never die
             logger.exception("domain cache refresh failed")
         await asyncio.sleep(interval)

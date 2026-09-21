@@ -1,12 +1,12 @@
 from __future__ import annotations
 
 import pytest
-from tests.helpers import StubProvider
 
 from mailtmapi.app.services import mailboxes as svc
 from mailtmapi.exceptions import MailValidationError
 from mailtmapi.providers.registry import ProviderRegistry
 from mailtmapi.settings import Settings
+from tests.helpers import StubProvider
 
 SECRET = "test-secret"
 

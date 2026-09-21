@@ -50,6 +50,12 @@ ignore = [
     "BLE001",  # worker loops handle broad exceptions on purpose
 ]
 
+[tool.ruff.lint.isort]
+# Make first-party classification stable across ruff versions; otherwise the
+# `tests` package is sorted by version-dependent heuristic heuristics and CI
+# (fresh install) may differ from the local venv.
+known-first-party = ["mailtmapi", "tests"]
+
 [tool.mypy]
 python_version = "3.10"
 check_untyped_defs = true

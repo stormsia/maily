@@ -5,13 +5,13 @@ from datetime import timedelta
 from pathlib import Path
 
 from fastapi.testclient import TestClient
-from tests.helpers import StubProvider
 
 from mailtmapi.app.main import create_app
 from mailtmapi.app.services.retention import utcnow_naive
 from mailtmapi.crypto import encrypt
 from mailtmapi.providers.registry import ProviderRegistry
 from mailtmapi.settings import Settings
+from tests.helpers import StubProvider
 
 SECRET = "test-secret"
 

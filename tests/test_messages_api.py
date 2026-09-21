@@ -3,11 +3,11 @@ from __future__ import annotations
 from pathlib import Path
 
 from fastapi.testclient import TestClient
-from tests.helpers import StubProvider
 
 from mailtmapi.app.main import create_app
 from mailtmapi.providers.registry import ProviderRegistry
 from mailtmapi.settings import Settings
+from tests.helpers import StubProvider
 
 SECRET = "test-secret"
 

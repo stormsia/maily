@@ -37,7 +37,7 @@ credentials.
 ### Option A — Docker (recommended)
 
 ```bash
-git clone <your-repo-url> && cd mailtmapi
+git clone https://github.com/stormsia/mailtmapi.git && cd mailtmapi
 cp .env.example .env        # adjust if needed
 docker compose up -d --build
 ```
@@ -47,6 +47,7 @@ Open <http://127.0.0.1:8477/> — the admin dashboard is ready.
 ### Option B — Local (Python 3.10+)
 
 ```bash
+git clone https://github.com/stormsia/mailtmapi.git && cd mailtmapi
 python -m venv .venv
 
 # Windows
@@ -55,11 +56,14 @@ python -m venv .venv
 source .venv/bin/activate
 
 pip install -e ".[dev]"
-mailtmapi
+mailtmapi                       # starts on 127.0.0.1:8477
 ```
 
-Plugins and migrations run automatically on startup — no manual setup.
-Development server (with auto-reload):
+The server reads `.env` if present (see [Configuration](#-configuration)); with
+no `.env` it runs with defaults: SQLite in the current directory, no API key.
+Migrations run automatically on startup — no manual setup.
+
+Development server (with auto-reload on code changes):
 
 ```bash
 uvicorn mailtmapi.app.main:create_app --factory --reload --port 8477
@@ -115,6 +119,9 @@ Copy `.env.example` to `.env` and adjust. Full reference:
 All endpoints are under `/v1` and (unless `MAILTM_API_KEY` is empty) require the
 header `X-API-Key: <key>`. Errors return `{"detail": "..."}` with proper status codes.
 
+> **Auth-free:** `GET /health` and `GET /v1/config` (server facts used by the
+> dashboard and the standalone client's auto-update) never need the key.
+
 ### Providers & targets
 
 | Method | Path | Description |
@@ -169,33 +176,75 @@ Interactive API docs: <http://127.0.0.1:8477/docs> (Swagger UI).
 
 ## 🐍 Python client
 
-Full-featured async client in one file, typed with Pydantic, logging with loguru.
+Two ways to use the client:
+
+### Standalone (recommended, pip + auto-update)
+
+`client/client.py` is a **self-contained single file** — it pulls only
+`httpx`, `loguru` and `pydantic`, not the server stack (FastAPI, SQLAlchemy,
+uvicorn, …). Works standalone or installed from this git repo:
+
+```bash
+# install from git (any project/venv):
+pip install "mailtmapi-client @ git+https://github.com/stormsia/mailtmapi.git#subdirectory=client"
+
+# …or just copy the file into your project:
+curl -O https://raw.githubusercontent.com/stormsia/mailtmapi/main/client/client.py
+```
 
 ```python
-import asyncio
+from client import MailTMAPI  # if installed/copied standalone
+
+async with MailTMAPI("http://127.0.0.1:8477", api_key="sk-...") as api:
+    mb = await api.mailboxes.create(provider="mail.tm")
+    res = await api.messages.wait_for_confirmation_email(
+        mb.id,
+        sender_domain="gmail.com",
+        url_contain=["confirm", "verify"],
+        digit_code_mask=r"(\d{6})",
+        timeout=120,
+    )
+    await api.mailboxes.delete(mb.id)
+```
+
+**Auto-update from git.** The client carries its own `__version__` and knows
+where to fetch its canonical source (`MAILTMAPI_CLIENT_SOURCE`, defaults to
+`main` branch of this repo). Check or apply updates with:
+
+```bash
+mailtmapi-client check     # "update available: 0.2.0 -> 0.3.0" (exit 2) or up-to-date
+mailtmapi-client update    # downloads newer client.py and replaces the installed file
+mailtmapi-client version
+```
+
+`update` is a plain file write — restart your scripts afterwards for the new
+version to apply. Inside your code:
+
+```python
+from client import check_update, self_update
+
+up = check_update()          # ("0.2.0", "0.3.0") or None
+self_update()                # True if the file was replaced
+```
+
+The server also advertises its release version at `GET /v1/config`
+(`client_version`, no API key needed). `api.check_client_version()` compares it
+to the local `__version__` and logs a warning with the update command when the
+server is newer. To keep the version matrix honest, a CI/suite test
+(`tests/test_client_standalone.py`) pins the client version to the server's.
+
+### Bundled with the app (`mailtmapi` package)
+
+The same client is shipped inside the server package (used by the dashboard,
+tests and `sdk.py`):
+
+```python
 from mailtmapi.client import MailTMAPI
 
 async def main():
     async with MailTMAPI("http://127.0.0.1:8477", api_key="sk-...") as api:
-        # create a disposable mailbox
         mb = await api.mailboxes.create(provider="mail.tm")
         print("mailbox:", mb.address)
-
-        # wait until a confirmation email arrives, extract link + code
-        res = await api.messages.wait_for_confirmation_email(
-            mb.id,
-            sender_domain="gmail.com",
-            url_contain=["confirm", "verify"],
-            digit_code_mask=r"(\d{6})",
-            timeout=120,
-        )
-        if res:
-            print("link:", res["confirmation_link"])
-            print("code:", res["confirmation_code"])
-        else:
-            print("timed out")
-
-        await api.mailboxes.delete(mb.id)
 
 asyncio.run(main())
 ```
@@ -205,12 +254,13 @@ asyncio.run(main())
 ```
 MailTMAPI                        # public entry point (async with / close)
 ├── .health      HealthAPI       GET /health
+├── .config      ConfigAPI       GET /v1/config (api_key_required, client_version)
 ├── .providers   ProvidersAPI    providers + targets
 ├── .mailboxes   MailboxesAPI    create / list / get / by_address / delete
 ├── .messages    MessagesAPI     list / get / mark_read / delete / source
 │                               wait_for / wait_for_confirmation_email
 ├── .gmail       GmailAPI        OAuth start / import / accounts / sync
-└── .admin       AdminAPI        stats / retention / gmail creds
+└── .admin       AdminAPI        stats / retention / domain cache / gmail creds
 ```
 
 ### Waiting helpers
@@ -269,11 +319,12 @@ src/mailtmapi/
 ├── providers/      # provider adapters: mail.tm, tempmail.plus, gmail
 ├── static/         # admin dashboard (plain HTML/JS/CSS — no build step)
 ├── client.py       # async Python client (Pydantic + loguru + httpx)
-├── sdk.py          # minimal async SDK
+├── sdk.py          # deprecated alias imports (warns)
 ├── settings.py     # pydantic-settings configuration
 ├── http.py         # shared HTTP client with proxy support
 ├── crypto.py       # Fernet encryption for stored credentials
 └── exceptions.py   # error types
+client/             # standalone pip-installable client (client.py + pyproject.toml)
 alembic/            # migrations (auto-applied on startup)
 tests/              # pytest suite
 ```

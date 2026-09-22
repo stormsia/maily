@@ -1,4 +1,5 @@
 import json
+from typing import Any
 
 from fastapi import APIRouter, Request
 from sqlalchemy import select
@@ -43,6 +44,15 @@ def _json_len(raw: str) -> int:
 
 
 @router.get("/v1/config")
-async def config(request: Request) -> dict[str, bool]:
-    """Non-secret server facts for the dashboard (this router is auth-free)."""
-    return {"api_key_required": bool(request.app.state.settings.api_key)}
+async def config(request: Request) -> dict[str, Any]:
+    """Non-secret server facts for the dashboard and the standalone client.
+
+    This router is auth-free: `client_version` lets a pip-installed client
+    detect it should run `python -m client update`.
+    """
+    from ... import __version__
+
+    return {
+        "api_key_required": bool(request.app.state.settings.api_key),
+        "client_version": __version__,
+    }

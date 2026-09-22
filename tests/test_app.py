@@ -40,6 +40,17 @@ def test_health_includes_domain_cache_status(tmp_path):
             assert isinstance(meta["domains"], int)
 
 
+def test_config_exposes_client_version(tmp_path):
+    import mailtmapi
+
+    with _app(tmp_path, api_key="sekret") as client:
+        # /v1/config is auth-free: it powers the dashboard banner and the
+        # standalone client's auto-update check
+        body = client.get("/v1/config").json()
+        assert body["api_key_required"] is True
+        assert body["client_version"] == mailtmapi.__version__
+
+
 def test_api_key_enforced_when_set(tmp_path):
     with _app(tmp_path, api_key="sekret") as client:
         # open endpoints

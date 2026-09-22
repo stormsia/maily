@@ -96,8 +96,12 @@ async def lifespan(app: FastAPI):
             settings.retention_interval_seconds,
         )
     )
-    cache_task = asyncio.create_task(dc.domain_cache_worker(factory, registry, settings))
-    headers_task = asyncio.create_task(ph.provider_headers_worker(factory, http, registry, settings))
+    cache_task = asyncio.create_task(
+        dc.domain_cache_worker(factory, registry, settings)
+    )
+    headers_task = asyncio.create_task(
+        ph.provider_headers_worker(factory, http, registry, settings)
+    )
     try:
         yield
     finally:

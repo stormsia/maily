@@ -18,9 +18,13 @@ jobs:
           python -m pip install --upgrade pip
           pip install -e ".[dev]"
       - name: Ruff lint
-        run: ruff check src tests
+        run: ruff check src tests client scripts
       - name: mypy
         run: mypy src
+      - name: Standalone client mirror
+        # client/client.py is generated from src/mailtmapi/standalone_client.py;
+        # a stale generated file is a build failure.
+        run: python scripts/build_client.py --check
       - name: Pytest
         # Test suite is hermetic by design: every Settings(...) in the tests
         # passes _env_file=None so a developer's local .env (MAILTM_API_KEY,

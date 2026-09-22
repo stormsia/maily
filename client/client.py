@@ -1,10 +1,23 @@
-"""mailtmapi standalone client.
+# -=- THIS FILE IS GENERATED from src/mailtmapi/standalone_client.py -=-
+# Do not edit by hand; edit the canonical file and run:
+#   python scripts/build_client.py
+"""mailtmapi standalone client — CANONICAL single-file implementation.
 
-Один самодостаточный файл: не тянет серверную часть (FastAPI, SQLAlchemy,
+Это единственный источник истины клиента. Два способа использовать этот код:
+
+    1. Внутри серверного пакета — через тонкий прокси `mailtmapi.client`
+       (этот модуль импортируется оттуда).
+    2. Снаружи — файл `client/client.py` в корне репозитория, который
+       генерируется из этого модуля скриптом `scripts/build_client.py`
+       (добавляет only шапку «generated»). Не редактируй `client/client.py`
+       руками — правь здесь и перегенерируй; parity проверяет тест
+       `tests/test_client_standalone.py::test_standalone_mirror_is_current`.
+
+Файл самодостаточный: не тянет серверную часть (FastAPI, SQLAlchemy,
 uvicorn и т.п.), нужны только httpx, loguru и pydantic.
 
     pip install "mailtmapi-client @ git+https://github.com/stormsia/mailtmapi.git#subdirectory=client"
-    # или просто скопируй этот файл в свой проект:
+    # или просто скопируй файл в свой проект:
     #   curl -O https://raw.githubusercontent.com/stormsia/mailtmapi/main/client/client.py
 
 Автообновление: клиент умеет проверять версию на git и обновлять себя из

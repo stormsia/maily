@@ -61,10 +61,30 @@ def test_versions_stay_in_sync():
     assert f'version = "{mailtmapi.__version__}"' in client_pyproject
 
 
+def test_standalone_mirror_is_current():
+    """client/client.py are generated from src/mailtmapi/standalone_client.py.
+
+    Правка канонического файла без перегенерации роняет этот тест (и CI).
+    """
+    build = importlib.util.spec_from_file_location(
+        "_build_client", Path(__file__).resolve().parents[1] / "scripts" / "build_client.py"
+    )
+    assert build and build.loader
+    build_mod = importlib.util.module_from_spec(build)
+    build.loader.exec_module(build_mod)
+
+    expected = build_mod.render()
+    assert CLIENT_FILE.read_text(encoding="utf-8") == expected, (
+        f"{CLIENT_FILE.name} is stale — run `python scripts/build_client.py`"
+    )
+
+
 def test_api_surface_matches_packaged_client():
     mod = _load_standalone()
-    missing = set(pkg_client.__all__) - set(mod.__all__)
-    assert not missing, f"standalone client missing: {sorted(missing)}"
+    # packaged `mailtmapi.client` may expose extra back-compat aliases
+    # (AdminAPI etc.), but every public name of the canonical file must exist
+    missing = set(mod.__all__) - set(pkg_client.__all__)
+    assert not missing, f"packaged client missing: {sorted(missing)}"
 
 
 class _Resp:

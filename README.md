@@ -344,6 +344,34 @@ docker compose up -d --build
 - Runs as a **non-root** user with `no-new-privileges` and `init: true`
 - Healthcheck pings `/health` automatically
 
+### Updating & recreating the stack (bulletproof)
+
+The plain `docker compose up -d --build` rebuilds the image only when a layer
+changes and leaves an existing container in place, so a stale image or a
+half-updated container can survive. To force a **full, deterministic
+recreate** of the stack — without touching your data:
+
+```bash
+docker compose down --remove-orphans              # stop & remove containers (data volume stays)
+docker compose build --pull --no-cache            # rebuild image from scratch (fresh base images, no cache)
+docker compose up -d --force-recreate             # start brand-new containers from the new image
+```
+
+One-liner:
+
+```bash
+docker compose down --remove-orphans && docker compose build --pull --no-cache && docker compose up -d --force-recreate
+```
+
+- `--pull` / `--no-cache` make the rebuild deterministic — every layer is
+  rebuilt on the latest base image, so no stale layer can leak into the update.
+- `--remove-orphans` and `--force-recreate` guarantee the old containers are
+  gone and brand-new ones run the fresh image.
+- Your mailboxes, messages and settings are **safe**: they live in the
+  `mailtmapi_data` named volume, which these commands never delete.
+- If you ever want to wipe *everything* including data, add `-v` to the first
+  command (`docker compose down -v`) — there is no way back.
+
 ---
 
 ## 📄 License

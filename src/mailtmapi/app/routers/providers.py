@@ -6,11 +6,12 @@ from ..deps import RegistryDep, SessionDep, SettingsDep, require_api_key
 from ..schemas import ProviderOut, TargetOut
 from ..services import domain_cache as dc
 
-router = APIRouter(prefix="/v1", dependencies=[Depends(require_api_key)])
+router = APIRouter(prefix="/v1", dependencies=[Depends(require_api_key)], tags=["Providers"])
 
 
 @router.get("/providers", response_model=list[ProviderOut])
 async def list_providers(registry: RegistryDep) -> list[ProviderOut]:
+    """List enabled providers and their kind (api/token or domain-based)."""
     return [ProviderOut(slug=p.slug, kind=p.kind) for p in registry.all()]
 
 
@@ -21,6 +22,7 @@ async def list_targets(
     registry: RegistryDep,
     provider: str | None = Query(None),
 ) -> list[TargetOut]:
+    """List usable posting targets, optionally filtered by provider slug."""
     providers = [registry.get(provider)] if provider else registry.all()
     out: list[TargetOut] = []
     for p in providers:

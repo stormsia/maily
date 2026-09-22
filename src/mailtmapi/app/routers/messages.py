@@ -10,7 +10,9 @@ from ..schemas import MessageDetailOut, MessageOut, SourceOut
 from ..services import mailboxes as svc
 
 router = APIRouter(
-    prefix="/v1/mailboxes/{mailbox_id}/messages", dependencies=[Depends(require_api_key)]
+    prefix="/v1/mailboxes/{mailbox_id}/messages",
+    dependencies=[Depends(require_api_key)],
+    tags=["Messages"],
 )
 
 
@@ -26,6 +28,7 @@ async def list_messages(
     settings: SettingsDep,
     page: int = Query(1, ge=1),
 ) -> list[MessageOut]:
+    """List a mailbox's messages (fetches one page from the provider and caches it)."""
     row = await svc.get_mailbox(session, mailbox_id)
     prov = registry.get(row.provider)
     summaries = await prov.list_messages(
@@ -46,6 +49,7 @@ async def get_message(
     registry: RegistryDep,
     settings: SettingsDep,
 ) -> MessageDetailOut:
+    """Fetch a single message with its full text and HTML bodies."""
     row = await svc.get_mailbox(session, mailbox_id)
     prov = registry.get(row.provider)
     detail = await prov.get_message(svc.to_mailbox_info(row, settings.resolved_secret_key()), msg_id)
@@ -84,6 +88,7 @@ async def mark_read(
     registry: RegistryDep,
     settings: SettingsDep,
 ) -> MessageOut:
+    """Mark a message as read (both upstream and locally)."""
     row = await svc.get_mailbox(session, mailbox_id)
     prov = registry.get(row.provider)
     await prov.mark_read(svc.to_mailbox_info(row, settings.resolved_secret_key()), msg_id)
@@ -108,6 +113,7 @@ async def delete_message(
     registry: RegistryDep,
     settings: SettingsDep,
 ) -> None:
+    """Delete a message (upstream and local cache)."""
     row = await svc.get_mailbox(session, mailbox_id)
     prov = registry.get(row.provider)
     await prov.delete_message(svc.to_mailbox_info(row, settings.resolved_secret_key()), msg_id)
@@ -129,6 +135,7 @@ async def get_source(
     registry: RegistryDep,
     settings: SettingsDep,
 ) -> SourceOut:
+    """Download the raw message source (.eml payload)."""
     row = await svc.get_mailbox(session, mailbox_id)
     prov = registry.get(row.provider)
     src = await prov.get_source(svc.to_mailbox_info(row, settings.resolved_secret_key()), msg_id)

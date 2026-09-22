@@ -7,7 +7,7 @@ from sqlalchemy import select
 from ...db.models import DomainCache
 from ..deps import RegistryDep, SessionDep
 
-router = APIRouter()
+router = APIRouter(tags=["System"])
 
 
 @router.get("/health")

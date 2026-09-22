@@ -4,11 +4,18 @@ import secrets
 from collections.abc import AsyncIterator
 from typing import Annotated
 
-from fastapi import Depends, Header, HTTPException, Request
+from fastapi import Depends, Header, HTTPException, Request, Security
+from fastapi.security import APIKeyHeader
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..providers.registry import ProviderRegistry
 from ..settings import Settings
+
+api_key_header = APIKeyHeader(
+    name="X-API-Key",
+    auto_error=False,
+    description="API key (required only when the server runs with MAILTM_API_KEY set).",
+)
 
 
 def get_settings(request: Request) -> Settings:
@@ -31,8 +38,8 @@ async def get_session(request: Request) -> AsyncIterator[AsyncSession]:
 
 async def require_api_key(
     request: Request,
-    x_api_key: Annotated[str | None, Header()] = None,
     authorization: Annotated[str | None, Header()] = None,
+    x_api_key: Annotated[str | None, Security(api_key_header)] = None,
 ) -> None:
     expected: str = request.app.state.settings.api_key
     if not expected:

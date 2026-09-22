@@ -9,7 +9,11 @@ from ..deps import RegistryDep, SessionDep, SettingsDep, require_api_key
 from ..schemas import CreateMailboxIn, MailboxOut
 from ..services import mailboxes as svc
 
-router = APIRouter(prefix="/v1/mailboxes", dependencies=[Depends(require_api_key)])
+router = APIRouter(
+    prefix="/v1/mailboxes",
+    dependencies=[Depends(require_api_key)],
+    tags=["Mailboxes"],
+)
 
 
 async def _parent_statuses(request: Request, rows: list[Mailbox]) -> dict[int, str]:
@@ -42,6 +46,7 @@ async def create(
     registry: RegistryDep,
     settings: SettingsDep,
 ) -> Mailbox:
+    """Create a disposable mailbox on a provider (optionally with a specific address/password)."""
     row = await svc.create_mailbox(
         session,
         registry,
@@ -64,6 +69,7 @@ async def list_mailboxes(
     provider: str | None = Query(None),
     active: bool = Query(True),
 ) -> list[MailboxOut]:
+    """List mailboxes, optionally filtered by provider and status."""
     q = select(Mailbox)
     if provider:
         q = q.where(Mailbox.provider == provider)
@@ -76,6 +82,7 @@ async def list_mailboxes(
 
 @router.get("/by-address/{email}", response_model=MailboxOut)
 async def by_address(email: str, request: Request, session: SessionDep) -> MailboxOut:
+    """Look up a mailbox by its full email address."""
     row = await svc.get_mailbox_by_address(session, email)
     statuses = await _parent_statuses(request, [row])
     return _with_status(row, statuses)
@@ -83,6 +90,7 @@ async def by_address(email: str, request: Request, session: SessionDep) -> Mailb
 
 @router.get("/{mailbox_id}", response_model=MailboxOut)
 async def get_one(mailbox_id: int, request: Request, session: SessionDep) -> MailboxOut:
+    """Fetch a single mailbox by id."""
     row = await svc.get_mailbox(session, mailbox_id)
     statuses = await _parent_statuses(request, [row])
     return _with_status(row, statuses)
@@ -95,6 +103,7 @@ async def delete_one(
     registry: RegistryDep,
     settings: SettingsDep,
 ) -> None:
+    """Deactivate and mark a mailbox deleted (also deletes it upstream)."""
     row = await svc.get_mailbox(session, mailbox_id)
     try:
         prov = registry.get(row.provider)

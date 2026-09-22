@@ -14,8 +14,12 @@ from ...settings import Settings
 from ..deps import SettingsDep, require_api_key
 from ..schemas import GmailAccountOut, ImportGmailIn, OAuthStartOut
 
-router = APIRouter(prefix="/v1/gmail", dependencies=[Depends(require_api_key)])
-public = APIRouter(prefix="/v1/gmail")
+router = APIRouter(
+    prefix="/v1/gmail",
+    dependencies=[Depends(require_api_key)],
+    tags=["Gmail"],
+)
+public = APIRouter(prefix="/v1/gmail", tags=["Gmail"])
 
 _OAUTH_STATE_TTL = 10 * 60
 
@@ -109,6 +113,7 @@ async def oauth_start(request: Request, settings: SettingsDep) -> OAuthStartOut:
 
 @public.get("/oauth/callback")
 async def oauth_callback(request: Request, settings: SettingsDep, code: str = "", state: str = ""):
+    """OAuth redirect target (browser flow). Not for direct use."""
     states: dict = request.app.state.oauth_states
     _purge_stale_oauth_states(states, time.time())
     issued = states.get(state)
@@ -145,17 +150,20 @@ async def import_account(request: Request, body: ImportGmailIn) -> GmailAccountO
 
 @router.get("/accounts", response_model=list[GmailAccountOut])
 async def list_accounts(request: Request) -> list[GmailAccountOut]:
+    """List connected Gmail accounts (expired ones included for reconnection)."""
     # list_all: show expired accounts too so reconnection is possible.
     return [_out(p) for p in await _store(request).list_all()]
 
 
 @router.delete("/accounts/{parent_id}", status_code=204)
 async def delete_account(request: Request, parent_id: int) -> None:
+    """Disconnect a linked Gmail account."""
     await _store(request).delete(parent_id)
 
 
 @router.post("/accounts/{parent_id}/sync", response_model=GmailAccountOut)
 async def sync_account(request: Request, parent_id: int) -> GmailAccountOut:
+    """Refresh profile/token state for a linked Gmail account."""
     parent = await _store(request).get(parent_id)
     parent = await _gmail(request).sync_profile(parent)
     return _out(parent)

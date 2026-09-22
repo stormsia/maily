@@ -4,10 +4,12 @@ import asyncio
 from contextlib import asynccontextmanager, suppress
 from pathlib import Path
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
+from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy.ext.asyncio import AsyncEngine
 
+from .. import __version__
 from ..db.engine import SessionFactory, make_engine
 from ..http import HttpClient
 from ..providers.gmail.db_store import DbGmailStore
@@ -31,6 +33,33 @@ from .routers.providers import router as providers_router
 from .services import domain_cache as dc
 from .services import provider_headers as ph
 from .services.retention import retention_worker, run_sweep
+
+OPENAPI_TAGS = [
+    {
+        "name": "System",
+        "description": "Liveness, readiness and client-facing configuration.",
+    },
+    {
+        "name": "Providers",
+        "description": "Enabled temp-mail providers and their usable posting targets.",
+    },
+    {
+        "name": "Mailboxes",
+        "description": "Create, list, look up and delete disposable mailboxes.",
+    },
+    {
+        "name": "Messages",
+        "description": "Read, mark, delete and download messages for a mailbox.",
+    },
+    {
+        "name": "Gmail",
+        "description": "Import Gmail accounts, OAuth pairing and per-account sync.",
+    },
+    {
+        "name": "Admin",
+        "description": "Operational controls: retention TTLs, domain cache and Gmail credentials.",
+    },
+]
 
 
 def _run_migrations(url: str) -> None:
@@ -120,7 +149,24 @@ async def lifespan(app: FastAPI):
 
 def create_app(settings: Settings | None = None) -> FastAPI:
     settings = settings or get_settings()
-    app = FastAPI(title="mailtmapi", lifespan=lifespan)
+    app = FastAPI(
+        title="mailtmapi",
+        version=__version__,
+        lifespan=lifespan,
+        description=(
+            "Local multi-provider temporary-email API. "
+            "Most endpoints require the `X-API-Key` header (see Admin → API key in the dashboard)."
+        ),
+        openapi_tags=OPENAPI_TAGS,
+        docs_url=None,
+        redoc_url=None,
+        swagger_ui_parameters={
+            "docExpansion": "none",
+            "filter": True,
+            "displayRequestDuration": True,
+            "persistAuthorization": True,
+        },
+    )
     app.state.settings = settings
     register_errors(app)
     app.include_router(health_router)
@@ -132,6 +178,11 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(admin_router)
     app.add_middleware(OriginGuard)
     static_dir = Path(__file__).resolve().parents[1] / "static"
+
+    @app.get("/docs", include_in_schema=False)
+    async def docs(_: Request) -> FileResponse:
+        return FileResponse(static_dir / "docs.html")
+
     if static_dir.is_dir():
         app.mount("/", StaticFiles(directory=static_dir, html=True), name="static")
     return app

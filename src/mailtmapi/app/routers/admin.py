@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 from datetime import timedelta
 
@@ -22,7 +22,11 @@ from ..services import domain_cache as dc
 from ..services import gmail_config as gcfg
 from ..services import retention as svc
 
-router = APIRouter(prefix="/v1/admin", dependencies=[Depends(require_api_key)])
+router = APIRouter(
+    prefix="/v1/admin",
+    dependencies=[Depends(require_api_key)],
+    tags=["Admin"],
+)
 
 
 def _sum_or_zero(value: int | None) -> int:
@@ -31,6 +35,7 @@ def _sum_or_zero(value: int | None) -> int:
 
 @router.get("/stats")
 async def stats(session: SessionDep) -> dict:
+    """Dashboard stats: mailbox/message totals, provider split, 7-day trend."""
     now = svc.utcnow_naive()
     cutoff = now - timedelta(days=6)
 
@@ -115,11 +120,13 @@ async def stats(session: SessionDep) -> dict:
 
 @router.get("/retention", response_model=list[RetentionOut])
 async def list_retention(session: SessionDep) -> list:
+    """List active TTL retention rules."""
     return await svc.get_retention(session)
 
 
 @router.put("/retention/{provider}", response_model=RetentionOut)
 async def set_retention(provider: str, body: RetentionIn, session: SessionDep):
+    """Create or update TTL retention for a provider (at least one TTL required)."""
     row = await svc.set_retention(session, provider, body.mailbox_ttl_hours, body.message_ttl_hours)
     await session.commit()
     await session.refresh(row)
@@ -128,6 +135,7 @@ async def set_retention(provider: str, body: RetentionIn, session: SessionDep):
 
 @router.delete("/retention/{provider}", status_code=204)
 async def remove_retention(provider: str, session: SessionDep) -> None:
+    """Disable retention rules for a provider."""
     if not await svc.delete_retention(session, provider):
         raise MailNotFoundError(f"retention for {provider} not found")
     await session.commit()
@@ -139,6 +147,7 @@ async def run_retention_sweep(
     registry: RegistryDep,
     settings: SettingsDep,
 ) -> dict:
+    """Run the retention cleanup sweep right now."""
     return await svc.run_sweep(request.app.state.session_factory, registry, settings)
 
 
@@ -148,6 +157,7 @@ async def get_domain_cache(
     registry: RegistryDep,
     settings: SettingsDep,
 ) -> DomainCacheOut:
+    """Domain cache settings and per-provider state."""
     cfg = await dc.get_settings(session, settings)
     return DomainCacheOut(
         enabled=cfg["enabled"],
@@ -166,6 +176,7 @@ async def set_domain_cache(
     registry: RegistryDep,
     settings: SettingsDep,
 ) -> DomainCacheOut:
+    """Update domain cache settings (enabled / interval)."""
     cfg = await dc.set_settings(
         session, settings, enabled=body.enabled, interval_seconds=body.interval_seconds
     )
@@ -182,6 +193,7 @@ async def set_domain_cache(
 
 @router.post("/domain-cache/run", response_model=None)
 async def run_domain_cache(request: Request, registry: RegistryDep) -> dict | JSONResponse:
+    """Force a domain cache refresh; 502 with a failed list when a provider errors."""
     result = await dc.refresh_cache(request.app.state.session_factory, registry)
     if result["failed"]:
         # A partial refresh is still a failed run — signal it, don't claim 200.
@@ -203,6 +215,7 @@ async def get_gmail_creds(
     session: SessionDep,
     settings: SettingsDep,
 ) -> GmailCredsOut:
+    """Current Gmail OAuth credentials (env or the encrypted store)."""
     secret = settings.resolved_secret_key()
     found = await gcfg.resolved(settings, session, secret)
     if found is None:
@@ -223,6 +236,7 @@ async def save_gmail_creds(
     session: SessionDep,
     settings: SettingsDep,
 ) -> GmailCredsOut:
+    """Save Gmail OAuth credentials to the encrypted store."""
     from fastapi import HTTPException
 
     secret = settings.resolved_secret_key()
@@ -251,6 +265,7 @@ async def clear_gmail_creds(
     session: SessionDep,
     settings: SettingsDep,
 ) -> None:
+    """Clear stored Gmail OAuth credentials."""
     from fastapi import HTTPException
 
     secret = settings.resolved_secret_key()

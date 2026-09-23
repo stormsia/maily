@@ -9,6 +9,7 @@ from sqlalchemy import delete, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.ext.asyncio import async_sessionmaker as AsyncSessionFactory
 
+from ...db.engine import retry_on_lock
 from ...db.models import Mailbox, Message, Retention
 from ...exceptions import MailValidationError
 from ...providers.registry import ProviderRegistry
@@ -71,6 +72,11 @@ async def delete_retention(session, provider: str) -> bool:
     return True
 
 
+async def _commit_short(session: AsyncSession) -> None:
+    """Commit the current unit of work right away (releases the write lock)."""
+    await retry_on_lock(session.commit)
+
+
 async def run_sweep(
     factory: AsyncSessionFactory[AsyncSession],
     registry: ProviderRegistry,
@@ -96,6 +102,9 @@ async def run_sweep(
             )
         )
         await session.execute(delete(Mailbox).where(Mailbox.is_deleted.is_(True)))
+        # commit before the provider-sync loops: they run network I/O and must
+        # not hold the SQLite write lock for the whole sweep
+        await _commit_short(session)
 
         # expired mailboxes
         for provider, ttl in mailbox_ttl.items():
@@ -119,6 +128,7 @@ async def run_sweep(
                 except Exception as exc:  # noqa: BLE001 - best-effort sync with provider
                     logger.warning("retention: provider delete failed for %s: %s", row.address, exc)
                 await session.delete(row)
+                await _commit_short(session)
                 mailboxes_deleted += 1
                 mailbox_deletes[provider] = mailbox_deletes.get(provider, 0) + 1
                 logger.info("retention: expired mailbox %s deleted", row.address)
@@ -149,6 +159,7 @@ async def run_sweep(
                     if mailbox_row is None:
                         # orphaned message: drop it locally without notifying a provider
                         await session.delete(msg)
+                        await _commit_short(session)
                         messages_deleted += 1
                         message_deletes[provider] = message_deletes.get(provider, 0) + 1
                         logger.info("retention: orphaned message %s deleted", msg.message_api_id)
@@ -165,6 +176,7 @@ async def run_sweep(
                         exc,
                     )
                 await session.delete(msg)
+                await _commit_short(session)
                 messages_deleted += 1
                 message_deletes[provider] = message_deletes.get(provider, 0) + 1
                 logger.info("retention: expired message %s deleted", msg.message_api_id)
@@ -177,7 +189,7 @@ async def run_sweep(
             await record(session, provider=provider, event=EVENT_MESSAGE_DELETED, count=n)
         await prune(session)
 
-        await session.commit()
+        await _commit_short(session)
         return {"mailboxes_deleted": mailboxes_deleted, "messages_deleted": messages_deleted}
 
 

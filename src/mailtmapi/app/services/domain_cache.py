@@ -11,6 +11,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.ext.asyncio import async_sessionmaker as AsyncSessionFactory
 
+from ...db.engine import retry_on_lock
 from ...db.models import AppSetting, DomainCache
 from ...exceptions import MailValidationError
 from ...providers.base import Target
@@ -91,6 +92,37 @@ async def _store(session, slug: str, targets: list[Target]) -> None:
     row.updated_at = _utcnow_naive()
 
 
+async def _store_committed(
+    factory: AsyncSessionFactory[AsyncSession], slug: str, targets: list[Target]
+) -> None:
+    """Persist one provider's domains in a short transaction (no long-running
+    write lock across other providers / HTTP fetches)."""
+
+    async def _do() -> None:
+        async with factory() as session:
+            await _store(session, slug, targets)
+            await session.commit()
+
+    await retry_on_lock(_do)
+
+
+async def _record_failure_committed(
+    factory: AsyncSessionFactory[AsyncSession], slug: str, error: str
+) -> None:
+    async def _do() -> None:
+        async with factory() as session:
+            row = await session.get(DomainCache, slug)
+            if row is None:
+                row = DomainCache(provider=slug, domains_json="")
+                session.add(row)
+            row.error = error
+            # Record the failed attempt so monitoring sees a recent date.
+            row.updated_at = _utcnow_naive()
+            await session.commit()
+
+    await retry_on_lock(_do)
+
+
 async def list_domain_targets(
     session,
     registry: ProviderRegistry,
@@ -123,29 +155,31 @@ async def refresh_cache(
     registry: ProviderRegistry,
     skip: set[str] | None = None,
 ) -> dict:
+    """Refresh every domain provider into its own short transaction.
+
+    Each provider's row is committed separately and its HTTP fetch happens with
+    no DB transaction open — so the worker never holds the SQLite write lock
+    across network I/O, which is what kept failing other writers with
+    "database is locked".
+    """
     refreshed: list[str] = []
     failed: list[str] = []
-    async with factory() as session:
-        for p in registry.all():
-            if p.kind != "domain":
-                continue
-            if skip and p.slug in skip:
-                continue
+    for p in registry.all():
+        if p.kind != "domain":
+            continue
+        if skip and p.slug in skip:
+            continue
+        try:
+            targets = await p.list_targets()
+            await _store_committed(factory, p.slug, targets)
+            refreshed.append(p.slug)
+        except Exception as exc:  # noqa: BLE001 - keep old domains, report error
+            failed.append(p.slug)
+            logger.warning("domain cache: refresh failed for %s: %s", p.slug, exc)
             try:
-                targets = await p.list_targets()
-                await _store(session, p.slug, targets)
-                refreshed.append(p.slug)
-            except Exception as exc:  # noqa: BLE001 - keep old domains, report error
-                failed.append(p.slug)
-                logger.warning("domain cache: refresh failed for %s: %s", p.slug, exc)
-                row = await session.get(DomainCache, p.slug)
-                if row is None:
-                    row = DomainCache(provider=p.slug, domains_json="")
-                    session.add(row)
-                row.error = str(exc)
-                # Record the failed attempt so monitoring sees a recent date.
-                row.updated_at = _utcnow_naive()
-        await session.commit()
+                await _record_failure_committed(factory, p.slug, str(exc))
+            except Exception:  # noqa: BLE001
+                logger.exception("domain cache: could not record failure for %s", p.slug)
     return {"refreshed": refreshed, "failed": failed}
 
 

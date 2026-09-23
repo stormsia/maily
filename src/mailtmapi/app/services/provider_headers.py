@@ -8,6 +8,7 @@ from datetime import datetime, timedelta, timezone
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.ext.asyncio import async_sessionmaker as AsyncSessionFactory
 
+from ...db.engine import retry_on_lock
 from ...db.models import ProviderHeaders
 from ...http import HttpClient
 from ...providers.registry import ProviderRegistry
@@ -55,6 +56,20 @@ async def _token_from_override(settings: Settings) -> str | None:
     return None
 
 
+async def _save_committed(
+    factory: AsyncSessionFactory[AsyncSession],
+    provider: str,
+    headers: dict[str, str],
+    error: str | None,
+) -> None:
+    async def _do() -> None:
+        async with factory() as session:
+            await _save(session, provider, headers, error)
+            await session.commit()
+
+    await retry_on_lock(_do)
+
+
 async def refresh(
     factory: AsyncSessionFactory[AsyncSession],
     http: HttpClient,
@@ -63,7 +78,12 @@ async def refresh(
     *,
     force: bool = False,
 ) -> dict[str, str]:
-    """Return fresh cached headers for provider, fetching from the site if stale."""
+    """Return fresh cached headers for provider, fetching from the site if stale.
+
+    The site fetch runs with no DB transaction open: keeping a writable read
+    snapshot across network I/O used to insta-fail with SQLITE_BUSY once another
+    writer committed in the meantime.
+    """
     if provider != SLUG:
         return {}
     override = await _token_from_override(settings)
@@ -81,19 +101,17 @@ async def refresh(
             and _utcnow() - row.updated_at < ttl
         ):
             return _parse_json(row.headers_json)
-
         stale = _parse_json(row.headers_json) if row and row.headers_json else {}
-        try:
-            token = await fetch_cors_header(http, settings.tempmail_io_origin)
-        except Exception as exc:  # noqa: BLE001 - keep last-known headers on network failure
-            logger.warning("provider_headers: fetch failed for %s: %s", provider, exc)
-            await _save(session, provider, stale, str(exc))
-            await session.commit()
-            return stale
-        headers = build_headers(token)
-        await _save(session, provider, headers, None if token else "no cors token found")
-        await session.commit()
-        return headers
+
+    try:
+        token = await fetch_cors_header(http, settings.tempmail_io_origin)
+    except Exception as exc:  # noqa: BLE001 - keep last-known headers on network failure
+        logger.warning("provider_headers: fetch failed for %s: %s", provider, exc)
+        await _save_committed(factory, provider, stale, str(exc))
+        return stale
+    headers = build_headers(token)
+    await _save_committed(factory, provider, headers, None if token else "no cors token found")
+    return headers
 
 
 def apply_headers(registry: ProviderRegistry, provider: str, headers: dict[str, str]) -> None:

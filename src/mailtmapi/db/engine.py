@@ -1,9 +1,11 @@
 from __future__ import annotations
 
-from collections.abc import AsyncIterator
+import asyncio
+from collections.abc import AsyncIterator, Awaitable, Callable
 from contextlib import asynccontextmanager
 
 from sqlalchemy import event
+from sqlalchemy.exc import OperationalError
 from sqlalchemy.ext.asyncio import (
     AsyncEngine,
     AsyncSession,
@@ -50,3 +52,21 @@ async def session_scope(
         except Exception:
             await session.rollback()
             raise
+
+
+async def retry_on_lock(operation: Callable[[], Awaitable[None]], *, attempts: int = 3, delay: float = 0.2) -> None:
+    """Run a short write transaction, retrying on transient SQLite locks.
+
+    ``SQLITE_BUSY`` (database is locked) is expected under concurrent Asyncio
+    writers (API handlers + background workers). WAL + busy_timeout handles
+    *waiting* for the writer lock, but a read->write snapshot upgrade after a
+    foreign commit fails instantly — hence the retry loop.
+    """
+    for attempt in range(attempts):
+        try:
+            await operation()
+            return
+        except OperationalError as exc:
+            if attempt == attempts - 1 or "locked" not in str(exc):
+                raise
+            await asyncio.sleep(delay * (attempt + 1))

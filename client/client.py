@@ -432,14 +432,30 @@ class MailboxesAPI:
         return Mailbox.model_validate(await self._t.request("POST", "/v1/mailboxes", json=payload))
 
     async def list(
-        self, *, provider: str | None = None, active: bool | None = None
+        self,
+        *,
+        provider: str | None = None,
+        active: bool | None = None,
+        q: str | None = None,
+        limit: int | None = None,
+        offset: int | None = None,
     ) -> list[Mailbox]:
-        """Список ящиков. active=None — без фильтра (включая удалённые)."""
+        """Список ящиков. active=None — без фильтра (включая удалённые).
+
+        q — подстрока адреса („%" и „_" считаются литералами), limit/offset —
+        постраничная выборка (максимальный limit — 500).
+        """
         params: dict[str, Any] = {}
         if provider:
             params["provider"] = provider
         if active is not None:
             params["active"] = str(active).lower()
+        if q:
+            params["q"] = q
+        if limit is not None:
+            params["limit"] = str(limit)
+        if offset is not None:
+            params["offset"] = str(offset)
         return [
             Mailbox.model_validate(m)
             for m in await self._t.request("GET", "/v1/mailboxes", params=params or None)

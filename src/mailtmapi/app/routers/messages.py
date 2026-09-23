@@ -8,6 +8,7 @@ from ...exceptions import MailNotFoundError
 from ..deps import RegistryDep, SessionDep, SettingsDep, require_api_key
 from ..schemas import MessageDetailOut, MessageOut, SourceOut
 from ..services import mailboxes as svc
+from ..services.stats_history import EVENT_MESSAGE_DELETED, record
 
 router = APIRouter(
     prefix="/v1/mailboxes/{mailbox_id}/messages",
@@ -68,7 +69,7 @@ async def get_message(
         cached.seen = True
     cached.has_attachments = detail.has_attachments
     cached.size = detail.size
-    cached.received_at = detail.received_at
+    cached.received_at = svc.as_naive_utc(detail.received_at)
     cached.body_text = detail.text
     cached.body_html = "\n".join(detail.html) if detail.html else None
     await session.commit()
@@ -124,6 +125,7 @@ async def delete_message(
     ).scalar_one_or_none()
     if cached is not None:
         cached.is_deleted = True
+        await record(session, provider=cached.provider, event=EVENT_MESSAGE_DELETED)
         await session.commit()
 
 

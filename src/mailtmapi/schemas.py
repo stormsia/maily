@@ -1,13 +1,28 @@
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, field_serializer
 
 
 class _Base(BaseModel):
     model_config = ConfigDict(from_attributes=True, extra="ignore")
+
+    @field_serializer("*")
+    def _naive_utc_as_z(self, value: Any) -> Any:
+        """Serialize datetimes as explicit UTC.
+
+        The app stores naive UTC (SQLite CURRENT_TIMESTAMP). Without a zone
+        suffix the browser would parse such an ISO string as *local* time, so
+        every naive datetime is emitted with an explicit ``Z`` here — that way
+        clients can render it correctly regardless of their timezone.
+        """
+        if isinstance(value, datetime):
+            if value.tzinfo is None:
+                return value.replace(tzinfo=timezone.utc).isoformat().replace("+00:00", "Z")
+            return value.astimezone(timezone.utc).isoformat().replace("+00:00", "Z")
+        return value
 
 
 class HealthOut(_Base):

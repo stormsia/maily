@@ -1,8 +1,19 @@
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import date, datetime
 
-from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String, Text, UniqueConstraint, func
+from sqlalchemy import (
+    Boolean,
+    Date,
+    DateTime,
+    ForeignKey,
+    Index,
+    Integer,
+    String,
+    Text,
+    UniqueConstraint,
+    func,
+)
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 
@@ -111,6 +122,30 @@ class DomainCache(Base):
     updated_at: Mapped[datetime] = mapped_column(
         DateTime, server_default=func.now(), onupdate=func.now()
     )
+
+
+class StatsEvent(Base):
+    """Aggregated activity ledger that survives retention deletes.
+
+    One row per (UTC day, provider, event) with an incrementing counter, so a
+    mailbox/message deleted by retention still counts here. Rows older than a
+    window (10 days) are pruned by the retention sweep. This is what the
+    dashboard's "last 10 days" block and the 7-day trend are based on.
+    """
+
+    __tablename__ = "stats_events"
+    __table_args__ = (
+        Index("ix_stats_events_day_event", "day", "event"),
+        Index("ix_stats_events_day_provider_event", "day", "provider", "event"),
+    )
+
+    #: mailbox_created | mailbox_deleted | message_received | message_deleted
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    day: Mapped[date] = mapped_column(Date)
+    provider: Mapped[str] = mapped_column(String(64))
+    event: Mapped[str] = mapped_column(String(32))
+    count: Mapped[int] = mapped_column(Integer, default=1)
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
 
 
 class ProviderHeaders(Base):

@@ -128,6 +128,11 @@ export async function openCreateMailbox(onCreated) {
   });
 }
 
+/* Server-side paged mailbox list: search/filter/pagination happen on the API,
+   so the page stays responsive no matter how many mailboxes exist. */
+const PER_PAGE = 200;
+const SEARCH_DEBOUNCE_MS = 250;
+
 export async function render(root) {
   root.innerHTML = "";
   const searchInput = h("input", { class: "input", placeholder: "Search by address…", "aria-label": "Search mailboxes", type: "search" });
@@ -140,46 +145,102 @@ export async function render(root) {
     provFilter, createBtn));
 
   const listWrap = h("div", {});
-  root.append(listWrap);
+  const loadMoreBtn = h("button", { class: "btn btn-ghost btn-sm", onclick: loadMore }, h("span", {}, "Show more"));
+  const pageInfo = h("span", { class: "mono pager-info" }, "");
+  const pager = h("div", { class: "pager" }, pageInfo, loadMoreBtn);
+  root.append(listWrap, pager);
   refreshIcons();
 
-  let all = [];
+  let items = [];        // mailboxes loaded so far (bounded page by page)
+  let page = 1;          // last page fetched
+  let more = false;      // may another page exist?
+  let loading = false;
   let providers = [];
-  listWrap.append(skeletonRows(7));
-  try {
-    [all, providers] = await Promise.all([
-      api.mailboxes(),
-      api.providers().catch(() => []),
-    ]);
-  } catch (e) {
-    listWrap.innerHTML = "";
-    listWrap.append(errorBox(e.detail || "Could not load mailboxes.", () => render(root)));
-    refreshIcons();
-    return;
+
+  function currentQuery() {
+    return searchInput.value.trim();
   }
-  for (const p of providers) provFilter.append(h("option", { value: p.slug }, p.slug));
+
+  async function fetchPage(n) {
+    const params = { limit: PER_PAGE, offset: (n - 1) * PER_PAGE };
+    const q = currentQuery();
+    const pf = provFilter.value;
+    if (q) params.q = q;
+    if (pf) params.provider = pf;
+    return api.mailboxes(params);
+  }
+
+  async function reload() {
+    loading = true;
+    draw();
+    try {
+      const rows = await fetchPage(1);
+      items = rows;
+      page = 1;
+      more = rows.length === PER_PAGE;
+      loading = false;
+      draw();
+    } catch (e) {
+      loading = false;
+      items = [];
+      listWrap.innerHTML = "";
+      listWrap.append(errorBox(e.detail || "Could not load mailboxes.", () => render(root)));
+      pager.style.display = "none";
+      refreshIcons();
+    }
+  }
+
+  async function loadMore() {
+    if (loading || !more) return;
+    loading = true;
+    draw();
+    try {
+      const rows = await fetchPage(page + 1);
+      items = items.concat(rows);
+      page += 1;
+      more = rows.length === PER_PAGE;
+      loading = false;
+      draw();
+    } catch (e) {
+      loading = false;
+      draw();
+      toast(e.detail || "Could not load more mailboxes.", "err");
+    }
+  }
+
+  function updatePager() {
+    const hasRows = items.length > 0;
+    pager.style.display = hasRows ? "" : "none";
+    if (loading && more) pageInfo.textContent = "loading…";
+    else pageInfo.textContent = hasRows ? `loaded ${items.length}${more ? "+" : ""}` : "";
+    loadMoreBtn.hidden = !more;
+    loadMoreBtn.disabled = loading;
+  }
 
   function draw() {
-    const q = searchInput.value.trim().toLowerCase();
-    const pf = provFilter.value;
-    const rows = all.filter((m) =>
-      (!pf || m.provider === pf) &&
-      (!q || (m.address || "").toLowerCase().includes(q)));
+    updatePager();
     listWrap.innerHTML = "";
-    if (!rows.length) {
+    if (loading && !items.length) {
+      listWrap.append(skeletonRows(7));
+      refreshIcons();
+      return;
+    }
+    if (!items.length) {
+      const filtering = Boolean(currentQuery() || provFilter.value);
       listWrap.append(emptyState({
-        icon: q || pf ? "search-x" : "inbox",
-        title: q || pf ? "No mailboxes match" : "No mailboxes yet",
-        copy: q || pf
+        icon: filtering ? "search-x" : "inbox",
+        title: filtering ? "No mailboxes match" : "No mailboxes yet",
+        copy: filtering
           ? "Try a different search, or clear the provider filter."
           : "Create your first mailbox to start receiving temporary mail.",
-        actionLabel: q || pf ? undefined : "Create mailbox",
+        actionLabel: filtering ? undefined : "Create mailbox",
         onAction: () => openCreateMailbox(() => render(root)),
       }));
       return;
     }
     const tbody = h("tbody", {});
-    for (const m of rows) {
+    const frag = document.createDocumentFragment();
+    for (const m of items) {
       const tr = h("tr", { class: "clickable", tabindex: "0", role: "link", "aria-label": `Open ${m.address}` });
       const go = () => { location.hash = `#/mailboxes/${m.id}`; };
       tr.addEventListener("click", (e) => { if (!e.target.closest("button")) go(); });
@@ -200,8 +261,9 @@ export async function render(root) {
         h("td", {}, statusPill(m.is_active)),
         h("td", { class: "muted small mono" }, fmtDate(m.created_at)),
         h("td", {}, h("div", { class: "row-actions" }, openBtn, delBtn)));
-      tbody.append(tr);
+      frag.appendChild(tr);
     }
+    tbody.appendChild(frag);
     listWrap.append(h("div", { class: "table-wrap" },
       h("table", { class: "table" },
         h("thead", {}, h("tr", {},
@@ -221,14 +283,37 @@ export async function render(root) {
     try {
       await api.deleteMailbox(m.id);
       toast(`Deleted ${m.address}.`, "ok", "trash-2");
-      all = all.filter((x) => x.id !== m.id);
+      items = items.filter((x) => x.id !== m.id);
       draw();
     } catch (err) {
       toast(err.detail || "Could not delete mailbox.", "err");
     }
   }
 
-  searchInput.addEventListener("input", draw);
-  provFilter.addEventListener("change", draw);
+  // Debounced search: resets to page 1 instead of re-filtering a huge list.
+  let searchTimer = null;
+  searchInput.addEventListener("input", () => {
+    clearTimeout(searchTimer);
+    searchTimer = setTimeout(reload, SEARCH_DEBOUNCE_MS);
+  });
+  provFilter.addEventListener("change", reload);
+
+  listWrap.append(skeletonRows(7));
+  try {
+    const [first, provs] = await Promise.all([
+      fetchPage(1),
+      api.providers().catch(() => []),
+    ]);
+    items = first;
+    more = first.length === PER_PAGE;
+    providers = provs;
+    for (const p of providers) provFilter.append(h("option", { value: p.slug }, p.slug));
+  } catch (e) {
+    listWrap.innerHTML = "";
+    listWrap.append(errorBox(e.detail || "Could not load mailboxes.", () => render(root)));
+    pager.style.display = "none";
+    refreshIcons();
+    return;
+  }
   draw();
 }

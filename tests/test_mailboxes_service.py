@@ -15,8 +15,15 @@ class FakeSession:
     def __init__(self) -> None:
         self.added: list = []
 
+    class _EmptyResult:
+        def scalar_one_or_none(self):
+            return None
+
     def add(self, obj) -> None:
         self.added.append(obj)
+
+    async def execute(self, stmt) -> _EmptyResult:
+        return self._EmptyResult()
 
     async def flush(self) -> None: ...
 
@@ -46,7 +53,8 @@ async def test_valid_address_is_saved():
     session = FakeSession()
     row = await _create("user@dom.com", session)
     assert row.address == "user@dom.com"
-    assert session.added == [row]
+    # the mailbox row plus its ledger event are both persisted
+    assert [type(o).__name__ for o in session.added] == ["Mailbox", "StatsEvent"]
 
 
 @pytest.mark.asyncio

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import random
+from datetime import datetime, timezone
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -12,6 +13,22 @@ from ...providers.base import MailboxInfo, MailboxSpec, MessageSummary
 from ...providers.registry import ProviderRegistry
 from ...settings import Settings
 from . import domain_cache as dc
+from .stats_history import (
+    EVENT_MAILBOX_CREATED,
+    EVENT_MESSAGE_RECEIVED,
+    record,
+)
+
+
+def as_naive_utc(dt: datetime | None) -> datetime | None:
+    """Normalize any datetime to naive UTC (the storage convention everywhere).
+
+    Avoids mixing zone-aware (`…+00:00`) and naive values in the SQLite
+    columns, which would break SQL date functions and comparisons.
+    """
+    if dt is None:
+        return None
+    return dt.astimezone(timezone.utc).replace(tzinfo=None)
 
 
 def to_mailbox_info(row: Mailbox, secret: str) -> MailboxInfo:
@@ -88,6 +105,7 @@ async def create_mailbox(
     )
     session.add(row)
     await session.flush()
+    await record(session, provider=row.provider, event=EVENT_MAILBOX_CREATED)
     return row
 
 
@@ -95,6 +113,7 @@ async def upsert_messages(
     session: AsyncSession, mailbox: Mailbox, summaries: list[MessageSummary]
 ) -> list[Message]:
     out: list[Message] = []
+    new_count = 0
     for s in summaries:
         existing = (
             await session.execute(
@@ -111,6 +130,7 @@ async def upsert_messages(
                 message_api_id=s.id,
             )
             session.add(existing)
+            new_count += 1
         existing.subject = s.subject or ""
         existing.from_address = s.from_.address or ""
         existing.from_name = s.from_.name or ""
@@ -118,8 +138,10 @@ async def upsert_messages(
             existing.seen = True
         existing.has_attachments = s.has_attachments
         existing.size = s.size
-        existing.received_at = s.received_at
+        existing.received_at = as_naive_utc(s.received_at)
         existing.is_deleted = False
         out.append(existing)
+    if new_count:
+        await record(session, provider=mailbox.provider, event=EVENT_MESSAGE_RECEIVED, count=new_count)
     await session.flush()
     return out

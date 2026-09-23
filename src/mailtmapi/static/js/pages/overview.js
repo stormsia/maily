@@ -203,6 +203,16 @@ export async function render(root) {
   if (entries.length) mountDonut(donutBox, entries);
   if (days.length) mountTrend(trendBox, days);
 
+  // last-10-days activity (retention-proof ledger — includes deleted boxes/messages)
+  const hist = stats.history && stats.history.totals ? stats.history.totals : {};
+  const histStrip = h("div", { class: "card strip mt-4" },
+    h("span", { class: "strip-text" }, "Activity · last 10 days"),
+    h("span", { class: "ttl-badge" }, h("b", {}, String(hist.mailbox_created ?? 0)), h("span", {}, "boxes created")),
+    h("span", { class: "ttl-badge is-off" }, h("b", {}, String(hist.mailbox_deleted ?? 0)), h("span", {}, "boxes deleted")),
+    h("span", { class: "ttl-badge" }, h("b", {}, String(hist.message_received ?? 0)), h("span", {}, "messages received")),
+    h("span", { class: "ttl-badge is-off" }, h("b", {}, String(hist.message_deleted ?? 0)), h("span", {}, "messages deleted")));
+  root.append(histStrip);
+
   // retention strip
   const slugs = [...new Set([...Object.keys(byProvider), ...Object.keys(ttlByProvider)])];
   const strip = h("div", { class: "card strip mt-4" });

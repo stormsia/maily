@@ -118,6 +118,34 @@ def test_retention_sweep(tmp_path: Path):
         assert mbs == {"fresh@x"}
         assert msgs == set()
 
+        # TTL deletes stay visible in the ledger after their rows are gone
+        totals = client.get("/v1/admin/stats").json()["history"]["totals"]
+        assert totals["mailbox_deleted"] == 1
+        assert totals["message_deleted"] == 1
+
+
+def test_stats_history_records_api_events(tmp_path: Path):
+    with _app(tmp_path) as client:
+        stub = StubProvider(address="hist@x")
+        client.app.state.registry = ProviderRegistry([stub])
+
+        mb = client.post("/v1/mailboxes", json={"provider": "stub"}).json()
+        client.get(f"/v1/mailboxes/{mb['id']}/messages")
+        client.delete(f"/v1/mailboxes/{mb['id']}/messages/m1")
+        client.delete(f"/v1/mailboxes/{mb['id']}")
+
+        stats = client.get("/v1/admin/stats").json()
+        assert stats["history"]["totals"] == {
+            "mailbox_created": 1,
+            "mailbox_deleted": 1,
+            "message_received": 1,
+            "message_deleted": 1,
+        }
+        # by_provider bucket rolls the events up per provider
+        assert stats["history"]["by_provider"]["stub"]["mailbox_deleted"] == 1
+        # the 7-day trend switches to the ledger once it has receive-events
+        assert stats["messages_last_7_days"][-1]["count"] == 1
+
 
 def test_admin_stats(tmp_path: Path):
     with _app(tmp_path) as client:
@@ -145,6 +173,15 @@ def test_admin_stats(tmp_path: Path):
         assert stats["by_provider"]["stub"]["messages_total"] == 1
         assert stats["gmail_accounts"] == {"total": 0, "active": 0}
         assert len(stats["messages_last_7_days"]) >= 1
+        # ledger exists even when nothing was recorded through the API yet
+        assert stats["history"]["window_days"] == 10
+        assert len(stats["history"]["days"]) == 10
+        assert stats["history"]["totals"] == {
+            "mailbox_created": 0,
+            "mailbox_deleted": 0,
+            "message_received": 0,
+            "message_deleted": 0,
+        }
 
 
 def test_gmail_creds_crud(tmp_path):

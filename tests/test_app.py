@@ -122,3 +122,61 @@ def test_provider_auth_401_is_tagged_distinctly():
         res = client.get("/boom")
         assert res.status_code == 401
         assert res.headers.get("x-mailtm-error") == "provider_auth"
+
+
+def test_mailboxes_list_respects_q_limit_offset(tmp_path):
+    from mailtmapi.providers.registry import ProviderRegistry
+    from tests.helpers import StubProvider
+
+    def create(client: TestClient, address: str) -> None:
+        client.app.state.registry = ProviderRegistry([StubProvider(address=address)])
+        r = client.post("/v1/mailboxes", json={"provider": "stub", "domain": "x.com"})
+        assert r.status_code == 200, r.text
+
+    with _app(tmp_path) as client:
+        for addr in ["alpha@x.com", "beta@x.com", "gamma@x.com", "a%b@x.com"]:
+            create(client, addr)
+
+        # id-desc order: gamma, beta, alpha, a%b
+        all_rows = client.get("/v1/mailboxes").json()
+        assert [m["address"] for m in all_rows] == [
+            "a%b@x.com", "gamma@x.com", "beta@x.com", "alpha@x.com",
+        ]
+
+        # limit / offset slice, applied before returning
+        page = client.get("/v1/mailboxes?limit=1&offset=1").json()
+        assert [m["address"] for m in page] == ["gamma@x.com"]
+
+        # q filters server-side (case-insensitive substring)
+        hit = client.get("/v1/mailboxes?q=eta").json()
+        assert [m["address"] for m in hit] == ["beta@x.com"]
+
+        # "%" in user input must match literally, not act as a wildcard
+        pct = client.get("/v1/mailboxes?q=%25").json()
+        assert len(pct) == 1 and pct[0]["address"] == "a%b@x.com"
+
+        # pagination + search compose
+        combo = client.get("/v1/mailboxes?q=%40x.com&limit=2&offset=1").json()
+        assert len(combo) == 2
+
+
+def test_datetimes_serialized_with_explicit_utc_z(tmp_path):
+    """Naive-UTC storage must be emitted with 'Z' so clients don't read it as local time."""
+    from datetime import datetime
+
+    from mailtmapi.providers.registry import ProviderRegistry
+    from tests.helpers import StubProvider
+
+    with _app(tmp_path) as client:
+        client.app.state.registry = ProviderRegistry([StubProvider()])
+        mb = client.post("/v1/mailboxes", json={"provider": "stub"})
+        assert mb.status_code == 200
+        created = mb.json()["created_at"]
+        assert created.endswith("Z")
+        assert datetime.fromisoformat(created).tzinfo is not None
+
+        # messages deserialize their provider timestamps into UTC as well
+        msgs = client.get(f"/v1/mailboxes/{mb.json()['id']}/messages").json()
+        received = msgs[0]["received_at"]
+        assert received.endswith("Z")
+        assert datetime.fromisoformat(received).tzinfo is not None

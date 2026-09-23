@@ -14,6 +14,12 @@ from ...exceptions import MailValidationError
 from ...providers.registry import ProviderRegistry
 from ...settings import Settings
 from ..services import mailboxes as svc
+from ..services.stats_history import (
+    EVENT_MAILBOX_DELETED,
+    EVENT_MESSAGE_DELETED,
+    prune,
+    record,
+)
 
 logger = logging.getLogger("mailtmapi.retention")
 
@@ -73,6 +79,8 @@ async def run_sweep(
     async with _sweep_lock, factory() as session:
         mailboxes_deleted = 0
         messages_deleted = 0
+        mailbox_deletes: dict[str, int] = {}
+        message_deletes: dict[str, int] = {}
         secret = settings.resolved_secret_key()
         retentions = list((await session.execute(select(Retention))).scalars())
         mailbox_ttl = {r.provider: r.mailbox_ttl_hours for r in retentions if r.mailbox_ttl_hours}
@@ -112,6 +120,7 @@ async def run_sweep(
                     logger.warning("retention: provider delete failed for %s: %s", row.address, exc)
                 await session.delete(row)
                 mailboxes_deleted += 1
+                mailbox_deletes[provider] = mailbox_deletes.get(provider, 0) + 1
                 logger.info("retention: expired mailbox %s deleted", row.address)
 
         # expired messages
@@ -141,6 +150,7 @@ async def run_sweep(
                         # orphaned message: drop it locally without notifying a provider
                         await session.delete(msg)
                         messages_deleted += 1
+                        message_deletes[provider] = message_deletes.get(provider, 0) + 1
                         logger.info("retention: orphaned message %s deleted", msg.message_api_id)
                         continue
                     await prov.delete_message(
@@ -156,7 +166,16 @@ async def run_sweep(
                     )
                 await session.delete(msg)
                 messages_deleted += 1
+                message_deletes[provider] = message_deletes.get(provider, 0) + 1
                 logger.info("retention: expired message %s deleted", msg.message_api_id)
+
+        # ledger bookkeeping: TTL deletes survive here after the rows are gone,
+        # and rows outside the reporting window are pruned
+        for provider, n in mailbox_deletes.items():
+            await record(session, provider=provider, event=EVENT_MAILBOX_DELETED, count=n)
+        for provider, n in message_deletes.items():
+            await record(session, provider=provider, event=EVENT_MESSAGE_DELETED, count=n)
+        await prune(session)
 
         await session.commit()
         return {"mailboxes_deleted": mailboxes_deleted, "messages_deleted": messages_deleted}

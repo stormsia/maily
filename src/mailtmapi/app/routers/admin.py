@@ -21,6 +21,8 @@ from ..schemas import (
 from ..services import domain_cache as dc
 from ..services import gmail_config as gcfg
 from ..services import retention as svc
+from ..services import stats_history
+from ..services.stats_history import EVENT_MESSAGE_RECEIVED
 
 router = APIRouter(
     prefix="/v1/admin",
@@ -35,7 +37,8 @@ def _sum_or_zero(value: int | None) -> int:
 
 @router.get("/stats")
 async def stats(session: SessionDep) -> dict:
-    """Dashboard stats: mailbox/message totals, provider split, 7-day trend."""
+    """Dashboard stats: mailbox/message totals, provider split, 7-day trend,
+    and a 10-day activity history that also covers retention-deleted items."""
     now = svc.utcnow_naive()
     cutoff = now - timedelta(days=6)
 
@@ -90,17 +93,27 @@ async def stats(session: SessionDep) -> dict:
         )
     ).one()
 
-    trend = [
-        {"date": d, "count": _sum_or_zero(c)}
-        for d, c in (
-            await session.execute(
-                select(func.date(Message.received_at).label("d"), func.count())
-                .where(Message.received_at >= cutoff)
-                .group_by("d")
-                .order_by("d")
-            )
-        ).all()
-    ] or [{"date": "no-data", "count": 0}]
+    history = await stats_history.report(session)
+
+    ledger_received = history["totals"][EVENT_MESSAGE_RECEIVED]
+    if ledger_received:
+        trend = [
+            {"date": day["date"], "count": day[EVENT_MESSAGE_RECEIVED]}
+            for day in history["days"][-7:]
+        ]
+    else:
+        # first boot / pre-ledger data: fall back to the live table
+        trend = [
+            {"date": d, "count": _sum_or_zero(c)}
+            for d, c in (
+                await session.execute(
+                    select(func.date(Message.received_at).label("d"), func.count())
+                    .where(Message.received_at >= cutoff)
+                    .group_by("d")
+                    .order_by("d")
+                )
+            ).all()
+        ] or [{"date": "no-data", "count": 0}]
 
     return {
         "mailboxes": {
@@ -115,6 +128,7 @@ async def stats(session: SessionDep) -> dict:
             "active": _sum_or_zero(gmail_active),
         },
         "messages_last_7_days": trend,
+        "history": history,
     }
 
 

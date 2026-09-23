@@ -116,6 +116,9 @@ export const api = {
     if (params.provider) q.set("provider", params.provider);
     if (params.active !== undefined && params.active !== "")
       q.set("active", String(params.active));
+    if (params.q) q.set("q", params.q);
+    if (params.limit != null) q.set("limit", String(params.limit));
+    if (params.offset != null) q.set("offset", String(params.offset));
     const qs = q.toString();
     return request(`/v1/mailboxes${qs ? `?${qs}` : ""}`);
   },

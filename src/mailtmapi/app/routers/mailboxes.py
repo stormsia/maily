@@ -8,6 +8,24 @@ from ...exceptions import MailNotFoundError
 from ..deps import RegistryDep, SessionDep, SettingsDep, require_api_key
 from ..schemas import CreateMailboxIn, MailboxOut
 from ..services import mailboxes as svc
+from ..services.stats_history import EVENT_MAILBOX_DELETED, record
+
+# The dashboard fetches mailbox lists in bounded pages (see static mailboxes.js).
+MAX_PAGE_SIZE = 500
+
+
+def _like_pattern(q: str) -> str:
+    """Escape LIKE wildcards so user input matches literally, then wrap in %…%."""
+    escaped = q.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+    return f"%{escaped}%"
+
+
+def _parse_page(limit: int | None, offset: int | None) -> tuple[int | None, int | None]:
+    if limit is None:
+        return None, None
+    limit = max(1, min(limit, MAX_PAGE_SIZE))
+    return limit, max(0, offset or 0)
+
 
 router = APIRouter(
     prefix="/v1/mailboxes",
@@ -18,7 +36,9 @@ router = APIRouter(
 
 async def _parent_statuses(request: Request, rows: list[Mailbox]) -> dict[int, str]:
     """Gmail account status per parent_id ('' status = unknown / not a gmail parent)."""
-    parents = {row.parent_id for row in rows if row.provider == "gmail" and row.parent_id is not None}
+    parents = {
+        row.parent_id for row in rows if row.provider == "gmail" and row.parent_id is not None
+    }
     if not parents:
         return {}
     try:
@@ -68,14 +88,24 @@ async def list_mailboxes(
     session: SessionDep,
     provider: str | None = Query(None),
     active: bool = Query(True),
+    q: str | None = Query(None, description="Substring filter on the full address"),
+    limit: int | None = Query(None, ge=1, le=MAX_PAGE_SIZE, description="Max rows to return"),
+    offset: int | None = Query(None, ge=0, description="Row offset"),
 ) -> list[MailboxOut]:
-    """List mailboxes, optionally filtered by provider and status."""
-    q = select(Mailbox)
+    """List mailboxes with optional provider/status filtering, address search and pagination."""
+    limit, offset = _parse_page(limit, offset)
+    q = q.strip() if q else None
+    qry = select(Mailbox)
     if provider:
-        q = q.where(Mailbox.provider == provider)
+        qry = qry.where(Mailbox.provider == provider)
     if active:
-        q = q.where(Mailbox.is_active.is_(True), Mailbox.is_deleted.is_(False))
-    rows = list((await session.execute(q.order_by(Mailbox.id.desc()))).scalars().all())
+        qry = qry.where(Mailbox.is_active.is_(True), Mailbox.is_deleted.is_(False))
+    if q:
+        qry = qry.where(Mailbox.address.ilike(_like_pattern(q), escape="\\"))
+    qry = qry.order_by(Mailbox.id.desc())
+    if limit is not None:
+        qry = qry.limit(limit).offset(offset or 0)
+    rows = list((await session.execute(qry)).scalars().all())
     statuses = await _parent_statuses(request, rows)
     return [_with_status(r, statuses) for r in rows]
 
@@ -112,4 +142,5 @@ async def delete_one(
         raise MailNotFoundError(str(exc)) from exc
     row.is_active = False
     row.is_deleted = True
+    await record(session, provider=row.provider, event=EVENT_MAILBOX_DELETED)
     await session.commit()

@@ -1,4 +1,5 @@
 import json
+from datetime import datetime, timezone
 from typing import Any
 
 from fastapi import APIRouter, Request
@@ -6,6 +7,16 @@ from sqlalchemy import select
 
 from ...db.models import DomainCache
 from ..deps import RegistryDep, SessionDep
+
+
+def _iso_utc(dt: datetime | None) -> str | None:
+    """Naive-UTC datetime as ISO-8601 with an explicit Z (this is a plain dict
+    response, so the schema-level serializer does not apply here)."""
+    if dt is None:
+        return None
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+    return dt.astimezone(timezone.utc).isoformat().replace("+00:00", "Z")
 
 router = APIRouter(tags=["System"])
 
@@ -21,7 +32,7 @@ async def health(session: SessionDep, registry: RegistryDep) -> dict:
     rows = (await session.execute(select(DomainCache))).scalars().all()
     for row in rows:
         cache[row.provider] = {
-            "last_refresh": row.updated_at.isoformat() if row.updated_at else None,
+            "last_refresh": _iso_utc(row.updated_at) if row.updated_at else None,
             "domains": _json_len(row.domains_json),
             "error": row.error,
         }

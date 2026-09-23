@@ -1,25 +1,40 @@
-# mailtmapi — минимизированный multi-stage образ
+# mailtmapi — минимизированный multi-stage образ на uv
 #
-# Stage 1 (build): собирает venv; весь мусор сборки (pip cache, метаданные
-#   hatchling, build-зависимости) остаётся в этом слое и не попадает в образ.
-# Stage 2 (runtime): только python-slim + готовый venv + исходники (editable,
-#   т.к. миграции alembic ищут ./alembic относительно src).
+# Stage 1 (build): uv sync по uv.lock (`--frozen` = образ собирается ровно из
+#   лок-файла, без пересборки разрешений). Установка только prod-зависимостей
+#   (`--no-dev`); корневой пакет ставится editable (дефолт uv sync) — как и
+#   раньше с `pip install -e .`, чтобы alembic видел ./alembic от src.
+#   Первый sync без проекта кешируется по паре pyproject.toml+uv.lock и
+#   переиспользуется между сборками; uv-кэш wheels живёт в своём слое.
+# Stage 2 (runtime): python-slim + готовый venv + исходники; uv в рантайме
+#   не нужен.
 
 # ---------- BUILD ----------
-FROM python:3.14-slim AS build
+FROM ghcr.io/astral-sh/uv:python3.14-bookworm-slim AS build
 
-ENV PIP_DISABLE_PIP_VERSION_CHECK=1 \
-    PIP_NO_CACHE_DIR=1 \
-    PIP_ROOT_USER_ACTION=ignore
+# без скачивания uv-менеджерных python: в образе уже системный 3.14;
+# без байткода в venv (PYTHONDONTWRITEBYTECODE закроет добор на рантайме)
+# UV_PROJECT_ENVIRONMENT: venv сразу в /venv — uv пишет абсолютные пути
+# (шебанг `#!/venv/bin/python3`) в консольные скрипты, и COPY без переноса
+# пути их не ломает
+ENV UV_LINK_MODE=copy \
+    UV_PYTHON_DOWNLOADS=never \
+    UV_PROJECT_ENVIRONMENT=/venv
 
 WORKDIR /app
-COPY . .
 
-# editable: магия hatchling, код живёт в /app/src, alembic рядом — миграции работают
-RUN python -m venv /venv && /venv/bin/pip install --no-cache-dir -e .
+# сначала только метаданные + lockfile: смена кода не отменяет слои зависимостей
+COPY pyproject.toml uv.lock ./
+RUN uv sync --frozen --no-dev --no-install-project
+
+# код проекта + editable-установка корневого пакета
+COPY . .
+RUN uv sync --frozen --no-dev
 
 # ---------- RUNTIME ----------
-FROM python:3.14-slim
+# та же база (bookworm, glibc), что в build-стадии: venv-шебанг ведёт на
+# /usr/local/bin/python3.14, а собранные wheels летают без пересборки
+FROM python:3.14-slim-bookworm
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
@@ -30,7 +45,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     MAILTM_DATABASE_URL="sqlite+aiosqlite:////data/mailtm.db" \
     MAILTM_SECRET_KEY_PATH="/data/mailtm.key"
 
-# только то, что нужно в рантайме: код, миграции, venv
+# только то, что нужно в рантайме: код, миграции, venv (путь совпадает с билдом)
 COPY --from=build /venv /venv
 COPY --from=build /app/src /app/src
 COPY --from=build /app/alembic /app/alembic

@@ -33,12 +33,14 @@ ALL_EVENTS = (
 WINDOW_DAYS = 10
 
 
-def _day_utc(when: datetime | None = None) -> date:
+def _day_utc(when: datetime | date | None = None) -> date:
     if when is None:
         when = datetime.now(timezone.utc)
-    if when.tzinfo is not None:
-        when = when.astimezone(timezone.utc).replace(tzinfo=None)
-    return when.date()
+    if isinstance(when, datetime):
+        if when.tzinfo is not None:
+            when = when.astimezone(timezone.utc).replace(tzinfo=None)
+        return when.date()
+    return when  # already a plain date
 
 
 async def record(
@@ -47,7 +49,7 @@ async def record(
     provider: str,
     event: str,
     count: int = 1,
-    when: datetime | None = None,
+    when: datetime | date | None = None,
 ) -> None:
     """Increment the day/provider/event counter in place (one row per bucket)."""
     if count <= 0:

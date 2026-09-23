@@ -1,8 +1,19 @@
 /* Mailboxes page: search, provider filter, create modal, list w/ delete. */
 import { api } from "../api.js";
 import {
-  h, esc, toast, refreshIcons, openModal, confirmDialog, emptyState,
-  errorBox, skeletonRows, addressCell, providerBadge, statusPill, fmtDate,
+  h,
+  esc,
+  toast,
+  refreshIcons,
+  openModal,
+  confirmDialog,
+  emptyState,
+  errorBox,
+  skeletonRows,
+  addressCell,
+  providerBadge,
+  statusPill,
+  fmtDate,
 } from "../ui.js";
 
 /** Shared "create mailbox" modal — also used by the topbar quick button. */
@@ -19,26 +30,48 @@ export async function openCreateMailbox(onCreated) {
     return;
   }
 
-  const providerSel = h("select", {}, ...providers.map((p) =>
-    h("option", { value: p.slug }, `${p.slug} · ${p.kind}`)));
+  const providerSel = h(
+    "select",
+    {},
+    ...providers.map((p) =>
+      h("option", { value: p.slug }, `${p.slug} · ${p.kind}`),
+    ),
+  );
   const kindHint = h("p", { class: "field-hint" }, "");
-  const domainField = h("div", { class: "field" },
-    h("label", {}, "Domain"), h("select", {}, h("option", {}, "Loading…")));
+  const domainField = h(
+    "div",
+    { class: "field" },
+    h("label", {}, "Domain"),
+    h("select", {}, h("option", {}, "Loading…")),
+  );
   const domainSel = domainField.querySelector("select");
-  const addressInput = h("input", { placeholder: "leave blank for random", autocomplete: "off", spellcheck: "false" });
+  const addressInput = h("input", {
+    placeholder: "leave blank for random",
+    autocomplete: "off",
+    spellcheck: "false",
+  });
   const addrSuffix = h("span", { class: "addr-suffix" }, "");
   const addrWrap = h("div", { class: "field-addr" }, addressInput, addrSuffix);
-  const passwordInput = h("input", { type: "password", placeholder: "leave blank to auto-generate", autocomplete: "new-password" });
-  const parentField = h("div", { class: "field" },
-    h("label", {}, "Parent Gmail account"), h("select", {}));
+  const passwordInput = h("input", {
+    type: "password",
+    placeholder: "leave blank to auto-generate",
+    autocomplete: "new-password",
+  });
+  const parentField = h(
+    "div",
+    { class: "field" },
+    h("label", {}, "Parent Gmail account"),
+    h("select", {}),
+  );
   const parentSel = parentField.querySelector("select");
 
   async function loadTargets() {
     const slug = providerSel.value;
     const prov = providers.find((p) => p.slug === slug);
-    kindHint.textContent = prov?.kind === "parent"
-      ? "Parent-kind provider: pick which connected account owns the new address."
-      : "Domain-kind provider: pick which domain the address is created on.";
+    kindHint.textContent =
+      prov?.kind === "parent"
+        ? "Parent-kind provider: pick which connected account owns the new address."
+        : "Domain-kind provider: pick which domain the address is created on.";
     if (prov?.kind === "domain") {
       parentField.style.display = "none";
       domainField.style.display = "";
@@ -47,8 +80,12 @@ export async function openCreateMailbox(onCreated) {
       try {
         const targets = await api.targets(slug);
         domainSel.innerHTML = "";
-        if (!targets.length) domainSel.append(h("option", { value: "" }, "No domains available"));
-        for (const t of targets) domainSel.append(h("option", { value: t.label || t.id }, esc(t.label || t.id)));
+        if (!targets.length)
+          domainSel.append(h("option", { value: "" }, "No domains available"));
+        for (const t of targets)
+          domainSel.append(
+            h("option", { value: t.label || t.id }, esc(t.label || t.id)),
+          );
       } catch {
         domainSel.innerHTML = "";
         domainSel.append(h("option", { value: "" }, "Could not load domains"));
@@ -61,8 +98,12 @@ export async function openCreateMailbox(onCreated) {
       try {
         const accounts = await api.gmailAccounts();
         parentSel.innerHTML = "";
-        if (!accounts.length) parentSel.append(h("option", { value: "" }, "No Gmail accounts — connect one first"));
-        for (const a of accounts) parentSel.append(h("option", { value: String(a.id) }, esc(a.email)));
+        if (!accounts.length)
+          parentSel.append(
+            h("option", { value: "" }, "No Gmail accounts — connect one first"),
+          );
+        for (const a of accounts)
+          parentSel.append(h("option", { value: String(a.id) }, esc(a.email)));
       } catch {
         parentSel.innerHTML = "";
         parentSel.append(h("option", { value: "" }, "Could not load accounts"));
@@ -75,18 +116,41 @@ export async function openCreateMailbox(onCreated) {
   /** Show "@domain" next to the typed local part when a domain is picked. */
   function updateAddrSuffix() {
     const prov = providers.find((p) => p.slug === providerSel.value);
-    addrSuffix.textContent = prov?.kind === "domain" && domainSel.value ? `@${domainSel.value}` : "";
+    addrSuffix.textContent =
+      prov?.kind === "domain" && domainSel.value ? `@${domainSel.value}` : "";
   }
   providerSel.addEventListener("change", loadTargets);
   loadTargets();
 
-  const form = h("div", {},
-    h("div", { class: "field" }, h("label", {}, "Provider"), providerSel, kindHint),
+  const form = h(
+    "div",
+    {},
+    h(
+      "div",
+      { class: "field" },
+      h("label", {}, "Provider"),
+      providerSel,
+      kindHint,
+    ),
     domainField,
     parentField,
-    h("div", { class: "field-row" },
-      h("div", { class: "field" }, h("label", {}, "Address ", h("span", { class: "opt" }, "(optional)")), addrWrap),
-      h("div", { class: "field" }, h("label", {}, "Password ", h("span", { class: "opt" }, "(optional)")), passwordInput)));
+    h(
+      "div",
+      { class: "field-row" },
+      h(
+        "div",
+        { class: "field" },
+        h("label", {}, "Address ", h("span", { class: "opt" }, "(optional)")),
+        addrWrap,
+      ),
+      h(
+        "div",
+        { class: "field" },
+        h("label", {}, "Password ", h("span", { class: "opt" }, "(optional)")),
+        passwordInput,
+      ),
+    ),
+  );
 
   openModal({
     title: "New mailbox",
@@ -95,7 +159,8 @@ export async function openCreateMailbox(onCreated) {
     actions: [
       { label: "Cancel" },
       {
-        label: "Create mailbox", kind: "btn-primary",
+        label: "Create mailbox",
+        kind: "btn-primary",
         onClick: async (e) => {
           const btn = e.currentTarget;
           btn.disabled = true;
@@ -104,11 +169,20 @@ export async function openCreateMailbox(onCreated) {
           const body = { provider: providerSel.value };
           const local = addressInput.value.trim();
           if (local) {
-            body.address = local.includes("@") ? local : (prov?.kind === "domain" && domainSel.value ? `${local}@${domainSel.value}` : local);
+            body.address = local.includes("@")
+              ? local
+              : prov?.kind === "domain" && domainSel.value
+                ? `${local}@${domainSel.value}`
+                : local;
           }
           if (passwordInput.value) body.password = passwordInput.value;
-          if (prov?.kind === "domain" && domainSel.value) body.domain = domainSel.value;
-          if (prov?.kind === "parent" && parentSel.value && /^\d+$/.test(parentSel.value)) {
+          if (prov?.kind === "domain" && domainSel.value)
+            body.domain = domainSel.value;
+          if (
+            prov?.kind === "parent" &&
+            parentSel.value &&
+            /^\d+$/.test(parentSel.value)
+          ) {
             body.parent_id = Number(parentSel.value);
           }
           try {
@@ -130,30 +204,64 @@ export async function openCreateMailbox(onCreated) {
 
 /* Server-side paged mailbox list: search/filter/pagination happen on the API,
    so the page stays responsive no matter how many mailboxes exist. */
-const PER_PAGE = 200;
+const PER_PAGE = 25;
 const SEARCH_DEBOUNCE_MS = 250;
 
 export async function render(root) {
   root.innerHTML = "";
-  const searchInput = h("input", { class: "input", placeholder: "Search by address…", "aria-label": "Search mailboxes", type: "search" });
-  const provFilter = h("select", { class: "select", "aria-label": "Filter by provider", style: "max-width:190px;padding-left:13px" },
-    h("option", { value: "" }, "All providers"));
-  const createBtn = h("button", { class: "btn btn-primary", onclick: () => openCreateMailbox(() => render(root)) },
-    h("i", { "data-lucide": "plus" }), h("span", {}, "Create mailbox"));
-  root.append(h("div", { class: "toolbar" },
-    h("div", { class: "search" }, h("i", { "data-lucide": "search" }), searchInput),
-    provFilter, createBtn));
+  const searchInput = h("input", {
+    class: "input",
+    placeholder: "Search by address…",
+    "aria-label": "Search mailboxes",
+    type: "search",
+  });
+  const provFilter = h(
+    "select",
+    {
+      class: "select",
+      "aria-label": "Filter by provider",
+      style: "max-width:190px;padding-left:13px",
+    },
+    h("option", { value: "" }, "All providers"),
+  );
+  const createBtn = h(
+    "button",
+    {
+      class: "btn btn-primary",
+      onclick: () => openCreateMailbox(() => render(root)),
+    },
+    h("i", { "data-lucide": "plus" }),
+    h("span", {}, "Create mailbox"),
+  );
+  root.append(
+    h(
+      "div",
+      { class: "toolbar" },
+      h(
+        "div",
+        { class: "search" },
+        h("i", { "data-lucide": "search" }),
+        searchInput,
+      ),
+      provFilter,
+      createBtn,
+    ),
+  );
 
   const listWrap = h("div", {});
-  const loadMoreBtn = h("button", { class: "btn btn-ghost btn-sm", onclick: loadMore }, h("span", {}, "Show more"));
+  const loadMoreBtn = h(
+    "button",
+    { class: "btn btn-ghost btn-sm", onclick: loadMore },
+    h("span", {}, "Show more"),
+  );
   const pageInfo = h("span", { class: "mono pager-info" }, "");
   const pager = h("div", { class: "pager" }, pageInfo, loadMoreBtn);
   root.append(listWrap, pager);
   refreshIcons();
 
-  let items = [];        // mailboxes loaded so far (bounded page by page)
-  let page = 1;          // last page fetched
-  let more = false;      // may another page exist?
+  let items = []; // mailboxes loaded so far (bounded page by page)
+  let page = 1; // last page fetched
+  let more = false; // may another page exist?
   let loading = false;
   let providers = [];
 
@@ -184,7 +292,9 @@ export async function render(root) {
       loading = false;
       items = [];
       listWrap.innerHTML = "";
-      listWrap.append(errorBox(e.detail || "Could not load mailboxes.", () => render(root)));
+      listWrap.append(
+        errorBox(e.detail || "Could not load mailboxes.", () => render(root)),
+      );
       pager.style.display = "none";
       refreshIcons();
     }
@@ -212,7 +322,10 @@ export async function render(root) {
     const hasRows = items.length > 0;
     pager.style.display = hasRows ? "" : "none";
     if (loading && more) pageInfo.textContent = "loading…";
-    else pageInfo.textContent = hasRows ? `loaded ${items.length}${more ? "+" : ""}` : "";
+    else
+      pageInfo.textContent = hasRows
+        ? `loaded ${items.length}${more ? "+" : ""}`
+        : "";
     loadMoreBtn.hidden = !more;
     loadMoreBtn.disabled = loading;
   }
@@ -227,49 +340,117 @@ export async function render(root) {
     }
     if (!items.length) {
       const filtering = Boolean(currentQuery() || provFilter.value);
-      listWrap.append(emptyState({
-        icon: filtering ? "search-x" : "inbox",
-        title: filtering ? "No mailboxes match" : "No mailboxes yet",
-        copy: filtering
-          ? "Try a different search, or clear the provider filter."
-          : "Create your first mailbox to start receiving temporary mail.",
-        actionLabel: filtering ? undefined : "Create mailbox",
-        onAction: () => openCreateMailbox(() => render(root)),
-      }));
+      listWrap.append(
+        emptyState({
+          icon: filtering ? "search-x" : "inbox",
+          title: filtering ? "No mailboxes match" : "No mailboxes yet",
+          copy: filtering
+            ? "Try a different search, or clear the provider filter."
+            : "Create your first mailbox to start receiving temporary mail.",
+          actionLabel: filtering ? undefined : "Create mailbox",
+          onAction: () => openCreateMailbox(() => render(root)),
+        }),
+      );
       return;
     }
     const tbody = h("tbody", {});
     const frag = document.createDocumentFragment();
     for (const m of items) {
-      const tr = h("tr", { class: "clickable", tabindex: "0", role: "link", "aria-label": `Open ${m.address}` });
-      const go = () => { location.hash = `#/mailboxes/${m.id}`; };
-      tr.addEventListener("click", (e) => { if (!e.target.closest("button")) go(); });
-      tr.addEventListener("keydown", (e) => { if (e.key === "Enter") go(); });
-      const openBtn = h("button", { class: "icon-btn", "aria-label": `Open ${m.address}`, title: "Open", onclick: (e) => { e.stopPropagation(); go(); } },
-        h("i", { "data-lucide": "arrow-right" }));
-      const delBtn = h("button", { class: "icon-btn danger", "aria-label": `Delete ${m.address}`, title: "Delete", onclick: (e) => deleteOne(e, m) },
-        h("i", { "data-lucide": "trash-2" }));
-      const provCell = h("td", { style: "display:flex;gap:6px;align-items:center;flex-wrap:wrap" },
-        providerBadge(m.provider));
-      if (m.provider === "gmail" && m.parent_status && m.parent_status !== "active") {
-        provCell.append(h("a", { class: "pill pill--warn", href: "#/gmail", title: "The Gmail account that owns this mailbox lost access — reconnect it." },
-          "reauth"));
+      const tr = h("tr", {
+        class: "clickable",
+        tabindex: "0",
+        role: "link",
+        "aria-label": `Open ${m.address}`,
+      });
+      const go = () => {
+        location.hash = `#/mailboxes/${m.id}`;
+      };
+      tr.addEventListener("click", (e) => {
+        if (!e.target.closest("button")) go();
+      });
+      tr.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") go();
+      });
+      const openBtn = h(
+        "button",
+        {
+          class: "icon-btn",
+          "aria-label": `Open ${m.address}`,
+          title: "Open",
+          onclick: (e) => {
+            e.stopPropagation();
+            go();
+          },
+        },
+        h("i", { "data-lucide": "arrow-right" }),
+      );
+      const delBtn = h(
+        "button",
+        {
+          class: "icon-btn danger",
+          "aria-label": `Delete ${m.address}`,
+          title: "Delete",
+          onclick: (e) => deleteOne(e, m),
+        },
+        h("i", { "data-lucide": "trash-2" }),
+      );
+      const provCell = h(
+        "td",
+        { style: "display:flex;gap:6px;align-items:center;flex-wrap:wrap" },
+        providerBadge(m.provider),
+      );
+      if (
+        m.provider === "gmail" &&
+        m.parent_status &&
+        m.parent_status !== "active"
+      ) {
+        provCell.append(
+          h(
+            "a",
+            {
+              class: "pill pill--warn",
+              href: "#/gmail",
+              title:
+                "The Gmail account that owns this mailbox lost access — reconnect it.",
+            },
+            "reauth",
+          ),
+        );
       }
       tr.append(
         h("td", {}, addressCell(m.address)),
         provCell,
         h("td", {}, statusPill(m.is_active)),
         h("td", { class: "muted small mono" }, fmtDate(m.created_at)),
-        h("td", {}, h("div", { class: "row-actions" }, openBtn, delBtn)));
+        h("td", {}, h("div", { class: "row-actions" }, openBtn, delBtn)),
+      );
       frag.appendChild(tr);
     }
     tbody.appendChild(frag);
-    listWrap.append(h("div", { class: "table-wrap" },
-      h("table", { class: "table" },
-        h("thead", {}, h("tr", {},
-          h("th", {}, "Address"), h("th", {}, "Provider"), h("th", {}, "Status"),
-          h("th", {}, "Created"), h("th", { style: "text-align:right" }, "Actions"))),
-        tbody)));
+    listWrap.append(
+      h(
+        "div",
+        { class: "table-wrap" },
+        h(
+          "table",
+          { class: "table" },
+          h(
+            "thead",
+            {},
+            h(
+              "tr",
+              {},
+              h("th", {}, "Address"),
+              h("th", {}, "Provider"),
+              h("th", {}, "Status"),
+              h("th", {}, "Created"),
+              h("th", { style: "text-align:right" }, "Actions"),
+            ),
+          ),
+          tbody,
+        ),
+      ),
+    );
     refreshIcons();
   }
 
@@ -307,10 +488,13 @@ export async function render(root) {
     items = first;
     more = first.length === PER_PAGE;
     providers = provs;
-    for (const p of providers) provFilter.append(h("option", { value: p.slug }, p.slug));
+    for (const p of providers)
+      provFilter.append(h("option", { value: p.slug }, p.slug));
   } catch (e) {
     listWrap.innerHTML = "";
-    listWrap.append(errorBox(e.detail || "Could not load mailboxes.", () => render(root)));
+    listWrap.append(
+      errorBox(e.detail || "Could not load mailboxes.", () => render(root)),
+    );
     pager.style.display = "none";
     refreshIcons();
     return;

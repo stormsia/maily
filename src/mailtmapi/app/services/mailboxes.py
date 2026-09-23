@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import random
-from datetime import datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -29,6 +29,19 @@ def as_naive_utc(dt: datetime | None) -> datetime | None:
     if dt is None:
         return None
     return dt.astimezone(timezone.utc).replace(tzinfo=None)
+
+
+def _received_bucket(dt: datetime | None, now: datetime) -> date:
+    """Receipt date for ledger bucketing.
+
+    Falls back to *today* when the provider sent no timestamp or a clearly
+    broken one (epoch, far future) — otherwise a garbage date would silently
+    drop the message out of the 7-day chart window.
+    """
+    rec = as_naive_utc(dt)
+    if rec is None or rec < now - timedelta(days=30) or rec > now + timedelta(days=1):
+        return now.date()
+    return rec.date()
 
 
 def to_mailbox_info(row: Mailbox, secret: str) -> MailboxInfo:
@@ -113,7 +126,8 @@ async def upsert_messages(
     session: AsyncSession, mailbox: Mailbox, summaries: list[MessageSummary]
 ) -> list[Message]:
     out: list[Message] = []
-    new_count = 0
+    new_by_day: dict[date, int] = {}
+    now = datetime.now(timezone.utc).replace(tzinfo=None)
     for s in summaries:
         existing = (
             await session.execute(
@@ -130,7 +144,8 @@ async def upsert_messages(
                 message_api_id=s.id,
             )
             session.add(existing)
-            new_count += 1
+            day = _received_bucket(s.received_at, now)
+            new_by_day[day] = new_by_day.get(day, 0) + 1
         existing.subject = s.subject or ""
         existing.from_address = s.from_.address or ""
         existing.from_name = s.from_.name or ""
@@ -141,7 +156,10 @@ async def upsert_messages(
         existing.received_at = as_naive_utc(s.received_at)
         existing.is_deleted = False
         out.append(existing)
-    if new_count:
-        await record(session, provider=mailbox.provider, event=EVENT_MESSAGE_RECEIVED, count=new_count)
+    # Bucket the "received" event by the message's actual receipt date (not the
+    # sync date) so the 7-day incoming chart reflects the true per-day inflow —
+    # and survives later retention deletes, since receive events live in the ledger.
+    for day, count in new_by_day.items():
+        await record(session, provider=mailbox.provider, event=EVENT_MESSAGE_RECEIVED, count=count, when=day)
     await session.flush()
     return out

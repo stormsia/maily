@@ -64,6 +64,19 @@ OPENAPI_TAGS = [
 ]
 
 
+_LOOPBACK_HOSTS = frozenset({"127.0.0.1", "localhost", "::1"})
+
+
+def _refuse_open_bind(settings: Settings) -> None:
+    host = settings.host.strip().lower()
+    if settings.api_key or host in _LOOPBACK_HOSTS:
+        return
+    raise RuntimeError(
+        "Refusing to listen on a non-loopback address without an API key. "
+        "Set MAILTM_API_KEY or bind MAILTM_HOST to 127.0.0.1."
+    )
+
+
 def _run_migrations(url: str) -> None:
     from alembic import command
     from alembic.config import Config
@@ -78,6 +91,7 @@ def _run_migrations(url: str) -> None:
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     settings: Settings = app.state.settings
+    _refuse_open_bind(settings)
     # Resolve (and pin) the Fernet key before any request can race to mint one.
     settings.resolved_secret_key()
     engine: AsyncEngine = make_engine(settings.database_url)

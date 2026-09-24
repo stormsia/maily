@@ -13,6 +13,7 @@ from .exceptions import (
     MailRateLimitError,
     MailServerError,
     MailTimeoutError,
+    MailValidationError,
 )
 
 
@@ -24,7 +25,7 @@ def _raise_for_status(response: httpx.Response) -> None:
         if not isinstance(body, dict):
             body = {"detail": str(body)}
     except Exception:
-        body = {"detail": response.text}
+        body = {"detail": response.text[:300]}
     detail = (
         body.get("detail")
         or body.get("message")
@@ -43,8 +44,10 @@ def _raise_for_status(response: httpx.Response) -> None:
             with suppress(ValueError):
                 retry_after = float(raw)
         raise MailRateLimitError(detail, retry_after=retry_after, status_code=code, response_data=body)
-    if code in (409, 422):
+    if code == 409:
         raise MailConflictError(detail, status_code=code, response_data=body)
+    if code == 422:
+        raise MailValidationError(detail, status_code=code, response_data=body)
     if code >= 500:
         raise MailServerError(detail, status_code=code, response_data=body)
     raise MailAPIError(detail, status_code=code, response_data=body)
@@ -56,7 +59,7 @@ class HttpClient:
             proxy=proxy,
             headers=headers,
             timeout=httpx.Timeout(30.0, connect=10.0),
-            follow_redirects=True,
+            follow_redirects=False,
         )
 
     async def close(self) -> None:

@@ -13,6 +13,7 @@ from sqlalchemy import (
     Text,
     UniqueConstraint,
     func,
+    text,
 )
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
@@ -46,11 +47,19 @@ class Mailbox(Base):
     __tablename__ = "mailboxes"
     __table_args__ = (
         Index("ix_mailboxes_provider_deleted_created", "provider", "is_deleted", "created_at"),
+        # Soft-deleted addresses must be reusable. SQLite stores Boolean as 0/1.
+        Index(
+            "uq_mailboxes_address_live",
+            "address",
+            unique=True,
+            sqlite_where=text("is_deleted = 0"),
+        ),
+        Index("ix_mailboxes_address", "address"),
     )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     provider: Mapped[str] = mapped_column(String(64), index=True)
-    address: Mapped[str] = mapped_column(String(255), unique=True, index=True)
+    address: Mapped[str] = mapped_column(String(255))
     parent_id: Mapped[int | None] = mapped_column(
         ForeignKey("gmail_accounts.id", ondelete="CASCADE"), nullable=True, index=True
     )
@@ -66,7 +75,7 @@ class Mailbox(Base):
 
     gmail_parent: Mapped[GmailAccount | None] = relationship(back_populates="mailboxes")
     messages: Mapped[list[Message]] = relationship(
-        back_populates="mailbox", cascade="all, delete-orphan"
+        back_populates="mailbox", cascade="all, delete-orphan", passive_deletes=True
     )
 
 

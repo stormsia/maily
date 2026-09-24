@@ -117,3 +117,22 @@ async def test_list_messages_maps_hydra_to_summary():
         assert msg.received_at.year == 2024
     finally:
         await http.close()
+
+
+@pytest.mark.asyncio
+async def test_get_message_quotes_slash_in_id():
+    def handler(request: httpx.Request) -> httpx.Response:
+        assert request.url.raw_path == b"/messages/a%2Fb"
+        return httpx.Response(
+            200,
+            json={"id": "a/b", "subject": "x", "from": {}, "to": [], "createdAt": "2024-01-15T12:30:45+00:00"},
+        )
+
+    http = _http(handler)
+    provider = MailTM(http)
+    mailbox = MailboxInfo(provider="mail.tm", address="user@mail.tm", token="jwt-token")
+    try:
+        detail = await provider.get_message(mailbox, "a/b")
+        assert detail.id == "a/b"
+    finally:
+        await http.close()

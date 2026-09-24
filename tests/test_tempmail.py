@@ -145,3 +145,36 @@ async def test_list_messages_maps_mail_list():
         assert msg.received_at.strftime("%Y-%m-%d %H:%M:%S") == "2024-01-15 12:30:45"
     finally:
         await http.close()
+
+
+@pytest.mark.asyncio
+async def test_get_source_download_url_is_empty():
+    def handler(request: httpx.Request) -> httpx.Response:
+        assert request.url.path == "/api/mails/9"
+        return httpx.Response(
+            200,
+            json={
+                "mail_id": 9,
+                "subject": "Code",
+                "from_mail": "bot@ex.com",
+                "html": "<p>hello</p>",
+                "text": "hello",
+            },
+        )
+
+    http = _http(handler)
+    provider = TempMailPlus(http, epin="secret-pin")
+    mailbox = MailboxInfo(
+        provider="tempmail.plus",
+        address="user@mailto.plus",
+        token="user@mailto.plus",
+        provider_account_id="user@mailto.plus",
+    )
+    try:
+        src = await provider.get_source(mailbox, "9")
+        assert src.id == "9"
+        assert src.data == "<p>hello</p>"
+        assert src.download_url == ""
+        assert "epin" not in src.download_url
+    finally:
+        await http.close()

@@ -137,13 +137,14 @@ async def delete_one(
     row = await svc.get_mailbox(session, mailbox_id)
     info = svc.to_mailbox_info(row, settings.resolved_secret_key())
     provider = row.provider
+    # Soft-delete first. If the provider then fails, retention reaps the row
+    # instead of leaving an active mailbox whose upstream account is gone.
+    row.is_active = False
+    row.is_deleted = True
+    await record(session, provider=provider, event=EVENT_MAILBOX_DELETED)
     await session.commit()
     try:
         prov = registry.get(provider)
         await prov.delete_mailbox(info)
     except KeyError as exc:
         raise MailNotFoundError(str(exc)) from exc
-    row.is_active = False
-    row.is_deleted = True
-    await record(session, provider=row.provider, event=EVENT_MAILBOX_DELETED)
-    await session.commit()

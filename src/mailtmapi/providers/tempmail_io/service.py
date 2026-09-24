@@ -170,7 +170,7 @@ class TempMailIO(HttpProvider):
         return [_summary(m) for m in data if isinstance(m, dict)]
 
     async def get_message(self, mailbox: MailboxInfo, message_id: str) -> MessageDetail:
-        data = await self._get_json(f"{self.BASE_URL}/api/v3/message/{message_id}")
+        data = await self._get_json(f"{self.BASE_URL}/api/v3/message/{quote(message_id, safe='')}")
         if not isinstance(data, dict) or not data.get("id"):
             raise MailNotFoundError(
                 f"temp-mail.io: message {message_id!r} not found",
@@ -181,7 +181,7 @@ class TempMailIO(HttpProvider):
     async def delete_message(self, mailbox: MailboxInfo, message_id: str) -> bool:
         with suppress(MailNotFoundError):
             await self._http.delete(
-                f"{self.BASE_URL}/api/v3/message/{message_id}",
+                f"{self.BASE_URL}/api/v3/message/{quote(message_id, safe='')}",
                 json={"token": mailbox.token},
                 headers=self._headers(),
             )
@@ -192,7 +192,7 @@ class TempMailIO(HttpProvider):
 
     async def get_source(self, mailbox: MailboxInfo, message_id: str) -> MessageSource:
         data = await self._get_json(
-            f"{self.BASE_URL}/api/v3/message/{message_id}/source_code"
+            f"{self.BASE_URL}/api/v3/message/{quote(message_id, safe='')}/source_code"
         )
         if not isinstance(data, dict) or "data" not in data:
             raise MailNotFoundError(

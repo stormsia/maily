@@ -5,7 +5,7 @@ import json
 import logging
 import time
 from contextlib import suppress
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -77,6 +77,28 @@ async def set_settings(
 def _utcnow_naive() -> datetime:
     """UTC now without tzinfo, matching what func.now() (CURRENT_TIMESTAMP) stores."""
     return datetime.now(timezone.utc).replace(tzinfo=None)
+
+
+def _as_naive_utc(value: datetime) -> datetime:
+    if value.tzinfo is None:
+        return value
+    return value.astimezone(timezone.utc).replace(tzinfo=None)
+
+
+def _fresh_domains(row: DomainCache | None, interval_seconds: int) -> list[str]:
+    """Domains from a row still young enough to serve.
+
+    A failed refresh keeps the previous list and stamps ``updated_at``, so age
+    is the only signal that a stored list has gone stale. Rows older than
+    ``2 * interval_seconds`` stay in the table but are not served.
+    """
+    domains = _parse_domains(row)
+    if not domains or row is None or row.updated_at is None:
+        return []
+    age = _utcnow_naive() - _as_naive_utc(row.updated_at)
+    if age > timedelta(seconds=2 * interval_seconds):
+        return []
+    return domains
 
 
 def _labels(targets: list[Target]) -> list[str]:
@@ -152,9 +174,13 @@ async def list_domain_targets(
             misses.append(p)
             continue
         row = await session.get(DomainCache, p.slug) if cfg["enabled"] else None
-        domains = _parse_domains(row) if row and row.domains_json else []
+        stored = _parse_domains(row)
+        domains = _fresh_domains(row, cfg["interval_seconds"])
         if domains:
             cached[p.slug] = domains
+        elif stored:
+            # Stale lists stay stored and are not served or replaced here.
+            continue
         else:
             misses.append(p)
     await session.commit()
@@ -236,21 +262,30 @@ async def find_provider_for_domain(
     settings: Settings,
     domain: str,
 ) -> str | None:
-    cfg = await get_settings(session, settings)
-    wanted = domain.lower()
-    live: list = []
-    if cfg["enabled"]:
-        for p in registry.all():
-            if p.kind != "domain":
-                continue
-            row = await session.get(DomainCache, p.slug)
-            if row and row.domains_json and wanted in {d.lower() for d in _parse_domains(row)}:
-                return p.slug
-            live.append(p)
-    else:
-        live = [p for p in registry.all() if p.kind == "domain"]
-    await session.commit()
-    for p in live:
+    # session.get autoflushes, which would persist the caller's pending writes
+    # before this lookup has decided anything. Reads here don't depend on them.
+    with session.no_autoflush:
+        cfg = await get_settings(session, settings)
+        wanted = domain.lower()
+        domain_providers = [p for p in registry.all() if p.kind == "domain"]
+        cached_domains: dict[str, list[str]] = {}
+        if cfg["enabled"]:
+            for p in domain_providers:
+                row = await session.get(DomainCache, p.slug)
+                domains = _parse_domains(row)
+                if domains:
+                    cached_domains[p.slug] = domains
+                if wanted in {d.lower() for d in _fresh_domains(row, cfg["interval_seconds"])}:
+                    return p.slug
+    # Do not commit or roll back the caller's session. create_mailbox commits
+    # before provider I/O; a rollback here would drop unrelated pending writes.
+    cached_owners = [
+        p
+        for p in domain_providers
+        if wanted in {d.lower() for d in cached_domains.get(p.slug, [])}
+    ]
+    scan = cached_owners or domain_providers
+    for p in scan:
         for t in await p.list_targets():
             if t.label.lower() == wanted:
                 return p.slug

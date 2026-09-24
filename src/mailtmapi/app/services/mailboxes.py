@@ -1,14 +1,16 @@
 from __future__ import annotations
 
+import logging
 import random
 from datetime import date, datetime, timedelta, timezone
 
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ...crypto import decrypt, encrypt
 from ...db.models import Mailbox, Message
-from ...exceptions import MailNotFoundError, MailValidationError
+from ...exceptions import MailConflictError, MailNotFoundError, MailValidationError
 from ...providers.base import MailboxInfo, MailboxSpec, MessageSummary
 from ...providers.registry import ProviderRegistry
 from ...settings import Settings
@@ -18,6 +20,16 @@ from .stats_history import (
     EVENT_MESSAGE_RECEIVED,
     record,
 )
+
+logger = logging.getLogger("mailtmapi.mailboxes")
+
+
+async def _undo_provider_create(prov, info: MailboxInfo) -> None:
+    """Best-effort delete of an account the provider already created."""
+    try:
+        await prov.delete_mailbox(info)
+    except Exception as exc:  # noqa: BLE001 - cleanup must not hide the original error
+        logger.warning("create_mailbox: provider cleanup failed for %s: %s", info.address, exc)
 
 
 def as_naive_utc(dt: datetime | None) -> datetime | None:
@@ -71,9 +83,11 @@ async def get_mailbox(session: AsyncSession, mailbox_id: int) -> Mailbox:
 
 async def get_mailbox_by_address(session: AsyncSession, email: str) -> Mailbox:
     row = (
-        await session.execute(select(Mailbox).where(Mailbox.address == email))
+        await session.execute(
+            select(Mailbox).where(Mailbox.address == email, Mailbox.is_deleted.is_(False))
+        )
     ).scalar_one_or_none()
-    if row is None or row.is_deleted:
+    if row is None:
         raise MailNotFoundError(f"mailbox {email} not found")
     return row
 
@@ -120,7 +134,16 @@ async def create_mailbox(
         is_deleted=False,
     )
     session.add(row)
-    await session.flush()
+    try:
+        await session.flush()
+    except IntegrityError as exc:
+        await session.rollback()
+        await _undo_provider_create(prov, info)
+        raise MailConflictError(f"mailbox {info.address} already exists") from exc
+    except Exception:
+        await session.rollback()
+        await _undo_provider_create(prov, info)
+        raise
     await record(session, provider=row.provider, event=EVENT_MAILBOX_CREATED)
     return row
 
@@ -140,7 +163,9 @@ async def upsert_messages(
                     Message.message_api_id.in_(ids),
                 )
             )
-        ).scalars().all()
+        )
+        .scalars()
+        .all()
         if ids
         else []
     )
@@ -164,12 +189,13 @@ async def upsert_messages(
         existing.has_attachments = s.has_attachments
         existing.size = s.size
         existing.received_at = as_naive_utc(s.received_at)
-        existing.is_deleted = False
         out.append(existing)
     # Bucket the "received" event by the message's actual receipt date (not the
     # sync date) so the 7-day incoming chart reflects the true per-day inflow —
     # and survives later retention deletes, since receive events live in the ledger.
     for day, count in new_by_day.items():
-        await record(session, provider=mailbox.provider, event=EVENT_MESSAGE_RECEIVED, count=count, when=day)
+        await record(
+            session, provider=mailbox.provider, event=EVENT_MESSAGE_RECEIVED, count=count, when=day
+        )
     await session.flush()
     return out

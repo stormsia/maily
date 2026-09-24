@@ -92,6 +92,28 @@ def test_messages_delete_and_source(tmp_path: Path):
         assert r.status_code == 200
 
 
+def test_deleted_message_stays_deleted_when_provider_lists_it(tmp_path: Path):
+    with _client(tmp_path) as client:
+        mb_id = _create_mailbox(client)
+        listed = client.get(f"/v1/mailboxes/{mb_id}/messages")
+        assert listed.status_code == 200
+        assert [m["message_api_id"] for m in listed.json()] == ["m1"]
+
+        deleted = client.delete(f"/v1/mailboxes/{mb_id}/messages/m1")
+        assert deleted.status_code == 204
+
+        again = client.get(f"/v1/mailboxes/{mb_id}/messages")
+        assert again.status_code == 200
+        assert again.json() == []
+
+        import sqlite3
+
+        conn = sqlite3.connect(str(tmp_path / "test.db"))
+        row = conn.execute("SELECT is_deleted FROM messages WHERE message_api_id = 'm1'").fetchone()
+        conn.close()
+        assert row == (1,)
+
+
 def test_messages_unknown_message_404(tmp_path: Path):
     with _client(tmp_path) as client:
         mb_id = _create_mailbox(client)

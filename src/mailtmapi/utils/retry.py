@@ -7,11 +7,18 @@ import random
 from collections.abc import Callable
 from typing import Any, TypeVar
 
-from ..exceptions import MailAPIError, MailAuthError, MailNotFoundError, MailRateLimitError
+from ..exceptions import (
+    MailAPIError,
+    MailAuthError,
+    MailConflictError,
+    MailNotFoundError,
+    MailRateLimitError,
+    MailValidationError,
+)
 
 logger = logging.getLogger(__name__)
 F = TypeVar("F", bound=Callable[..., Any])
-_NO_RETRY = (MailAuthError, MailNotFoundError)
+_NO_RETRY = (MailAuthError, MailNotFoundError, MailValidationError, MailConflictError)
 
 
 def async_retry(
@@ -22,6 +29,9 @@ def async_retry(
     jitter: bool = True,
     exceptions: tuple[type[Exception], ...] = (MailAPIError,),
 ) -> Callable[[F], F]:
+    if max_attempts < 1:
+        raise ValueError("max_attempts must be >= 1")
+
     def decorator(func: F) -> F:
         @functools.wraps(func)
         async def wrapper(*args: Any, **kwargs: Any) -> Any:

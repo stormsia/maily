@@ -1,13 +1,16 @@
 from __future__ import annotations
 
+import asyncio
 import json
 import sqlite3
 import time
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 
 from fastapi.testclient import TestClient
 
 from mailtmapi.app.main import create_app
+from mailtmapi.app.services import domain_cache as dc
+from mailtmapi.db.models import AppSetting
 from mailtmapi.providers.registry import ProviderRegistry
 from mailtmapi.settings import Settings
 from tests.helpers import StubProvider, make_targets
@@ -184,3 +187,156 @@ def test_cache_disabled_serves_live(tmp_path):
         conn.close()
         # run stored the row, but the live /v1/targets call did not touch it
         assert row is not None
+
+
+def _age_cache(tmp_path, provider: str, *, age: timedelta) -> None:
+    stamp = (datetime.now(timezone.utc) - age).replace(tzinfo=None).isoformat(sep=" ")
+    conn = _db(tmp_path)
+    conn.execute(
+        "UPDATE domain_cache SET updated_at = ? WHERE provider = ?",
+        (stamp, provider),
+    )
+    conn.commit()
+    conn.close()
+
+
+def test_list_domain_targets_hides_cache_older_than_two_intervals(tmp_path):
+    # Given: a stored domain list older than 2 * domain_cache_interval_seconds
+    # When: the API lists targets
+    # Then: those domains are not served, and the row is still stored
+    interval = 1800
+    db = tmp_path / "test.db"
+    app = create_app(
+        Settings(
+            database_url=f"sqlite+aiosqlite:///{db}",
+            secret_key=SECRET,
+            _env_file=None,
+            domain_cache_enabled=True,
+            domain_cache_interval_seconds=interval,
+        )
+    )
+    with TestClient(app) as client:
+        good = StubProvider("good", [])
+        client.app.state.registry = ProviderRegistry([good])
+        conn = _db(tmp_path)
+        conn.execute(
+            "INSERT INTO domain_cache (provider, domains_json, error, updated_at) VALUES (?, ?, ?, ?)",
+            ("good", json.dumps(["a.com"]), None, datetime.now(timezone.utc).isoformat(sep=" ")),
+        )
+        conn.commit()
+        conn.close()
+        _age_cache(tmp_path, "good", age=timedelta(seconds=2 * interval + 1))
+
+        r = client.get("/v1/targets")
+        assert r.status_code == 200
+        assert r.json() == []
+        assert good.list_targets_calls == 0
+
+        conn = _db(tmp_path)
+        stored = conn.execute(
+            "SELECT domains_json FROM domain_cache WHERE provider = 'good'"
+        ).fetchone()
+        conn.close()
+        assert json.loads(stored[0]) == ["a.com"]
+
+
+def test_list_domain_targets_serves_fresh_cache(tmp_path):
+    # Given: a cache row younger than 2 * interval
+    # When: the API lists targets
+    # Then: the cached domain is returned and the provider is not called
+    with _app(tmp_path) as client:
+        good = StubProvider("good", make_targets("good", "a.com"))
+        client.app.state.registry = ProviderRegistry([good])
+        client.post("/v1/admin/domain-cache/run")
+        _age_cache(tmp_path, "good", age=timedelta(seconds=1800))
+
+        r = client.get("/v1/targets")
+        assert r.status_code == 200
+        assert r.json() == [
+            {"id": "a.com", "kind": "domain", "provider": "good", "label": "a.com"}
+        ]
+        assert good.list_targets_calls == 1
+
+
+def test_find_provider_prefers_cache_owner_over_earlier_live_match(tmp_path):
+    # Given: provider A is listed first and would also return the domain live,
+    # and provider B's cache (not A's) contains it
+    # When: resolving the domain
+    # Then: B is returned and A is not scanned
+    db = tmp_path / "test.db"
+    app = create_app(
+        Settings(
+            database_url=f"sqlite+aiosqlite:///{db}",
+            secret_key=SECRET,
+            _env_file=None,
+            domain_cache_enabled=True,
+        )
+    )
+    with TestClient(app) as client:
+        earlier = StubProvider("alpha", make_targets("alpha", "shared.com"))
+        owner = StubProvider("beta", make_targets("beta", "shared.com"))
+        client.app.state.registry = ProviderRegistry([earlier, owner])
+        conn = _db(tmp_path)
+        now = datetime.now(timezone.utc).replace(tzinfo=None).isoformat(sep=" ")
+        conn.execute(
+            "INSERT INTO domain_cache (provider, domains_json, error, updated_at) VALUES (?, ?, ?, ?)",
+            ("beta", json.dumps(["Shared.COM"]), None, now),
+        )
+        conn.commit()
+        conn.close()
+
+        factory = client.app.state.session_factory
+
+        async def _resolve() -> str | None:
+            async with factory() as session:
+                return await dc.find_provider_for_domain(
+                    session,
+                    client.app.state.registry,
+                    client.app.state.settings,
+                    "shared.com",
+                )
+
+        assert asyncio.run(_resolve()) == "beta"
+        assert earlier.list_targets_calls == 0
+        assert owner.list_targets_calls == 0
+
+
+def test_find_provider_for_domain_does_not_commit_session(tmp_path):
+    # Given: an unrelated pending row in the caller's session
+    # When: resolving a domain that misses the cache
+    # Then: that row is still pending — the lookup did not commit
+    db = tmp_path / "test.db"
+    app = create_app(
+        Settings(
+            database_url=f"sqlite+aiosqlite:///{db}",
+            secret_key=SECRET,
+            _env_file=None,
+            domain_cache_enabled=True,
+        )
+    )
+    with TestClient(app) as client:
+        good = StubProvider("good", make_targets("good", "a.com"))
+        client.app.state.registry = ProviderRegistry([good])
+        factory = client.app.state.session_factory
+
+        async def _resolve() -> str | None:
+            async with factory() as session:
+                session.add(AppSetting(key="pending.probe", value="1"))
+                slug = await dc.find_provider_for_domain(
+                    session,
+                    client.app.state.registry,
+                    client.app.state.settings,
+                    "a.com",
+                )
+                # The factory commits on clean exit; roll back so only a commit
+                # inside the lookup could have persisted the probe.
+                await session.rollback()
+                return slug
+
+        assert asyncio.run(_resolve()) == "good"
+        conn = _db(tmp_path)
+        stored = conn.execute(
+            "SELECT 1 FROM app_settings WHERE key = 'pending.probe'"
+        ).fetchone()
+        conn.close()
+        assert stored is None

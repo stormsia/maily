@@ -40,7 +40,7 @@ async def list_messages(
     await session.commit()
     for m in cached:
         await session.refresh(m)
-    return [_summary_out(m) for m in cached]
+    return [_summary_out(m) for m in cached if not m.is_deleted]
 
 
 @router.get("/{msg_id}", response_model=MessageDetailOut)

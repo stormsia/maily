@@ -8,8 +8,10 @@ import pytest
 from mailtmapi.exceptions import (
     MailAPIError,
     MailAuthError,
+    MailConflictError,
     MailNotFoundError,
     MailRateLimitError,
+    MailValidationError,
 )
 from mailtmapi.utils.retry import async_retry
 
@@ -70,7 +72,15 @@ async def test_exhausts_attempts_and_raises_last_error(sleep_spy):
     assert len(sleep_spy) == 2
 
 
-@pytest.mark.parametrize("exc", [MailAuthError("nope"), MailNotFoundError("gone")])
+@pytest.mark.parametrize(
+    "exc",
+    [
+        MailAuthError("nope"),
+        MailNotFoundError("gone"),
+        MailValidationError("bad"),
+        MailConflictError("taken"),
+    ],
+)
 async def test_non_retryable_errors_raise_immediately(sleep_spy, exc):
     calls = 0
 

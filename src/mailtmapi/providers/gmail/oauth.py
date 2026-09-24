@@ -5,7 +5,7 @@ import time
 import urllib.parse
 from typing import Any
 
-from mailtmapi.exceptions import MailValidationError
+from mailtmapi.exceptions import MailAPIError, MailAuthError, MailValidationError
 from mailtmapi.http import HttpClient
 
 SCOPES = [
@@ -16,6 +16,16 @@ TOKEN_URI = "https://oauth2.googleapis.com/token"
 AUTH_URI = "https://accounts.google.com/o/oauth2/v2/auth"
 
 _FORM = {"Content-Type": "application/x-www-form-urlencoded"}
+_AUTH_TOKEN_ERRORS = frozenset({"invalid_grant", "invalid_client", "unauthorized_client"})
+
+
+def _raise_token_auth(body: dict[str, Any]) -> None:
+    error = body.get("error")
+    if not isinstance(error, str) or error not in _AUTH_TOKEN_ERRORS:
+        return
+    description = body.get("error_description")
+    message = description if isinstance(description, str) and description else error
+    raise MailAuthError(message, response_data=body)
 
 
 class GmailOAuth:
@@ -97,12 +107,19 @@ class GmailOAuth:
         }
 
     async def _token_post(self, payload: dict[str, str]) -> dict:
-        resp = await self._http.post(
-            self._token_uri,
-            content=urllib.parse.urlencode(payload).encode(),
-            headers=_FORM,
-        )
+        try:
+            resp = await self._http.post(
+                self._token_uri,
+                content=urllib.parse.urlencode(payload).encode(),
+                headers=_FORM,
+            )
+        except MailAuthError:
+            raise
+        except MailAPIError as exc:
+            _raise_token_auth(exc.response_data)
+            raise
         data: dict[str, Any] = resp.json()
+        _raise_token_auth(data)
         return {
             "access_token": data["access_token"],
             "refresh_token": data.get("refresh_token", ""),

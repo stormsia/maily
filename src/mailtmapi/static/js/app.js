@@ -3,7 +3,7 @@ import { api, getApiKey, setApiKey, setAuthRequiredHandler } from "./api.js";
 import { h, toast, refreshIcons, openModal, closeModal } from "./ui.js";
 import { render as renderOverview, cleanup as cleanupOverview } from "./pages/overview.js";
 import { render as renderMailboxes, openCreateMailbox } from "./pages/mailboxes.js";
-import { render as renderDetail } from "./pages/detail.js";
+import { render as renderDetail, cleanup as cleanupDetail } from "./pages/detail.js";
 import { render as renderRetention } from "./pages/retention.js";
 import { render as renderDomainCache } from "./pages/domain-cache.js";
 import { render as renderGmail } from "./pages/gmail.js";
@@ -183,7 +183,9 @@ function setNav(name) {
 async function route() {
   const r = parseHash();
   try { currentCleanup?.(); } catch { /* page torn down already */ }
-  currentCleanup = r.name === "overview" ? cleanupOverview : null;
+  currentCleanup = r.name === "overview" ? cleanupOverview
+    : r.name === "detail" ? cleanupDetail
+    : null;
   setNav(r.name);
   const [title, eyebrow, sub] = TITLES[r.name] || TITLES.overview;
   titleEl.textContent = title;

@@ -3,6 +3,7 @@ from __future__ import annotations
 import base64
 import logging
 from typing import Any
+from urllib.parse import quote
 
 from ...exceptions import MailAPIError, MailNotFoundError, MailValidationError
 from ...utils.misc import random_string
@@ -141,7 +142,7 @@ class NoopMail(HttpProvider):
         return [_summary(m) for m in data if isinstance(m, dict)]
 
     async def get_message(self, mailbox: MailboxInfo, message_id: str) -> MessageDetail:
-        data = await self._get_json(f"{self.BASE_URL}/api/i/{message_id}")
+        data = await self._get_json(f"{self.BASE_URL}/api/i/{quote(message_id, safe='')}")
         if not isinstance(data, dict) or not data.get("id"):
             raise MailNotFoundError(
                 f"noopmail.org: message {message_id!r} not found",
@@ -153,11 +154,11 @@ class NoopMail(HttpProvider):
         # Эндпоинт удаления требует id и m_id: /api/i/{id}/{m_id}.
         # Список и удаление ходят по-разному, поэтому m_id достаём из детали.
         try:
-            data = await self._get_json(f"{self.BASE_URL}/api/i/{message_id}")
+            data = await self._get_json(f"{self.BASE_URL}/api/i/{quote(message_id, safe='')}")
             m_id = data.get("m_id") if isinstance(data, dict) else None
-            url = f"{self.BASE_URL}/api/i/{message_id}"
+            url = f"{self.BASE_URL}/api/i/{quote(message_id, safe='')}"
             if m_id:
-                url += f"/{m_id}"
+                url += f"/{quote(str(m_id), safe='')}"
             await self._http.delete(url, headers=self._headers())
         except MailNotFoundError:
             pass
@@ -168,7 +169,7 @@ class NoopMail(HttpProvider):
         return True
 
     async def get_source(self, mailbox: MailboxInfo, message_id: str) -> MessageSource:
-        data = await self._get_json(f"{self.BASE_URL}/api/i/{message_id}")
+        data = await self._get_json(f"{self.BASE_URL}/api/i/{quote(message_id, safe='')}")
         if not isinstance(data, dict) or not data.get("id"):
             raise MailNotFoundError(
                 f"noopmail.org: message {message_id!r} not found",
@@ -180,7 +181,7 @@ class NoopMail(HttpProvider):
                 f"noopmail.org: raw source for message {message_id!r} not found",
                 status_code=404,
             )
-        raw = await self._get_raw(f"{self.BASE_URL}/raw/{m_id}")
+        raw = await self._get_raw(f"{self.BASE_URL}/raw/{quote(str(m_id), safe='')}")
         return MessageSource(id=message_id, data=raw, download_url="")
 
     @async_retry()

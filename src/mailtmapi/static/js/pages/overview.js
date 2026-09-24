@@ -263,9 +263,11 @@ export async function render(root, { silent = false } = {}) {
   // Ledger is the single source once it has activity: received+deleted survive
   // retention, live rows do not. Otherwise fall back to the live 7-day query.
   const hasLedgerActivity = (histTotals.message_received ?? 0) + (histTotals.message_deleted ?? 0) > 0;
-  const days = hasLedgerActivity
+  const isDay = (d) => /^\d{4}-\d{2}-\d{2}$/.test(d?.date || "");
+  const days = (hasLedgerActivity
     ? (hist.days || []).slice(-7).map((d) => ({ date: d.date, count: d.message_received, deleted: d.message_deleted }))
-    : (stats.messages_last_7_days || []).filter((d) => d.date !== "no-data");
+    : (stats.messages_last_7_days || [])
+  ).filter(isDay);
 
   root.innerHTML = "";
 

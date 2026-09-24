@@ -98,7 +98,7 @@ export async function render(root) {
     } else {
       credsLine.append("OAuth configured via server environment",
         h("div", { class: "field-hint", style: "margin-top:2px" },
-          "Managed by MAILTM_GMAIL_CLIENT_ID / MAILTM_GMAIL_SECRET — not editable here."));
+          "Managed by MAILTM_GMAIL_CLIENT_ID / MAILTM_GMAIL_CLIENT_SECRET (or MAILTM_GMAIL_CREDENTIALS_PATH) — not editable here."));
       actionsRow.append(connectBtn());
     }
     refreshIcons();

@@ -16,3 +16,4 @@ dist/
 *.egg-info/
 .playwright-mcp/
 *.png
+.omo/*

@@ -41,7 +41,10 @@ async def set_retention(
     mailbox_ttl_hours: int | None,
     message_ttl_hours: int | None,
 ) -> Retention:
-    for name, ttl in (("mailbox_ttl_hours", mailbox_ttl_hours), ("message_ttl_hours", message_ttl_hours)):
+    for name, ttl in (
+        ("mailbox_ttl_hours", mailbox_ttl_hours),
+        ("message_ttl_hours", message_ttl_hours),
+    ):
         if ttl is not None and ttl < 1:
             raise MailValidationError(f"{name} must be >= 1 or null")
     if mailbox_ttl_hours is None and message_ttl_hours is None:
@@ -64,7 +67,9 @@ async def delete_retention(session, provider: str) -> bool:
     return True
 
 
-async def _write(factory: AsyncSessionFactory[AsyncSession], operation: Callable[[AsyncSession], Awaitable[None]]) -> None:
+async def _write(
+    factory: AsyncSessionFactory[AsyncSession], operation: Callable[[AsyncSession], Awaitable[None]]
+) -> None:
     """One short write transaction in a fresh session, retried on SQLITE_BUSY.
 
     Retrying ``session.commit`` on a session that already failed is useless:
@@ -133,11 +138,10 @@ async def run_sweep(
                 await prov.delete_mailbox(info)
             except Exception as exc:  # noqa: BLE001 - best-effort sync with provider
                 logger.warning("retention: provider delete failed for %s: %s", row.address, exc)
+                continue
 
             async def _drop_box(s: AsyncSession, box_id: int = row.id) -> None:
-                found = await s.get(Mailbox, box_id)
-                if found is not None:
-                    await s.delete(found)
+                await s.execute(delete(Mailbox).where(Mailbox.id == box_id))
 
             await _write(factory, _drop_box)
             mailboxes_deleted += 1
@@ -176,11 +180,10 @@ async def run_sweep(
                     msg.provider,
                     exc,
                 )
+                continue
 
             async def _drop_msg(s: AsyncSession, mid: int = msg.id) -> None:
-                found = await s.get(Message, mid)
-                if found is not None:
-                    await s.delete(found)
+                await s.execute(delete(Message).where(Message.id == mid))
 
             await _write(factory, _drop_msg)
             messages_deleted += 1

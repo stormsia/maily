@@ -46,6 +46,25 @@ function copyExtra(err, data) {
   if (typeof data.code === "string") err.code = data.code;
 }
 
+/* FastAPI: detail is a string, or a 422 array of {loc, msg, type}. */
+function formatDetail(data) {
+  if (!data) return "";
+  const detail = data.detail;
+  if (typeof detail === "string") return detail;
+  if (Array.isArray(detail)) {
+    const parts = detail
+      .map((item) => {
+        if (!item || typeof item !== "object") return item == null ? "" : String(item);
+        const loc = Array.isArray(item.loc) ? item.loc.join(".") : "";
+        const msg = typeof item.msg === "string" ? item.msg : "";
+        return [loc, msg].filter(Boolean).join(" ");
+      })
+      .filter(Boolean);
+    return parts.join("; ");
+  }
+  return "";
+}
+
 async function parseError(res) {
   let data;
   try {
@@ -53,9 +72,7 @@ async function parseError(res) {
   } catch {
     data = null;
   }
-  const detail =
-    (data && typeof data.detail === "string" && data.detail) ||
-    `${res.status} ${res.statusText}`.trim();
+  const detail = formatDetail(data) || `${res.status} ${res.statusText}`.trim();
   return { detail, data: data && typeof data === "object" ? data : null };
 }
 

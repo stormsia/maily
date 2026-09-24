@@ -1,9 +1,11 @@
 from __future__ import annotations
 
+import logging
 import re
 from typing import Any
+from urllib.parse import quote
 
-from ...exceptions import MailValidationError
+from ...exceptions import MailAPIError, MailValidationError
 from ...utils.misc import random_password, random_string
 from ...utils.retry import async_retry
 from ..base import (
@@ -20,9 +22,15 @@ from ..base import (
     parse_iso,
 )
 
+logger = logging.getLogger(__name__)
+
 _CACHE_TTL = 300.0
 
 _URL_RE = re.compile(r"https?://[^\s]+", re.IGNORECASE)
+
+
+def _qid(message_id: str) -> str:
+    return quote(message_id, safe="")
 
 
 def _party(raw: Any) -> Party:
@@ -104,7 +112,6 @@ class MailTM(HttpProvider):
             targets.append(Target(id=domain, kind="domain", provider=self.slug, label=domain))
         return targets
 
-    @async_retry()
     async def create_mailbox(self, spec: MailboxSpec) -> MailboxInfo:
         address = spec.address
         if not address:
@@ -122,19 +129,55 @@ class MailTM(HttpProvider):
                 json={"address": address, "password": password},
             )
         ).json()
-        token = (
+        if not isinstance(account, dict):
+            raise MailAPIError("mail.tm: account response is not an object")
+        account_id = str(account["id"]) if account.get("id") else ""
+        try:
+            token = await self._fetch_token(address, password)
+        except MailAPIError as exc:
+            await self._drop_orphaned_account(account_id, address, exc)
+            raise
+        if not isinstance(token, dict) or not token.get("token"):
+            await self._drop_orphaned_account(account_id, address, None)
+            raise MailAPIError("mail.tm: token response missing token")
+        return MailboxInfo(
+            provider=self.slug,
+            address=address,
+            token=str(token["token"]),
+            provider_account_id=account_id,
+            password=password,
+        )
+
+    @async_retry()
+    async def _fetch_token(self, address: str, password: str) -> Any:
+        return (
             await self._http.post(
                 f"{self.API_URL}/token",
                 json={"address": address, "password": password},
             )
         ).json()
-        return MailboxInfo(
-            provider=self.slug,
-            address=address,
-            token=str(token["token"]),
-            provider_account_id=str(account["id"]),
-            password=password,
-        )
+
+    async def _drop_orphaned_account(
+        self,
+        account_id: str,
+        address: str,
+        failure: MailAPIError | None,
+    ) -> None:
+        if not account_id:
+            logger.warning("mail.tm: account created for %s but id is missing; cannot delete", address)
+            return
+        body = failure.response_data if failure is not None else {}
+        raw = body.get("token") if isinstance(body, dict) else None
+        if not raw:
+            logger.warning("mail.tm: orphaned account %s cannot be deleted (no token)", account_id)
+            return
+        try:
+            await self._http.delete(
+                f"{self.API_URL}/accounts/{account_id}",
+                headers={"Authorization": f"Bearer {raw}"},
+            )
+        except Exception as exc:
+            logger.warning("mail.tm: failed to delete orphaned account %s: %s", account_id, exc)
 
     @async_retry()
     async def delete_mailbox(self, mailbox: MailboxInfo) -> bool:
@@ -162,7 +205,7 @@ class MailTM(HttpProvider):
     async def get_message(self, mailbox: MailboxInfo, message_id: str) -> MessageDetail:
         data = (
             await self._http.get(
-                f"{self.API_URL}/messages/{message_id}",
+                f"{self.API_URL}/messages/{_qid(message_id)}",
                 headers=self._auth(mailbox),
             )
         ).json()
@@ -171,7 +214,7 @@ class MailTM(HttpProvider):
     @async_retry()
     async def delete_message(self, mailbox: MailboxInfo, message_id: str) -> bool:
         resp = await self._http.delete(
-            f"{self.API_URL}/messages/{message_id}",
+            f"{self.API_URL}/messages/{_qid(message_id)}",
             headers=self._auth(mailbox),
         )
         return resp.status_code == 204
@@ -180,7 +223,7 @@ class MailTM(HttpProvider):
     async def mark_read(self, mailbox: MailboxInfo, message_id: str) -> bool:
         data = (
             await self._http.patch(
-                f"{self.API_URL}/messages/{message_id}",
+                f"{self.API_URL}/messages/{_qid(message_id)}",
                 headers={**self._auth(mailbox), "Content-Type": "application/merge-patch+json"},
                 json={"seen": True},
             )
@@ -191,7 +234,7 @@ class MailTM(HttpProvider):
     async def get_source(self, mailbox: MailboxInfo, message_id: str) -> MessageSource:
         data = (
             await self._http.get(
-                f"{self.API_URL}/sources/{message_id}",
+                f"{self.API_URL}/sources/{_qid(message_id)}",
                 headers=self._auth(mailbox),
             )
         ).json()

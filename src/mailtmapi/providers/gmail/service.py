@@ -3,9 +3,10 @@ from __future__ import annotations
 import asyncio
 import logging
 import time
+import urllib.parse
 from contextlib import suppress
 
-from mailtmapi.exceptions import MailAPIError, MailAuthError, MailValidationError
+from mailtmapi.exceptions import MailAPIError, MailAuthError, MailNotFoundError, MailValidationError
 from mailtmapi.http import HttpClient
 from mailtmapi.providers.base import (
     MailboxInfo,
@@ -44,7 +45,7 @@ class GmailProvider:
         self._owns_http = http is None
         self._parent_rr = 0
         self._alias_rr: dict[int, int] = {}
-        self._page_tokens: dict[str, str] = {}
+        self._page_tokens: dict[tuple[str, int], str] = {}
         self._refresh_locks: dict[int, asyncio.Lock] = {}
         self._locks_guard = asyncio.Lock()
 
@@ -59,6 +60,14 @@ class GmailProvider:
         if self._owns_http:
             await self._http.close()
 
+    async def _load_locked(self, parent: GmailParent) -> GmailParent:
+        if parent.id is None:
+            return parent
+        try:
+            return await self._store.get(parent.id)
+        except MailNotFoundError:
+            return parent
+
     async def _ensure_access(self, parent: GmailParent) -> str:
         # Fast path: a still-valid token needs no lock and no store write.
         if (
@@ -70,32 +79,41 @@ class GmailProvider:
         async with self._locks_guard:
             lock = self._parent_lock(parent.id or 0)
         async with lock:
+            current = await self._load_locked(parent)
             if (
-                parent.access_token
-                and parent.access_expires_at
-                and parent.access_expires_at > time.time() + 60
+                current.access_token
+                and current.access_expires_at
+                and current.access_expires_at > time.time() + 60
             ):
-                return parent.access_token
+                parent.access_token = current.access_token
+                parent.access_expires_at = current.access_expires_at
+                parent.refresh_token = current.refresh_token
+                return current.access_token
             try:
-                tokens = await self._oauth.refresh(parent.refresh_token)
+                tokens = await self._oauth.refresh(current.refresh_token)
             except MailAuthError:
                 # Refresh token was rejected (revoked, or test-mode lapse).
                 # Flag the account expired so the dashboard can prompt to
                 # reconnect — active mailboxes keep working against the cache,
                 # but no new mailboxes are picked from it.
+                current.status = "expired"
                 parent.status = "expired"
-                if parent.id:
+                if current.id:
                     with suppress(Exception):
-                        await self._store.update(parent)
+                        await self._store.update(current)
                 raise
-            parent.access_token = tokens["access_token"]
-            parent.access_expires_at = tokens["expires_at"]
+            current.access_token = tokens["access_token"]
+            current.access_expires_at = tokens["expires_at"]
             if tokens.get("refresh_token"):
-                parent.refresh_token = tokens["refresh_token"]
+                current.refresh_token = tokens["refresh_token"]
             if tokens.get("scopes"):
-                parent.scopes = tokens["scopes"]
-            await self._store.update(parent)
-            return parent.access_token  # type: ignore[return-value]
+                current.scopes = tokens["scopes"]
+                parent.scopes = current.scopes
+            await self._store.update(current)
+            parent.access_token = current.access_token
+            parent.access_expires_at = current.access_expires_at
+            parent.refresh_token = current.refresh_token
+            return current.access_token or ""
 
     async def _api_get(self, parent: GmailParent, url: str, params: dict | None = None) -> dict:
         token = await self._ensure_access(parent)
@@ -212,58 +230,53 @@ class GmailProvider:
                 return parent
         raise MailValidationError("no parent for mailbox")
 
+    def _message_url(self, message_id: str, suffix: str = "") -> str:
+        quoted = urllib.parse.quote(message_id, safe="")
+        return f"{_API_BASE}/messages/{quoted}{suffix}"
+
     @async_retry(max_attempts=3)
     async def list_messages(self, mailbox: MailboxInfo, page: int = 1) -> list[MessageSummary]:
         parent = await self._resolve_parent(mailbox)
         alias = mailbox.address or mailbox.token
         params: dict = {"q": f'to:("{alias}") in:anywhere -in:trash', "maxResults": 100}
         if page > 1:
-            stored = self._page_tokens.get(alias)
+            stored = self._page_tokens.get((alias, page))
             if not stored:
                 return []
             params["pageToken"] = stored
         data = await self._api_get(parent, f"{_API_BASE}/messages", params=params)
         nxt = data.get("nextPageToken") or ""
+        next_key = (alias, page + 1)
         if nxt:
-            self._page_tokens[alias] = nxt
+            self._page_tokens[next_key] = nxt
         else:
-            self._page_tokens.pop(alias, None)
+            self._page_tokens.pop(next_key, None)
         message_list: list[dict] = data.get("messages") or []
         token = await self._ensure_access(parent)
 
         async def _full(msg_id: str) -> dict:
             resp = await self._http.get(
-                f"{_API_BASE}/messages/{msg_id}",
+                self._message_url(msg_id),
                 params={"format": "full"},
                 headers={"Authorization": f"Bearer {token}"},
             )
             return resp.json()
 
-        results = await asyncio.gather(
-            *[_full(m["id"]) for m in message_list],
-            return_exceptions=True,
-        )
-        out: list[MessageSummary] = []
-        for result in results:
-            if isinstance(result, Exception):
-                logger.warning("Failed to fetch message detail: %s", result)
-                continue
-            if isinstance(result, dict):
-                out.append(raw_to_summary(result))
-        return out
+        results = await asyncio.gather(*[_full(m["id"]) for m in message_list])
+        return [raw_to_summary(result) for result in results]
 
     @async_retry(max_attempts=3)
     async def get_message(self, mailbox: MailboxInfo, message_id: str) -> MessageDetail:
         parent = await self._resolve_parent(mailbox)
         data = await self._api_get(
-            parent, f"{_API_BASE}/messages/{message_id}", params={"format": "full"}
+            parent, self._message_url(message_id), params={"format": "full"}
         )
         return raw_to_detail(data)
 
     @async_retry(max_attempts=3)
     async def delete_message(self, mailbox: MailboxInfo, message_id: str) -> bool:
         parent = await self._resolve_parent(mailbox)
-        result = await self._api_post(parent, f"{_API_BASE}/messages/{message_id}/trash")
+        result = await self._api_post(parent, self._message_url(message_id, "/trash"))
         return "id" in result or "threadId" in result
 
     @async_retry(max_attempts=3)

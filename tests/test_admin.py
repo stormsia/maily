@@ -53,9 +53,7 @@ def test_retention_crud(tmp_path):
 
         r = client.get("/v1/admin/retention")
         assert r.status_code == 200
-        assert r.json() == [
-            {"provider": "stub", "mailbox_ttl_hours": 24, "message_ttl_hours": 12}
-        ]
+        assert r.json() == [{"provider": "stub", "mailbox_ttl_hours": 24, "message_ttl_hours": 12}]
 
         r = client.delete("/v1/admin/retention/stub")
         assert r.status_code == 204
@@ -122,6 +120,124 @@ def test_retention_sweep(tmp_path: Path):
         totals = client.get("/v1/admin/stats").json()["history"]["totals"]
         assert totals["mailbox_deleted"] == 1
         assert totals["message_deleted"] == 1
+
+
+def test_retention_keeps_mailbox_when_provider_delete_fails(tmp_path: Path):
+    from mailtmapi.exceptions import MailAPIError
+
+    class Boom(StubProvider):
+        async def delete_mailbox(self, mailbox) -> bool:
+            raise MailAPIError("upstream exploded")
+
+    with _app(tmp_path) as client:
+        client.app.state.registry = ProviderRegistry([Boom()])
+        now = utcnow_naive()
+        old = now - timedelta(days=10)
+        conn = _db(tmp_path)
+        tok = encrypt(SECRET, "tok")
+        conn.execute(
+            "INSERT INTO mailboxes (provider, address, mailbox_token_enc, created_at, updated_at)"
+            " VALUES ('stub', 'stuck@x', ?, ?, ?)",
+            (tok, old.isoformat(), old.isoformat()),
+        )
+        box_id = conn.execute("SELECT last_insert_rowid()").fetchone()[0]
+        conn.execute(
+            "INSERT INTO messages (mailbox_id, provider, message_api_id, received_at, cached_at)"
+            " VALUES (?, 'stub', 'child', ?, ?)",
+            (box_id, old.isoformat(), now.isoformat()),
+        )
+        conn.execute("INSERT INTO retention (provider, mailbox_ttl_hours) VALUES ('stub', 24)")
+        conn.commit()
+        conn.close()
+
+        r = client.post("/v1/admin/retention/run")
+        assert r.status_code == 200
+        assert r.json()["mailboxes_deleted"] == 0
+
+        conn = _db(tmp_path)
+        row = conn.execute("SELECT address FROM mailboxes WHERE id = ?", (box_id,)).fetchone()
+        msg = conn.execute(
+            "SELECT message_api_id FROM messages WHERE mailbox_id = ?", (box_id,)
+        ).fetchone()
+        conn.close()
+        assert row == ("stuck@x",)
+        assert msg == ("child",)
+
+
+def test_retention_keeps_message_when_provider_delete_fails(tmp_path: Path):
+    from mailtmapi.exceptions import MailAPIError
+
+    class Boom(StubProvider):
+        async def delete_message(self, mailbox, message_id: str) -> bool:
+            raise MailAPIError("upstream exploded")
+
+    with _app(tmp_path) as client:
+        client.app.state.registry = ProviderRegistry([Boom()])
+        now = utcnow_naive()
+        old = now - timedelta(days=10)
+        conn = _db(tmp_path)
+        tok = encrypt(SECRET, "tok")
+        conn.execute(
+            "INSERT INTO mailboxes (provider, address, mailbox_token_enc, created_at, updated_at)"
+            " VALUES ('stub', 'live@x', ?, ?, ?)",
+            (tok, now.isoformat(), now.isoformat()),
+        )
+        box_id = conn.execute("SELECT last_insert_rowid()").fetchone()[0]
+        conn.execute(
+            "INSERT INTO messages (mailbox_id, provider, message_api_id, received_at, cached_at)"
+            " VALUES (?, 'stub', 'stuck-msg', ?, ?)",
+            (box_id, old.isoformat(), now.isoformat()),
+        )
+        conn.execute("INSERT INTO retention (provider, message_ttl_hours) VALUES ('stub', 24)")
+        conn.commit()
+        conn.close()
+
+        r = client.post("/v1/admin/retention/run")
+        assert r.status_code == 200
+        assert r.json()["messages_deleted"] == 0
+
+        conn = _db(tmp_path)
+        msg = conn.execute(
+            "SELECT message_api_id FROM messages WHERE mailbox_id = ?", (box_id,)
+        ).fetchone()
+        conn.close()
+        assert msg == ("stuck-msg",)
+
+
+def test_retention_deletes_mailbox_that_has_messages(tmp_path: Path):
+    with _app(tmp_path) as client:
+        stub = StubProvider()
+        client.app.state.registry = ProviderRegistry([stub])
+        now = utcnow_naive()
+        old = now - timedelta(days=10)
+        conn = _db(tmp_path)
+        tok = encrypt(SECRET, "tok")
+        conn.execute(
+            "INSERT INTO mailboxes (provider, address, mailbox_token_enc, created_at, updated_at)"
+            " VALUES ('stub', 'parent@x', ?, ?, ?)",
+            (tok, old.isoformat(), old.isoformat()),
+        )
+        box_id = conn.execute("SELECT last_insert_rowid()").fetchone()[0]
+        conn.execute(
+            "INSERT INTO messages (mailbox_id, provider, message_api_id, received_at, cached_at)"
+            " VALUES (?, 'stub', 'kid', ?, ?)",
+            (box_id, old.isoformat(), now.isoformat()),
+        )
+        conn.execute("INSERT INTO retention (provider, mailbox_ttl_hours) VALUES ('stub', 24)")
+        conn.commit()
+        conn.close()
+
+        r = client.post("/v1/admin/retention/run")
+        assert r.status_code == 200
+        assert r.json()["mailboxes_deleted"] == 1
+        assert stub.delete_mailbox_calls == ["parent@x"]
+
+        conn = _db(tmp_path)
+        left = conn.execute("SELECT id FROM mailboxes").fetchall()
+        msgs = conn.execute("SELECT id FROM messages").fetchall()
+        conn.close()
+        assert left == []
+        assert msgs == []
 
 
 def test_stats_history_records_api_events(tmp_path: Path):
@@ -194,8 +310,7 @@ def test_stats_backfill_is_idempotent_across_restarts(tmp_path: Path):
     now = utcnow_naive()
     conn = _db(tmp_path)
     conn.execute(
-        "INSERT INTO mailboxes (provider, address, mailbox_token_enc)"
-        " VALUES ('stub', 'bf@x', ?)",
+        "INSERT INTO mailboxes (provider, address, mailbox_token_enc) VALUES ('stub', 'bf@x', ?)",
         (encrypt(SECRET, "tok"),),
     )
     mb_id = conn.execute("SELECT last_insert_rowid()").fetchone()[0]

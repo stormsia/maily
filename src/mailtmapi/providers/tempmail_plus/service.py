@@ -4,6 +4,7 @@ import logging
 import re
 from datetime import datetime
 from typing import Any
+from urllib.parse import quote
 
 from ...exceptions import MailAPIError, MailNotFoundError, MailValidationError
 from ...http import HttpClient
@@ -207,7 +208,7 @@ class TempMailPlus(HttpProvider):
 
     async def get_message(self, mailbox: MailboxInfo, message_id: str) -> MessageDetail:
         data = await self._get_json(
-            f"{self.API_URL}/mails/{message_id}",
+            f"{self.API_URL}/mails/{quote(message_id, safe='')}",
             params=self._params(mailbox.token),
         )
         if "err" in data or "mail_id" not in data:
@@ -220,7 +221,7 @@ class TempMailPlus(HttpProvider):
 
     async def delete_message(self, mailbox: MailboxInfo, message_id: str) -> bool:
         data = await self._delete_json(
-            f"{self.API_URL}/mails/{message_id}",
+            f"{self.API_URL}/mails/{quote(message_id, safe='')}",
             data=self._params(mailbox.token),
         )
         return bool(data.get("result", False))
@@ -233,5 +234,5 @@ class TempMailPlus(HttpProvider):
         return MessageSource(
             id=message_id,
             data="\n".join(detail.html) if detail.html else detail.text,
-            download_url=f"{self.API_URL}/mails/{message_id}?email={mailbox.token}&epin={self._epin}",
+            download_url="",
         )

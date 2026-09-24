@@ -7,6 +7,7 @@ from pathlib import Path
 from fastapi import FastAPI, Request
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
+from loguru import logger
 from sqlalchemy.ext.asyncio import AsyncEngine
 
 from .. import __version__
@@ -32,6 +33,7 @@ from .routers.messages import router as messages_router
 from .routers.providers import router as providers_router
 from .services import domain_cache as dc
 from .services import provider_headers as ph
+from .services import stats_history
 from .services.retention import retention_worker, run_sweep
 
 OPENAPI_TAGS = [
@@ -76,9 +78,22 @@ def _run_migrations(url: str) -> None:
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     settings: Settings = app.state.settings
+    # Resolve (and pin) the Fernet key before any request can race to mint one.
+    settings.resolved_secret_key()
     engine: AsyncEngine = make_engine(settings.database_url)
     _run_migrations(settings.database_url)
     factory = SessionFactory(engine)
+    # Seed the ledger's receive-counters from messages that predate the ledger,
+    # so the 7-day incoming chart doesn't fall back to live rows and then
+    # silently lose past days to retention deletes. Idempotent per day.
+    async with factory() as session:
+        seeded = await stats_history.backfill_received(session)
+        await session.commit()
+        if seeded:
+            logger.info(
+                "stats: seeded message_received for {} day/provider bucket(s)",
+                seeded,
+            )
     http = HttpClient(proxy=settings.proxy)
     secret = settings.resolved_secret_key()
     store = DbGmailStore(factory, secret)

@@ -41,21 +41,32 @@ class Settings(BaseSettings):
     provider_headers_ttl_seconds: int = 21600
 
     def resolved_secret_key(self) -> str:
+        """Encryption key, resolved once.
+
+        Cached on the instance: a failed persist must not mint a new key on
+        the next call, or tokens encrypted with the previous one become
+        unreadable for the rest of the process.
+        """
+        cached = getattr(self, "_resolved_secret", None)
+        if cached:
+            return cached
         if self.secret_key:
-            return self.secret_key
-        if self.secret_key_path.exists():
-            return self.secret_key_path.read_text(encoding="utf-8").strip()
-        key = Fernet.generate_key().decode()
-        try:
-            self.secret_key_path.write_text(key, encoding="utf-8")
-            os.chmod(self.secret_key_path, 0o600)
-        except OSError as exc:
-            logger.warning("could not persist generated secret key to %s: %s", self.secret_key_path, exc)
-        logger.warning(
-            "generated a new encryption key at %s — keep this file safe and persisted "
-            "across restarts, otherwise stored credentials cannot be decrypted",
-            self.secret_key_path,
-        )
+            key = self.secret_key
+        elif self.secret_key_path.exists():
+            key = self.secret_key_path.read_text(encoding="utf-8").strip()
+        else:
+            key = Fernet.generate_key().decode()
+            try:
+                self.secret_key_path.write_text(key, encoding="utf-8")
+                os.chmod(self.secret_key_path, 0o600)
+            except OSError as exc:
+                logger.warning("could not persist generated secret key to %s: %s", self.secret_key_path, exc)
+            logger.warning(
+                "generated a new encryption key at %s — keep this file safe and persisted "
+                "across restarts, otherwise stored credentials cannot be decrypted",
+                self.secret_key_path,
+            )
+        object.__setattr__(self, "_resolved_secret", key)
         return key
 
     def gmail_client(self) -> tuple[str, str]:

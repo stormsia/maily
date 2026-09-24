@@ -44,6 +44,9 @@ class GmailAccount(Base):
 
 class Mailbox(Base):
     __tablename__ = "mailboxes"
+    __table_args__ = (
+        Index("ix_mailboxes_provider_deleted_created", "provider", "is_deleted", "created_at"),
+    )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     provider: Mapped[str] = mapped_column(String(64), index=True)
@@ -69,7 +72,10 @@ class Mailbox(Base):
 
 class Message(Base):
     __tablename__ = "messages"
-    __table_args__ = (UniqueConstraint("mailbox_id", "message_api_id", name="uq_message_mailbox_api_id"),)
+    __table_args__ = (
+        UniqueConstraint("mailbox_id", "message_api_id", name="uq_message_mailbox_api_id"),
+        Index("ix_messages_provider_deleted_received", "provider", "is_deleted", "received_at"),
+    )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     mailbox_id: Mapped[int] = mapped_column(
@@ -135,8 +141,8 @@ class StatsEvent(Base):
 
     __tablename__ = "stats_events"
     __table_args__ = (
+        UniqueConstraint("day", "provider", "event", name="uq_stats_events_bucket"),
         Index("ix_stats_events_day_event", "day", "event"),
-        Index("ix_stats_events_day_provider_event", "day", "provider", "event"),
     )
 
     #: mailbox_created | mailbox_deleted | message_received | message_deleted

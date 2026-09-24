@@ -31,14 +31,6 @@ def utcnow_naive() -> datetime:
     return datetime.now(timezone.utc).replace(tzinfo=None)
 
 
-def _as_naive(dt: datetime | None) -> datetime | None:
-    if dt is None:
-        return None
-    if dt.tzinfo is not None:
-        dt = dt.astimezone(timezone.utc).replace(tzinfo=None)
-    return dt
-
-
 async def get_retention(session) -> list[Retention]:
     return list((await session.execute(select(Retention).order_by(Retention.provider))).scalars())
 
@@ -72,9 +64,19 @@ async def delete_retention(session, provider: str) -> bool:
     return True
 
 
-async def _commit_short(session: AsyncSession) -> None:
-    """Commit the current unit of work right away (releases the write lock)."""
-    await retry_on_lock(session.commit)
+async def _write(factory: AsyncSessionFactory[AsyncSession], operation: Callable[[AsyncSession], Awaitable[None]]) -> None:
+    """One short write transaction in a fresh session, retried on SQLITE_BUSY.
+
+    Retrying ``session.commit`` on a session that already failed is useless:
+    the transaction is dead. A new session is the only retry that works.
+    """
+
+    async def _do() -> None:
+        async with factory() as session:
+            await operation(session)
+            await session.commit()
+
+    await retry_on_lock(_do)
 
 
 async def run_sweep(
@@ -92,8 +94,10 @@ async def run_sweep(
         mailbox_ttl = {r.provider: r.mailbox_ttl_hours for r in retentions if r.mailbox_ttl_hours}
         message_ttl = {r.provider: r.message_ttl_hours for r in retentions if r.message_ttl_hours}
 
-        # reap soft-deleted rows (provider side already removed at API time)
-        await session.execute(
+    # Soft-deleted rows were already removed upstream. One write, then the
+    # session is closed before any provider I/O.
+    async def _reap(s: AsyncSession) -> None:
+        await s.execute(
             delete(Message).where(
                 or_(
                     Message.is_deleted.is_(True),
@@ -101,96 +105,97 @@ async def run_sweep(
                 )
             )
         )
-        await session.execute(delete(Mailbox).where(Mailbox.is_deleted.is_(True)))
-        # commit before the provider-sync loops: they run network I/O and must
-        # not hold the SQLite write lock for the whole sweep
-        await _commit_short(session)
+        await s.execute(delete(Mailbox).where(Mailbox.is_deleted.is_(True)))
 
-        # expired mailboxes
-        for provider, ttl in mailbox_ttl.items():
-            cutoff = utcnow_naive() - timedelta(hours=ttl)
+    await _write(factory, _reap)
+
+    # expired mailboxes — cutoff is applied in SQL so a large provider
+    # doesn't load every live mailbox into memory just to skip most of them
+    for provider, ttl in mailbox_ttl.items():
+        cutoff = utcnow_naive() - timedelta(hours=ttl)
+        async with factory() as read:
             rows = list(
                 (
-                    await session.execute(
+                    await read.execute(
                         select(Mailbox).where(
-                            Mailbox.provider == provider, Mailbox.is_deleted.is_(False)
+                            Mailbox.provider == provider,
+                            Mailbox.is_deleted.is_(False),
+                            Mailbox.created_at.is_not(None),
+                            Mailbox.created_at < cutoff,
                         )
                     )
                 ).scalars()
             )
-            for row in rows:
-                created_at = _as_naive(row.created_at)
-                if created_at is None or created_at >= cutoff:
-                    continue
-                try:
-                    prov = registry.get(provider)
-                    await prov.delete_mailbox(svc.to_mailbox_info(row, secret))
-                except Exception as exc:  # noqa: BLE001 - best-effort sync with provider
-                    logger.warning("retention: provider delete failed for %s: %s", row.address, exc)
-                await session.delete(row)
-                await _commit_short(session)
-                mailboxes_deleted += 1
-                mailbox_deletes[provider] = mailbox_deletes.get(provider, 0) + 1
-                logger.info("retention: expired mailbox %s deleted", row.address)
+        for row in rows:
+            info = svc.to_mailbox_info(row, secret)
+            try:
+                prov = registry.get(provider)
+                await prov.delete_mailbox(info)
+            except Exception as exc:  # noqa: BLE001 - best-effort sync with provider
+                logger.warning("retention: provider delete failed for %s: %s", row.address, exc)
 
-        # expired messages
-        for provider, ttl in message_ttl.items():
-            cutoff = utcnow_naive() - timedelta(hours=ttl)
+            async def _drop_box(s: AsyncSession, box_id: int = row.id) -> None:
+                found = await s.get(Mailbox, box_id)
+                if found is not None:
+                    await s.delete(found)
+
+            await _write(factory, _drop_box)
+            mailboxes_deleted += 1
+            mailbox_deletes[provider] = mailbox_deletes.get(provider, 0) + 1
+            logger.info("retention: expired mailbox %s deleted", row.address)
+
+    # expired messages — mailbox is joined in so we don't re-fetch it per row
+    for provider, ttl in message_ttl.items():
+        cutoff = utcnow_naive() - timedelta(hours=ttl)
+        async with factory() as read:
             msg_rows = list(
                 (
-                    await session.execute(
-                        select(Message)
+                    await read.execute(
+                        select(Message, Mailbox)
                         .join(Mailbox, Message.mailbox_id == Mailbox.id)
                         .where(
                             Message.provider == provider,
                             Mailbox.is_deleted.is_(False),
                             Message.is_deleted.is_(False),
+                            Message.received_at.is_not(None),
+                            Message.received_at < cutoff,
                         )
                     )
-                ).scalars()
+                ).all()
             )
-            for msg in msg_rows:
-                received_at = _as_naive(msg.received_at)
-                if received_at is None or received_at >= cutoff:
-                    continue
-                try:
-                    prov = registry.get(provider)
-                    mailbox_row = await session.get(Mailbox, msg.mailbox_id)
-                    if mailbox_row is None:
-                        # orphaned message: drop it locally without notifying a provider
-                        await session.delete(msg)
-                        await _commit_short(session)
-                        messages_deleted += 1
-                        message_deletes[provider] = message_deletes.get(provider, 0) + 1
-                        logger.info("retention: orphaned message %s deleted", msg.message_api_id)
-                        continue
-                    await prov.delete_message(
-                        svc.to_mailbox_info(mailbox_row, secret),
-                        msg.message_api_id,
-                    )
-                except Exception as exc:  # noqa: BLE001 - best-effort sync with provider
-                    logger.warning(
-                        "retention: provider message delete failed for %s/%s: %s",
-                        msg.message_api_id,
-                        msg.provider,
-                        exc,
-                    )
-                await session.delete(msg)
-                await _commit_short(session)
-                messages_deleted += 1
-                message_deletes[provider] = message_deletes.get(provider, 0) + 1
-                logger.info("retention: expired message %s deleted", msg.message_api_id)
+        for msg, mailbox_row in msg_rows:
+            info = svc.to_mailbox_info(mailbox_row, secret)
+            msg_id = msg.message_api_id
+            try:
+                prov = registry.get(provider)
+                await prov.delete_message(info, msg_id)
+            except Exception as exc:  # noqa: BLE001 - best-effort sync with provider
+                logger.warning(
+                    "retention: provider message delete failed for %s/%s: %s",
+                    msg_id,
+                    msg.provider,
+                    exc,
+                )
 
-        # ledger bookkeeping: TTL deletes survive here after the rows are gone,
-        # and rows outside the reporting window are pruned
-        for provider, n in mailbox_deletes.items():
-            await record(session, provider=provider, event=EVENT_MAILBOX_DELETED, count=n)
-        for provider, n in message_deletes.items():
-            await record(session, provider=provider, event=EVENT_MESSAGE_DELETED, count=n)
-        await prune(session)
+            async def _drop_msg(s: AsyncSession, mid: int = msg.id) -> None:
+                found = await s.get(Message, mid)
+                if found is not None:
+                    await s.delete(found)
 
-        await _commit_short(session)
-        return {"mailboxes_deleted": mailboxes_deleted, "messages_deleted": messages_deleted}
+            await _write(factory, _drop_msg)
+            messages_deleted += 1
+            message_deletes[provider] = message_deletes.get(provider, 0) + 1
+            logger.info("retention: expired message %s deleted", msg_id)
+
+    async def _ledger(s: AsyncSession) -> None:
+        for prov_slug, n in mailbox_deletes.items():
+            await record(s, provider=prov_slug, event=EVENT_MAILBOX_DELETED, count=n)
+        for prov_slug, n in message_deletes.items():
+            await record(s, provider=prov_slug, event=EVENT_MESSAGE_DELETED, count=n)
+        await prune(s)
+
+    await _write(factory, _ledger)
+    return {"mailboxes_deleted": mailboxes_deleted, "messages_deleted": messages_deleted}
 
 
 async def retention_worker(sweep: Callable[[], Awaitable[dict]], interval_seconds: float) -> None:

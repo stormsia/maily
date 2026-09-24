@@ -98,6 +98,9 @@ async def create_mailbox(
             raise MailValidationError("no providers registered")
         slug = random.choice(providers).slug
     prov = registry.get(slug)
+    # Domain lookup may have committed already; either way the provider call
+    # must not run inside an open write transaction.
+    await session.commit()
     info = await prov.create_mailbox(
         MailboxSpec(address=address, domain=domain, parent_id=parent_id, password=password)
     )
@@ -128,15 +131,22 @@ async def upsert_messages(
     out: list[Message] = []
     new_by_day: dict[date, int] = {}
     now = datetime.now(timezone.utc).replace(tzinfo=None)
-    for s in summaries:
-        existing = (
+    ids = [s.id for s in summaries]
+    existing_rows = (
+        (
             await session.execute(
                 select(Message).where(
                     Message.mailbox_id == mailbox.id,
-                    Message.message_api_id == s.id,
+                    Message.message_api_id.in_(ids),
                 )
             )
-        ).scalar_one_or_none()
+        ).scalars().all()
+        if ids
+        else []
+    )
+    by_id = {row.message_api_id: row for row in existing_rows}
+    for s in summaries:
+        existing = by_id.get(s.id)
         if existing is None:
             existing = Message(
                 mailbox_id=mailbox.id,

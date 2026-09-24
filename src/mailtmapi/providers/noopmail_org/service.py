@@ -86,12 +86,13 @@ class NoopMail(HttpProvider):
     default_headers = _HEADERS
     BASE_URL = "https://noopmail.org"
 
-    async def _fetch_targets(self) -> list[Target]:
-        seen: set[str] = set()
+    async def _fetch_targets(self, *, known: set[str] | None = None) -> list[Target]:
+        seen: set[str] = set(known or ())
         dupes = 0
-        # Хитрость: /api/rd возвращает ОДИН случайный домен за запрос.
-        # Тянем повторно, пока не наберём все уникальные dm; когда 15 подряд
-        # вызовов вернули уже известный домен — считаем набор полным.
+        # /api/rd returns ONE random domain per call. Keep pulling until 15
+        # calls in a row are domains we already have — that is the full set.
+        # `known` is the previous cache: without it a refresh that already
+        # holds every domain stops on the first duplicate and writes nothing new.
         for _ in range(_RD_MAX_ITERATIONS):
             data = await self._get_json(f"{self.BASE_URL}/api/rd")
             if not isinstance(data, dict) or not data.get("dm"):

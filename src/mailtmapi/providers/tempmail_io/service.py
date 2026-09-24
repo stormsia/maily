@@ -107,7 +107,7 @@ class TempMailIO(HttpProvider):
             headers["X-CORS-Header"] = self._cors_token
         return headers
 
-    async def _fetch_targets(self) -> list[Target]:
+    async def _fetch_targets(self, *, known: set[str] | None = None) -> list[Target]:
         data = await self._get_json(f"{self.BASE_URL}/api/v4/domains")
         domains = data.get("domains") if isinstance(data, dict) else None
         if not domains:

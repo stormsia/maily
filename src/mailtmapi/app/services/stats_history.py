@@ -11,10 +11,11 @@ from __future__ import annotations
 from datetime import date, datetime, timedelta, timezone
 from typing import Any
 
-from sqlalchemy import delete, select
+from sqlalchemy import delete, func, select
+from sqlalchemy.dialects.sqlite import insert as sqlite_insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from ...db.models import StatsEvent
+from ...db.models import Message, StatsEvent
 
 #: Event kinds recorded in the ledger.
 EVENT_MAILBOX_CREATED = "mailbox_created"
@@ -51,29 +52,74 @@ async def record(
     count: int = 1,
     when: datetime | date | None = None,
 ) -> None:
-    """Increment the day/provider/event counter in place (one row per bucket)."""
+    """Increment the day/provider/event counter (one row per bucket).
+
+    Atomic upsert: two concurrent receives of the same provider/day cannot
+    insert two rows, which used to make the next read raise.
+    """
     if count <= 0:
         return
     day = _day_utc(when)
-    row = (
-        await session.execute(
-            select(StatsEvent).where(
-                StatsEvent.day == day,
-                StatsEvent.provider == provider,
-                StatsEvent.event == event,
-            )
-        )
-    ).scalar_one_or_none()
-    if row is None:
-        session.add(StatsEvent(day=day, provider=provider, event=event, count=count))
-    else:
-        row.count += count
+    stmt = sqlite_insert(StatsEvent).values(
+        day=day, provider=provider, event=event, count=count
+    )
+    stmt = stmt.on_conflict_do_update(
+        index_elements=["day", "provider", "event"],
+        set_={"count": StatsEvent.count + count},
+    )
+    await session.execute(stmt)
 
 
 async def prune(session: AsyncSession, *, days: int = WINDOW_DAYS) -> None:
     """Drop ledger rows older than the retention window."""
     cutoff = _day_utc() - timedelta(days=days)
     await session.execute(delete(StatsEvent).where(StatsEvent.day < cutoff))
+
+
+async def backfill_received(session: AsyncSession, *, days: int = WINDOW_DAYS) -> int:
+    """Seed the ledger's ``message_received`` counters from stored messages.
+
+    Migration aid for rows that predate the ledger: without receive-events the
+    7-day incoming chart falls back to the live table, and a later retention
+    sweep hard-deletes those rows, silently erasing past chart days.
+
+    Only fills (day, provider) buckets that have no receive counter yet, so
+    repeated calls and restarts never double-count. Messages already erased by
+    retention are gone from the live table and cannot be reconstructed here.
+    """
+    start = _day_utc() - timedelta(days=days - 1)
+    buckets = (
+        await session.execute(
+            select(
+                Message.provider,
+                func.date(Message.received_at).label("d"),
+                func.count(),
+            )
+            .where(Message.received_at.is_not(None), Message.received_at >= start)
+            .group_by(Message.provider, "d")
+        )
+    ).all()
+    existing = {
+        (r[0], r[1])
+        for r in (
+            await session.execute(
+                select(StatsEvent.day, StatsEvent.provider).where(
+                    StatsEvent.event == EVENT_MESSAGE_RECEIVED,
+                    StatsEvent.day >= start,
+                )
+            )
+        ).all()
+    }
+    inserted = 0
+    for provider, day_str, count in buckets:
+        day = date.fromisoformat(day_str)
+        if (day, provider) in existing:
+            continue
+        session.add(
+            StatsEvent(day=day, provider=provider, event=EVENT_MESSAGE_RECEIVED, count=count)
+        )
+        inserted += 1
+    return inserted
 
 
 def _zero() -> dict[str, int]:

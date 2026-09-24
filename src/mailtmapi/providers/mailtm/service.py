@@ -94,7 +94,7 @@ class MailTM(HttpProvider):
     def _auth(self, mailbox: MailboxInfo) -> dict[str, str]:
         return {"Authorization": f"Bearer {mailbox.token}"}
 
-    async def _fetch_targets(self) -> list[Target]:
+    async def _fetch_targets(self, *, known: set[str] | None = None) -> list[Target]:
         data = (await self._http.get(f"{self.API_URL}/domains")).json()
         targets: list[Target] = []
         for m in data.get("hydra:member") or []:

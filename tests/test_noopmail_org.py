@@ -65,6 +65,14 @@ async def test_list_targets_collects_all_domains_and_caches():
         again = await provider.list_targets()
         assert calls == calls_before
         assert {t.id for t in again} == {"a.com", "b.com", "c.com"}
+
+        # fresh=True must keep sampling past domains already cached, or a
+        # refresh that draws a known domain first would replace the DB with one row.
+        queue.extend(["a.com", "d.com"])
+        calls_before = calls
+        refreshed = await provider.list_targets(fresh=True)
+        assert calls > calls_before
+        assert {t.id for t in refreshed} == {"a.com", "b.com", "c.com", "d.com"}
     finally:
         await http.close()
 

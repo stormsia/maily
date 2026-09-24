@@ -152,19 +152,23 @@ class HttpProvider:
         if self._owns_http:
             await self._http.close()
 
-    async def list_targets(self) -> list[Target]:
+    async def list_targets(self, *, fresh: bool = False) -> list[Target]:
         now = time.monotonic()
-        if self._targets and now - self._targets_at < self.cache_ttl:
+        if not fresh and self._targets and now - self._targets_at < self.cache_ttl:
             return list(self._targets)
         async with self._lock:
-            if self._targets and time.monotonic() - self._targets_at < self.cache_ttl:
+            if not fresh and self._targets and time.monotonic() - self._targets_at < self.cache_ttl:
                 return list(self._targets)
-            targets = await self._fetch_targets()
+            # `known` is the previous in-memory list. noopmail uses it so a
+            # random /api/rd refresh doesn't stop on the first already-seen
+            # domain; full-list providers ignore it.
+            known = {t.label for t in self._targets} if fresh and self._targets else None
+            targets = await self._fetch_targets(known=known)
             self._targets = targets
             self._targets_at = time.monotonic()
             return list(targets)
 
-    async def _fetch_targets(self) -> list[Target]:
+    async def _fetch_targets(self, *, known: set[str] | None = None) -> list[Target]:
         raise NotImplementedError
 
     @async_retry()

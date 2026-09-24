@@ -173,6 +173,8 @@ def test_admin_stats(tmp_path: Path):
         assert stats["by_provider"]["stub"]["messages_total"] == 1
         assert stats["gmail_accounts"] == {"total": 0, "active": 0}
         assert len(stats["messages_last_7_days"]) >= 1
+        # message inserted after boot is not backfilled — shown via live fallback
+        assert stats["messages_last_7_days"][-1]["count"] == 1
         # ledger exists even when nothing was recorded through the API yet
         assert stats["history"]["window_days"] == 10
         assert len(stats["history"]["days"]) == 10
@@ -182,6 +184,40 @@ def test_admin_stats(tmp_path: Path):
             "message_received": 0,
             "message_deleted": 0,
         }
+
+
+def test_stats_backfill_is_idempotent_across_restarts(tmp_path: Path):
+    # first boot creates the schema (alembic) so the raw INSERTs below work
+    with _app(tmp_path):
+        pass
+
+    now = utcnow_naive()
+    conn = _db(tmp_path)
+    conn.execute(
+        "INSERT INTO mailboxes (provider, address, mailbox_token_enc)"
+        " VALUES ('stub', 'bf@x', ?)",
+        (encrypt(SECRET, "tok"),),
+    )
+    mb_id = conn.execute("SELECT last_insert_rowid()").fetchone()[0]
+    # two messages received on different days — both must appear in the chart
+    for i, minutes in enumerate((0, 60 * 24)):
+        conn.execute(
+            "INSERT INTO messages (mailbox_id, provider, message_api_id, received_at, cached_at)"
+            " VALUES (?, 'stub', ?, ?, ?)",
+            (mb_id, f"m{i}", (now - timedelta(minutes=minutes)).isoformat(), now.isoformat()),
+        )
+    conn.commit()
+    conn.close()
+
+    with _app(tmp_path) as client:
+        days = client.get("/v1/admin/stats").json()["history"]["days"]
+        counts = [d["message_received"] for d in days]
+        assert counts[-1] == 1 and counts[-2] == 1
+
+    # second boot on the same DB must not double-count (per-day idempotency)
+    with _app(tmp_path) as client:
+        totals = client.get("/v1/admin/stats").json()["history"]["totals"]
+        assert totals["message_received"] == 2
 
 
 def test_gmail_creds_crud(tmp_path):

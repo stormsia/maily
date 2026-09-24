@@ -79,12 +79,24 @@ def _utcnow_naive() -> datetime:
     return datetime.now(timezone.utc).replace(tzinfo=None)
 
 
+def _labels(targets: list[Target]) -> list[str]:
+    seen: set[str] = set()
+    out: list[str] = []
+    for t in targets:
+        label = (t.label or "").strip().lower()
+        if label and label not in seen:
+            seen.add(label)
+            out.append(label)
+    return out
+
+
 async def _store(session, slug: str, targets: list[Target]) -> None:
     row = await session.get(DomainCache, slug)
     if row is None:
         row = DomainCache(provider=slug, domains_json="")
         session.add(row)
-    row.domains_json = json.dumps([t.label for t in targets])
+    # Full replace: domains the provider no longer returns are dropped.
+    row.domains_json = json.dumps(_labels(targets))
     row.error = None
     # Force a timestamp bump even when the domain list didn't change — the
     # column's onupdate only fires on an actual UPDATE, and identical data
@@ -131,22 +143,29 @@ async def list_domain_targets(
 ) -> list[Target]:
     providers = [registry.get(provider)] if provider else registry.all()
     cfg = await get_settings(session, settings)
+    # Read the cache, then drop the transaction before any provider HTTP.
+    cached: dict[str, list[str]] = {}
+    misses: list = []
     out: list[Target] = []
     for p in providers:
         if p.kind != "domain":
-            out.extend(await p.list_targets())
+            misses.append(p)
             continue
-        row = None
-        if cfg["enabled"]:
-            row = await session.get(DomainCache, p.slug)
-        if row and row.domains_json:
-            for d in _parse_domains(row):
-                out.append(Target(id=d, kind="domain", provider=p.slug, label=d))
+        row = await session.get(DomainCache, p.slug) if cfg["enabled"] else None
+        domains = _parse_domains(row) if row and row.domains_json else []
+        if domains:
+            cached[p.slug] = domains
         else:
-            targets = await p.list_targets()
-            if cfg["enabled"]:
-                await _store(session, p.slug, targets)
-            out.extend(targets)
+            misses.append(p)
+    await session.commit()
+    for slug, domains in cached.items():
+        for d in domains:
+            out.append(Target(id=d, kind="domain", provider=slug, label=d))
+    for p in misses:
+        targets = await p.list_targets()
+        if p.kind == "domain" and cfg["enabled"]:
+            await _store(session, p.slug, targets)
+        out.extend(targets)
     return out
 
 
@@ -170,7 +189,8 @@ async def refresh_cache(
         if skip and p.slug in skip:
             continue
         try:
-            targets = await p.list_targets()
+            # Bypass the adapter's in-memory TTL: a refresh must hit the provider.
+            targets = await p.list_targets(fresh=True)
             await _store_committed(factory, p.slug, targets)
             refreshed.append(p.slug)
         except Exception as exc:  # noqa: BLE001 - keep old domains, report error
@@ -217,16 +237,22 @@ async def find_provider_for_domain(
     domain: str,
 ) -> str | None:
     cfg = await get_settings(session, settings)
+    wanted = domain.lower()
+    live: list = []
     if cfg["enabled"]:
         for p in registry.all():
             if p.kind != "domain":
                 continue
             row = await session.get(DomainCache, p.slug)
-            if row and row.domains_json and domain.lower() in {d.lower() for d in _parse_domains(row)}:
+            if row and row.domains_json and wanted in {d.lower() for d in _parse_domains(row)}:
                 return p.slug
-    for p in registry.all():
+            live.append(p)
+    else:
+        live = [p for p in registry.all() if p.kind == "domain"]
+    await session.commit()
+    for p in live:
         for t in await p.list_targets():
-            if t.label.lower() == domain.lower():
+            if t.label.lower() == wanted:
                 return p.slug
     return None
 

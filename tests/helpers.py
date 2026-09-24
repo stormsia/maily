@@ -51,8 +51,9 @@ class StubProvider:
 
     async def close(self) -> None: ...
 
-    async def list_targets(self) -> list[Target]:
+    async def list_targets(self, *, fresh: bool = False) -> list[Target]:
         self.list_targets_calls += 1
+        self.list_targets_fresh = fresh
         if self.fail:
             raise RuntimeError("boom")
         return list(self._targets)

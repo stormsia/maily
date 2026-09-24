@@ -31,10 +31,11 @@ async def list_messages(
 ) -> list[MessageOut]:
     """List a mailbox's messages (fetches one page from the provider and caches it)."""
     row = await svc.get_mailbox(session, mailbox_id)
+    info = svc.to_mailbox_info(row, settings.resolved_secret_key())
     prov = registry.get(row.provider)
-    summaries = await prov.list_messages(
-        svc.to_mailbox_info(row, settings.resolved_secret_key()), page=page
-    )
+    # Release the read transaction before the provider round-trip.
+    await session.commit()
+    summaries = await prov.list_messages(info, page=page)
     cached = await svc.upsert_messages(session, row, summaries)
     await session.commit()
     for m in cached:
@@ -52,8 +53,10 @@ async def get_message(
 ) -> MessageDetailOut:
     """Fetch a single message with its full text and HTML bodies."""
     row = await svc.get_mailbox(session, mailbox_id)
+    info = svc.to_mailbox_info(row, settings.resolved_secret_key())
     prov = registry.get(row.provider)
-    detail = await prov.get_message(svc.to_mailbox_info(row, settings.resolved_secret_key()), msg_id)
+    await session.commit()
+    detail = await prov.get_message(info, msg_id)
     cached = (
         await session.execute(
             select(Message).where(Message.mailbox_id == row.id, Message.message_api_id == msg_id)
@@ -91,8 +94,10 @@ async def mark_read(
 ) -> MessageOut:
     """Mark a message as read (both upstream and locally)."""
     row = await svc.get_mailbox(session, mailbox_id)
+    info = svc.to_mailbox_info(row, settings.resolved_secret_key())
     prov = registry.get(row.provider)
-    await prov.mark_read(svc.to_mailbox_info(row, settings.resolved_secret_key()), msg_id)
+    await session.commit()
+    await prov.mark_read(info, msg_id)
     cached = (
         await session.execute(
             select(Message).where(Message.mailbox_id == row.id, Message.message_api_id == msg_id)
@@ -116,8 +121,10 @@ async def delete_message(
 ) -> None:
     """Delete a message (upstream and local cache)."""
     row = await svc.get_mailbox(session, mailbox_id)
+    info = svc.to_mailbox_info(row, settings.resolved_secret_key())
     prov = registry.get(row.provider)
-    await prov.delete_message(svc.to_mailbox_info(row, settings.resolved_secret_key()), msg_id)
+    await session.commit()
+    await prov.delete_message(info, msg_id)
     cached = (
         await session.execute(
             select(Message).where(Message.mailbox_id == row.id, Message.message_api_id == msg_id)
@@ -139,6 +146,8 @@ async def get_source(
 ) -> SourceOut:
     """Download the raw message source (.eml payload)."""
     row = await svc.get_mailbox(session, mailbox_id)
+    info = svc.to_mailbox_info(row, settings.resolved_secret_key())
     prov = registry.get(row.provider)
-    src = await prov.get_source(svc.to_mailbox_info(row, settings.resolved_secret_key()), msg_id)
+    await session.commit()
+    src = await prov.get_source(info, msg_id)
     return SourceOut(id=src.id, data=src.data, download_url=src.download_url or "")

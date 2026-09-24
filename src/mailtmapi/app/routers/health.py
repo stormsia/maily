@@ -9,6 +9,23 @@ from ...db.models import DomainCache
 from ..deps import RegistryDep, SessionDep
 
 
+_ERROR_MAX = 160
+
+
+def _safe_error(raw: str | None) -> str | None:
+    """Short, single-line provider error for the public health payload.
+
+    Refresh failures can echo an upstream URL or response body; the dashboard
+    banner only needs to know that a refresh failed, not the raw text.
+    """
+    if not raw:
+        return None
+    text = " ".join(raw.split())
+    if len(text) <= _ERROR_MAX:
+        return text
+    return text[: _ERROR_MAX - 1] + "…"
+
+
 def _iso_utc(dt: datetime | None) -> str | None:
     """Naive-UTC datetime as ISO-8601 with an explicit Z (this is a plain dict
     response, so the schema-level serializer does not apply here)."""
@@ -34,7 +51,7 @@ async def health(session: SessionDep, registry: RegistryDep) -> dict:
         cache[row.provider] = {
             "last_refresh": _iso_utc(row.updated_at) if row.updated_at else None,
             "domains": _json_len(row.domains_json),
-            "error": row.error,
+            "error": _safe_error(row.error),
         }
     providers: dict[str, dict] = {}
     for provider in registry.all():

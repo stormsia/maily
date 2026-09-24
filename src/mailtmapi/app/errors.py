@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import logging
+
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
@@ -13,6 +15,8 @@ from ..exceptions import (
     MailRateLimitError,
     MailValidationError,
 )
+
+logger = logging.getLogger("mailtmapi.errors")
 
 
 def _json(
@@ -79,8 +83,10 @@ def register_errors(app: FastAPI) -> None:
 
     @app.exception_handler(KeyError)
     async def _key(_req: Request, exc: KeyError) -> JSONResponse:
+        # registry.get raises KeyError for an unknown provider slug
         return _json(404, str(exc).strip("'\""), code="not_found")
 
     @app.exception_handler(Exception)
-    async def _internal(_req: Request, exc: Exception) -> JSONResponse:
+    async def _internal(req: Request, exc: Exception) -> JSONResponse:
+        logger.exception("unhandled error on %s %s", req.method, req.url.path)
         return _json(500, "Internal server error", code="internal")

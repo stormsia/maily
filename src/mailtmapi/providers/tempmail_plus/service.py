@@ -141,7 +141,7 @@ class TempMailPlus(HttpProvider):
     async def _get_json(self, url: str, params: dict[str, Any] | None = None) -> dict:
         return (await self._http.get(url, params=params, headers=self._headers())).json()
 
-    async def _fetch_targets(self) -> list[Target]:
+    async def _fetch_targets(self, *, known: set[str] | None = None) -> list[Target]:
         resp = await self._http.get(
             f"{self.BASE_URL}/en/",
             headers={**self._headers(), "Accept": "text/html,application/xhtml+xml", "X-Requested-With": ""},

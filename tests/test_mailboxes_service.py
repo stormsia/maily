@@ -27,6 +27,8 @@ class FakeSession:
 
     async def flush(self) -> None: ...
 
+    async def commit(self) -> None: ...
+
 
 async def _create(address: str, session: FakeSession | None = None) -> svc.Mailbox:
     session = session or FakeSession()
@@ -53,8 +55,8 @@ async def test_valid_address_is_saved():
     session = FakeSession()
     row = await _create("user@dom.com", session)
     assert row.address == "user@dom.com"
-    # the mailbox row plus its ledger event are both persisted
-    assert [type(o).__name__ for o in session.added] == ["Mailbox", "StatsEvent"]
+    # ledger is an upsert (execute), not session.add
+    assert [type(o).__name__ for o in session.added] == ["Mailbox"]
 
 
 @pytest.mark.asyncio

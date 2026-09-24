@@ -78,7 +78,11 @@ async def stats(session: SessionDep) -> dict:
             "messages_total": 0,
         }
     for provider, msg_count in (
-        await session.execute(select(Message.provider, func.count()).group_by(Message.provider))
+        await session.execute(
+            select(Message.provider, func.count())
+            .where(Message.is_deleted.is_(False))
+            .group_by(Message.provider)
+        )
     ).all():
         by_provider.setdefault(provider, {"mailboxes_total": 0, "mailboxes_active": 0, "mailboxes_deleted": 0, "messages_total": 0})[
             "messages_total"

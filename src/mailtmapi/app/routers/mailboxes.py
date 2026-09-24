@@ -11,6 +11,7 @@ from ..services import mailboxes as svc
 from ..services.stats_history import EVENT_MAILBOX_DELETED, record
 
 # The dashboard fetches mailbox lists in bounded pages (see static mailboxes.js).
+# Omitting limit still caps the response so a full table can't be streamed out.
 MAX_PAGE_SIZE = 500
 
 
@@ -20,11 +21,10 @@ def _like_pattern(q: str) -> str:
     return f"%{escaped}%"
 
 
-def _parse_page(limit: int | None, offset: int | None) -> tuple[int | None, int | None]:
+def _parse_page(limit: int | None, offset: int | None) -> tuple[int, int]:
     if limit is None:
-        return None, None
-    limit = max(1, min(limit, MAX_PAGE_SIZE))
-    return limit, max(0, offset or 0)
+        limit = MAX_PAGE_SIZE
+    return max(1, min(limit, MAX_PAGE_SIZE)), max(0, offset or 0)
 
 
 router = APIRouter(
@@ -89,7 +89,9 @@ async def list_mailboxes(
     provider: str | None = Query(None),
     active: bool = Query(True),
     q: str | None = Query(None, description="Substring filter on the full address"),
-    limit: int | None = Query(None, ge=1, le=MAX_PAGE_SIZE, description="Max rows to return"),
+    limit: int | None = Query(
+        None, ge=1, le=MAX_PAGE_SIZE, description=f"Max rows to return (default {MAX_PAGE_SIZE})"
+    ),
     offset: int | None = Query(None, ge=0, description="Row offset"),
 ) -> list[MailboxOut]:
     """List mailboxes with optional provider/status filtering, address search and pagination."""
@@ -102,9 +104,7 @@ async def list_mailboxes(
         qry = qry.where(Mailbox.is_active.is_(True), Mailbox.is_deleted.is_(False))
     if q:
         qry = qry.where(Mailbox.address.ilike(_like_pattern(q), escape="\\"))
-    qry = qry.order_by(Mailbox.id.desc())
-    if limit is not None:
-        qry = qry.limit(limit).offset(offset or 0)
+    qry = qry.order_by(Mailbox.id.desc()).limit(limit).offset(offset)
     rows = list((await session.execute(qry)).scalars().all())
     statuses = await _parent_statuses(request, rows)
     return [_with_status(r, statuses) for r in rows]
@@ -135,9 +135,12 @@ async def delete_one(
 ) -> None:
     """Deactivate and mark a mailbox deleted (also deletes it upstream)."""
     row = await svc.get_mailbox(session, mailbox_id)
+    info = svc.to_mailbox_info(row, settings.resolved_secret_key())
+    provider = row.provider
+    await session.commit()
     try:
-        prov = registry.get(row.provider)
-        await prov.delete_mailbox(svc.to_mailbox_info(row, settings.resolved_secret_key()))
+        prov = registry.get(provider)
+        await prov.delete_mailbox(info)
     except KeyError as exc:
         raise MailNotFoundError(str(exc)) from exc
     row.is_active = False

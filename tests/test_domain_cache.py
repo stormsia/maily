@@ -67,6 +67,8 @@ def test_run_populates_cache_and_reports_failures(tmp_path):
         body = r.json()
         assert body["refreshed"] == ["good"]
         assert body["failed"] == ["bad"]
+        assert good.list_targets_fresh is True
+        assert bad.list_targets_fresh is True
         assert isinstance(body["detail"], str) and body["detail"]
 
         body = client.get("/v1/admin/domain-cache").json()

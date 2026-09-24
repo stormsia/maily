@@ -45,14 +45,31 @@ class GmailProvider:
         self._parent_rr = 0
         self._alias_rr: dict[int, int] = {}
         self._page_tokens: dict[str, str] = {}
-        self._lock = asyncio.Lock()  # ponytail: global lock, per-parent if throughput matters
+        self._refresh_locks: dict[int, asyncio.Lock] = {}
+        self._locks_guard = asyncio.Lock()
+
+    def _parent_lock(self, parent_id: int) -> asyncio.Lock:
+        lock = self._refresh_locks.get(parent_id)
+        if lock is None:
+            lock = asyncio.Lock()
+            self._refresh_locks[parent_id] = lock
+        return lock
 
     async def close(self) -> None:
         if self._owns_http:
             await self._http.close()
 
     async def _ensure_access(self, parent: GmailParent) -> str:
-        async with self._lock:
+        # Fast path: a still-valid token needs no lock and no store write.
+        if (
+            parent.access_token
+            and parent.access_expires_at
+            and parent.access_expires_at > time.time() + 60
+        ):
+            return parent.access_token
+        async with self._locks_guard:
+            lock = self._parent_lock(parent.id or 0)
+        async with lock:
             if (
                 parent.access_token
                 and parent.access_expires_at

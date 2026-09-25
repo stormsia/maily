@@ -153,6 +153,145 @@ function parseIds(raw) {
   return ids;
 }
 
+function statusPill(status) {
+  if (!status) return null;
+  const s = String(status).toLowerCase();
+  const cls = s === "active" || s === "ok" || s === "connected" ? "pill pill--on"
+    : s.includes("error") || s.includes("expired") || s.includes("invalid") ? "pill pill--warn"
+    : "pill pill--off";
+  return h("span", { class: cls }, status);
+}
+
+function parentOptions(accounts, selectedIds) {
+  const rows = [];
+  const seen = new Set();
+  for (const account of accounts) {
+    const id = Number(account?.id);
+    if (!Number.isInteger(id) || seen.has(id)) continue;
+    seen.add(id);
+    rows.push({
+      id,
+      email: account.email || `id ${id}`,
+      status: account.status || "",
+      missing: false,
+    });
+  }
+  for (const raw of selectedIds) {
+    const id = Number(raw);
+    if (!Number.isInteger(id) || seen.has(id)) continue;
+    seen.add(id);
+    rows.push({ id, email: `${id} · (missing)`, status: "", missing: true });
+  }
+  rows.sort((a, b) => a.email.localeCompare(b.email) || a.id - b.id);
+  return rows;
+}
+
+function parentPicker(accounts, selectedIds = []) {
+  const chosen = new Set(selectedIds.map((id) => Number(id)).filter(Number.isInteger));
+  const options = parentOptions(accounts, [...chosen]);
+  let query = "";
+  let open = false;
+
+  const summary = h("span", { class: "parent-picker-label" }, "None");
+  const toggle = h("button", {
+    type: "button",
+    class: "parent-picker-toggle",
+    "aria-expanded": "false",
+    "aria-label": "Gmail parents",
+    onclick: () => setOpen(!open),
+  }, summary, h("i", { "data-lucide": "chevron-down", class: "parent-picker-chevron", "aria-hidden": "true" }));
+
+  const search = h("input", {
+    type: "search",
+    placeholder: "Filter by email or id",
+    autocomplete: "off",
+    spellcheck: "false",
+    "aria-label": "Filter Gmail parents",
+    oninput: () => {
+      query = search.value;
+      paint();
+    },
+  });
+  const selectAll = h("button", {
+    type: "button",
+    onclick: () => {
+      for (const row of visible()) chosen.add(row.id);
+      paint();
+    },
+  }, "Select all");
+  const clear = h("button", {
+    type: "button",
+    onclick: () => {
+      for (const row of visible()) chosen.delete(row.id);
+      paint();
+    },
+  }, "Clear");
+  const list = h("div", { class: "parent-picker-list", role: "group", "aria-label": "Gmail parents" });
+  const panel = h("div", { class: "parent-picker-panel" },
+    h("div", { class: "parent-picker-tools" },
+      h("div", { class: "parent-picker-search" },
+        h("i", { "data-lucide": "search", "aria-hidden": "true" }),
+        search),
+      h("div", { class: "parent-picker-actions" }, selectAll, clear)),
+    list);
+  const root = h("div", { class: "parent-picker" }, toggle, panel);
+
+  function matches(row) {
+    const q = query.trim().toLowerCase();
+    if (!q) return true;
+    return row.email.toLowerCase().includes(q) || String(row.id).includes(q);
+  }
+
+  function visible() {
+    return options.filter(matches);
+  }
+
+  function setOpen(next) {
+    open = next;
+    root.classList.toggle("is-open", open);
+    toggle.setAttribute("aria-expanded", open ? "true" : "false");
+    if (open) search.focus();
+  }
+
+  function paint() {
+    const n = chosen.size;
+    summary.textContent = n ? `${n} selected` : "None";
+    list.innerHTML = "";
+    const rows = visible();
+    if (!rows.length) {
+      list.append(h("p", { class: "parent-picker-empty" }, options.length ? "No matches." : "No Gmail parents."));
+      return;
+    }
+    for (const row of rows) {
+      const on = chosen.has(row.id);
+      const box = h("input", { type: "checkbox", checked: on ? "checked" : null, tabindex: "-1" });
+      if (on) box.checked = true;
+      const btn = h("button", {
+        type: "button",
+        class: on ? "parent-picker-row is-on" : "parent-picker-row",
+        "aria-pressed": on ? "true" : "false",
+        onclick: () => {
+          if (chosen.has(row.id)) chosen.delete(row.id);
+          else chosen.add(row.id);
+          paint();
+        },
+      }, box, h("span", { class: "parent-picker-main" },
+        h("span", { class: "parent-picker-email" }, row.email),
+        h("span", { class: "parent-picker-id" }, String(row.id))),
+      row.missing ? null : statusPill(row.status));
+      list.append(btn);
+    }
+  }
+
+  paint();
+  return {
+    root,
+    selectedIds() {
+      return [...chosen].sort((a, b) => a - b);
+    },
+  };
+}
+
 function toExpires(value) {
   if (!value) return null;
   const d = new Date(value);
@@ -166,10 +305,12 @@ export async function render(root) {
 
   let keys = [];
   let providers = [];
+  let accounts = [];
   try {
-    [keys, providers] = await Promise.all([
+    [keys, providers, accounts] = await Promise.all([
       api.keys(),
       api.providers().catch(() => []),
+      api.gmailAccounts().catch(() => []),
     ]);
   } catch (e) {
     root.innerHTML = "";
@@ -258,13 +399,7 @@ export async function render(root) {
       value: existing?.expires_at ? toLocalInput(existing.expires_at) : "",
     });
     const providersPick = providerTiles(existing?.scope?.providers || []);
-    const parentInput = h("input", {
-      value: (existing?.scope?.parent_ids || []).join(", "),
-      placeholder: "1, 4 — empty means none",
-      autocomplete: "off",
-      spellcheck: "false",
-      "aria-label": "Parent ids",
-    });
+    const parentsPick = parentPicker(accounts, existing?.scope?.parent_ids || []);
     const actionsPick = actionTiles(existing?.scope?.actions || []);
     const retWrap = h("div", { class: "grid", style: "gap:8px" });
     const retRows = existing ? [] : retentionRows(retWrap, slugs);
@@ -279,16 +414,16 @@ export async function render(root) {
         providersPick,
         h("p", { class: "field-hint" }, "None selected means every provider.")),
       h("div", { class: "field" },
-        h("label", {}, "Parent ids"),
-        parentInput,
-        h("p", { class: "field-hint" }, "Comma-separated Gmail parent ids. Empty means none.")),
+        h("label", {}, "Gmail parents"),
+        parentsPick.root,
+        h("p", { class: "field-hint" }, "None selected means this key gets no root Gmail parents.")),
       h("div", { class: "field" }, h("label", {}, "Actions"), actionsPick),
       existing ? null : h("div", { class: "field" },
         h("label", {}, "Retention ", h("span", { class: "opt" }, "(optional)")),
         h("p", { class: "field-hint" }, RETENTION_HINT),
         retWrap,
         slugs.length ? null : h("p", { class: "field-hint" }, "No providers loaded — retention can be set later.")));
-    return { body, nameInput, expiryInput, providersPick, parentInput, actionsPick, retRows };
+    return { body, nameInput, expiryInput, providersPick, parentsPick, actionsPick, retRows };
   }
 
   function readForm(form) {
@@ -302,7 +437,7 @@ export async function render(root) {
       expires_at: toExpires(form.expiryInput.value),
       scope: {
         providers: providersList,
-        parent_ids: parseIds(form.parentInput.value),
+        parent_ids: form.parentsPick.selectedIds(),
         actions,
       },
     };

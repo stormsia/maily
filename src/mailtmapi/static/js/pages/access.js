@@ -58,16 +58,42 @@ function providerGrid(providers) {
   return wrap;
 }
 
-function parentGrid(ids) {
-  const wrap = h("div", { class: "pick-grid", role: "group", "aria-label": "Gmail parents" });
-  if (!ids?.length) {
-    wrap.append(statusTile("No root Gmail parents", "Empty means none are granted", false));
-    return wrap;
+function parentList(ids, accounts) {
+  const byId = new Map();
+  for (const account of accounts) {
+    const id = Number(account?.id);
+    if (Number.isInteger(id)) byId.set(id, account);
   }
-  for (const id of ids) {
-    wrap.append(statusTile(String(id), "Allowed", true));
+  const summary = h("span", { class: "parent-picker-label" },
+    ids.length ? `${ids.length} root parent${ids.length === 1 ? "" : "s"}` : "No root Gmail parents");
+  const list = h("div", { class: "parent-picker-list", role: "list", "aria-label": "Gmail parents" });
+  if (!ids.length) {
+    list.append(h("p", { class: "parent-picker-empty" }, "No root Gmail parents."));
+  } else {
+    for (const raw of ids) {
+      const id = Number(raw);
+      const account = byId.get(id);
+      const email = account?.email || `${raw} · (not visible)`;
+      list.append(h("div", { class: "parent-picker-row", role: "listitem" },
+        h("span", { class: "parent-picker-main" },
+          h("span", { class: "parent-picker-email" }, email),
+          h("span", { class: "parent-picker-id" }, String(raw)))));
+    }
   }
-  return wrap;
+  const panel = h("div", { class: "parent-picker-panel" }, list);
+  const toggle = h("button", {
+    type: "button",
+    class: "parent-picker-toggle",
+    "aria-expanded": "false",
+    "aria-label": "Gmail parents",
+    onclick: () => {
+      const open = !root.classList.contains("is-open");
+      root.classList.toggle("is-open", open);
+      toggle.setAttribute("aria-expanded", open ? "true" : "false");
+    },
+  }, summary, h("i", { "data-lucide": "chevron-down", class: "parent-picker-chevron", "aria-hidden": "true" }));
+  const root = h("div", { class: "parent-picker" }, toggle, panel);
+  return root;
 }
 
 function retentionBlock(rows) {
@@ -95,8 +121,12 @@ export async function render(root) {
   root.append(skeletonRows(3));
 
   let me;
+  let accounts = [];
   try {
-    me = await api.keyMe();
+    [me, accounts] = await Promise.all([
+      api.keyMe(),
+      api.gmailAccounts().catch(() => []),
+    ]);
   } catch (e) {
     root.innerHTML = "";
     root.append(errorBox(e.detail || "Could not load this key.", () => render(root)));
@@ -128,7 +158,7 @@ export async function render(root) {
     section("Expiry", null, h("span", { class: "mono" }, me?.expires_at ? fmtDate(me.expires_at) : "never")),
     section("Actions", null, actionGrid(scope.actions)),
     section("Providers", "Empty means all providers.", providerGrid(scope.providers)),
-    section("Gmail parents", "Empty means no root Gmail parents.", parentGrid(scope.parent_ids)),
+    section("Gmail parents", "Empty means no root Gmail parents.", parentList(scope.parent_ids || [], accounts)),
     section("Retention", "A blank provider follows the root TTL.", retentionBlock(retention))));
 
   root.append(h("div", { class: "note" },

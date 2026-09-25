@@ -3,16 +3,20 @@ import { api, getApiKey, setApiKey } from "../api.js";
 import { h, toast, refreshIcons, openModal, closeModal, confirmDialog, emptyState, errorBox, skeletonRows, copyText, fmtDate } from "../ui.js";
 
 const ACTIONS = [
-  "mailboxes:read",
-  "mailboxes:write",
-  "messages:read",
-  "messages:write",
-  "stats:read",
-  "retention:read",
-  "retention:write",
-  "parents:add",
-  "parents:read",
+  ["mailboxes:read", "List and open mailboxes this key owns"],
+  ["mailboxes:write", "Create and delete its own mailboxes"],
+  ["messages:read", "Read messages in its mailboxes"],
+  ["messages:write", "Mark read and delete its messages"],
+  ["stats:read", "See stats for its own mail"],
+  ["retention:read", "View retention rules"],
+  ["retention:write", "Change retention and run a sweep of its mail"],
+  ["parents:read", "See Gmail parents it may use"],
+  ["parents:add", "Connect and remove its own Gmail parents"],
 ];
+
+const RETENTION_HINT = "Leave a provider blank to follow the root retention settings. A number replaces the root TTL for this key only.";
+
+let slugs = [];
 
 const PREV_KEY = "mailtm_api_key_prev";
 
@@ -45,41 +49,80 @@ function secretField(secret) {
     h("p", { class: "field-hint" }, "Shown once in this dialog. Copy it now — the list never stores it."));
 }
 
-function actionChecks(selected = []) {
-  const wrap = h("div", { class: "grid", style: "gap:8px" });
-  for (const action of ACTIONS) {
-    const input = h("input", {
-      type: "checkbox",
-      value: action,
-      checked: selected.includes(action),
-      "aria-label": action,
-    });
-    wrap.append(h("label", { style: "display:flex;align-items:center;gap:8px;cursor:pointer" },
-      input,
-      h("span", { class: "mono" }, action)));
+function pickTile(label, copy, pressed, onToggle) {
+  const check = h("i", { "data-lucide": "check", class: "pick-tile-check", "aria-hidden": "true" });
+  const btn = h("button", {
+    type: "button",
+    class: pressed ? "pick-tile is-on" : "pick-tile",
+    "aria-pressed": pressed ? "true" : "false",
+    onclick: () => onToggle(btn),
+  }, check, h("span", { class: "pick-tile-body" },
+    h("span", { class: "pick-tile-title" }, label),
+    copy ? h("span", { class: "pick-tile-copy" }, copy) : null));
+  btn.dataset.value = label;
+  return btn;
+}
+
+function paintTile(btn, on) {
+  btn.classList.toggle("is-on", on);
+  btn.setAttribute("aria-pressed", on ? "true" : "false");
+}
+
+function providerTiles(selected = []) {
+  const chosen = new Set(selected);
+  const wrap = h("div", { class: "pick-grid", role: "group", "aria-label": "Providers" });
+  for (const slug of selected) {
+    if (slugs.includes(slug)) continue;
+    wrap.append(pickTile(slug, "Already on this key", chosen.has(slug), (btn) => {
+      paintTile(btn, btn.getAttribute("aria-pressed") !== "true");
+    }));
+  }
+  for (const slug of slugs) {
+    wrap.append(pickTile(slug, null, chosen.has(slug), (btn) => {
+      paintTile(btn, btn.getAttribute("aria-pressed") !== "true");
+    }));
   }
   return wrap;
 }
 
-function checkedActions(root) {
-  return [...root.querySelectorAll('input[type="checkbox"]:checked')].map((el) => el.value);
+function selectedValues(root) {
+  return [...root.querySelectorAll('.pick-tile[aria-pressed="true"]')].map((el) => el.dataset.value);
 }
 
-function retentionRows(container, providers) {
+function actionTiles(selected = []) {
+  const wrap = h("div", { class: "pick-grid", role: "group", "aria-label": "Actions" });
+  for (const [action, copy] of ACTIONS) {
+    wrap.append(pickTile(action, copy, selected.includes(action), (btn) => {
+      paintTile(btn, btn.getAttribute("aria-pressed") !== "true");
+    }));
+  }
+  return wrap;
+}
+
+function ttlInput(slug, side, value) {
+  return h("input", {
+    type: "number", min: "1", step: "1", placeholder: "root",
+    value: value ?? "",
+    "aria-label": `${slug} ${side} TTL hours`,
+  });
+}
+
+function retentionCard(slug, box, msg) {
+  return h("div", { class: "card ret-card" },
+    h("div", { class: "ret-card-top" }, h("span", { class: "prov-name mono" }, slug)),
+    h("div", { style: "display:flex;gap:12px" },
+      h("div", { class: "field", style: "margin:0;flex:1" }, h("label", {}, "Mailbox TTL (hours)"), box),
+      h("div", { class: "field", style: "margin:0;flex:1" }, h("label", {}, "Message TTL (hours)"), msg)));
+}
+
+function retentionRows(container, providers, existing = new Map()) {
   const rows = [];
   for (const slug of providers) {
-    const box = h("input", {
-      type: "number", min: "1", step: "1", placeholder: "disabled", "aria-label": `${slug} mailbox TTL hours`,
-    });
-    const msg = h("input", {
-      type: "number", min: "1", step: "1", placeholder: "disabled", "aria-label": `${slug} message TTL hours`,
-    });
+    const row = existing.get(slug);
+    const box = ttlInput(slug, "mailbox", row?.mailbox_ttl_hours);
+    const msg = ttlInput(slug, "message", row?.message_ttl_hours);
     rows.push({ slug, box, msg });
-    container.append(h("div", { class: "card ret-card" },
-      h("div", { class: "ret-card-top" }, h("span", { class: "prov-name mono" }, slug)),
-      h("div", { style: "display:flex;gap:12px" },
-        h("div", { class: "field", style: "margin:0;flex:1" }, h("label", {}, "Mailbox TTL (hours)"), box),
-        h("div", { class: "field", style: "margin:0;flex:1" }, h("label", {}, "Message TTL (hours)"), msg))));
+    container.append(retentionCard(slug, box, msg));
   }
   return rows;
 }
@@ -135,7 +178,7 @@ export async function render(root) {
     return;
   }
 
-  const slugs = [...new Set(providers.map((p) => p.slug).filter(Boolean))];
+  slugs = [...new Set(providers.map((p) => p.slug).filter(Boolean))];
   root.innerHTML = "";
   const createBtn = h("button", { class: "btn btn-primary", onclick: openCreate },
     h("i", { "data-lucide": "plus" }), h("span", {}, "New key"));
@@ -214,13 +257,7 @@ export async function render(root) {
       "aria-label": "Expiry",
       value: existing?.expires_at ? toLocalInput(existing.expires_at) : "",
     });
-    const providerInput = h("input", {
-      value: (existing?.scope?.providers || []).join(", "),
-      placeholder: "mail.tm, gmail — empty means all",
-      autocomplete: "off",
-      spellcheck: "false",
-      "aria-label": "Providers",
-    });
+    const providersPick = providerTiles(existing?.scope?.providers || []);
     const parentInput = h("input", {
       value: (existing?.scope?.parent_ids || []).join(", "),
       placeholder: "1, 4 — empty means none",
@@ -228,7 +265,7 @@ export async function render(root) {
       spellcheck: "false",
       "aria-label": "Parent ids",
     });
-    const checks = actionChecks(existing?.scope?.actions || []);
+    const actionsPick = actionTiles(existing?.scope?.actions || []);
     const retWrap = h("div", { class: "grid", style: "gap:8px" });
     const retRows = existing ? [] : retentionRows(retWrap, slugs);
     const body = h("div", {},
@@ -239,25 +276,26 @@ export async function render(root) {
         h("p", { class: "field-hint" }, "Leave blank for a key that does not expire.")),
       h("div", { class: "field" },
         h("label", {}, "Providers"),
-        providerInput,
-        h("p", { class: "field-hint" }, "Comma-separated slugs. Empty means all providers.")),
+        providersPick,
+        h("p", { class: "field-hint" }, "None selected means every provider.")),
       h("div", { class: "field" },
         h("label", {}, "Parent ids"),
         parentInput,
         h("p", { class: "field-hint" }, "Comma-separated Gmail parent ids. Empty means none.")),
-      h("div", { class: "field" }, h("label", {}, "Actions"), checks),
+      h("div", { class: "field" }, h("label", {}, "Actions"), actionsPick),
       existing ? null : h("div", { class: "field" },
         h("label", {}, "Retention ", h("span", { class: "opt" }, "(optional)")),
+        h("p", { class: "field-hint" }, RETENTION_HINT),
         retWrap,
         slugs.length ? null : h("p", { class: "field-hint" }, "No providers loaded — retention can be set later.")));
-    return { body, nameInput, expiryInput, providerInput, parentInput, checks, retRows };
+    return { body, nameInput, expiryInput, providersPick, parentInput, actionsPick, retRows };
   }
 
   function readForm(form) {
     const name = form.nameInput.value.trim();
     if (!name) throw new Error("Name is required.");
-    const providersList = form.providerInput.value.split(/[\s,]+/).map((s) => s.trim()).filter(Boolean);
-    const actions = checkedActions(form.checks);
+    const providersList = selectedValues(form.providersPick);
+    const actions = selectedValues(form.actionsPick);
     if (!actions.length) throw new Error("Pick at least one action.");
     return {
       name,
@@ -316,30 +354,11 @@ export async function render(root) {
     const retWrap = h("div", { class: "grid", style: "gap:8px" });
     const existingRetention = new Map((key.key_retention || []).map((row) => [row.provider, row]));
     const editSlugs = [...new Set([...slugs, ...existingRetention.keys()])];
-    const retRows = [];
-    for (const slug of editSlugs) {
-      const row = existingRetention.get(slug);
-      const box = h("input", {
-        type: "number", min: "1", step: "1", placeholder: "disabled",
-        value: row?.mailbox_ttl_hours ?? "",
-        "aria-label": `${slug} mailbox TTL hours`,
-      });
-      const msg = h("input", {
-        type: "number", min: "1", step: "1", placeholder: "disabled",
-        value: row?.message_ttl_hours ?? "",
-        "aria-label": `${slug} message TTL hours`,
-      });
-      retRows.push({ slug, box, msg });
-      retWrap.append(h("div", { class: "card ret-card" },
-        h("div", { class: "ret-card-top" }, h("span", { class: "prov-name mono" }, slug)),
-        h("div", { style: "display:flex;gap:12px" },
-          h("div", { class: "field", style: "margin:0;flex:1" }, h("label", {}, "Mailbox TTL (hours)"), box),
-          h("div", { class: "field", style: "margin:0;flex:1" }, h("label", {}, "Message TTL (hours)"), msg))));
-    }
+    const retRows = retentionRows(retWrap, editSlugs, existingRetention);
     form.body.append(h("div", { class: "field" },
       h("label", {}, "Retention"),
-      retWrap,
-      h("p", { class: "field-hint" }, "Saving replaces this key's retention rows. Blank hours are omitted.")));
+      h("p", { class: "field-hint" }, RETENTION_HINT),
+      retWrap));
     openModal({
       title: `Edit ${key.name}`,
       sub: "Name, expiry, and scope. The secret does not change.",

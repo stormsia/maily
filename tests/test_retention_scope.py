@@ -393,13 +393,112 @@ def test_expired_key_ttl_still_applies_on_root_sweep(tmp_path: Path) -> None:
         assert left == {"root@x"}
 
 
-def test_root_sweep_deletes_root_message_not_key_message(tmp_path: Path) -> None:
-    """Given a global message TTL, when root sweeps, only the root mailbox's message is deleted."""
+def test_full_sweep_applies_root_ttl_when_key_has_no_retention_row(tmp_path: Path) -> None:
+    """Given no key_retention, when root sweeps, both the key mailbox and the root mailbox go."""
+    with _app(tmp_path) as client:
+        client.app.state.registry = ProviderRegistry([StubProvider()])
+        now = utcnow_naive()
+        old = (now - timedelta(days=10)).strftime("%Y-%m-%d %H:%M:%S")
+        conn = _db(tmp_path)
+        key_id = _insert_key(
+            conn,
+            secret="mk_inherit",
+            actions=["retention:write"],
+            providers=["stub"],
+        )
+        _insert_mailbox(conn, address="root@x", created_at=old, owner_key_id=None)
+        _insert_mailbox(conn, address="key@x", created_at=old, owner_key_id=key_id)
+        conn.execute(
+            "INSERT INTO retention (provider, mailbox_ttl_hours) VALUES ('stub', 1)"
+        )
+        conn.commit()
+        conn.close()
+
+        response = client.post("/v1/admin/retention/run", headers={"X-API-Key": ROOT})
+
+        assert response.status_code == 200
+        assert response.json()["mailboxes_deleted"] == 2
+        conn = _db(tmp_path)
+        left = {row[0] for row in conn.execute("SELECT address FROM mailboxes")}
+        conn.close()
+        assert left == set()
+
+
+def test_key_sweep_inherits_root_ttl_without_deleting_root_mailbox(tmp_path: Path) -> None:
+    """Given no key_retention, when the key sweeps, only its mailbox older than the root TTL goes."""
+    secret = "mk_inherit"
+    with _app(tmp_path) as client:
+        client.app.state.registry = ProviderRegistry([StubProvider()])
+        now = utcnow_naive()
+        old = (now - timedelta(days=10)).strftime("%Y-%m-%d %H:%M:%S")
+        conn = _db(tmp_path)
+        key_id = _insert_key(
+            conn,
+            secret=secret,
+            actions=["retention:write"],
+            providers=["stub"],
+        )
+        _insert_mailbox(conn, address="root@x", created_at=old, owner_key_id=None)
+        _insert_mailbox(conn, address="key@x", created_at=old, owner_key_id=key_id)
+        conn.execute(
+            "INSERT INTO retention (provider, mailbox_ttl_hours) VALUES ('stub', 1)"
+        )
+        conn.commit()
+        conn.close()
+
+        response = client.post("/v1/admin/retention/run", headers={"X-API-Key": secret})
+
+        assert response.status_code == 200
+        assert response.json()["mailboxes_deleted"] == 1
+        conn = _db(tmp_path)
+        left = {row[0] for row in conn.execute("SELECT address FROM mailboxes")}
+        conn.close()
+        assert left == {"root@x"}
+
+
+def test_key_longer_ttl_keeps_key_mail_while_root_short_ttl_deletes_root(tmp_path: Path) -> None:
+    """Given a key TTL longer than root, when root sweeps, only the root mailbox is deleted."""
+    with _app(tmp_path) as client:
+        client.app.state.registry = ProviderRegistry([StubProvider()])
+        now = utcnow_naive()
+        old = (now - timedelta(hours=2)).strftime("%Y-%m-%d %H:%M:%S")
+        conn = _db(tmp_path)
+        key_id = _insert_key(
+            conn,
+            secret="mk_longer",
+            actions=["retention:write"],
+            providers=["stub"],
+        )
+        _insert_mailbox(conn, address="root@x", created_at=old, owner_key_id=None)
+        _insert_mailbox(conn, address="key@x", created_at=old, owner_key_id=key_id)
+        conn.execute(
+            "INSERT INTO retention (provider, mailbox_ttl_hours) VALUES ('stub', 1)"
+        )
+        conn.execute(
+            "INSERT INTO key_retention (key_id, provider, mailbox_ttl_hours)"
+            " VALUES (?, 'stub', 48)",
+            (key_id,),
+        )
+        conn.commit()
+        conn.close()
+
+        response = client.post("/v1/admin/retention/run", headers={"X-API-Key": ROOT})
+
+        assert response.status_code == 200
+        assert response.json()["mailboxes_deleted"] == 1
+        conn = _db(tmp_path)
+        left = {row[0] for row in conn.execute("SELECT address FROM mailboxes")}
+        conn.close()
+        assert left == {"key@x"}
+
+
+def test_root_sweep_message_ttl_follows_root_when_key_has_no_row(tmp_path: Path) -> None:
+    """Given a global message TTL and no key row, when root sweeps, both owners' messages go."""
     with _app(tmp_path) as client:
         client.app.state.registry = ProviderRegistry([StubProvider()])
         now = utcnow_naive()
         fresh = now.isoformat()
-        old = (now - timedelta(days=10)).isoformat()
+        old = (now - timedelta(days=10)).strftime("%Y-%m-%d %H:%M:%S")
         conn = _db(tmp_path)
         key_id = _insert_key(
             conn,
@@ -420,8 +519,8 @@ def test_root_sweep_deletes_root_message_not_key_message(tmp_path: Path) -> None
         response = client.post("/v1/admin/retention/run", headers={"X-API-Key": ROOT})
 
         assert response.status_code == 200
-        assert response.json()["messages_deleted"] == 1
+        assert response.json()["messages_deleted"] == 2
         conn = _db(tmp_path)
         left = {row[0] for row in conn.execute("SELECT message_api_id FROM messages")}
         conn.close()
-        assert left == {"key-msg"}
+        assert left == set()

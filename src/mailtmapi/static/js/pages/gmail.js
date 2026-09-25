@@ -35,22 +35,27 @@ function showCredentials(me) {
   return false;
 }
 
+function canAddParents(me) {
+  if (me == null || me.is_root === true) return true;
+  const actions = me.scope?.actions;
+  return Array.isArray(actions) && actions.includes("parents:add");
+}
+
 export async function render(root, me = null) {
   const credentials = showCredentials(me);
+  const canConnect = canAddParents(me);
   root.innerHTML = "";
 
-  const actionsRow = credentials
-    ? h("div", { style: "display:flex;gap:8px;justify-content:center;flex-wrap:wrap" })
+  const actionsRow = h("div", { style: "display:flex;gap:8px;justify-content:center;flex-wrap:wrap" });
+  const credsLine = credentials
+    ? h("div", { class: "small muted", style: "margin-bottom:12px;min-height:20px" })
     : null;
-  const credsLine = h("div", { class: "small muted", style: "margin-bottom:12px;min-height:20px" });
-  const card = credentials
-    ? h("div", { class: "card connect-card" },
-        h("h2", {}, "Bring your own Gmail"),
-        h("p", {}, "Connect a Google account via OAuth, then create unlimited +alias mailboxes on top of it. The callback returns to the server — this tab stays put."),
-        credsLine,
-        actionsRow)
-    : null;
-  if (card) root.append(card);
+  const card = h("div", { class: "card connect-card" },
+    h("h2", {}, "Bring your own Gmail"),
+    h("p", {}, "Connect a Google account via OAuth, then create unlimited +alias mailboxes on top of it. The callback returns to the server — this tab stays put."),
+    credsLine,
+    canConnect ? actionsRow : null);
+  root.append(card);
 
   const listWrap = h("div", { class: "mt-6" });
   root.append(listWrap);
@@ -71,6 +76,10 @@ export async function render(root, me = null) {
     return;
   }
   if (credentials) drawCreds();
+  else if (canConnect) {
+    actionsRow.append(connectBtn());
+    refreshIcons();
+  }
   draw();
 
   /** Connect button (primary once configured, ghost otherwise). */
@@ -387,7 +396,9 @@ export async function render(root, me = null) {
       listWrap.append(emptyState({
         icon: "at-sign",
         title: "No Gmail accounts connected",
-        copy: "Hit “Connect Gmail” above and approve access in the new tab. Accounts you add will show up here.",
+        copy: canConnect
+          ? "Hit “Connect Gmail” above and approve access in the new tab. Accounts you add will show up here."
+          : "Accounts this key may use show up here. This key cannot connect a new one.",
       }));
       return;
     }
@@ -399,7 +410,7 @@ export async function render(root, me = null) {
       const delBtn = h("button", { class: "icon-btn danger", title: "Remove account", "aria-label": `Remove ${a.email}`, onclick: (e) => deleteOne(e, a) },
         h("i", { "data-lucide": "trash-2" }));
       const needsReauth = !["active", "connected", "ok"].includes((a.status || "").toLowerCase());
-      const reauthBtn = needsReauth && credentials
+      const reauthBtn = needsReauth && canConnect
         ? h("button", { class: "icon-btn warn", title: `Reconnect ${a.email} — access expired`, "aria-label": `Reconnect ${a.email}`, onclick: () => reconnectAccount(a) },
             h("i", { "data-lucide": "plug-zap" }))
         : null;

@@ -2,15 +2,92 @@
 import { api } from "../api.js";
 import { h, refreshIcons, errorBox, skeletonRows, fmtDate } from "../ui.js";
 
-function chips(items, emptyLabel) {
-  if (!items?.length) return h("span", { class: "muted" }, emptyLabel);
-  return h("div", { class: "sendas" }, ...items.map((item) => h("span", { class: "chip" }, String(item))));
+const ACTIONS = [
+  ["mailboxes:read", "List and open mailboxes this key owns"],
+  ["mailboxes:write", "Create and delete its own mailboxes"],
+  ["messages:read", "Read messages in its mailboxes"],
+  ["messages:write", "Mark read and delete its messages"],
+  ["stats:read", "See stats for its own mail"],
+  ["retention:read", "View retention rules"],
+  ["retention:write", "Change retention and run a sweep of its mail"],
+  ["parents:read", "See Gmail parents it may use"],
+  ["parents:add", "Connect and remove its own Gmail parents"],
+];
+
+function statusTile(label, copy, allowed) {
+  const state = allowed ? "Allowed" : "Not granted";
+  const icon = allowed ? "check" : "minus";
+  return h("div", {
+    class: allowed ? "pick-tile is-on" : "pick-tile is-off",
+    role: "group",
+    "aria-pressed": allowed ? "true" : "false",
+    "aria-disabled": "true",
+  },
+    h("i", { "data-lucide": icon, class: "pick-tile-check", "aria-hidden": "true" }),
+    h("span", { class: "pick-tile-body" },
+      h("span", { class: "pick-tile-title" }, label),
+      h("span", { class: "pick-tile-copy" }, copy),
+      h("span", { class: "pick-tile-copy" }, state)));
 }
 
-function row(label, value) {
+function section(title, hint, body) {
   return h("div", { class: "field", style: "margin-bottom:var(--s-4)" },
-    h("label", {}, label),
-    value);
+    h("label", {}, title),
+    hint ? h("p", { class: "field-hint" }, hint) : null,
+    body);
+}
+
+function actionGrid(granted) {
+  const allowed = new Set(Array.isArray(granted) ? granted : []);
+  const wrap = h("div", { class: "pick-grid", role: "group", "aria-label": "Actions" });
+  for (const [action, copy] of ACTIONS) {
+    wrap.append(statusTile(action, copy, allowed.has(action)));
+  }
+  return wrap;
+}
+
+function providerGrid(providers) {
+  const wrap = h("div", { class: "pick-grid", role: "group", "aria-label": "Providers" });
+  if (!providers?.length) {
+    wrap.append(statusTile("All providers", "Empty means every provider", true));
+    return wrap;
+  }
+  for (const slug of providers) {
+    wrap.append(statusTile(String(slug), "Allowed", true));
+  }
+  return wrap;
+}
+
+function parentGrid(ids) {
+  const wrap = h("div", { class: "pick-grid", role: "group", "aria-label": "Gmail parents" });
+  if (!ids?.length) {
+    wrap.append(statusTile("No root Gmail parents", "Empty means none are granted", false));
+    return wrap;
+  }
+  for (const id of ids) {
+    wrap.append(statusTile(String(id), "Allowed", true));
+  }
+  return wrap;
+}
+
+function retentionBlock(rows) {
+  if (!rows.length) {
+    return h("span", { class: "muted" }, "Follows root retention");
+  }
+  const grid = h("div", { class: "ret-grid" });
+  for (const item of rows) {
+    grid.append(h("div", { class: "card ret-card" },
+      h("div", { class: "ret-card-top" },
+        h("span", { class: "prov-name mono" }, item.provider || "—")),
+      h("div", { class: "prov-metrics" },
+        h("div", { class: "prov-metric" },
+          h("b", {}, item.mailbox_ttl_hours == null ? "—" : String(item.mailbox_ttl_hours)),
+          h("span", {}, "mailbox hours")),
+        h("div", { class: "prov-metric" },
+          h("b", {}, item.message_ttl_hours == null ? "—" : String(item.message_ttl_hours)),
+          h("span", {}, "message hours")))));
+  }
+  return grid;
 }
 
 export async function render(root) {
@@ -34,47 +111,26 @@ export async function render(root) {
         h("h2", {}, "Root key"),
         h("span", { class: "pill pill--on" }, "root")),
       h("p", { class: "muted" },
-        "This session is the root key. It is not an issued key, so it has no scope row. ",
-        "Issue and inspect keys from the Keys page.")));
+        "This session is the root key and can do everything."),
+      h("a", { class: "btn btn-ghost", href: "#/keys" },
+        h("i", { "data-lucide": "key-round" }),
+        h("span", {}, "Keys"))));
     refreshIcons();
     return;
   }
 
   const scope = me?.scope || {};
   const retention = Array.isArray(me?.key_retention) ? me.key_retention : [];
-  const card = h("div", { class: "card" },
+  root.append(h("div", { class: "card" },
     h("div", { class: "section-head", style: "margin-top:0" },
       h("h2", {}, me?.name || "This key"),
       h("span", { class: "pill pill--off" }, "read-only")),
-    row("Expiry", h("span", { class: "mono" }, me?.expires_at ? fmtDate(me.expires_at) : "never")),
-    row("Providers", h("div", {},
-      chips(scope.providers, "all providers"),
-      h("p", { class: "field-hint" }, "Empty means all providers."))),
-    row("Parent ids", h("div", {},
-      chips(scope.parent_ids, "none"),
-      h("p", { class: "field-hint" }, "Empty means none. This key cannot use a root Gmail parent that is not listed."))),
-    row("Actions", chips(scope.actions, "none")));
+    section("Expiry", null, h("span", { class: "mono" }, me?.expires_at ? fmtDate(me.expires_at) : "never")),
+    section("Actions", null, actionGrid(scope.actions)),
+    section("Providers", "Empty means all providers.", providerGrid(scope.providers)),
+    section("Gmail parents", "Empty means no root Gmail parents.", parentGrid(scope.parent_ids)),
+    section("Retention", "A blank provider follows the root TTL.", retentionBlock(retention))));
 
-  if (retention.length) {
-    const grid = h("div", { class: "ret-grid" });
-    for (const item of retention) {
-      grid.append(h("div", { class: "card ret-card" },
-        h("div", { class: "ret-card-top" },
-          h("span", { class: "prov-name mono" }, item.provider || "—")),
-        h("div", { class: "prov-metrics" },
-          h("div", { class: "prov-metric" },
-            h("b", {}, item.mailbox_ttl_hours == null ? "—" : String(item.mailbox_ttl_hours)),
-            h("span", {}, "mailbox hours")),
-          h("div", { class: "prov-metric" },
-            h("b", {}, item.message_ttl_hours == null ? "—" : String(item.message_ttl_hours)),
-            h("span", {}, "message hours")))));
-    }
-    card.append(row("Retention", grid));
-  } else {
-    card.append(row("Retention", h("span", { class: "muted" }, "No per-key retention rows.")));
-  }
-
-  root.append(card);
   root.append(h("div", { class: "note" },
     h("i", { "data-lucide": "info" }),
     h("span", {}, "This page only shows what this key can do. It cannot change the scope, and it never shows the secret.")));

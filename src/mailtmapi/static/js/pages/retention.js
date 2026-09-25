@@ -49,7 +49,7 @@ export async function render(root, me = null) {
     h("p", { class: "muted", style: "flex:1;min-width:220px" },
       writable
         ? "Automatic cleanup for old mailboxes and messages. Empty fields mean disabled."
-        : "Retention rules for this key. Read-only — this key cannot change them."),
+        : "Read-only. A blank provider follows root retention."),
     sweepBtn));
 
   if (!slugs.length) {

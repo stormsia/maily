@@ -3,7 +3,7 @@ from __future__ import annotations
 import hashlib
 import json
 import secrets
-from collections.abc import Callable
+from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import Annotated, Final
@@ -195,7 +195,7 @@ def action_allowed(principal: Principal, *names: str) -> bool:
     return all(name in scope.actions for name in names)
 
 
-def require_action(*names: str) -> Callable[..., Principal]:
+def require_action(*names: str) -> Callable[..., Awaitable[Principal]]:
     """Dependency factory. Every named action must be present. Root bypasses."""
 
     async def _require(principal: PrincipalDep) -> Principal:

@@ -131,7 +131,7 @@ async def create(
         session,
         registry,
         settings,
-        provider=body.provider,
+        provider=slug,
         domain=body.domain,
         parent_id=body.parent_id,
         address=body.address,

@@ -5,6 +5,7 @@ from __future__ import annotations
 import hashlib
 import json
 import secrets as _secrets
+from collections.abc import Mapping
 from dataclasses import dataclass
 from datetime import datetime
 from typing import Final
@@ -52,7 +53,7 @@ class KeyCreate(BaseModel):
 
     name: str
     expires_at: datetime | None
-    scope: dict[str, object]
+    scope: Mapping[str, object]
     root_key: str
 
 
@@ -63,7 +64,7 @@ class KeyUpdate(BaseModel):
 
     name: str
     expires_at: datetime | None
-    scope: dict[str, object]
+    scope: Mapping[str, object]
 
 
 class KeyView(BaseModel):
@@ -104,7 +105,7 @@ class InvalidKeyScope(Exception):
         return self.detail
 
 
-def parse_scope(raw: dict[str, object]) -> KeyScope:
+def parse_scope(raw: Mapping[str, object]) -> KeyScope:
     """Parse a write-time scope. Unknown parent ids are not checked."""
     if set(raw) != _SCOPE_KEYS:
         raise InvalidKeyScope(detail="scope requires providers, parent_ids, and actions")
@@ -129,7 +130,7 @@ def parse_scope(raw: dict[str, object]) -> KeyScope:
     )
 
 
-def _scope_json(raw: dict[str, object]) -> str:
+def _scope_json(raw: Mapping[str, object]) -> str:
     try:
         scope = parse_scope(raw)
     except InvalidKeyScope as exc:

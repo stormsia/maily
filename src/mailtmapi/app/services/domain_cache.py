@@ -268,24 +268,15 @@ async def find_provider_for_domain(
         cfg = await get_settings(session, settings)
         wanted = domain.lower()
         domain_providers = [p for p in registry.all() if p.kind == "domain"]
-        cached_domains: dict[str, list[str]] = {}
         if cfg["enabled"]:
             for p in domain_providers:
                 row = await session.get(DomainCache, p.slug)
-                domains = _parse_domains(row)
-                if domains:
-                    cached_domains[p.slug] = domains
                 if wanted in {d.lower() for d in _fresh_domains(row, cfg["interval_seconds"])}:
                     return p.slug
     # Do not commit or roll back the caller's session. create_mailbox commits
     # before provider I/O; a rollback here would drop unrelated pending writes.
-    cached_owners = [
-        p
-        for p in domain_providers
-        if wanted in {d.lower() for d in cached_domains.get(p.slug, [])}
-    ]
-    scan = cached_owners or domain_providers
-    for p in scan:
+    # Fresh cache misses the domain, so scan live once. A hit already returned.
+    for p in domain_providers:
         for t in await p.list_targets():
             if t.label.lower() == wanted:
                 return p.slug

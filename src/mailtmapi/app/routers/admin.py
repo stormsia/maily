@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import JSONResponse
 from sqlalchemy import case, func, select
 
-from ...db.models import GmailAccount, Mailbox, Message
+from ...db.models import GmailAccount, KeyRetention, Mailbox, Message, Retention
 from ...exceptions import MailNotFoundError
 from ..authz import (
     Principal,
@@ -50,7 +50,7 @@ def _sum_or_zero(value: int | None) -> int:
 async def stats(
     session: SessionDep,
     principal: StatsRead,
-) -> dict:
+) -> dict | scoped_stats.ScopedStats:
     """Dashboard stats: mailbox/message totals, provider split, 7-day trend,
     and a 10-day activity history that also covers retention-deleted items."""
     if not principal.is_root:
@@ -152,7 +152,7 @@ async def stats(
     }
 
 
-async def _owned_stats(session: SessionDep, principal: Principal) -> dict:
+async def _owned_stats(session: SessionDep, principal: Principal) -> scoped_stats.ScopedStats:
     key = principal.key
     if key is None:
         raise HTTPException(status_code=403, detail="forbidden")
@@ -192,6 +192,7 @@ async def set_retention(
     principal: RetentionWrite,
 ):
     """Create or update TTL retention for a provider (at least one TTL required)."""
+    row: Retention | KeyRetention
     if principal.is_root:
         row = await svc.set_retention(session, provider, body.mailbox_ttl_hours, body.message_ttl_hours)
     else:

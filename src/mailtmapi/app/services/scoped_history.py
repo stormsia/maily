@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from datetime import date, datetime, timedelta, timezone
-from typing import TypedDict, assert_never
+from typing import TypedDict
 
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -43,10 +43,10 @@ class HistoryView(TypedDict):
 
 def zero_events() -> EventCounts:
     return {
-        EVENT_MAILBOX_CREATED: 0,
-        EVENT_MAILBOX_DELETED: 0,
-        EVENT_MESSAGE_RECEIVED: 0,
-        EVENT_MESSAGE_DELETED: 0,
+        "mailbox_created": 0,
+        "mailbox_deleted": 0,
+        "message_received": 0,
+        "message_deleted": 0,
     }
 
 
@@ -63,10 +63,10 @@ def _as_date(value: str | date) -> date:
 def _history_day(day: date, counts: EventCounts) -> HistoryDay:
     return {
         "date": day.isoformat(),
-        EVENT_MAILBOX_CREATED: counts[EVENT_MAILBOX_CREATED],
-        EVENT_MAILBOX_DELETED: counts[EVENT_MAILBOX_DELETED],
-        EVENT_MESSAGE_RECEIVED: counts[EVENT_MESSAGE_RECEIVED],
-        EVENT_MESSAGE_DELETED: counts[EVENT_MESSAGE_DELETED],
+        "mailbox_created": counts["mailbox_created"],
+        "mailbox_deleted": counts["mailbox_deleted"],
+        "message_received": counts["message_received"],
+        "message_deleted": counts["message_deleted"],
     }
 
 
@@ -78,7 +78,7 @@ async def owned_history(session: AsyncSession, owned: ColumnElement[bool]) -> Hi
     by_provider: dict[str, EventCounts] = {}
     await _fold_mailboxes(session, owned, start, by_day, totals, by_provider)
     await _fold_messages(session, owned, start, by_day, totals, by_provider)
-    ranked = sorted(by_provider, key=lambda slug: -sum(by_provider[slug].values()))
+    ranked = sorted(by_provider, key=lambda slug: -_event_total(by_provider[slug]))
     return {
         "window_days": WINDOW_DAYS,
         "days": _fill_days(start, by_day),
@@ -159,6 +159,15 @@ def _bump(
     _apply(by_provider.setdefault(provider, zero_events()), event, count)
 
 
+def _event_total(counts: EventCounts) -> int:
+    return (
+        counts["mailbox_created"]
+        + counts["mailbox_deleted"]
+        + counts["message_received"]
+        + counts["message_deleted"]
+    )
+
+
 def _apply(bucket: EventCounts, event: str, count: int) -> None:
     match event:
         case "mailbox_created":
@@ -169,8 +178,6 @@ def _apply(bucket: EventCounts, event: str, count: int) -> None:
             bucket["message_received"] += count
         case "message_deleted":
             bucket["message_deleted"] += count
-        case unreachable:
-            assert_never(unreachable)
 
 
 def _fill_days(start: date, by_day: dict[date, EventCounts]) -> list[HistoryDay]:

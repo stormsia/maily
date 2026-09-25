@@ -10,7 +10,6 @@ from sqlalchemy.sql.elements import ColumnElement
 
 from ...db.models import GmailAccount, Mailbox, Message
 from .scoped_history import HistoryView, owned_history
-from .stats_history import EVENT_MESSAGE_RECEIVED
 
 _TREND_DAYS = 7
 
@@ -76,9 +75,9 @@ async def owned_report(
     mailboxes, messages, by_provider = await _live_counts(session, owned)
     history = await owned_history(session, owned)
     trend = [
-        TrendPoint(date=day["date"], count=day[EVENT_MESSAGE_RECEIVED])
+        TrendPoint(date=day["date"], count=day["message_received"])
         for day in history["days"][-_TREND_DAYS:]
-        if day[EVENT_MESSAGE_RECEIVED]
+        if day["message_received"]
     ]
     return {
         "mailboxes": mailboxes,

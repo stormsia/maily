@@ -141,7 +141,8 @@ class GmailProvider:
         resp = await self._http.post(url, **kwargs)
         return resp.json()
 
-    async def list_targets(self) -> list[Target]:
+    async def list_targets(self, *, fresh: bool = False) -> list[Target]:
+        del fresh  # Gmail has no target cache; the flag exists for MailProvider.
         return [
             Target(
                 id=str(p.id),

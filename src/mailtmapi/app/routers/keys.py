@@ -79,13 +79,13 @@ async def _replace_retention(
     for item in existing:
         await session.delete(item)
     await session.flush()
-    for item in rows:
+    for row_in in rows:
         session.add(
             KeyRetention(
                 key_id=key_id,
-                provider=item.provider,
-                mailbox_ttl_hours=item.mailbox_ttl_hours,
-                message_ttl_hours=item.message_ttl_hours,
+                provider=row_in.provider,
+                mailbox_ttl_hours=row_in.mailbox_ttl_hours,
+                message_ttl_hours=row_in.message_ttl_hours,
             )
         )
     await session.flush()

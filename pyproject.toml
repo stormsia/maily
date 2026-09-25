@@ -20,7 +20,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-dev = ["pytest>=8", "pytest-asyncio>=0.24", "ruff>=0.6", "mypy>=1.11"]
+dev = ["pytest>=8", "pytest-asyncio>=0.24", "pytest-xdist>=3.6", "ruff>=0.6", "mypy>=1.11"]
 
 [project.scripts]
 mailtmapi = "mailtmapi.app.main:run"
@@ -33,6 +33,8 @@ packages = ["src/mailtmapi"]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
+# Each test builds its own temp SQLite via tmp_path, so workers do not share a database.
+addopts = "-n auto"
 # "src" makes the package importable; "." (repo root) makes `tests` importable
 # as a package (`tests.helpers`) even when pytest is invoked as a bare script
 # instead of `python -m pytest`.

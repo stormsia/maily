@@ -32,6 +32,8 @@ jobs:
         # `python -m pytest` over bare `pytest`: guarantees the repo root is on
         # sys.path so `from tests.helpers import ...` resolves (tests is a
         # package via tests/__init__.py).
+        # -n auto comes from addopts (pytest-xdist). Each test uses its own
+        # tmp_path SQLite database, so workers do not share state.
         run: python -m pytest -q
       - name: JS syntax check
         # Static ES modules, no build step / package.json. node --check parses

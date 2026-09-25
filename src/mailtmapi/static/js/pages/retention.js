@@ -12,7 +12,14 @@ function numField(label, value) {
   return h("div", { class: "field", style: "margin:0;flex:1" }, h("label", {}, label), input);
 }
 
-export async function render(root) {
+function canWriteRetention(me) {
+  if (me == null || me.is_root === true) return true;
+  const actions = me.scope?.actions;
+  return Array.isArray(actions) && actions.includes("retention:write");
+}
+
+export async function render(root, me = null) {
+  const writable = canWriteRetention(me);
   root.innerHTML = "";
   root.append(skeletonRows(3));
 
@@ -34,11 +41,15 @@ export async function render(root) {
   const slugs = [...new Set([...providers.map((p) => p.slug), ...Object.keys(byProvider)])];
 
   root.innerHTML = "";
-  const sweepBtn = h("button", { class: "btn btn-primary", onclick: runSweep },
-    h("i", { "data-lucide": "timer" }), h("span", {}, "Run sweep now"));
+  const sweepBtn = writable
+    ? h("button", { class: "btn btn-primary", onclick: runSweep },
+        h("i", { "data-lucide": "timer" }), h("span", {}, "Run sweep now"))
+    : null;
   root.append(h("div", { class: "toolbar toolbar--top" },
     h("p", { class: "muted", style: "flex:1;min-width:220px" },
-      "Automatic cleanup for old mailboxes and messages. Empty fields mean disabled."),
+      writable
+        ? "Automatic cleanup for old mailboxes and messages. Empty fields mean disabled."
+        : "Retention rules for this key. Read-only — this key cannot change them."),
     sweepBtn));
 
   if (!slugs.length) {
@@ -52,13 +63,28 @@ export async function render(root) {
   const grid = h("div", { class: "ret-grid" });
   for (const slug of slugs) {
     const existing = byProvider[slug];
+    const enabled = existing?.mailbox_ttl_hours != null || existing?.message_ttl_hours != null;
+    const stateBadge = h("span", { class: `pill ${enabled ? "pill--on" : "pill--off"}` },
+      enabled ? "enabled" : "disabled");
+    if (!writable) {
+      grid.append(h("div", { class: "card ret-card" },
+        h("div", { class: "ret-card-top" },
+          h("span", { class: "prov-name mono" }, slug),
+          stateBadge),
+        h("div", { class: "prov-metrics" },
+          h("div", { class: "prov-metric" },
+            h("b", {}, existing?.mailbox_ttl_hours == null ? "—" : String(existing.mailbox_ttl_hours)),
+            h("span", {}, "mailbox hours")),
+          h("div", { class: "prov-metric" },
+            h("b", {}, existing?.message_ttl_hours == null ? "—" : String(existing.message_ttl_hours)),
+            h("span", {}, "message hours")))));
+      continue;
+    }
+
     const boxTtl = numField("Mailbox TTL (hours)", existing?.mailbox_ttl_hours);
     const msgTtl = numField("Message TTL (hours)", existing?.message_ttl_hours);
     const boxInput = boxTtl.querySelector("input");
     const msgInput = msgTtl.querySelector("input");
-    const stateBadge = h("span", { class: `pill ${(existing?.mailbox_ttl_hours != null || existing?.message_ttl_hours != null) ? "pill--on" : "pill--off"}` },
-      (existing?.mailbox_ttl_hours != null || existing?.message_ttl_hours != null) ? "enabled" : "disabled");
-
     const saveBtn = h("button", { class: "btn btn-primary btn-sm", onclick: async () => {
       const parse = (v) => (v === "" ? null : Math.floor(Number(v)));
       const mb = parse(boxInput.value);
@@ -73,7 +99,7 @@ export async function render(root) {
       try {
         await api.saveRetention(slug, { mailbox_ttl_hours: mb, message_ttl_hours: ms });
         toast(`Retention saved for ${slug}.`, "ok", "check-circle-2");
-        render(root);
+        render(root, me);
       } catch (e) {
         toast(e.detail || "Could not save.", "err");
         saveBtn.disabled = false;
@@ -91,7 +117,7 @@ export async function render(root) {
       try {
         await api.disableRetention(slug);
         toast(`Retention disabled for ${slug}.`, "ok", "check-circle-2");
-        render(root);
+        render(root, me);
       } catch (e) { toast(e.detail || "Could not disable.", "err"); }
     } }, "Disable");
 

@@ -26,6 +26,7 @@ class _CopyingStore(MemoryGmailStore):
             send_as=list(stored.send_as),
             scopes=stored.scopes,
             status=stored.status,
+            owner_key_id=stored.owner_key_id,
         )
 
 

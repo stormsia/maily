@@ -5,9 +5,12 @@ import email.utils
 from contextlib import suppress
 from datetime import datetime, timezone
 
+from mailtmapi.exceptions import MailValidationError
 from mailtmapi.providers.base import Attachment, MessageDetail, MessageSource, MessageSummary, Party
 
 _API_BASE = "https://gmail.googleapis.com/gmail/v1/users/me"
+_RECIPIENT_HEADERS = ("to", "cc", "delivered-to")
+_PLUS_ALIAS_DETAIL = "gmail address must be a plus-alias"
 
 
 def decode_body(data: str) -> str:
@@ -22,6 +25,27 @@ def is_base_or_alias(address: str, bases: list[str]) -> bool:
         return False
     stripped = strip_plus(address).lower()
     return any(strip_plus(base).lower() == stripped for base in bases)
+
+
+def require_plus_alias(address: str) -> None:
+    """Reject a Gmail mailbox whose local part has no plus tag."""
+    local = address.split("@", 1)[0]
+    if "+" not in local:
+        raise MailValidationError(_PLUS_ALIAS_DETAIL)
+
+
+def addressed_to(raw: dict, mailbox_address: str) -> bool:
+    """True when To, Cc, or Delivered-To contains the full mailbox address."""
+    wanted = mailbox_address.lower()
+    headers = {
+        str(header.get("name", "")).lower(): str(header.get("value", ""))
+        for header in raw.get("payload", {}).get("headers", [])
+    }
+    for name in _RECIPIENT_HEADERS:
+        parsed = email.utils.getaddresses([headers.get(name, "")])
+        if any(address.lower() == wanted for _name, address in parsed):
+            return True
+    return False
 
 
 def strip_plus(email: str) -> str:

@@ -22,6 +22,43 @@ class Base(DeclarativeBase):
     pass
 
 
+class ApiKey(Base):
+    """Issued API key. Mutation is required by SQLAlchemy mapped columns. # noqa: MUTABLE_OK"""
+
+    __tablename__ = "api_keys"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    name: Mapped[str] = mapped_column(String(255))
+    prefix: Mapped[str] = mapped_column(String(32))
+    secret_enc: Mapped[str] = mapped_column(Text)
+    secret_sha256: Mapped[str] = mapped_column(String(64), unique=True, index=True)
+    scope_json: Mapped[str] = mapped_column(Text)
+    expires_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime, server_default=func.now(), onupdate=func.now()
+    )
+
+    retention_rules: Mapped[list[KeyRetention]] = relationship(
+        back_populates="api_key", cascade="all, delete-orphan", passive_deletes=True
+    )
+
+
+class KeyRetention(Base):
+    """Per-key retention override. Mutation is required by SQLAlchemy. # noqa: MUTABLE_OK"""
+
+    __tablename__ = "key_retention"
+
+    key_id: Mapped[int] = mapped_column(
+        ForeignKey("api_keys.id", ondelete="CASCADE"), primary_key=True
+    )
+    provider: Mapped[str] = mapped_column(String(64), primary_key=True)
+    mailbox_ttl_hours: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    message_ttl_hours: Mapped[int | None] = mapped_column(Integer, nullable=True)
+
+    api_key: Mapped[ApiKey] = relationship(back_populates="retention_rules")
+
+
 class GmailAccount(Base):
     __tablename__ = "gmail_accounts"
 
@@ -33,6 +70,9 @@ class GmailAccount(Base):
     scopes: Mapped[str] = mapped_column(Text, default="")
     send_as_json: Mapped[str] = mapped_column(Text, default="[]")
     status: Mapped[str] = mapped_column(String(32), default="active", index=True)
+    owner_key_id: Mapped[int | None] = mapped_column(
+        ForeignKey("api_keys.id"), nullable=True
+    )
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(
         DateTime, server_default=func.now(), onupdate=func.now()
@@ -68,6 +108,9 @@ class Mailbox(Base):
     provider_account_id: Mapped[str | None] = mapped_column(String(255), nullable=True)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, index=True)
     is_deleted: Mapped[bool] = mapped_column(Boolean, default=False)
+    owner_key_id: Mapped[int | None] = mapped_column(
+        ForeignKey("api_keys.id"), nullable=True, index=True
+    )
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), index=True)
     updated_at: Mapped[datetime] = mapped_column(
         DateTime, server_default=func.now(), onupdate=func.now()

@@ -96,7 +96,7 @@ Copy `.env.example` to `.env` and adjust. Full reference:
 |---|---|---|
 | `MAILTM_HOST` | `127.0.0.1` | Bind address (`0.0.0.0` inside Docker) |
 | `MAILTM_PORT` | `8477` | HTTP port |
-| `MAILTM_API_KEY` | *(empty)* | If set, every API request needs `X-API-Key` |
+| `MAILTM_API_KEY` | *(empty)* | Root key. Issued keys live in the database. Empty on loopback is open root; if set, requests need `X-API-Key` |
 | `MAILTM_DATABASE_URL` | `sqlite+aiosqlite:///mailtm.db` | SQLite location; use `////data/mailtm.db` in Docker |
 | `MAILTM_SECRET_KEY` | *(auto)* | Fernet key for encrypting stored credentials; auto-generated into `mailtm.key` if empty |
 | `MAILTM_PROXY` | *(empty)* | Outbound proxy for provider requests |
@@ -116,11 +116,14 @@ Copy `.env.example` to `.env` and adjust. Full reference:
 
 ## 📡 REST API
 
-All endpoints are under `/v1` and (unless `MAILTM_API_KEY` is empty) require the
-header `X-API-Key: <key>`. Errors return `{"detail": "..."}` with proper status codes.
+All endpoints are under `/v1`. Send `X-API-Key` with the root key (`MAILTM_API_KEY`) or an issued key. If `MAILTM_API_KEY` is empty and the server is on loopback, the API is open as root. Errors return `{"detail": "..."}`.
 
 > **Auth-free:** `GET /health` and `GET /v1/config` (server facts used by the
 > dashboard and the standalone client's auto-update) never need the key.
+
+An unknown or expired key is `401` `{"detail": "invalid api key"}` with the header `X-MailTM-Error: api_key`. A known key that lacks an action, or that touches another owner's row, is `403` `{"detail": "forbidden"}` without that header.
+
+Key scope: an empty `providers` list grants all providers. An empty `parent_ids` list grants no Gmail parents. Gmail mailbox addresses must be plus-aliases.
 
 ### Providers & targets
 
@@ -134,10 +137,12 @@ header `X-API-Key: <key>`. Errors return `{"detail": "..."}` with proper status 
 | Method | Path | Description |
 |---|---|---|
 | `POST` | `/v1/mailboxes` | Create mailbox (`provider`, `domain`/`parent_id`, optional `address`, `password`) |
-| `GET` | `/v1/mailboxes?provider=&active=` | List mailboxes |
+| `GET` | `/v1/mailboxes?provider=&active=` | List the caller's mailboxes |
 | `GET` | `/v1/mailboxes/by-address/{email}` | Find by full address |
-| `GET` | `/v1/mailboxes/{id}` | Get one mailbox |
+| `GET` | `/v1/mailboxes/{id}` | Get one of the caller's mailboxes |
 | `DELETE` | `/v1/mailboxes/{id}` | Delete mailbox (provider + local) |
+
+List and get are scoped to the caller. Another owner's mailbox is `403`, not `404`. A missing row is `404`.
 
 ### Messages
 
@@ -169,6 +174,22 @@ header `X-API-Key: <key>`. Errors return `{"detail": "..."}` with proper status 
 | `DELETE` | `/v1/admin/retention/{provider}` | Disable rules for a provider |
 | `POST` | `/v1/admin/retention/run` | Run cleanup sweep now |
 | `GET/PUT/DELETE` | `/v1/admin/gmail/creds` | Manage stored OAuth credentials |
+
+### Keys
+
+Every keys route is root-only except `GET /v1/admin/keys/me`, which any authenticated key may call. Root's `/me` body is `{"is_root": true}`. The secret comes back only from create, rotate, and `GET /{id}/secret`.
+
+| Method | Path | Description |
+|---|---|---|
+| `POST` | `/v1/admin/keys` | Create a key. The response includes the secret once |
+| `GET` | `/v1/admin/keys` | List keys. Secrets are omitted |
+| `GET` | `/v1/admin/keys/me` | Current principal. Any authenticated key. Root returns `{"is_root": true}` |
+| `GET` | `/v1/admin/keys/{id}` | One key, without the secret |
+| `GET` | `/v1/admin/keys/{id}/secret` | Reveal the stored secret |
+| `PATCH` | `/v1/admin/keys/{id}` | Update name, expiry, and scope. The secret is unchanged |
+| `PUT` | `/v1/admin/keys/{id}/retention` | Replace that key's retention rows |
+| `POST` | `/v1/admin/keys/{id}/rotate` | Rotate the secret. The new secret is returned once |
+| `DELETE` | `/v1/admin/keys/{id}` | Delete the key. `409` if it still owns a live mailbox or gmail account |
 
 Interactive API docs: <http://127.0.0.1:8477/docs> (Swagger UI).
 
@@ -260,8 +281,22 @@ MailTMAPI                        # public entry point (async with / close)
 ├── .messages    MessagesAPI     list / get / mark_read / delete / source
 │                               wait_for / wait_for_confirmation_email
 ├── .gmail       GmailAPI        OAuth start / import / accounts / sync
-└── .admin       AdminAPI        stats / retention / domain cache / gmail creds
+└── .admin       AdminAPI        stats / retention / domain cache / gmail creds / keys
 ```
+
+### Issued keys (`0.3.0`)
+
+`AdminAPI` (`api.admin`) key methods, client version `0.3.0`:
+
+- `keys` lists keys. The secret is not in the response.
+- `key_create` creates a key and returns the secret once.
+- `key_get` returns one key without the secret.
+- `key_me` works for any authenticated key. Root gets `{"is_root": true}`.
+- `key_secret` reveals the stored secret.
+- `key_update` changes name, expiry, and scope. The secret stays the same.
+- `key_retention_set` replaces that key's retention rows.
+- `key_rotate` issues a new secret and returns it once.
+- `key_delete` deletes the key. `409` if it still owns a live mailbox or gmail account.
 
 ### Waiting helpers
 

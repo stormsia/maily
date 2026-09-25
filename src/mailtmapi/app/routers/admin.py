@@ -2,13 +2,24 @@
 
 from datetime import timedelta
 
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import JSONResponse
 from sqlalchemy import case, func, select
 
 from ...db.models import GmailAccount, Mailbox, Message
 from ...exceptions import MailNotFoundError
-from ..deps import RegistryDep, SessionDep, SettingsDep, require_api_key
+from ..authz import (
+    Principal,
+    RetentionRead,
+    RetentionWrite,
+    RootDep,
+    StatsRead,
+    parse_scope,
+    provider_allowed,
+    require_principal,
+    require_root,
+)
+from ..deps import RegistryDep, SessionDep, SettingsDep
 from ..schemas import (
     DomainCacheIn,
     DomainCacheOut,
@@ -21,12 +32,12 @@ from ..schemas import (
 from ..services import domain_cache as dc
 from ..services import gmail_config as gcfg
 from ..services import retention as svc
-from ..services import stats_history
+from ..services import scoped_stats, stats_history
 from ..services.stats_history import EVENT_MESSAGE_RECEIVED
 
 router = APIRouter(
     prefix="/v1/admin",
-    dependencies=[Depends(require_api_key)],
+    dependencies=[Depends(require_principal)],
     tags=["Admin"],
 )
 
@@ -36,9 +47,14 @@ def _sum_or_zero(value: int | None) -> int:
 
 
 @router.get("/stats")
-async def stats(session: SessionDep) -> dict:
+async def stats(
+    session: SessionDep,
+    principal: StatsRead,
+) -> dict:
     """Dashboard stats: mailbox/message totals, provider split, 7-day trend,
     and a 10-day activity history that also covers retention-deleted items."""
+    if not principal.is_root:
+        return await _owned_stats(session, principal)
     now = svc.utcnow_naive()
     cutoff = now - timedelta(days=6)
 
@@ -136,25 +152,75 @@ async def stats(session: SessionDep) -> dict:
     }
 
 
+async def _owned_stats(session: SessionDep, principal: Principal) -> dict:
+    key = principal.key
+    if key is None:
+        raise HTTPException(status_code=403, detail="forbidden")
+    scope = parse_scope(key.scope_json)
+    return await scoped_stats.owned_report(session, key_id=key.id, parent_ids=scope.parent_ids)
+
+
+def _issued_key_id(principal: Principal) -> int:
+    key = principal.key
+    if key is None:
+        raise HTTPException(status_code=403, detail="forbidden")
+    return key.id
+
+
+def _require_key_provider(principal: Principal, provider: str) -> None:
+    if provider_allowed(principal, provider):
+        return
+    raise HTTPException(status_code=403, detail="forbidden")
+
+
 @router.get("/retention", response_model=list[RetentionOut])
-async def list_retention(session: SessionDep) -> list:
-    """List active TTL retention rules."""
-    return await svc.get_retention(session)
+async def list_retention(
+    session: SessionDep,
+    principal: RetentionRead,
+) -> list:
+    """List active TTL retention rules. Root reads the global table."""
+    if principal.is_root:
+        return await svc.get_retention(session)
+    return await svc.get_key_retention(session, _issued_key_id(principal))
 
 
 @router.put("/retention/{provider}", response_model=RetentionOut)
-async def set_retention(provider: str, body: RetentionIn, session: SessionDep):
+async def set_retention(
+    provider: str,
+    body: RetentionIn,
+    session: SessionDep,
+    principal: RetentionWrite,
+):
     """Create or update TTL retention for a provider (at least one TTL required)."""
-    row = await svc.set_retention(session, provider, body.mailbox_ttl_hours, body.message_ttl_hours)
+    if principal.is_root:
+        row = await svc.set_retention(session, provider, body.mailbox_ttl_hours, body.message_ttl_hours)
+    else:
+        _require_key_provider(principal, provider)
+        row = await svc.set_key_retention(
+            session,
+            _issued_key_id(principal),
+            provider,
+            body.mailbox_ttl_hours,
+            body.message_ttl_hours,
+        )
     await session.commit()
     await session.refresh(row)
     return row
 
 
 @router.delete("/retention/{provider}", status_code=204)
-async def remove_retention(provider: str, session: SessionDep) -> None:
+async def remove_retention(
+    provider: str,
+    session: SessionDep,
+    principal: RetentionWrite,
+) -> None:
     """Disable retention rules for a provider."""
-    if not await svc.delete_retention(session, provider):
+    if principal.is_root:
+        removed = await svc.delete_retention(session, provider)
+    else:
+        _require_key_provider(principal, provider)
+        removed = await svc.delete_key_retention(session, _issued_key_id(principal), provider)
+    if not removed:
         raise MailNotFoundError(f"retention for {provider} not found")
     await session.commit()
 
@@ -164,9 +230,13 @@ async def run_retention_sweep(
     request: Request,
     registry: RegistryDep,
     settings: SettingsDep,
+    principal: RetentionWrite,
 ) -> dict:
-    """Run the retention cleanup sweep right now."""
-    return await svc.run_sweep(request.app.state.session_factory, registry, settings)
+    """Run the retention cleanup sweep right now. A key sweeps only its mailboxes."""
+    only_key_id = None if principal.is_root else _issued_key_id(principal)
+    return await svc.run_sweep(
+        request.app.state.session_factory, registry, settings, only_key_id=only_key_id
+    )
 
 
 @router.get("/domain-cache", response_model=DomainCacheOut)
@@ -174,6 +244,7 @@ async def get_domain_cache(
     session: SessionDep,
     registry: RegistryDep,
     settings: SettingsDep,
+    _: RootDep,
 ) -> DomainCacheOut:
     """Domain cache settings and per-provider state."""
     cfg = await dc.get_settings(session, settings)
@@ -193,6 +264,7 @@ async def set_domain_cache(
     session: SessionDep,
     registry: RegistryDep,
     settings: SettingsDep,
+    _: RootDep,
 ) -> DomainCacheOut:
     """Update domain cache settings (enabled / interval)."""
     cfg = await dc.set_settings(
@@ -210,7 +282,11 @@ async def set_domain_cache(
 
 
 @router.post("/domain-cache/run", response_model=None)
-async def run_domain_cache(request: Request, registry: RegistryDep) -> dict | JSONResponse:
+async def run_domain_cache(
+    request: Request,
+    registry: RegistryDep,
+    _: RootDep,
+) -> dict | JSONResponse:
     """Force a domain cache refresh; 502 with a failed list when a provider errors."""
     result = await dc.refresh_cache(request.app.state.session_factory, registry)
     if result["failed"]:
@@ -227,7 +303,7 @@ async def run_domain_cache(request: Request, registry: RegistryDep) -> dict | JS
     return result
 
 
-@router.get("/gmail/creds", response_model=GmailCredsOut)
+@router.get("/gmail/creds", response_model=GmailCredsOut, dependencies=[Depends(require_root)])
 async def get_gmail_creds(
     request: Request,
     session: SessionDep,
@@ -247,7 +323,7 @@ async def get_gmail_creds(
     )
 
 
-@router.put("/gmail/creds", response_model=GmailCredsOut)
+@router.put("/gmail/creds", response_model=GmailCredsOut, dependencies=[Depends(require_root)])
 async def save_gmail_creds(
     request: Request,
     body: GmailCredsIn,
@@ -277,7 +353,7 @@ async def save_gmail_creds(
     )
 
 
-@router.delete("/gmail/creds", status_code=204)
+@router.delete("/gmail/creds", status_code=204, dependencies=[Depends(require_root)])
 async def clear_gmail_creds(
     request: Request,
     session: SessionDep,

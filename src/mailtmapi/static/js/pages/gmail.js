@@ -30,17 +30,27 @@ const WIZ_STEPS = [
     lead: "Credentials are stored on this server, then the Google consent screen opens in a new tab." },
 ];
 
-export async function render(root) {
+function showCredentials(me) {
+  if (me == null || me.is_root === true) return true;
+  return false;
+}
+
+export async function render(root, me = null) {
+  const credentials = showCredentials(me);
   root.innerHTML = "";
 
-  const actionsRow = h("div", { style: "display:flex;gap:8px;justify-content:center;flex-wrap:wrap" });
+  const actionsRow = credentials
+    ? h("div", { style: "display:flex;gap:8px;justify-content:center;flex-wrap:wrap" })
+    : null;
   const credsLine = h("div", { class: "small muted", style: "margin-bottom:12px;min-height:20px" });
-  const card = h("div", { class: "card connect-card" },
-    h("h2", {}, "Bring your own Gmail"),
-    h("p", {}, "Connect a Google account via OAuth, then create unlimited +alias mailboxes on top of it. The callback returns to the server — this tab stays put."),
-    credsLine,
-    actionsRow);
-  root.append(card);
+  const card = credentials
+    ? h("div", { class: "card connect-card" },
+        h("h2", {}, "Bring your own Gmail"),
+        h("p", {}, "Connect a Google account via OAuth, then create unlimited +alias mailboxes on top of it. The callback returns to the server — this tab stays put."),
+        credsLine,
+        actionsRow)
+    : null;
+  if (card) root.append(card);
 
   const listWrap = h("div", { class: "mt-6" });
   root.append(listWrap);
@@ -52,7 +62,7 @@ export async function render(root) {
   try {
     [accounts, creds] = await Promise.all([
       api.gmailAccounts(),
-      api.gmailCreds().catch(() => null),
+      credentials ? api.gmailCreds().catch(() => null) : Promise.resolve(null),
     ]);
   } catch (e) {
     listWrap.innerHTML = "";
@@ -60,7 +70,7 @@ export async function render(root) {
     refreshIcons();
     return;
   }
-  drawCreds();
+  if (credentials) drawCreds();
   draw();
 
   /** Connect button (primary once configured, ghost otherwise). */
@@ -71,6 +81,7 @@ export async function render(root) {
 
   /** Status line + setup/edit affordances on the connect card. */
   function drawCreds() {
+    if (!credentials || !credsLine || !actionsRow) return;
     credsLine.innerHTML = "";
     actionsRow.innerHTML = "";
     if (!creds) { actionsRow.append(connectBtn()); refreshIcons(); return; }
@@ -355,7 +366,7 @@ export async function render(root) {
       window.open(auth_url, "_blank", "noopener");
       toast("Google consent opened in a new tab — approve it, then come back and refresh.", "info", "external-link");
     } catch (err) {
-      if (err.status === 400) {
+      if (err.status === 400 && credentials) {
         // CredentialsError-like: OAuth credentials not configured yet.
         openWizard(creds?.source === "db" ? 4 : 1);
       } else {
@@ -388,7 +399,7 @@ export async function render(root) {
       const delBtn = h("button", { class: "icon-btn danger", title: "Remove account", "aria-label": `Remove ${a.email}`, onclick: (e) => deleteOne(e, a) },
         h("i", { "data-lucide": "trash-2" }));
       const needsReauth = !["active", "connected", "ok"].includes((a.status || "").toLowerCase());
-      const reauthBtn = needsReauth
+      const reauthBtn = needsReauth && credentials
         ? h("button", { class: "icon-btn warn", title: `Reconnect ${a.email} — access expired`, "aria-label": `Reconnect ${a.email}`, onclick: () => reconnectAccount(a) },
             h("i", { "data-lucide": "plug-zap" }))
         : null;
@@ -412,7 +423,7 @@ export async function render(root) {
       window.open(auth_url, "_blank", "noopener");
       toast("Google consent opened in a new tab — approve it, then refresh.", "info", "external-link");
     } catch (err) {
-      if (err.status === 400) {
+      if (err.status === 400 && credentials) {
         openWizard(creds?.source === "db" ? 4 : 1);
       } else {
         toast(err.detail || "Could not start OAuth.", "err");

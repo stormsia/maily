@@ -195,4 +195,27 @@ export const api = {
     request(`/v1/gmail/accounts/${encodeURIComponent(id)}/sync`, {
       method: "POST",
     }),
+  keys: () => request("/v1/admin/keys"),
+  keyCreate: (body) => request("/v1/admin/keys", { method: "POST", body }),
+  keySecret: (id) =>
+    request(`/v1/admin/keys/${encodeURIComponent(id)}/secret`),
+  keyUpdate: (id, body) =>
+    request(`/v1/admin/keys/${encodeURIComponent(id)}`, {
+      method: "PATCH",
+      body,
+    }),
+  keyRetentionSet: (id, body) =>
+    request(`/v1/admin/keys/${encodeURIComponent(id)}/retention`, {
+      method: "PUT",
+      body,
+    }),
+  keyRotate: (id) =>
+    request(`/v1/admin/keys/${encodeURIComponent(id)}/rotate`, {
+      method: "POST",
+    }),
+  keyDelete: (id) =>
+    request(`/v1/admin/keys/${encodeURIComponent(id)}`, {
+      method: "DELETE",
+    }),
+  keyMe: () => request("/v1/admin/keys/me"),
 };

@@ -53,7 +53,7 @@ import httpx
 from loguru import logger
 from pydantic import BaseModel, ConfigDict
 
-__version__ = "0.2.0"
+__version__ = "0.3.0"
 
 # Откуда клиент берёт себя для автообновления (переопределяется env-переменной).
 CLIENT_SOURCE = os.environ.get(
@@ -800,6 +800,75 @@ class AdminAPI:
 
     async def gmail_creds_clear(self) -> None:
         await self._t.request("DELETE", "/v1/admin/gmail/creds")
+
+    async def keys(self) -> list[dict[str, Any]]:
+        """Root only. Lists keys; the secret is not in the response."""
+        return await self._t.request("GET", "/v1/admin/keys")
+
+    async def key_create(
+        self,
+        *,
+        name: str,
+        expires_at: str | None,
+        scope: dict[str, Any],
+        retention: list[dict[str, Any]],
+    ) -> dict[str, Any]:
+        """Root only. Creates a key; the response includes the secret once."""
+        # Four fields are the POST /v1/admin/keys body; scope is posted as given.
+        return await self._t.request(
+            "POST",
+            "/v1/admin/keys",
+            json={
+                "name": name,
+                "expires_at": expires_at,
+                "scope": scope,
+                "retention": retention,
+            },
+        )
+
+    async def key_get(self, key_id: int) -> dict[str, Any]:
+        """Root only. Returns one key without the secret."""
+        return await self._t.request("GET", f"/v1/admin/keys/{key_id}")
+
+    async def key_me(self) -> dict[str, Any]:
+        """Any authenticated key. Root gets is_root; an issued key gets no secret."""
+        return await self._t.request("GET", "/v1/admin/keys/me")
+
+    async def key_secret(self, key_id: int) -> dict[str, Any]:
+        """Root only. Reveals the secret."""
+        return await self._t.request("GET", f"/v1/admin/keys/{key_id}/secret")
+
+    async def key_update(
+        self,
+        key_id: int,
+        *,
+        name: str,
+        expires_at: str | None,
+        scope: dict[str, Any],
+    ) -> dict[str, Any]:
+        """Root only. Updates name, expiry, and scope; the secret is unchanged."""
+        # name, expires_at, and scope are the PATCH body; scope is posted as given.
+        return await self._t.request(
+            "PATCH",
+            f"/v1/admin/keys/{key_id}",
+            json={"name": name, "expires_at": expires_at, "scope": scope},
+        )
+
+    async def key_retention_set(
+        self, key_id: int, retention: list[dict[str, Any]]
+    ) -> list[dict[str, Any]]:
+        """Root only. Replaces that key's retention rows."""
+        return await self._t.request(
+            "PUT", f"/v1/admin/keys/{key_id}/retention", json=retention
+        )
+
+    async def key_rotate(self, key_id: int) -> dict[str, Any]:
+        """Root only. Rotates the secret; the response includes the new secret once."""
+        return await self._t.request("POST", f"/v1/admin/keys/{key_id}/rotate")
+
+    async def key_delete(self, key_id: int) -> None:
+        """Root only. Deletes the key."""
+        await self._t.request("DELETE", f"/v1/admin/keys/{key_id}")
 
 
 # --------------------------------------------------------------------------- #

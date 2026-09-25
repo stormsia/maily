@@ -8,7 +8,6 @@ from sqlalchemy import select
 from ...db.models import DomainCache
 from ..deps import RegistryDep, SessionDep
 
-
 _ERROR_MAX = 160
 
 

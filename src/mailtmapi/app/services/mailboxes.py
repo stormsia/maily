@@ -102,6 +102,8 @@ async def create_mailbox(
     parent_id: int | None,
     address: str | None,
     password: str | None,
+    owner_key_id: int | None = None,
+    allowed_parent_ids: list[int] | None = None,
 ) -> Mailbox:
     slug = provider
     if not slug and domain:
@@ -115,13 +117,22 @@ async def create_mailbox(
     # Domain lookup may have committed already; either way the provider call
     # must not run inside an open write transaction.
     await session.commit()
-    info = await prov.create_mailbox(
-        MailboxSpec(address=address, domain=domain, parent_id=parent_id, password=password)
+    spec = MailboxSpec(
+        address=address,
+        domain=domain,
+        parent_id=parent_id,
+        password=password,
+        allowed_parent_ids=(
+            tuple(allowed_parent_ids) if slug == "gmail" and allowed_parent_ids is not None else None
+        ),
     )
+    info = await prov.create_mailbox(spec)
     if not _is_valid_address(info.address):
         raise MailValidationError(
             f"provider {slug!r} returned invalid address {info.address!r}; expected local@domain"
         )
+    if slug == "gmail" and "+" not in info.address.split("@", 1)[0]:
+        raise MailValidationError("gmail address must be a plus-alias")
     secret = settings.resolved_secret_key()
     row = Mailbox(
         provider=info.provider,
@@ -132,6 +143,7 @@ async def create_mailbox(
         provider_account_id=info.provider_account_id,
         is_active=True,
         is_deleted=False,
+        owner_key_id=owner_key_id,
     )
     session.add(row)
     try:

@@ -28,6 +28,8 @@ from .routers.admin import router as admin_router
 from .routers.gmail import public as gmail_public
 from .routers.gmail import router as gmail_router
 from .routers.health import router as health_router
+from .routers.keys import me_router as keys_me_router
+from .routers.keys import router as keys_router
 from .routers.mailboxes import router as mailboxes_router
 from .routers.messages import router as messages_router
 from .routers.providers import router as providers_router
@@ -60,6 +62,10 @@ OPENAPI_TAGS = [
     {
         "name": "Admin",
         "description": "Operational controls: retention TTLs, domain cache and Gmail credentials.",
+    },
+    {
+        "name": "Keys",
+        "description": "Issued API keys are root-only except GET /me.",
     },
 ]
 
@@ -205,6 +211,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(mailboxes_router)
     app.include_router(messages_router)
     app.include_router(admin_router)
+    app.include_router(keys_me_router)
+    app.include_router(keys_router)
     app.add_middleware(OriginGuard)
     static_dir = Path(__file__).resolve().parents[1] / "static"
 

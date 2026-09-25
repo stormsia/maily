@@ -21,7 +21,15 @@ from mailtmapi.utils.misc import random_string
 from mailtmapi.utils.retry import async_retry
 
 from .oauth import GmailOAuth
-from .parse import is_base_or_alias, raw_to_detail, raw_to_source, raw_to_summary, strip_plus
+from .parse import (
+    addressed_to,
+    is_base_or_alias,
+    raw_to_detail,
+    raw_to_source,
+    raw_to_summary,
+    require_plus_alias,
+    strip_plus,
+)
 from .store import GmailParent, GmailParentStore
 
 logger = logging.getLogger(__name__)
@@ -109,7 +117,8 @@ class GmailProvider:
             if tokens.get("scopes"):
                 current.scopes = tokens["scopes"]
                 parent.scopes = current.scopes
-            await self._store.update(current)
+            if current.id:
+                await self._store.update(current)
             parent.access_token = current.access_token
             parent.access_expires_at = current.access_expires_at
             parent.refresh_token = current.refresh_token
@@ -139,6 +148,7 @@ class GmailProvider:
                 kind="parent",
                 provider="gmail",
                 label=strip_plus(p.email),
+                owner_key_id=p.owner_key_id,
             )
             for p in await self._store.list_active()
         ]
@@ -146,9 +156,18 @@ class GmailProvider:
     async def _pick_parent(self, spec: MailboxSpec) -> GmailParent:
         if spec.parent_id is not None:
             return await self._store.get(spec.parent_id)
-        active = await self._store.list_active()
-        if not active:
-            raise MailValidationError("no active gmail parents")
+        granted = spec.allowed_parent_ids
+        if granted is not None:
+            allowed = set(granted)
+            active = [
+                parent for parent in await self._store.list_active() if parent.id in allowed
+            ]
+            if not active:
+                raise MailValidationError("no gmail parent granted")
+        else:
+            active = await self._store.list_active()
+            if not active:
+                raise MailValidationError("no active gmail parents")
         parent = active[self._parent_rr % len(active)]
         self._parent_rr += 1
         return parent
@@ -185,7 +204,8 @@ class GmailProvider:
                 seen.add(key)
                 deduped.append(b)
         parent.send_as = deduped
-        if parent.id:
+        # id 0 is an unsaved parent from import/callback. Only a stored id may be written.
+        if parent.id is not None and parent.id > 0:
             await self._store.update(parent)
         return parent.send_as
 
@@ -208,6 +228,7 @@ class GmailProvider:
             alias = spec.address
         else:
             alias = self._next_alias(parent, bases)
+        require_plus_alias(alias)
         return MailboxInfo(
             provider="gmail",
             address=alias,
@@ -266,33 +287,38 @@ class GmailProvider:
         return [raw_to_summary(result) for result in results]
 
     @async_retry(max_attempts=3)
-    async def get_message(self, mailbox: MailboxInfo, message_id: str) -> MessageDetail:
+    async def _full_for_mailbox(self, mailbox: MailboxInfo, message_id: str) -> dict:
         parent = await self._resolve_parent(mailbox)
         data = await self._api_get(
             parent, self._message_url(message_id), params={"format": "full"}
         )
-        return raw_to_detail(data)
+        if not addressed_to(data, mailbox.address or mailbox.token):
+            raise MailNotFoundError(f"message {message_id} not found")
+        return data
 
-    @async_retry(max_attempts=3)
+    async def get_message(self, mailbox: MailboxInfo, message_id: str) -> MessageDetail:
+        return raw_to_detail(await self._full_for_mailbox(mailbox, message_id))
+
     async def delete_message(self, mailbox: MailboxInfo, message_id: str) -> bool:
+        await self._full_for_mailbox(mailbox, message_id)
         parent = await self._resolve_parent(mailbox)
         result = await self._api_post(parent, self._message_url(message_id, "/trash"))
         return "id" in result or "threadId" in result
 
-    @async_retry(max_attempts=3)
     async def mark_read(self, mailbox: MailboxInfo, message_id: str) -> bool:
+        await self._full_for_mailbox(mailbox, message_id)
         parent = await self._resolve_parent(mailbox)
         result = await self._api_post(
             parent,
-            f"{_API_BASE}/messages/{message_id}/modify",
+            self._message_url(message_id, "/modify"),
             json_body={"removeLabelIds": ["UNREAD"]},
         )
         return "id" in result or "threadId" in result
 
-    @async_retry(max_attempts=3)
     async def get_source(self, mailbox: MailboxInfo, message_id: str) -> MessageSource:
+        await self._full_for_mailbox(mailbox, message_id)
         parent = await self._resolve_parent(mailbox)
         data = await self._api_get(
-            parent, f"{_API_BASE}/messages/{message_id}", params={"format": "raw"}
+            parent, self._message_url(message_id), params={"format": "raw"}
         )
         return raw_to_source(data, message_id)

@@ -10,11 +10,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.ext.asyncio import async_sessionmaker as AsyncSessionFactory
 
 from ...db.engine import retry_on_lock
-from ...db.models import Mailbox, Message, Retention
+from ...db.models import KeyRetention, Mailbox, Message, Retention
 from ...exceptions import MailValidationError
 from ...providers.registry import ProviderRegistry
 from ...settings import Settings
 from ..services import mailboxes as svc
+from ..services.retention_rules import load_sweep_rules, owner_clause
 from ..services.stats_history import (
     EVENT_MAILBOX_DELETED,
     EVENT_MESSAGE_DELETED,
@@ -31,16 +32,7 @@ def utcnow_naive() -> datetime:
     return datetime.now(timezone.utc).replace(tzinfo=None)
 
 
-async def get_retention(session) -> list[Retention]:
-    return list((await session.execute(select(Retention).order_by(Retention.provider))).scalars())
-
-
-async def set_retention(
-    session,
-    provider: str,
-    mailbox_ttl_hours: int | None,
-    message_ttl_hours: int | None,
-) -> Retention:
+def _check_ttls(mailbox_ttl_hours: int | None, message_ttl_hours: int | None) -> None:
     for name, ttl in (
         ("mailbox_ttl_hours", mailbox_ttl_hours),
         ("message_ttl_hours", message_ttl_hours),
@@ -49,6 +41,29 @@ async def set_retention(
             raise MailValidationError(f"{name} must be >= 1 or null")
     if mailbox_ttl_hours is None and message_ttl_hours is None:
         raise MailValidationError("at least one ttl required")
+
+
+async def get_retention(session) -> list[Retention]:
+    return list((await session.execute(select(Retention).order_by(Retention.provider))).scalars())
+
+
+async def get_key_retention(session, key_id: int) -> list[KeyRetention]:
+    """Rows this issued key may read. Other keys and the global table stay hidden."""
+    rows = await session.execute(
+        select(KeyRetention)
+        .where(KeyRetention.key_id == key_id)
+        .order_by(KeyRetention.provider)
+    )
+    return list(rows.scalars())
+
+
+async def set_retention(
+    session,
+    provider: str,
+    mailbox_ttl_hours: int | None,
+    message_ttl_hours: int | None,
+) -> Retention:
+    _check_ttls(mailbox_ttl_hours, message_ttl_hours)
     row = await session.get(Retention, provider)
     if row is None:
         row = Retention(provider=provider)
@@ -59,8 +74,35 @@ async def set_retention(
     return row
 
 
+async def set_key_retention(
+    session,
+    key_id: int,
+    provider: str,
+    mailbox_ttl_hours: int | None,
+    message_ttl_hours: int | None,
+) -> KeyRetention:
+    """Write this key's row only. Does not touch the global retention table."""
+    _check_ttls(mailbox_ttl_hours, message_ttl_hours)
+    row = await session.get(KeyRetention, (key_id, provider))
+    if row is None:
+        row = KeyRetention(key_id=key_id, provider=provider)
+        session.add(row)
+    row.mailbox_ttl_hours = mailbox_ttl_hours
+    row.message_ttl_hours = message_ttl_hours
+    await session.flush()
+    return row
+
+
 async def delete_retention(session, provider: str) -> bool:
     row = await session.get(Retention, provider)
+    if row is None:
+        return False
+    await session.delete(row)
+    return True
+
+
+async def delete_key_retention(session, key_id: int, provider: str) -> bool:
+    row = await session.get(KeyRetention, (key_id, provider))
     if row is None:
         return False
     await session.delete(row)
@@ -88,6 +130,8 @@ async def run_sweep(
     factory: AsyncSessionFactory[AsyncSession],
     registry: ProviderRegistry,
     settings: Settings,
+    *,
+    only_key_id: int | None = None,
 ) -> dict:
     async with _sweep_lock, factory() as session:
         mailboxes_deleted = 0
@@ -95,9 +139,7 @@ async def run_sweep(
         mailbox_deletes: dict[str, int] = {}
         message_deletes: dict[str, int] = {}
         secret = settings.resolved_secret_key()
-        retentions = list((await session.execute(select(Retention))).scalars())
-        mailbox_ttl = {r.provider: r.mailbox_ttl_hours for r in retentions if r.mailbox_ttl_hours}
-        message_ttl = {r.provider: r.message_ttl_hours for r in retentions if r.message_ttl_hours}
+        mailbox_rules, message_rules = await load_sweep_rules(session, only_key_id)
 
     # Soft-deleted rows were already removed upstream. One write, then the
     # session is closed before any provider I/O.
@@ -116,14 +158,15 @@ async def run_sweep(
 
     # expired mailboxes — cutoff is applied in SQL so a large provider
     # doesn't load every live mailbox into memory just to skip most of them
-    for provider, ttl in mailbox_ttl.items():
-        cutoff = utcnow_naive() - timedelta(hours=ttl)
+    for rule in mailbox_rules:
+        cutoff = utcnow_naive() - timedelta(hours=rule.hours)
         async with factory() as read:
             rows = list(
                 (
                     await read.execute(
                         select(Mailbox).where(
-                            Mailbox.provider == provider,
+                            Mailbox.provider == rule.provider,
+                            owner_clause(rule.owner_key_id),
                             Mailbox.is_deleted.is_(False),
                             Mailbox.created_at.is_not(None),
                             Mailbox.created_at < cutoff,
@@ -134,7 +177,7 @@ async def run_sweep(
         for row in rows:
             info = svc.to_mailbox_info(row, secret)
             try:
-                prov = registry.get(provider)
+                prov = registry.get(rule.provider)
                 await prov.delete_mailbox(info)
             except Exception as exc:  # noqa: BLE001 - best-effort sync with provider
                 logger.warning("retention: provider delete failed for %s: %s", row.address, exc)
@@ -145,12 +188,12 @@ async def run_sweep(
 
             await _write(factory, _drop_box)
             mailboxes_deleted += 1
-            mailbox_deletes[provider] = mailbox_deletes.get(provider, 0) + 1
+            mailbox_deletes[rule.provider] = mailbox_deletes.get(rule.provider, 0) + 1
             logger.info("retention: expired mailbox %s deleted", row.address)
 
     # expired messages — mailbox is joined in so we don't re-fetch it per row
-    for provider, ttl in message_ttl.items():
-        cutoff = utcnow_naive() - timedelta(hours=ttl)
+    for rule in message_rules:
+        cutoff = utcnow_naive() - timedelta(hours=rule.hours)
         async with factory() as read:
             msg_rows = list(
                 (
@@ -158,7 +201,8 @@ async def run_sweep(
                         select(Message, Mailbox)
                         .join(Mailbox, Message.mailbox_id == Mailbox.id)
                         .where(
-                            Message.provider == provider,
+                            Message.provider == rule.provider,
+                            owner_clause(rule.owner_key_id),
                             Mailbox.is_deleted.is_(False),
                             Message.is_deleted.is_(False),
                             Message.received_at.is_not(None),
@@ -171,7 +215,7 @@ async def run_sweep(
             info = svc.to_mailbox_info(mailbox_row, secret)
             msg_id = msg.message_api_id
             try:
-                prov = registry.get(provider)
+                prov = registry.get(rule.provider)
                 await prov.delete_message(info, msg_id)
             except Exception as exc:  # noqa: BLE001 - best-effort sync with provider
                 logger.warning(
@@ -187,7 +231,7 @@ async def run_sweep(
 
             await _write(factory, _drop_msg)
             messages_deleted += 1
-            message_deletes[provider] = message_deletes.get(provider, 0) + 1
+            message_deletes[rule.provider] = message_deletes.get(rule.provider, 0) + 1
             logger.info("retention: expired message %s deleted", msg_id)
 
     async def _ledger(s: AsyncSession) -> None:

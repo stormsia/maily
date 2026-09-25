@@ -16,6 +16,7 @@ class GmailParent:
     send_as: list[str] = field(default_factory=list)  # full emails, no plus tags
     scopes: str = ""
     status: str = "active"
+    owner_key_id: int | None = None
 
 
 class GmailParentStore(Protocol):

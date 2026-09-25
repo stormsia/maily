@@ -49,6 +49,7 @@ class DbGmailStore:
             send_as=list(send_as),
             scopes=row.scopes or "",
             status=row.status,
+            owner_key_id=row.owner_key_id,
         )
 
     def _apply(self, row: GmailAccount, parent: GmailParent) -> None:
@@ -61,6 +62,7 @@ class DbGmailStore:
         row.scopes = parent.scopes or ""
         row.send_as_json = json.dumps(parent.send_as)
         row.status = parent.status
+        row.owner_key_id = parent.owner_key_id
 
     async def list_active(self) -> list[GmailParent]:
         async with self._factory() as s:

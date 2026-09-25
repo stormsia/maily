@@ -1,0 +1,460 @@
+/* Keys page (root only): list issued keys, create, reveal, rotate, delete, open-as. */
+import { api, getApiKey, setApiKey } from "../api.js";
+import { h, toast, refreshIcons, openModal, closeModal, confirmDialog, emptyState, errorBox, skeletonRows, copyText, fmtDate } from "../ui.js";
+
+const ACTIONS = [
+  "mailboxes:read",
+  "mailboxes:write",
+  "messages:read",
+  "messages:write",
+  "stats:read",
+  "retention:read",
+  "retention:write",
+  "parents:add",
+  "parents:read",
+];
+
+const PREV_KEY = "mailtm_api_key_prev";
+
+function scopeSummary(scope) {
+  const providers = scope?.providers?.length ? scope.providers.join(", ") : "all providers";
+  const parents = scope?.parent_ids?.length ? `${scope.parent_ids.length} parents` : "no parents";
+  const actions = scope?.actions?.length ?? 0;
+  return `${providers} · ${parents} · ${actions} action${actions === 1 ? "" : "s"}`;
+}
+
+function secretField(secret) {
+  const input = h("input", {
+    type: "text",
+    value: secret,
+    readonly: true,
+    spellcheck: "false",
+    "aria-label": "Key secret",
+    style: "font-family:var(--font-mono)",
+  });
+  const copyBtn = h("button", {
+    class: "icon-btn",
+    type: "button",
+    "aria-label": "Copy secret",
+    title: "Copy",
+    onclick: () => copyText(secret, "Secret copied"),
+  }, h("i", { "data-lucide": "copy" }));
+  return h("div", { class: "field" },
+    h("label", {}, "Secret"),
+    h("div", { class: "pass-wrap" }, input, copyBtn),
+    h("p", { class: "field-hint" }, "Shown once in this dialog. Copy it now — the list never stores it."));
+}
+
+function actionChecks(selected = []) {
+  const wrap = h("div", { class: "grid", style: "gap:8px" });
+  for (const action of ACTIONS) {
+    const input = h("input", {
+      type: "checkbox",
+      value: action,
+      checked: selected.includes(action),
+      "aria-label": action,
+    });
+    wrap.append(h("label", { style: "display:flex;align-items:center;gap:8px;cursor:pointer" },
+      input,
+      h("span", { class: "mono" }, action)));
+  }
+  return wrap;
+}
+
+function checkedActions(root) {
+  return [...root.querySelectorAll('input[type="checkbox"]:checked')].map((el) => el.value);
+}
+
+function retentionRows(container, providers) {
+  const rows = [];
+  for (const slug of providers) {
+    const box = h("input", {
+      type: "number", min: "1", step: "1", placeholder: "disabled", "aria-label": `${slug} mailbox TTL hours`,
+    });
+    const msg = h("input", {
+      type: "number", min: "1", step: "1", placeholder: "disabled", "aria-label": `${slug} message TTL hours`,
+    });
+    rows.push({ slug, box, msg });
+    container.append(h("div", { class: "card ret-card" },
+      h("div", { class: "ret-card-top" }, h("span", { class: "prov-name mono" }, slug)),
+      h("div", { style: "display:flex;gap:12px" },
+        h("div", { class: "field", style: "margin:0;flex:1" }, h("label", {}, "Mailbox TTL (hours)"), box),
+        h("div", { class: "field", style: "margin:0;flex:1" }, h("label", {}, "Message TTL (hours)"), msg))));
+  }
+  return rows;
+}
+
+function collectRetention(rows) {
+  const out = [];
+  for (const row of rows) {
+    const parse = (v) => (v.trim() === "" ? null : Math.floor(Number(v)));
+    const mailbox = parse(row.box.value);
+    const message = parse(row.msg.value);
+    if (mailbox === null && message === null) continue;
+    if ((mailbox !== null && !(mailbox >= 1)) || (message !== null && !(message >= 1))) {
+      throw new Error(`TTL for ${row.slug} must be 1 hour or more.`);
+    }
+    out.push({ provider: row.slug, mailbox_ttl_hours: mailbox, message_ttl_hours: message });
+  }
+  return out;
+}
+
+function parseIds(raw) {
+  const text = raw.trim();
+  if (!text) return [];
+  const parts = text.split(/[\s,]+/).filter(Boolean);
+  const ids = parts.map((part) => Number(part));
+  if (ids.some((id) => !Number.isInteger(id))) {
+    throw new Error("Parent ids must be integers.");
+  }
+  return ids;
+}
+
+function toExpires(value) {
+  if (!value) return null;
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) throw new Error("Expiry is not a valid date.");
+  return d.toISOString();
+}
+
+export async function render(root) {
+  root.innerHTML = "";
+  root.append(skeletonRows(4));
+
+  let keys = [];
+  let providers = [];
+  try {
+    [keys, providers] = await Promise.all([
+      api.keys(),
+      api.providers().catch(() => []),
+    ]);
+  } catch (e) {
+    root.innerHTML = "";
+    root.append(errorBox(e.detail || "Could not load keys.", () => render(root)));
+    refreshIcons();
+    return;
+  }
+
+  const slugs = [...new Set(providers.map((p) => p.slug).filter(Boolean))];
+  root.innerHTML = "";
+  const createBtn = h("button", { class: "btn btn-primary", onclick: openCreate },
+    h("i", { "data-lucide": "plus" }), h("span", {}, "New key"));
+  root.append(h("div", { class: "toolbar toolbar--top" },
+    h("p", { class: "muted", style: "flex:1;min-width:220px" },
+      "Issued keys. Empty providers means all. Empty parent ids means none. Secrets stay off this list."),
+    createBtn));
+
+  const listWrap = h("div", {});
+  root.append(listWrap);
+  draw();
+
+  function draw() {
+    listWrap.innerHTML = "";
+    if (!keys.length) {
+      listWrap.append(emptyState({
+        icon: "key-round",
+        title: "No issued keys",
+        copy: "Create a key with a name, an optional expiry, and the actions it may use.",
+        actionLabel: "New key",
+        onAction: openCreate,
+      }));
+      refreshIcons();
+      return;
+    }
+    const tbody = h("tbody", {});
+    for (const key of keys) {
+      const revealBtn = h("button", {
+        class: "icon-btn", title: "Reveal secret", "aria-label": `Reveal ${key.name}`,
+        onclick: () => reveal(key),
+      }, h("i", { "data-lucide": "eye" }));
+      const rotateBtn = h("button", {
+        class: "icon-btn", title: "Rotate secret", "aria-label": `Rotate ${key.name}`,
+        onclick: () => rotate(key),
+      }, h("i", { "data-lucide": "refresh-cw" }));
+      const openBtn = h("button", {
+        class: "icon-btn", title: "Open dashboard as this key", "aria-label": `Open dashboard as ${key.name}`,
+        onclick: () => openAs(key),
+      }, h("i", { "data-lucide": "log-in" }));
+      const editBtn = h("button", {
+        class: "icon-btn", title: "Edit scope", "aria-label": `Edit ${key.name}`,
+        onclick: () => openEdit(key),
+      }, h("i", { "data-lucide": "pencil" }));
+      const delBtn = h("button", {
+        class: "icon-btn danger", title: "Delete key", "aria-label": `Delete ${key.name}`,
+        onclick: () => remove(key),
+      }, h("i", { "data-lucide": "trash-2" }));
+      tbody.append(h("tr", {},
+        h("td", {}, key.name),
+        h("td", { class: "mono" }, key.prefix || "—"),
+        h("td", { class: "muted small mono" }, key.expires_at ? fmtDate(key.expires_at) : "never"),
+        h("td", { class: "muted small" }, scopeSummary(key.scope)),
+        h("td", {}, h("div", { class: "row-actions" }, revealBtn, rotateBtn, openBtn, editBtn, delBtn))));
+    }
+    listWrap.append(h("div", { class: "table-wrap" },
+      h("table", { class: "table" },
+        h("thead", {}, h("tr", {},
+          h("th", {}, "Name"),
+          h("th", {}, "Prefix"),
+          h("th", {}, "Expiry"),
+          h("th", {}, "Scope"),
+          h("th", { style: "text-align:right" }, "Actions"))),
+        tbody)));
+    refreshIcons();
+  }
+
+  function formBody(existing) {
+    const nameInput = h("input", {
+      value: existing?.name || "",
+      placeholder: "ci-readonly",
+      autocomplete: "off",
+      "aria-label": "Key name",
+    });
+    const expiryInput = h("input", {
+      type: "datetime-local",
+      "aria-label": "Expiry",
+      value: existing?.expires_at ? toLocalInput(existing.expires_at) : "",
+    });
+    const providerInput = h("input", {
+      value: (existing?.scope?.providers || []).join(", "),
+      placeholder: "mail.tm, gmail — empty means all",
+      autocomplete: "off",
+      spellcheck: "false",
+      "aria-label": "Providers",
+    });
+    const parentInput = h("input", {
+      value: (existing?.scope?.parent_ids || []).join(", "),
+      placeholder: "1, 4 — empty means none",
+      autocomplete: "off",
+      spellcheck: "false",
+      "aria-label": "Parent ids",
+    });
+    const checks = actionChecks(existing?.scope?.actions || []);
+    const retWrap = h("div", { class: "grid", style: "gap:8px" });
+    const retRows = existing ? [] : retentionRows(retWrap, slugs);
+    const body = h("div", {},
+      h("div", { class: "field" }, h("label", {}, "Name"), nameInput),
+      h("div", { class: "field" },
+        h("label", {}, "Expiry ", h("span", { class: "opt" }, "(optional)")),
+        expiryInput,
+        h("p", { class: "field-hint" }, "Leave blank for a key that does not expire.")),
+      h("div", { class: "field" },
+        h("label", {}, "Providers"),
+        providerInput,
+        h("p", { class: "field-hint" }, "Comma-separated slugs. Empty means all providers.")),
+      h("div", { class: "field" },
+        h("label", {}, "Parent ids"),
+        parentInput,
+        h("p", { class: "field-hint" }, "Comma-separated Gmail parent ids. Empty means none.")),
+      h("div", { class: "field" }, h("label", {}, "Actions"), checks),
+      existing ? null : h("div", { class: "field" },
+        h("label", {}, "Retention ", h("span", { class: "opt" }, "(optional)")),
+        retWrap,
+        slugs.length ? null : h("p", { class: "field-hint" }, "No providers loaded — retention can be set later.")));
+    return { body, nameInput, expiryInput, providerInput, parentInput, checks, retRows };
+  }
+
+  function readForm(form) {
+    const name = form.nameInput.value.trim();
+    if (!name) throw new Error("Name is required.");
+    const providersList = form.providerInput.value.split(/[\s,]+/).map((s) => s.trim()).filter(Boolean);
+    const actions = checkedActions(form.checks);
+    if (!actions.length) throw new Error("Pick at least one action.");
+    return {
+      name,
+      expires_at: toExpires(form.expiryInput.value),
+      scope: {
+        providers: providersList,
+        parent_ids: parseIds(form.parentInput.value),
+        actions,
+      },
+    };
+  }
+
+  function openCreate() {
+    const form = formBody(null);
+    openModal({
+      title: "New key",
+      sub: "The secret is shown once after create.",
+      wide: true,
+      body: form.body,
+      actions: [
+        { label: "Cancel" },
+        {
+          label: "Create key",
+          kind: "btn-primary",
+          keepOpen: true,
+          onClick: async (e) => {
+            let payload;
+            try {
+              payload = readForm(form);
+              payload.retention = collectRetention(form.retRows);
+            } catch (err) {
+              toast(err.message, "err");
+              return;
+            }
+            const btn = e.currentTarget;
+            btn.disabled = true;
+            btn.classList.add("is-loading");
+            try {
+              const created = await api.keyCreate(payload);
+              toast(`Created ${created.name}.`, "ok", "key-round");
+              closeModal();
+              showSecret("Key created", created.secret, () => render(root));
+            } catch (err) {
+              toast(err.detail || "Could not create key.", "err");
+              btn.disabled = false;
+              btn.classList.remove("is-loading");
+            }
+          },
+        },
+      ],
+    });
+  }
+
+  function openEdit(key) {
+    const form = formBody(key);
+    const retWrap = h("div", { class: "grid", style: "gap:8px" });
+    const existingRetention = new Map((key.key_retention || []).map((row) => [row.provider, row]));
+    const editSlugs = [...new Set([...slugs, ...existingRetention.keys()])];
+    const retRows = [];
+    for (const slug of editSlugs) {
+      const row = existingRetention.get(slug);
+      const box = h("input", {
+        type: "number", min: "1", step: "1", placeholder: "disabled",
+        value: row?.mailbox_ttl_hours ?? "",
+        "aria-label": `${slug} mailbox TTL hours`,
+      });
+      const msg = h("input", {
+        type: "number", min: "1", step: "1", placeholder: "disabled",
+        value: row?.message_ttl_hours ?? "",
+        "aria-label": `${slug} message TTL hours`,
+      });
+      retRows.push({ slug, box, msg });
+      retWrap.append(h("div", { class: "card ret-card" },
+        h("div", { class: "ret-card-top" }, h("span", { class: "prov-name mono" }, slug)),
+        h("div", { style: "display:flex;gap:12px" },
+          h("div", { class: "field", style: "margin:0;flex:1" }, h("label", {}, "Mailbox TTL (hours)"), box),
+          h("div", { class: "field", style: "margin:0;flex:1" }, h("label", {}, "Message TTL (hours)"), msg))));
+    }
+    form.body.append(h("div", { class: "field" },
+      h("label", {}, "Retention"),
+      retWrap,
+      h("p", { class: "field-hint" }, "Saving replaces this key's retention rows. Blank hours are omitted.")));
+    openModal({
+      title: `Edit ${key.name}`,
+      sub: "Name, expiry, and scope. The secret does not change.",
+      wide: true,
+      body: form.body,
+      actions: [
+        { label: "Cancel" },
+        {
+          label: "Save",
+          kind: "btn-primary",
+          keepOpen: true,
+          onClick: async (e) => {
+            let payload;
+            let retention;
+            try {
+              payload = readForm(form);
+              retention = collectRetention(retRows);
+            } catch (err) {
+              toast(err.message, "err");
+              return;
+            }
+            const btn = e.currentTarget;
+            btn.disabled = true;
+            btn.classList.add("is-loading");
+            try {
+              await api.keyUpdate(key.id, payload);
+              await api.keyRetentionSet(key.id, retention);
+              toast(`Updated ${key.name}.`, "ok", "check-circle-2");
+              closeModal();
+              render(root);
+            } catch (err) {
+              toast(err.detail || "Could not update key.", "err");
+              btn.disabled = false;
+              btn.classList.remove("is-loading");
+            }
+          },
+        },
+      ],
+    });
+  }
+
+  function showSecret(title, secret, after) {
+    if (!secret) {
+      toast("The server did not return a secret.", "err");
+      return;
+    }
+    openModal({
+      title,
+      sub: "Copy the secret. It is not written to the key list.",
+      body: secretField(secret),
+      actions: [{ label: "Done", kind: "btn-primary", onClick: () => { if (after) after(); } }],
+    });
+  }
+
+  async function reveal(key) {
+    try {
+      const body = await api.keySecret(key.id);
+      showSecret(`Secret for ${key.name}`, body?.secret);
+    } catch (err) {
+      toast(err.detail || "Could not reveal secret.", "err");
+    }
+  }
+
+  async function rotate(key) {
+    const ok = await confirmDialog({
+      title: `Rotate ${key.name}?`,
+      message: "The current secret stops working. Name, scope, and owned rows stay.",
+      confirmLabel: "Rotate",
+    });
+    if (!ok) return;
+    try {
+      const created = await api.keyRotate(key.id);
+      showSecret("Rotated secret", created?.secret, () => render(root));
+    } catch (err) {
+      toast(err.detail || "Could not rotate key.", "err");
+    }
+  }
+
+  async function openAs(key) {
+    try {
+      const body = await api.keySecret(key.id);
+      const secret = body?.secret;
+      if (!secret) { toast("The server did not return a secret.", "err"); return; }
+      const current = getApiKey();
+      try {
+        if (current) localStorage.setItem(PREV_KEY, current);
+        else localStorage.removeItem(PREV_KEY);
+      } catch { /* private mode */ }
+      setApiKey(secret);
+      location.reload();
+    } catch (err) {
+      toast(err.detail || "Could not open as this key.", "err");
+    }
+  }
+
+  async function remove(key) {
+    const ok = await confirmDialog({
+      title: `Delete ${key.name}?`,
+      message: "Refused while the key still owns a live mailbox or Gmail account.",
+    });
+    if (!ok) return;
+    try {
+      await api.keyDelete(key.id);
+      toast(`Deleted ${key.name}.`, "ok", "trash-2");
+      keys = keys.filter((row) => row.id !== key.id);
+      draw();
+    } catch (err) {
+      toast(err.detail || "Could not delete key.", "err");
+    }
+  }
+}
+
+function toLocalInput(iso) {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "";
+  const pad = (n) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}

@@ -7,6 +7,8 @@ import { render as renderDetail, cleanup as cleanupDetail } from "./pages/detail
 import { render as renderRetention } from "./pages/retention.js";
 import { render as renderDomainCache } from "./pages/domain-cache.js";
 import { render as renderGmail } from "./pages/gmail.js";
+import { render as renderKeys } from "./pages/keys.js";
+import { render as renderAccess } from "./pages/access.js";
 
 const root = document.getElementById("app");
 const titleEl = document.getElementById("page-title");
@@ -19,7 +21,13 @@ const TITLES = {
   retention: ["Retention", "Admin console", "Automatic cleanup rules per provider."],
   "domain-cache": ["Domain cache", "Admin console", "Cached provider domains and refresh schedule."],
   gmail: ["Gmail", "Admin console", "Connect Google accounts for +alias mailboxes."],
+  keys: ["Keys", "Admin console", "Issue scoped keys, reveal secrets, and open the dashboard as one."],
+  access: ["Access", "Admin console", "What this key can do. Read-only."],
 };
+
+const PREV_KEY = "mailtm_api_key_prev";
+/** Latest GET /v1/admin/keys/me, or null when the call has not succeeded. */
+let currentMe = null;
 
 let currentCleanup = null;
 
@@ -73,6 +81,62 @@ async function ping() {
   } catch {
     /* server too old / unreachable: keep banner state unset */
   }
+  try {
+    currentMe = await api.keyMe();
+  } catch {
+    currentMe = null;
+  }
+  applyPrincipalNav();
+  syncPrevKeyButton();
+  redirectIfHidden();
+}
+
+function hasAction(name) {
+  const actions = currentMe?.scope?.actions;
+  return Array.isArray(actions) && actions.includes(name);
+}
+
+/** Root sees Keys, Domain cache, and Gmail credentials. Issued keys do not. */
+function applyPrincipalNav() {
+  const root = currentMe?.is_root === true;
+  const known = currentMe != null;
+  const show = (route, visible) => {
+    const link = document.querySelector(`.nav-link[data-route="${route}"]`);
+    if (link) link.hidden = !visible;
+  };
+  show("keys", !known || root);
+  show("domain-cache", !known || root);
+  show("access", true);
+  const retention = !known || root || hasAction("retention:read") || hasAction("retention:write");
+  show("retention", retention);
+  const gmail = !known || root || hasAction("parents:read") || hasAction("parents:add");
+  show("gmail", gmail);
+}
+
+/** Leave a page the current principal is not allowed to see. */
+function redirectIfHidden() {
+  if (currentMe == null) return;
+  const name = parseHash().name;
+  const link = document.querySelector(`.nav-link[data-route="${name}"]`);
+  if (link?.hidden) location.hash = name === "keys" ? "#/access" : "#/";
+}
+
+function readPrevKey() {
+  try { return localStorage.getItem(PREV_KEY) || ""; }
+  catch { return ""; }
+}
+
+function syncPrevKeyButton() {
+  const btn = document.getElementById("prev-key-btn");
+  if (btn) btn.hidden = !readPrevKey();
+}
+
+function restorePrevKey() {
+  const prev = readPrevKey();
+  if (!prev) return;
+  setApiKey(prev);
+  try { localStorage.removeItem(PREV_KEY); } catch { /* private mode */ }
+  location.reload();
 }
 
 /* ---------- settings / API key modal ---------- */
@@ -171,6 +235,8 @@ function parseHash() {
   if (parts[0] === "retention") return { name: "retention" };
   if (parts[0] === "domain-cache") return { name: "domain-cache" };
   if (parts[0] === "gmail") return { name: "gmail" };
+  if (parts[0] === "keys") return { name: "keys" };
+  if (parts[0] === "access") return { name: "access" };
   return { name: "overview" };
 }
 
@@ -197,9 +263,11 @@ async function route() {
     if (r.name === "overview") await renderOverview(root);
     else if (r.name === "mailboxes") await renderMailboxes(root);
     else if (r.name === "detail") await renderDetail(root, r.id);
-    else if (r.name === "retention") await renderRetention(root);
+    else if (r.name === "retention") await renderRetention(root, currentMe);
     else if (r.name === "domain-cache") await renderDomainCache(root);
-    else if (r.name === "gmail") await renderGmail(root);
+    else if (r.name === "gmail") await renderGmail(root, currentMe);
+    else if (r.name === "keys") await renderKeys(root);
+    else if (r.name === "access") await renderAccess(root);
   } catch (e) {
     root.innerHTML = "";
     root.append(h("div", { class: "error-box" },
@@ -216,6 +284,8 @@ window.addEventListener("hashchange", route);
 /* ---------- wiring ---------- */
 document.getElementById("settings-btn")?.addEventListener("click", openSettings);
 document.getElementById("key-btn")?.addEventListener("click", openSettings);
+document.getElementById("prev-key-btn")?.addEventListener("click", restorePrevKey);
+syncPrevKeyButton();
 document.getElementById("quick-create-btn")?.addEventListener("click", () =>
   openCreateMailbox((mb) => { location.hash = `#/mailboxes/${mb.id}`; }));
 

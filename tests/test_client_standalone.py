@@ -5,6 +5,7 @@ from __future__ import annotations
 import ast
 import importlib.util
 import inspect
+import json
 from pathlib import Path
 
 import httpx
@@ -135,6 +136,68 @@ def test_self_update_replaces_target_file(monkeypatch, tmp_path):
     assert mod.self_update("https://example.invalid/client.py") is True
     assert '__version__ = "9.9.9"' in target.read_text(encoding="utf-8")
     assert not (tmp_path / "client.py.tmp").exists()
+
+
+@pytest.mark.asyncio
+async def test_key_me_requests_current_key():
+    """Given a mocked server, key_me hits GET /v1/admin/keys/me and returns its JSON."""
+    mod = _load_standalone()
+    seen: list[httpx.Request] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        seen.append(request)
+        return httpx.Response(200, json={"is_root": True})
+
+    transport_client = httpx.AsyncClient(
+        base_url="http://test", transport=httpx.MockTransport(handler)
+    )
+    api = mod.MailTMAPI(client=transport_client)
+    try:
+        assert await api.admin.key_me() == {"is_root": True}
+    finally:
+        await api.close()
+
+    assert len(seen) == 1
+    assert seen[0].method == "GET"
+    assert seen[0].url.path == "/v1/admin/keys/me"
+
+
+@pytest.mark.asyncio
+async def test_key_create_posts_scope_body_unchanged():
+    """Given empty scope lists, key_create posts them as given and returns the secret JSON."""
+    mod = _load_standalone()
+    seen: list[httpx.Request] = []
+    scope = {"providers": [], "parent_ids": [], "actions": ["mailboxes:read"]}
+    body = {
+        "name": "reader",
+        "expires_at": None,
+        "scope": scope,
+        "retention": [],
+    }
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        seen.append(request)
+        return httpx.Response(200, json={"id": 1, "secret": "mk_once", "scope": scope})
+
+    transport_client = httpx.AsyncClient(
+        base_url="http://test", transport=httpx.MockTransport(handler)
+    )
+    api = mod.MailTMAPI(client=transport_client)
+    try:
+        created = await api.admin.key_create(
+            name=body["name"],
+            expires_at=body["expires_at"],
+            scope=scope,
+            retention=body["retention"],
+        )
+    finally:
+        await api.close()
+
+    assert created == {"id": 1, "secret": "mk_once", "scope": scope}
+    assert len(seen) == 1
+    assert seen[0].method == "POST"
+    assert seen[0].url.path == "/v1/admin/keys"
+    assert json.loads(seen[0].content) == body
 
 
 @pytest.mark.asyncio

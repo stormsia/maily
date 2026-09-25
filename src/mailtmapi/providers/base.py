@@ -39,6 +39,7 @@ class Target:
     kind: TargetKind
     provider: str
     label: str  # domain hostname or parent email
+    owner_key_id: int | None = None  # Gmail parent owner; None is root
 
 
 @dataclass
@@ -47,6 +48,8 @@ class MailboxSpec:
     domain: str | None = None
     parent_id: int | None = None
     password: str | None = None
+    # None: root / unfiltered auto-pick. () denies every parent. A tuple limits auto-pick.
+    allowed_parent_ids: tuple[int, ...] | None = None
 
 
 @dataclass

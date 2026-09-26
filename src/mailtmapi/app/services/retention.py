@@ -25,7 +25,7 @@ from ..services.stats_history import (
 
 logger = logging.getLogger("mailtmapi.retention")
 
-_sweep_lock = asyncio.Lock() | None
+_sweep_lock: asyncio.Lock | None = None
 
 
 def utcnow_naive() -> datetime:

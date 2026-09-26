@@ -4,7 +4,6 @@ import asyncio
 import logging
 from collections.abc import Awaitable, Callable
 from datetime import datetime, timedelta, timezone
-from typing import Any
 
 from sqlalchemy import delete, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -26,7 +25,7 @@ from ..services.stats_history import (
 
 logger = logging.getLogger("mailtmapi.retention")
 
-_sweep_lock: asyncio.Lock = asyncio.Lock()  # type: ignore[assignment]
+_sweep_lock: asyncio.Lock = asyncio.Lock()
 
 
 def utcnow_naive() -> datetime:

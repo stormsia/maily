@@ -25,7 +25,7 @@ from ..services.stats_history import (
 
 logger = logging.getLogger("mailtmapi.retention")
 
-_sweep_lock = asyncio.Lock()
+_sweep_lock = asyncio.Lock() | None
 
 
 def utcnow_naive() -> datetime:
@@ -44,7 +44,11 @@ def _check_ttls(mailbox_ttl_hours: int | None, message_ttl_hours: int | None) ->
 
 
 async def get_retention(session) -> list[Retention]:
-    return list((await session.execute(select(Retention).order_by(Retention.provider))).scalars())
+    return list(
+        (
+            await session.execute(select(Retention).order_by(Retention.provider))
+        ).scalars()
+    )
 
 
 async def get_key_retention(session, key_id: int) -> list[KeyRetention]:
@@ -110,7 +114,8 @@ async def delete_key_retention(session, key_id: int, provider: str) -> bool:
 
 
 async def _write(
-    factory: AsyncSessionFactory[AsyncSession], operation: Callable[[AsyncSession], Awaitable[None]]
+    factory: AsyncSessionFactory[AsyncSession],
+    operation: Callable[[AsyncSession], Awaitable[None]],
 ) -> None:
     """One short write transaction in a fresh session, retried on SQLITE_BUSY.
 
@@ -148,7 +153,9 @@ async def run_sweep(
             delete(Message).where(
                 or_(
                     Message.is_deleted.is_(True),
-                    Message.mailbox_id.in_(select(Mailbox.id).where(Mailbox.is_deleted.is_(True))),
+                    Message.mailbox_id.in_(
+                        select(Mailbox.id).where(Mailbox.is_deleted.is_(True))
+                    ),
                 )
             )
         )
@@ -180,7 +187,9 @@ async def run_sweep(
                 prov = registry.get(rule.provider)
                 await prov.delete_mailbox(info)
             except Exception as exc:  # noqa: BLE001 - best-effort sync with provider
-                logger.warning("retention: provider delete failed for %s: %s", row.address, exc)
+                logger.warning(
+                    "retention: provider delete failed for %s: %s", row.address, exc
+                )
                 continue
 
             async def _drop_box(s: AsyncSession, box_id: int = row.id) -> None:
@@ -242,10 +251,15 @@ async def run_sweep(
         await prune(s)
 
     await _write(factory, _ledger)
-    return {"mailboxes_deleted": mailboxes_deleted, "messages_deleted": messages_deleted}
+    return {
+        "mailboxes_deleted": mailboxes_deleted,
+        "messages_deleted": messages_deleted,
+    }
 
 
-async def retention_worker(sweep: Callable[[], Awaitable[dict]], interval_seconds: float) -> None:
+async def retention_worker(
+    sweep: Callable[[], Awaitable[dict]], interval_seconds: float
+) -> None:
     while True:
         try:
             await sweep()

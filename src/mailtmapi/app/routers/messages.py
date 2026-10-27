@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from contextlib import suppress
+
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import select
 
@@ -50,6 +52,16 @@ async def list_messages(
     summaries = await prov.list_messages(info, page=page)
     cached = await svc.upsert_messages(session, row, summaries)
     await session.commit()
+
+    if row.provider == "anonymmail.net":
+        stmt = (
+            select(Message)
+            .where(Message.mailbox_id == row.id, Message.is_deleted.is_(False))
+            .order_by(Message.received_at.desc().nulls_last(), Message.id.desc())
+        )
+        all_messages = (await session.execute(stmt)).scalars().all()
+        return [_summary_out(m) for m in all_messages]
+
     for m in cached:
         await session.refresh(m)
     return [_summary_out(m) for m in cached if not m.is_deleted]
@@ -69,12 +81,35 @@ async def get_message(
     info = svc.to_mailbox_info(row, settings.resolved_secret_key())
     prov = registry.get(row.provider)
     await session.commit()
-    detail = await prov.get_message(info, msg_id)
+
     cached = (
         await session.execute(
             select(Message).where(Message.mailbox_id == row.id, Message.message_api_id == msg_id)
         )
     ).scalar_one_or_none()
+    if cached is not None and cached.is_deleted:
+        raise MailNotFoundError(f"message {msg_id} not found")
+
+    if cached is not None and (cached.body_text is not None or cached.body_html is not None):
+        html_list = [cached.body_html] if cached.body_html is not None else []
+        return MessageDetailOut(
+            **_summary_out(cached).model_dump(),
+            text=cached.body_text or "",
+            html=html_list,
+        )
+
+    try:
+        detail = await prov.get_message(info, msg_id)
+    except MailNotFoundError:
+        if cached is not None:
+            html_list = [cached.body_html] if cached.body_html is not None else []
+            return MessageDetailOut(
+                **_summary_out(cached).model_dump(),
+                text=cached.body_text or "",
+                html=html_list,
+            )
+        raise
+
     if cached is None:
         cached = Message(mailbox_id=row.id, provider=row.provider, message_api_id=msg_id)
         session.add(cached)
@@ -111,13 +146,14 @@ async def mark_read(
     info = svc.to_mailbox_info(row, settings.resolved_secret_key())
     prov = registry.get(row.provider)
     await session.commit()
-    await prov.mark_read(info, msg_id)
+    with suppress(Exception):
+        await prov.mark_read(info, msg_id)
     cached = (
         await session.execute(
             select(Message).where(Message.mailbox_id == row.id, Message.message_api_id == msg_id)
         )
     ).scalar_one_or_none()
-    if cached is None:
+    if cached is None or cached.is_deleted:
         raise MailNotFoundError(f"message {msg_id} not found")
     cached.seen = True
     await session.commit()
@@ -139,13 +175,14 @@ async def delete_message(
     info = svc.to_mailbox_info(row, settings.resolved_secret_key())
     prov = registry.get(row.provider)
     await session.commit()
-    await prov.delete_message(info, msg_id)
+    with suppress(Exception):
+        await prov.delete_message(info, msg_id)
     cached = (
         await session.execute(
             select(Message).where(Message.mailbox_id == row.id, Message.message_api_id == msg_id)
         )
     ).scalar_one_or_none()
-    if cached is not None:
+    if cached is not None and not cached.is_deleted:
         cached.is_deleted = True
         await record(session, provider=cached.provider, event=EVENT_MESSAGE_DELETED)
         await session.commit()
@@ -165,5 +202,16 @@ async def get_source(
     info = svc.to_mailbox_info(row, settings.resolved_secret_key())
     prov = registry.get(row.provider)
     await session.commit()
-    src = await prov.get_source(info, msg_id)
-    return SourceOut(id=src.id, data=src.data, download_url=src.download_url or "")
+    cached = (
+        await session.execute(
+            select(Message).where(Message.mailbox_id == row.id, Message.message_api_id == msg_id)
+        )
+    ).scalar_one_or_none()
+
+    try:
+        src = await prov.get_source(info, msg_id)
+        return SourceOut(id=src.id, data=src.data, download_url=src.download_url or "")
+    except Exception:
+        if cached is not None and (cached.body_html or cached.body_text):
+            return SourceOut(id=msg_id, data=cached.body_html or cached.body_text or "", download_url="")
+        raise

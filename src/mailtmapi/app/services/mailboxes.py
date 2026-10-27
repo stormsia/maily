@@ -11,7 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from ...crypto import decrypt, encrypt
 from ...db.models import Mailbox, Message
 from ...exceptions import MailConflictError, MailNotFoundError, MailValidationError
-from ...providers.base import MailboxInfo, MailboxSpec, MessageSummary
+from ...providers.base import MailboxInfo, MailboxSpec, MessageDetail, MessageSummary
 from ...providers.registry import ProviderRegistry
 from ...settings import Settings
 from . import domain_cache as dc
@@ -201,6 +201,11 @@ async def upsert_messages(
         existing.has_attachments = s.has_attachments
         existing.size = s.size
         existing.received_at = as_naive_utc(s.received_at)
+        if isinstance(s, MessageDetail):
+            if s.text:
+                existing.body_text = s.text
+            if s.html:
+                existing.body_html = "\n".join(s.html)
         out.append(existing)
     # Bucket the "received" event by the message's actual receipt date (not the
     # sync date) so the 7-day incoming chart reflects the true per-day inflow —

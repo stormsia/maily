@@ -13,6 +13,7 @@ from sqlalchemy.ext.asyncio import AsyncEngine
 from .. import __version__
 from ..db.engine import SessionFactory, make_engine
 from ..http import HttpClient
+from ..providers.anonymmail_net import AnonymMailNet
 from ..providers.gmail.db_store import DbGmailStore
 from ..providers.gmail.oauth import GmailOAuth
 from ..providers.gmail.service import GmailProvider
@@ -143,6 +144,7 @@ async def lifespan(app: FastAPI):
             TempMailPlus(http=http),
             TempMailIO(http=http),
             NoopMail(http=http),
+            AnonymMailNet(http=http),
         ]
     )
     await ph.bootstrap(factory, http, registry, settings)

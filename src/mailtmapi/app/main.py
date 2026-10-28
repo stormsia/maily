@@ -157,10 +157,12 @@ async def lifespan(app: FastAPI):
     app.state.gmail = gmail
     app.state.oauth = oauth
     app.state.oauth_states = {}
+    sweep_lock = asyncio.Lock()
+    app.state.sweep_lock = sweep_lock
 
     sweep_task = asyncio.create_task(
         retention_worker(
-            lambda: run_sweep(factory, registry, settings),
+            lambda: run_sweep(factory, registry, settings, lock=sweep_lock),
             settings.retention_interval_seconds,
         )
     )

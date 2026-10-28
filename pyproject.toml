@@ -33,6 +33,7 @@ packages = ["src/mailtmapi"]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
 # Each test builds its own temp SQLite via tmp_path, so workers do not share a database.
 addopts = "-n auto"
 # "src" makes the package importable; "." (repo root) makes `tests` importable

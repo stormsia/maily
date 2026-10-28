@@ -236,7 +236,11 @@ async def run_retention_sweep(
     """Run the retention cleanup sweep right now. A key sweeps only its mailboxes."""
     only_key_id = None if principal.is_root else _issued_key_id(principal)
     return await svc.run_sweep(
-        request.app.state.session_factory, registry, settings, only_key_id=only_key_id
+        request.app.state.session_factory,
+        registry,
+        settings,
+        only_key_id=only_key_id,
+        lock=getattr(request.app.state, 'sweep_lock', None),
     )
 
 

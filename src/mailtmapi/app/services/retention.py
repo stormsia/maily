@@ -25,8 +25,6 @@ from ..services.stats_history import (
 
 logger = logging.getLogger("mailtmapi.retention")
 
-_sweep_lock: asyncio.Lock = asyncio.Lock()
-
 
 def utcnow_naive() -> datetime:
     return datetime.now(timezone.utc).replace(tzinfo=None)
@@ -131,14 +129,14 @@ async def _write(
     await retry_on_lock(_do)
 
 
-async def run_sweep(
+async def _do_sweep(
     factory: AsyncSessionFactory[AsyncSession],
     registry: ProviderRegistry,
     settings: Settings,
     *,
     only_key_id: int | None = None,
 ) -> dict:
-    async with _sweep_lock, factory() as session:
+    async with factory() as session:
         mailboxes_deleted = 0
         messages_deleted = 0
         mailbox_deletes: dict[str, int] = {}
@@ -255,6 +253,20 @@ async def run_sweep(
         "mailboxes_deleted": mailboxes_deleted,
         "messages_deleted": messages_deleted,
     }
+
+
+async def run_sweep(
+    factory: AsyncSessionFactory[AsyncSession],
+    registry: ProviderRegistry,
+    settings: Settings,
+    *,
+    only_key_id: int | None = None,
+    lock: asyncio.Lock | None = None,
+) -> dict:
+    if lock is not None:
+        async with lock:
+            return await _do_sweep(factory, registry, settings, only_key_id=only_key_id)
+    return await _do_sweep(factory, registry, settings, only_key_id=only_key_id)
 
 
 async def retention_worker(

@@ -175,8 +175,12 @@ async def delete_message(
     info = svc.to_mailbox_info(row, settings.resolved_secret_key())
     prov = registry.get(row.provider)
     await session.commit()
-    with suppress(Exception):
+    try:
         await prov.delete_message(info, msg_id)
+    except MailNotFoundError:
+        raise
+    except Exception:
+        pass
     cached = (
         await session.execute(
             select(Message).where(Message.mailbox_id == row.id, Message.message_api_id == msg_id)

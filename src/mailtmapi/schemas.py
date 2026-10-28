@@ -29,9 +29,21 @@ class HealthOut(_Base):
     status: str = ""
 
 
+class ProviderCapabilitiesOut(_Base):
+    can_choose_username: bool = True
+    can_choose_domain: bool = True
+    can_set_password: bool = False
+    supports_delete_mailbox: bool = True
+    supports_delete_message: bool = True
+    supports_mark_read: bool = False
+    supports_source: bool = True
+    supports_attachments: bool = True
+
+
 class ProviderOut(_Base):
     slug: str
     kind: str
+    capabilities: ProviderCapabilitiesOut | None = None
 
 
 class TargetOut(_Base):

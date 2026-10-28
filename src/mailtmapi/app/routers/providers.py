@@ -2,10 +2,10 @@ from __future__ import annotations
 
 from fastapi import APIRouter, Depends, Query
 
-from ...providers.base import MailProvider, Target
+from ...providers.base import MailProvider, Target, get_capabilities
 from ..authz import PrincipalDep, parent_allowed, provider_allowed, require_principal
 from ..deps import RegistryDep, SessionDep, SettingsDep
-from ..schemas import ProviderOut, TargetOut
+from ..schemas import ProviderCapabilitiesOut, ProviderOut, TargetOut
 from ..services import domain_cache as dc
 
 router = APIRouter(prefix="/v1", dependencies=[Depends(require_principal)], tags=["Providers"])
@@ -14,11 +14,23 @@ router = APIRouter(prefix="/v1", dependencies=[Depends(require_principal)], tags
 @router.get("/providers", response_model=list[ProviderOut])
 async def list_providers(registry: RegistryDep, principal: PrincipalDep) -> list[ProviderOut]:
     """List enabled providers and their kind (api/token or domain-based)."""
-    return [
-        ProviderOut(slug=p.slug, kind=p.kind)
-        for p in registry.all()
-        if provider_allowed(principal, p.slug)
-    ]
+    out: list[ProviderOut] = []
+    for p in registry.all():
+        if not provider_allowed(principal, p.slug):
+            continue
+        caps = get_capabilities(p)
+        caps_out = ProviderCapabilitiesOut(
+            can_choose_username=caps.can_choose_username,
+            can_choose_domain=caps.can_choose_domain,
+            can_set_password=caps.can_set_password,
+            supports_delete_mailbox=caps.supports_delete_mailbox,
+            supports_delete_message=caps.supports_delete_message,
+            supports_mark_read=caps.supports_mark_read,
+            supports_source=caps.supports_source,
+            supports_attachments=caps.supports_attachments,
+        )
+        out.append(ProviderOut(slug=p.slug, kind=p.kind, capabilities=caps_out))
+    return out
 
 
 def _visible_providers(registry: RegistryDep, principal: PrincipalDep, slug: str | None) -> list[MailProvider]:

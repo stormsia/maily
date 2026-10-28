@@ -4,8 +4,11 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="theme-color" content="#0b0e14" />
-  <title>mailtmapi · API Reference</title>
+  <title>mailtmapi · Documentation & API Reference</title>
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%237c6cff'/%3E%3Cpath d='M8 12l8 6 8-6' stroke='white' stroke-width='2.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3Crect x='7' y='10' width='18' height='13' rx='2.5' stroke='white' stroke-width='2.5' fill='none'/%3E%3C/svg%3E" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/swagger-ui.css" />
   <style>
     :root {
@@ -20,7 +23,7 @@
       --accent-2: #2cc6e0;
       --green: #2fb87f;
       --red: #f0656a;
-      --mono: "Jet Bra Mono", ui-monospace, SFMono-Regular, Consolas, monospace;
+      --mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Consolas, monospace;
     }
     * { box-sizing: border-box; }
     body {
@@ -35,14 +38,14 @@
     .docs-top {
       display: flex;
       align-items: center;
-      gap: 14px;
-      padding: 18px 28px;
+      gap: 16px;
+      padding: 16px 28px;
       border-bottom: 1px solid var(--border-soft);
-      backdrop-filter: blur(6px);
+      backdrop-filter: blur(12px);
       position: sticky;
       top: 0;
-      background: rgba(11, 14, 20, 0.78);
-      z-index: 20;
+      background: rgba(11, 14, 20, 0.88);
+      z-index: 50;
     }
     .docs-top .brand {
       display: flex;
@@ -70,21 +73,45 @@
       font-weight: 500;
       font-size: 12.5px;
     }
-    .docs-top .spacer { flex: 1; }
-    .docs-top select.sw-ui-theme {
-      background: var(--panel);
-      color: var(--text);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 7px 10px;
-      font: 500 13px inherit;
+    .nav-tabs {
+      display: flex;
+      gap: 6px;
+      background: rgba(18, 22, 31, 0.7);
+      padding: 4px;
+      border-radius: 10px;
+      border: 1px solid var(--border-soft);
     }
+    .nav-tab {
+      background: transparent;
+      border: none;
+      color: var(--muted);
+      font-family: inherit;
+      font-size: 13px;
+      font-weight: 600;
+      padding: 6px 14px;
+      border-radius: 7px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .nav-tab:hover {
+      color: var(--text);
+      background: rgba(255, 255, 255, 0.05);
+    }
+    .nav-tab.active {
+      background: var(--accent);
+      color: #fff;
+      box-shadow: 0 4px 12px rgba(124, 108, 255, 0.35);
+    }
+    .docs-top .spacer { flex: 1; }
     .docs-top a.back {
       color: var(--muted);
       text-decoration: none;
       font-size: 13px;
       font-weight: 600;
-      padding: 7px 12px;
+      padding: 7px 14px;
       border: 1px solid var(--border);
       border-radius: 8px;
       transition: background 0.15s, color 0.15s, border-color 0.15s;
@@ -94,7 +121,146 @@
       border-color: var(--accent);
       background: var(--panel);
     }
-    .swagger-ui-wrap { padding: 8px 26px 40px; }
+
+    /* Container */
+    .docs-container {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 24px 28px 60px;
+    }
+
+    .tab-content { display: none; }
+    .tab-content.active { display: block; animation: fadeIn 0.2s ease; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+
+    /* Custom content styling */
+    .section-title {
+      font-family: "Sora", sans-serif;
+      font-size: 24px;
+      font-weight: 800;
+      margin: 0 0 8px 0;
+      letter-spacing: -0.02em;
+    }
+    .section-desc {
+      color: var(--muted);
+      font-size: 15px;
+      margin: 0 0 24px 0;
+      line-height: 1.5;
+    }
+    .card-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+      gap: 18px;
+      margin-bottom: 30px;
+    }
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 20px;
+      position: relative;
+    }
+    .card-title {
+      font-size: 16px;
+      font-weight: 700;
+      margin: 0 0 8px 0;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .card-body {
+      color: var(--muted);
+      font-size: 13.5px;
+      line-height: 1.5;
+    }
+
+    /* Code block */
+    .code-box {
+      background: #07090e;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+      margin-bottom: 20px;
+    }
+    .code-box-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 16px;
+      background: rgba(255, 255, 255, 0.02);
+      border-bottom: 1px solid var(--border-soft);
+      font-family: var(--mono);
+      font-size: 12px;
+      color: var(--muted);
+    }
+    .copy-btn {
+      background: var(--panel-2);
+      border: 1px solid var(--border);
+      color: var(--muted);
+      font-family: inherit;
+      font-size: 12px;
+      font-weight: 600;
+      padding: 4px 10px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .copy-btn:hover {
+      color: var(--text);
+      border-color: var(--accent);
+    }
+    pre.code-content {
+      margin: 0;
+      padding: 16px;
+      overflow-x: auto;
+      font-family: var(--mono);
+      font-size: 13px;
+      line-height: 1.6;
+      color: #d1d7e5;
+    }
+
+    /* Providers table */
+    .table-wrap {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      overflow: hidden;
+      margin-bottom: 24px;
+    }
+    table.data-table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+      font-size: 13.5px;
+    }
+    table.data-table th {
+      padding: 14px 18px;
+      background: rgba(255, 255, 255, 0.02);
+      border-bottom: 1px solid var(--border);
+      font-weight: 700;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--muted);
+    }
+    table.data-table td {
+      padding: 14px 18px;
+      border-bottom: 1px solid var(--border-soft);
+    }
+    table.data-table tr:last-child td { border-bottom: none; }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 3px 8px;
+      border-radius: 6px;
+      font-size: 11.5px;
+      font-weight: 600;
+      font-family: var(--mono);
+    }
+    .badge--domain { background: rgba(124, 108, 255, 0.15); color: #9d8fff; border: 1px solid rgba(124, 108, 255, 0.3); }
+    .badge--parent { background: rgba(44, 198, 224, 0.15); color: #4ee0f5; border: 1px solid rgba(44, 198, 224, 0.3); }
+    .badge--yes { background: rgba(47, 184, 127, 0.15); color: #41d99a; border: 1px solid rgba(47, 184, 127, 0.3); }
+    .badge--no { background: rgba(139, 147, 167, 0.1); color: var(--muted); }
 
     /* ---------- Swagger UI dark theme ---------- */
     .swagger-ui { background: transparent; color: var(--text); font-family: inherit; }
@@ -138,6 +304,7 @@
       border-radius: 12px;
       box-shadow: none;
       overflow: hidden;
+      margin-bottom: 10px;
     }
     .swagger-ui .opblock .opblock-summary {
       border-color: var(--border-soft);
@@ -158,156 +325,93 @@
       font-size: 13.5px;
     }
     .swagger-ui .opblock .opblock-summary-description { color: var(--muted); }
-    .swagger-ui .opblock .opblock-section-header {
-      background: var(--panel-2);
-      border-bottom: 1px solid var(--border-soft);
+    .swagger-ui .opblock.opblock-post { border-color: rgba(47, 184, 127, 0.35); background: rgba(47, 184, 127, 0.04); }
+    .swagger-ui .opblock.opblock-post .opblock-summary-method { background: var(--green); }
+    .swagger-ui .opblock.opblock-get { border-color: rgba(44, 198, 224, 0.35); background: rgba(44, 198, 224, 0.04); }
+    .swagger-ui .opblock.opblock-get .opblock-summary-method { background: var(--accent-2); color: #0b0e14; }
+    .swagger-ui .opblock.opblock-put { border-color: rgba(124, 108, 255, 0.35); background: rgba(124, 108, 255, 0.04); }
+    .swagger-ui .opblock.opblock-put .opblock-summary-method { background: var(--accent); }
+    .swagger-ui .opblock.opblock-delete { border-color: rgba(240, 101, 106, 0.35); background: rgba(240, 101, 106, 0.04); }
+    .swagger-ui .opblock.opblock-delete .opblock-summary-method { background: var(--red); }
+    .swagger-ui .opblock.opblock-patch { border-color: rgba(235, 170, 60, 0.35); background: rgba(235, 170, 60, 0.04); }
+    .swagger-ui .opblock.opblock-patch .opblock-summary-method { background: #ebaa3c; color: #0b0e14; }
+    .swagger-ui .opblock-body { background: var(--panel-2); color: var(--text); padding: 18px 20px; }
+    .swagger-ui .tabli .tabitem { color: var(--muted); }
+    .swagger-ui .tabli .tabitem.active { color: var(--text); border-bottom-color: var(--accent); }
+    .swagger-ui .parameters-container, .swagger-ui .responses-wrapper { padding: 8px 0; }
+    .swagger-ui table.parameters, .swagger-ui table.responses-table { color: var(--text); }
+    .swagger-ui table.parameters thead th, .swagger-ui table.responses-table thead th {
+      color: var(--muted);
+      border-bottom-color: var(--border);
     }
-    .swagger-ui .opblock .opblock-section-header h4 { color: var(--text); }
-    .swagger-ui .opblock .opblock-section-header > div > label { color: var(--muted); }
-    .swagger-ui .opblock .opblock-body { background: var(--panel); }
-
-    .swagger-ui .btn {
-      background: var(--panel-2);
+    .swagger-ui table.parameters tbody tr td, .swagger-ui table.responses-table tbody tr td {
+      border-bottom-color: var(--border-soft);
       color: var(--text);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      font-family: inherit;
-      box-shadow: none;
-      font-weight: 600;
     }
-    .swagger-ui .btn:hover { border-color: var(--accent); }
+    .swagger-ui .parameter__name { font-family: var(--mono); color: var(--text); font-weight: 700; font-size: 13px; }
+    .swagger-ui .parameter__type { font-family: var(--mono); color: var(--muted); font-size: 12px; }
+    .swagger-ui input[type="text"], .swagger-ui select, .swagger-ui textarea {
+      background: var(--panel) !important;
+      color: var(--text) !important;
+      border: 1px solid var(--border) !important;
+      border-radius: 8px !important;
+      padding: 8px 10px !important;
+      font-family: var(--mono) !important;
+    }
+    .swagger-ui .btn {
+      border-radius: 8px;
+      font-weight: 700;
+      font-size: 13px;
+      box-shadow: none;
+      transition: all 0.15s;
+    }
     .swagger-ui .btn.execute {
       background: linear-gradient(135deg, var(--accent), var(--accent-2));
       border: none;
       color: #fff;
     }
-    .swagger-ui .btn.execute:hover { filter: brightness(1.08); }
-
-    .swagger-ui select, .swagger-ui label select {
-      background: var(--panel-2);
-      color: var(--text);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      font-family: inherit;
+    .swagger-ui .btn.cancel { border-color: var(--border); color: var(--muted); background: transparent; }
+    .swagger-ui .btn.authorize {
+      color: var(--accent);
+      border-color: var(--accent);
+      background: rgba(124, 108, 255, 0.1);
     }
-    .swagger-ui input[type="text"], .swagger-ui input[type="email"],
-    .swagger-ui input[type="password"], .swagger-ui input[type="search"],
-    .swagger-ui input[type="url"], .swagger-ui textarea,
-    .swagger-ui .wrapper textarea {
-      background: var(--panel-2);
-      color: var(--text);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      font-family: var(--mono);
-      font-size: 13px;
-    }
-    .swagger-ui input::placeholder, .swagger-ui textarea::placeholder { color: #5c6478; }
-    .swagger-ui input[type="text"]:focus, .swagger-ui textarea:focus,
-    .swagger-ui select:focus { border-color: var(--accent); outline: none; }
-
-    .swagger-ui .parameter__name, .swagger-ui .parameter__in,
-    .swagger-ui .parameters-col_description, .swagger-ui table thead tr td,
-    .swagger-ui table thead tr th { color: var(--muted); }
-    .swagger-ui .responses-inner h4, .swagger-ui .responses-header h4 { color: var(--text); }
-    .swagger-ui table thead { background: var(--panel-2); }
-
-    .swagger-ui .response-col_status { color: var(--text); }
-    .swagger-ui .response-col_status .response-undocumented { color: var(--muted); }
-    .swagger-ui .model-title { color: var(--text); font-family: var(--mono); }
-    .swagger-ui .model-box, .swagger-ui .model {
-      background: var(--panel-2);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-    }
-    .swagger-ui .prop-name, .swagger-ui .prop-type { font-family: var(--mono); }
-    .swagger-ui .prop-name { color: var(--accent-2); }
-    .swagger-ui .prop-type { color: var(--accent); }
-    .swagger-ui .model-toggle::after { filter: invert(0.85); }
-
-    .swagger-ui .tab li { background: var(--panel-2); }
-    .swagger-ui .tab li.tabitem {
-      border: 1px solid var(--border-soft);
-      border-radius: 8px;
-      font-family: inherit;
-    }
-    .swagger-ui .tab li.active a, .swagger-ui .tab li a { color: var(--muted); }
-    .swagger-ui .tab li.active a { color: var(--text); }
-
-    .swagger-ui .topbar { display: none; }
-    .swagger-ui .scheme-container {
-      background: var(--panel);
-      border: 1px solid var(--border-soft);
-      border-radius: 12px;
-      box-shadow: none;
-      margin: 0 0 20px;
-      padding: 12px 16px;
-    }
-    .swagger-ui .auth-container .errors, .swagger-ui .errors-wrapper {
-      background: rgba(240, 101, 106, 0.08);
-      border-color: var(--red);
-      color: var(--red);
-    }
-    .swagger-ui .auth-bar .wrapper .block .btn.authorize {
-      background: var(--panel-2);
-      color: var(--accent-2);
-      border: 1px solid var(--border);
-    }
-    .swagger-ui .btn-group .btn.authorize { background: var(--panel-2); color: var(--accent-2); }
-    .swagger-ui .authorization__btn svg, .swagger-ui .opblock-summary-control svg { fill: currentColor; }
-    .swagger-ui .authorization__btn.unlocked svg, .swagger-ui .authorization__btn.locked svg { fill: var(--accent-2); }
-
-    .swagger-ui .response-controls .response-control-media-type {
-      background: var(--panel-2);
-      border-color: var(--border);
-      color: var(--text);
-    }
-    .swagger-ui code, .swagger-ui .renderedMarkdown code, .swagger-ui .markdown code,
-    .swagger-ui .highlight-code { font-family: var(--mono); }
-    .swagger-ui .highlight-code pre, .swagger-ui .highlight code { background: #0d1117; }
-    .swagger-ui .microlight, .swagger-ui .micro { background: #0d1117 !important; color: var(--text); }
-
-    .swagger-ui .copy-to-clipboard, .swagger-ui button.copy-to-clipboard {
-      background: var(--panel-2);
-    }
-    .swagger-ui .model-example { background: var(--panel-2); }
-    .swagger-ui section.models {
-      border: 1px solid var(--border-soft);
-      border-radius: 12px;
-      background: var(--panel);
-    }
-    .swagger-ui section.models h4 { color: var(--text); font-family: "Sora", inherit; }
-    .swagger-ui section.models .model-container {
-      background: var(--panel);
-      border-bottom: 1px solid var(--border-soft);
-    }
-
-    .swagger-ui .dialog-ux .backdrop-ux { background: rgba(4, 6, 10, 0.7); }
+    .swagger-ui .btn.authorize svg { fill: var(--accent); }
+    .swagger-ui .dialog-ux .backdrop-ux { background: rgba(11, 14, 20, 0.85); backdrop-filter: blur(8px); }
     .swagger-ui .dialog-ux .modal-ux {
       background: var(--panel);
       border: 1px solid var(--border);
-      border-radius: 14px;
-      box-shadow: 0 24px 60px rgba(0,0,0,0.5);
-    }
-    .swagger-ui .dialog-ux .modal-ux-content p { color: var(--muted); }
-
-    .swagger-ui .opblock-summary-method.get { background: #18657a; }
-    .swagger-ui .opblock-summary-method.post { background: #1d7a5f; }
-    .swagger-ui .opblock-summary-method.put { background: #7a6818; }
-    .swagger-ui .opblock-summary-method.delete { background: #7a2b35; }
-
-    .swagger-ui .model-title-text { color: var(--text); }
-    .swagger-ui .json-schema-2020-12 .json-schema-view, .swagger-ui .json-schema-2020-12 {
+      border-radius: 16px;
       color: var(--text);
+      box-shadow: 0 20px 48px rgba(0, 0, 0, 0.6);
     }
-    .swagger-ui .markdown p, .swagger-ui .renderedMarkdown p { color: var(--muted); margin: 0; }
-    .swagger-ui .loading-container .loading { color: var(--muted); }
-    .swagger-ui .loading-container .loading::after { border-color: var(--border) var(--border) var(--accent) var(--accent); }
-    .swagger-ui .errors-wrapper .message-wrapper { color: var(--red); }
+    .swagger-ui .dialog-ux .modal-ux-header { border-bottom-color: var(--border-soft); }
+    .swagger-ui .dialog-ux .modal-ux-header h3 { color: var(--text); font-family: "Sora", inherit; }
+    .swagger-ui .dialog-ux .modal-ux-content { color: var(--text); }
+    .swagger-ui .model-box { background: var(--panel); border: 1px solid var(--border-soft); border-radius: 10px; }
+    .swagger-ui .model-title { color: var(--text); font-family: "Sora", inherit; }
+    .swagger-ui .model { color: var(--text); font-family: var(--mono); }
+    .swagger-ui .prop-type { color: var(--accent-2); }
+    .swagger-ui .prop-format { color: var(--muted); }
+    .swagger-ui .filter .operation-filter-input {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      color: var(--text);
+      padding: 10px 14px;
+      font-size: 14px;
+    }
+    .swagger-ui .scheme-container {
+      background: transparent;
+      box-shadow: none;
+      padding: 8px 0;
+      border-bottom: 1px solid var(--border-soft);
+    }
 
-    @media (max-width: 640px) {
-      .docs-top { flex-wrap: wrap; padding: 14px 16px; }
-      .swagger-ui-wrap { padding: 4px 14px 30px; }
-      .docs-top select.sw-ui-theme { display: none; }
+    @media (max-width: 768px) {
+      .docs-top { flex-wrap: wrap; padding: 12px 16px; }
+      .nav-tabs { order: 3; width: 100%; overflow-x: auto; }
+      .docs-container { padding: 16px 16px 40px; }
     }
   </style>
 </head>
@@ -317,23 +421,312 @@
       <span class="brand-mark">✉</span>
       <span>
         <span style="display:block">mailtmapi</span>
-        <span class="brand-sub">API Reference</span>
+        <span class="brand-sub">Developer Hub</span>
       </span>
     </a>
+
+    <div class="nav-tabs" role="tablist">
+      <button class="nav-tab active" data-tab="swagger"><span>⚡</span> API Explorer</button>
+      <button class="nav-tab" data-tab="python"><span>🐍</span> Python Async Client</button>
+      <button class="nav-tab" data-tab="providers"><span>🌐</span> Providers</button>
+      <button class="nav-tab" data-tab="curl"><span>💻</span> cURL & Auth</button>
+    </div>
+
     <div class="spacer"></div>
-    <label class="docs-top" for="theme-select" style="display:none">Theme</label>
     <a class="back" href="/">← Dashboard</a>
   </header>
 
-  <div class="swagger-ui-wrap">
-    <div id="swagger-ui"></div>
+  <div class="docs-container">
+    <!-- TAB 1: SWAGGER UI -->
+    <div class="tab-content active" id="tab-swagger">
+      <div id="swagger-ui"></div>
+    </div>
+
+    <!-- TAB 2: PYTHON ASYNC CLIENT -->
+    <div class="tab-content" id="tab-python">
+      <h2 class="section-title">Standalone Python Async Client</h2>
+      <p class="section-desc">
+        <code>mailtmapi-client</code> is a zero-dependency (only httpx, loguru, pydantic) single-file client.
+        Full async support, typed pydantic models, granular exception hierarchy, and high-level verification helpers.
+      </p>
+
+      <div class="code-box">
+        <div class="code-box-header">
+          <span>Installation</span>
+          <button class="copy-btn" onclick="copySnippet(this)">Copy</button>
+        </div>
+        <pre class="code-content">pip install "mailtmapi-client @ git+https://github.com/stormsia/mailtmapi.git#subdirectory=client"
+# or copy the standalone client.py file directly:
+curl -O https://raw.githubusercontent.com/stormsia/mailtmapi/main/client/client.py</pre>
+      </div>
+
+      <div class="code-box">
+        <div class="code-box-header">
+          <span>Quickstart · Receive verification code in 1 line</span>
+          <button class="copy-btn" onclick="copySnippet(this)">Copy</button>
+        </div>
+        <pre class="code-content">import asyncio
+from mailtmapi.client import MailTMAPI, WaitTimeoutError, AuthenticationError
+
+async def main():
+    async with MailTMAPI("http://127.0.0.1:8477", api_key="sk-...") as api:
+        # 1. Create temporary mailbox automatically picking the best domain
+        box = await api.create_temp_mailbox()
+        print(f"Created mailbox: {box.address}")
+
+        # 2. Wait for incoming verification email and extract 6-digit code
+        try:
+            code = await api.wait_for_code(box, timeout=60.0)
+            print(f"Verification code: {code}")
+        except WaitTimeoutError:
+            print("Timed out waiting for code.")
+
+asyncio.run(main())</pre>
+      </div>
+
+      <div class="code-box">
+        <div class="code-box-header">
+          <span>Extract confirmation link</span>
+          <button class="copy-btn" onclick="copySnippet(this)">Copy</button>
+        </div>
+        <pre class="code-content">async with MailTMAPI("http://127.0.0.1:8477", api_key="sk-...") as api:
+    box = await api.create_temp_mailbox(provider="tempmail.plus")
+    
+    # Wait for email and extract confirmation URL containing 'verify' or 'activate'
+    link = await api.wait_for_link(
+        box,
+        url_contain=["verify", "confirm", "activate", "token"],
+        timeout=60.0,
+    )
+    print(f"Activation link: {link}")</pre>
+      </div>
+
+      <div class="code-box">
+        <div class="code-box-header">
+          <span>Real-time email stream (Async Generator)</span>
+          <button class="copy-btn" onclick="copySnippet(this)">Copy</button>
+        </div>
+        <pre class="code-content">async with MailTMAPI("http://127.0.0.1:8477") as api:
+    box = await api.mailboxes.create(domain="mail.tm")
+    print(f"Listening for incoming messages on {box.address}...")
+
+    # Continuously yields incoming messages as they arrive
+    async for msg in api.messages.iter_messages(box, poll_interval=2.0, timeout=120.0):
+        print(f"New mail from {msg.from_address}: {msg.subject}")
+        detail = await api.messages.get(box, msg.message_api_id)
+        print("Body:", detail.text)</pre>
+      </div>
+
+      <div class="code-box">
+        <div class="code-box-header">
+          <span>Manage scoped API Keys</span>
+          <button class="copy-btn" onclick="copySnippet(this)">Copy</button>
+        </div>
+        <pre class="code-content">async with MailTMAPI("http://127.0.0.1:8477", api_key="root_secret") as api:
+    # Create key restricted to mail.tm only
+    key = await api.keys.create(
+        name="bot-worker",
+        scope={"providers": ["mail.tm"], "parent_ids": [], "actions": ["read", "write"]},
+    )
+    print(f"Issued Key: {key.prefix}... Secret: {key.secret}")</pre>
+      </div>
+    </div>
+
+    <!-- TAB 3: PROVIDERS -->
+    <div class="tab-content" id="tab-providers">
+      <h2 class="section-title">Active Provider Adapters</h2>
+      <p class="section-desc">
+        mailtmapi seamlessly aggregates public temporary-mail networks and private Gmail parent accounts into one unified REST API.
+      </p>
+
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Provider Slug</th>
+              <th>Kind</th>
+              <th>Custom Username</th>
+              <th>Custom Domain</th>
+              <th>Password / PIN</th>
+              <th>Raw RFC822</th>
+              <th>Read Tracking</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>mail.tm</strong></td>
+              <td><span class="badge badge--domain">domain</span></td>
+              <td><span class="badge badge--yes">Supported</span></td>
+              <td><span class="badge badge--yes">Supported</span></td>
+              <td><span class="badge badge--yes">Supported</span></td>
+              <td><span class="badge badge--yes">Supported</span></td>
+              <td><span class="badge badge--yes">Supported</span></td>
+            </tr>
+            <tr>
+              <td><strong>tempmail.plus</strong></td>
+              <td><span class="badge badge--domain">domain</span></td>
+              <td><span class="badge badge--yes">Supported</span></td>
+              <td><span class="badge badge--yes">Supported</span></td>
+              <td><span class="badge badge--yes">PIN code</span></td>
+              <td><span class="badge badge--yes">Supported</span></td>
+              <td><span class="badge badge--yes">Supported</span></td>
+            </tr>
+            <tr>
+              <td><strong>temp-mail.io</strong></td>
+              <td><span class="badge badge--domain">domain</span></td>
+              <td><span class="badge badge--yes">Supported</span></td>
+              <td><span class="badge badge--yes">Supported</span></td>
+              <td><span class="badge badge--no">No</span></td>
+              <td><span class="badge badge--yes">Supported</span></td>
+              <td><span class="badge badge--no">No-op</span></td>
+            </tr>
+            <tr>
+              <td><strong>noopmail.org</strong></td>
+              <td><span class="badge badge--domain">domain</span></td>
+              <td><span class="badge badge--yes">Supported</span></td>
+              <td><span class="badge badge--yes">Supported</span></td>
+              <td><span class="badge badge--no">No</span></td>
+              <td><span class="badge badge--yes">Supported</span></td>
+              <td><span class="badge badge--no">No-op</span></td>
+            </tr>
+            <tr>
+              <td><strong>anonymmail.net</strong></td>
+              <td><span class="badge badge--domain">domain</span></td>
+              <td><span class="badge badge--yes">Supported</span></td>
+              <td><span class="badge badge--yes">Supported</span></td>
+              <td><span class="badge badge--no">No</span></td>
+              <td><span class="badge badge--yes">Supported</span></td>
+              <td><span class="badge badge--no">No-op</span></td>
+            </tr>
+            <tr>
+              <td><strong>dispoemail.org</strong></td>
+              <td><span class="badge badge--domain">domain</span></td>
+              <td><span class="badge badge--yes">Supported</span></td>
+              <td><span class="badge badge--yes">Supported</span></td>
+              <td><span class="badge badge--no">No</span></td>
+              <td><span class="badge badge--yes">Supported</span></td>
+              <td><span class="badge badge--no">No-op</span></td>
+            </tr>
+            <tr>
+              <td><strong>gmail</strong></td>
+              <td><span class="badge badge--parent">parent</span></td>
+              <td><span class="badge badge--yes">+alias</span></td>
+              <td><span class="badge badge--no">Parent account</span></td>
+              <td><span class="badge badge--no">OAuth2</span></td>
+              <td><span class="badge badge--yes">Supported</span></td>
+              <td><span class="badge badge--yes">Supported</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="card">
+        <h3 class="card-title">Adding a New Provider?</h3>
+        <p class="card-body">
+          See the developer guide in <code>docs/ADDING_PROVIDERS.md</code> for a complete step-by-step
+          walkthrough and copy-pasteable boilerplate for adding any new email service with hermetic unit tests.
+        </p>
+      </div>
+    </div>
+
+    <!-- TAB 4: CURL & AUTH -->
+    <div class="tab-content" id="tab-curl">
+      <h2 class="section-title">cURL & Authentication Cheat Sheet</h2>
+      <p class="section-desc">
+        Authenticate all requests with the <code>X-API-Key</code> HTTP header.
+      </p>
+
+      <div class="code-box">
+        <div class="code-box-header">
+          <span>List available targets (domains)</span>
+          <button class="copy-btn" onclick="copySnippet(this)">Copy</button>
+        </div>
+        <pre class="code-content"><span class="curl-cmd">curl -X GET "${window.location.origin}/v1/targets" \
+  -H "X-API-Key: ${getSavedKey() || 'YOUR_API_KEY'}" \
+  -H "Accept: application/json"</span></pre>
+      </div>
+
+      <div class="code-box">
+        <div class="code-box-header">
+          <span>Create disposable mailbox</span>
+          <button class="copy-btn" onclick="copySnippet(this)">Copy</button>
+        </div>
+        <pre class="code-content"><span class="curl-cmd">curl -X POST "${window.location.origin}/v1/mailboxes" \
+  -H "X-API-Key: ${getSavedKey() || 'YOUR_API_KEY'}" \
+  -H "Content-Type: application/json" \
+  -d '{"provider": "mail.tm", "domain": "mail.tm"}'</span></pre>
+      </div>
+
+      <div class="code-box">
+        <div class="code-box-header">
+          <span>Fetch messages for mailbox</span>
+          <button class="copy-btn" onclick="copySnippet(this)">Copy</button>
+        </div>
+        <pre class="code-content"><span class="curl-cmd">curl -X GET "${window.location.origin}/v1/mailboxes/1/messages" \
+  -H "X-API-Key: ${getSavedKey() || 'YOUR_API_KEY'}"</span></pre>
+      </div>
+
+      <div class="code-box">
+        <div class="code-box-header">
+          <span>Inspect single message (text & HTML)</span>
+          <button class="copy-btn" onclick="copySnippet(this)">Copy</button>
+        </div>
+        <pre class="code-content"><span class="curl-cmd">curl -X GET "${window.location.origin}/v1/mailboxes/1/messages/MESSAGE_ID" \
+  -H "X-API-Key: ${getSavedKey() || 'YOUR_API_KEY'}"</span></pre>
+      </div>
+    </div>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/swagger-ui-bundle.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/swagger-ui-standalone-preset.js"></script>
   <script>
+    function getSavedKey() {
+      try {
+        return localStorage.getItem("mailtm_api_key") || "";
+      } catch (e) {
+        return "";
+      }
+    }
+
+    function copySnippet(btn) {
+      const pre = btn.closest(".code-box").querySelector("pre");
+      const text = pre.innerText || pre.textContent;
+      navigator.clipboard.writeText(text).then(() => {
+        const orig = btn.textContent;
+        btn.textContent = "Copied!";
+        btn.style.borderColor = "var(--green)";
+        btn.style.color = "var(--green)";
+        setTimeout(() => {
+          btn.textContent = orig;
+          btn.style.borderColor = "";
+          btn.style.color = "";
+        }, 1500);
+      });
+    }
+
+    // Tabs switching
+    document.querySelectorAll(".nav-tab").forEach(tab => {
+      tab.addEventListener("click", () => {
+        document.querySelectorAll(".nav-tab").forEach(t => t.classList.remove("active"));
+        document.querySelectorAll(".tab-content").forEach(c => c.classList.remove("active"));
+        tab.classList.add("active");
+        const target = document.getElementById("tab-" + tab.dataset.tab);
+        if (target) target.classList.add("active");
+      });
+    });
+
+    // Replace origin and key placeholders in curl commands
+    document.querySelectorAll(".curl-cmd").forEach(el => {
+      const host = window.location.origin || "http://127.0.0.1:8477";
+      const key = getSavedKey() || "YOUR_API_KEY";
+      el.innerHTML = el.innerHTML.replace(/\$\{window\.location\.origin\}/g, host)
+                                 .replace(/\$\{getSavedKey\(\) \|\| 'YOUR_API_KEY'\}/g, key);
+    });
+
+    // Init Swagger UI
     (function () {
-      var ui = SwaggerUIBundle({
+      const apiKey = getSavedKey();
+      const ui = SwaggerUIBundle({
         url: "./openapi.json",
         dom_id: "#swagger-ui",
         deepLinking: true,
@@ -347,6 +740,11 @@
         plugins: [SwaggerUIBundle.plugins.DownloadUrl],
         layout: "StandaloneLayout",
         defaultModelsExpandDepth: -1,
+        onComplete: function() {
+          if (apiKey && ui.preauthorizeApiKey) {
+            ui.preauthorizeApiKey("APIKeyHeader", apiKey);
+          }
+        }
       });
       window.ui = ui;
     })();

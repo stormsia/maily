@@ -16,6 +16,39 @@ TargetKind = Literal["domain", "parent"]
 _FROM_RE = re.compile(r"<([^>]+)>")
 
 
+@dataclass(frozen=True)
+class ProviderCapabilities:
+    """Capabilities supported by a mail provider."""
+
+    can_choose_username: bool = True
+    can_choose_domain: bool = True
+    can_set_password: bool = False
+    supports_delete_mailbox: bool = True
+    supports_delete_message: bool = True
+    supports_mark_read: bool = False
+    supports_source: bool = True
+    supports_attachments: bool = True
+
+
+def split_address(address: str) -> tuple[str, str]:
+    """Split 'user@domain.tld' into ('user', 'domain.tld').
+
+    Raises ValueError if the address does not contain an '@' or is empty.
+    """
+    mailbox, sep, domain = address.partition("@")
+    if not sep or not mailbox or not domain:
+        raise ValueError(f"Address {address!r} is not in user@domain format")
+    return mailbox.strip(), domain.strip()
+
+
+def get_capabilities(provider: Any) -> ProviderCapabilities:
+    """Return provider capabilities or default if undefined."""
+    caps = getattr(provider, "capabilities", None)
+    if isinstance(caps, ProviderCapabilities):
+        return caps
+    return ProviderCapabilities()
+
+
 def parse_iso(value: Any) -> datetime | None:
     if not value:
         return None
@@ -136,6 +169,7 @@ class HttpProvider:
     kind: TargetKind = "domain"
     cache_ttl: float = 300.0
     default_headers: dict[str, str] | None = None
+    capabilities: ProviderCapabilities = ProviderCapabilities()
 
     def __init__(
         self,
@@ -207,3 +241,11 @@ class HttpProvider:
         except Exception:
             return {}
         return body if isinstance(body, dict) else {}
+
+    async def delete_mailbox(self, mailbox: MailboxInfo) -> bool:
+        """Default hook: assumes mailbox deleted locally if upstream has no deletion API."""
+        return True
+
+    async def mark_read(self, mailbox: MailboxInfo, message_id: str) -> bool:
+        """Default hook: returns True if upstream provider does not track read status."""
+        return True

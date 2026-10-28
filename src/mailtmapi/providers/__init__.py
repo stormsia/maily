@@ -1,4 +1,39 @@
-from .base import MailboxInfo, MailboxSpec, MailProvider, Target
+from .base import (
+    Attachment,
+    HttpProvider,
+    MailboxInfo,
+    MailboxSpec,
+    MailProvider,
+    MessageDetail,
+    MessageSource,
+    MessageSummary,
+    Party,
+    ProviderCapabilities,
+    Target,
+    TargetKind,
+    get_capabilities,
+    parse_from_value,
+    parse_iso,
+    split_address,
+)
 from .registry import ProviderRegistry
 
-__all__ = ["MailProvider", "MailboxInfo", "MailboxSpec", "Target", "ProviderRegistry"]
+__all__ = [
+    "MailProvider",
+    "HttpProvider",
+    "MailboxInfo",
+    "MailboxSpec",
+    "Target",
+    "TargetKind",
+    "Party",
+    "Attachment",
+    "MessageSummary",
+    "MessageDetail",
+    "MessageSource",
+    "ProviderCapabilities",
+    "get_capabilities",
+    "split_address",
+    "parse_iso",
+    "parse_from_value",
+    "ProviderRegistry",
+]

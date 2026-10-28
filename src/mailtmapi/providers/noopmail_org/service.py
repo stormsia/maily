@@ -16,6 +16,7 @@ from ..base import (
     MessageSource,
     MessageSummary,
     Party,
+    ProviderCapabilities,
     Target,
     TargetKind,
     parse_from_value,
@@ -86,6 +87,16 @@ class NoopMail(HttpProvider):
     cache_ttl = _CACHE_TTL
     default_headers = _HEADERS
     BASE_URL = "https://noopmail.org"
+    capabilities = ProviderCapabilities(
+        can_choose_username=True,
+        can_choose_domain=True,
+        can_set_password=False,
+        supports_delete_mailbox=False,
+        supports_delete_message=True,
+        supports_mark_read=False,
+        supports_source=True,
+        supports_attachments=False,
+    )
 
     async def _fetch_targets(self, *, known: set[str] | None = None) -> list[Target]:
         seen: set[str] = set(known or ())

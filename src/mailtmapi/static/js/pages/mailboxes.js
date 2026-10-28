@@ -14,6 +14,7 @@ import {
   providerBadge,
   statusPill,
   fmtDate,
+  copyText,
 } from "../ui.js";
 
 /** Shared "create mailbox" modal — also used by the topbar quick button. */
@@ -109,6 +110,9 @@ export async function openCreateMailbox(onCreated) {
         parentSel.append(h("option", { value: "" }, "Could not load accounts"));
       }
     }
+    const canPassword = prov?.capabilities ? prov.capabilities.can_set_password : (slug === "mail.tm" || slug === "tempmail.plus");
+    passwordInput.disabled = !canPassword;
+    passwordInput.placeholder = canPassword ? "leave blank to auto-generate" : "Not supported by this provider";
     updateAddrSuffix();
   }
   domainSel.addEventListener("change", updateAddrSuffix);
@@ -371,6 +375,19 @@ export async function render(root) {
       tr.addEventListener("keydown", (e) => {
         if (e.key === "Enter") go();
       });
+      const copyBtn = h(
+        "button",
+        {
+          class: "icon-btn",
+          "aria-label": `Copy ${m.address}`,
+          title: "Copy address",
+          onclick: (e) => {
+            e.stopPropagation();
+            copyText(m.address, "Address copied");
+          },
+        },
+        h("i", { "data-lucide": "copy" }),
+      );
       const openBtn = h(
         "button",
         {
@@ -422,7 +439,7 @@ export async function render(root) {
         provCell,
         h("td", {}, statusPill(m.is_active)),
         h("td", { class: "muted small mono" }, fmtDate(m.created_at)),
-        h("td", {}, h("div", { class: "row-actions" }, openBtn, delBtn)),
+        h("td", {}, h("div", { class: "row-actions" }, copyBtn, openBtn, delBtn)),
       );
       frag.appendChild(tr);
     }

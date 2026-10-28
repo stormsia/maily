@@ -16,6 +16,7 @@ from ..base import (
     MessageSource,
     MessageSummary,
     Party,
+    ProviderCapabilities,
     Target,
     TargetKind,
     parse_from_value,
@@ -89,6 +90,16 @@ class TempMailIO(HttpProvider):
     cache_ttl = _CACHE_TTL
     default_headers = _HEADERS
     BASE_URL = "https://api.internal.temp-mail.io"
+    capabilities = ProviderCapabilities(
+        can_choose_username=True,
+        can_choose_domain=True,
+        can_set_password=False,
+        supports_delete_mailbox=True,
+        supports_delete_message=True,
+        supports_mark_read=False,
+        supports_source=True,
+        supports_attachments=True,
+    )
 
     def __init__(
         self,

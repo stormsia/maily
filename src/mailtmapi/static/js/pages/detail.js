@@ -17,8 +17,7 @@ import {
 } from "../ui.js";
 
 const PAGE_SIZE_HINT = 20;
-const POLL_MS = 30000;
-
+let currentPollMs = 10000;
 let pollTimer = null;
 
 /** Stop background polling (page torn down or auth died). */
@@ -27,6 +26,24 @@ export function cleanup() {
     clearInterval(pollTimer);
     pollTimer = null;
   }
+}
+
+function extractVerification(msg) {
+  if (!msg) return null;
+  const text = [msg.text || "", ...(msg.html || [])].join("\n");
+  if (!text.trim()) return null;
+  const codeMatch =
+    text.match(/(?:code|pin|\u043a\u043e\u0434|\u043f\u0430\u0440\u043e\u043b\u044c)[^\d\n\r]{1,15}(\b\d{4,8}\b)/i) ||
+    text.match(/\b([0-9]{4,8})\b/);
+  const urlMatches = text.match(/https?:\/\/[^\s<>"')\]]+/gi) || [];
+  const actionLink =
+    urlMatches.find((u) => /(?:confirm|verify|activate|token|reset|auth)/i.test(u)) ||
+    (urlMatches.length === 1 ? urlMatches[0] : null);
+  if (!codeMatch && !actionLink) return null;
+  return {
+    code: codeMatch ? codeMatch[1] || codeMatch[0] : null,
+    link: actionLink,
+  };
 }
 
 function msgItem(msg, selected, onOpen) {
@@ -174,6 +191,21 @@ export async function render(root, id) {
         },
         h("i", { "data-lucide": "copy" }),
         h("span", {}, "Copy"),
+      ),
+      h(
+        "select",
+        {
+          class: "poll-select",
+          title: "Auto-refresh interval",
+          onchange: (e) => {
+            const val = parseInt(e.target.value, 10);
+            setPollInterval(val);
+          },
+        },
+        h("option", { value: "5000" }, "Auto 5s"),
+        h("option", { value: "10000", selected: true }, "Auto 10s"),
+        h("option", { value: "30000" }, "Auto 30s"),
+        h("option", { value: "0" }, "Auto Off"),
       ),
       h(
         "button",
@@ -468,6 +500,63 @@ export async function render(root, id) {
       h("i", { "data-lucide": "code-2" }),
     );
 
+    const extracted = extractVerification(msg);
+    const extractCard = extracted
+      ? h(
+          "div",
+          { class: "extraction-card" },
+          h(
+            "div",
+            { class: "extraction-title" },
+            h("i", { "data-lucide": "sparkles" }),
+            "Quick Extract",
+          ),
+          extracted.code
+            ? h(
+                "div",
+                { class: "extraction-row" },
+                h("span", { class: "extraction-label" }, "Verification Code:"),
+                h("span", { class: "extraction-code mono" }, extracted.code),
+                h(
+                  "button",
+                  {
+                    class: "btn btn-primary btn-sm",
+                    onclick: () => copyText(extracted.code, "Code copied"),
+                  },
+                  "Copy Code",
+                ),
+              )
+            : null,
+          extracted.link
+            ? h(
+                "div",
+                { class: "extraction-row" },
+                h("span", { class: "extraction-label" }, "Action Link:"),
+                h(
+                  "a",
+                  {
+                    href: extracted.link,
+                    target: "_blank",
+                    rel: "noopener",
+                    class: "extraction-link mono",
+                  },
+                  extracted.link.length > 55
+                    ? extracted.link.slice(0, 55) + "…"
+                    : extracted.link,
+                ),
+                h(
+                  "button",
+                  {
+                    class: "btn btn-ghost btn-sm",
+                    onclick: () => copyText(extracted.link, "Link copied"),
+                  },
+                  "Copy Link",
+                ),
+              )
+            : null,
+        )
+      : null;
+
     readCol.append(
       h(
         "div",
@@ -511,19 +600,31 @@ export async function render(root, id) {
           ),
         ),
       ),
+      extractCard,
       seg ? h("div", { style: "margin-bottom:12px" }, seg) : null,
       bodyWrap,
     );
     refreshIcons();
   }
 
-  refreshList();
-  pollTimer = setInterval(() => {
-    if (loadingMsgs) return;
-    if (!document.body.contains(root)) {
-      cleanup();
-      return;
+  function setPollInterval(ms) {
+    if (pollTimer) {
+      clearInterval(pollTimer);
+      pollTimer = null;
     }
-    refreshList();
-  }, POLL_MS);
+    currentPollMs = ms;
+    if (ms > 0) {
+      pollTimer = setInterval(() => {
+        if (loadingMsgs) return;
+        if (!document.body.contains(root)) {
+          cleanup();
+          return;
+        }
+        refreshList();
+      }, ms);
+    }
+  }
+
+  refreshList();
+  setPollInterval(10000);
 }

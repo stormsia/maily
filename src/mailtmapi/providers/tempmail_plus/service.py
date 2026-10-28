@@ -19,6 +19,7 @@ from ..base import (
     MessageSource,
     MessageSummary,
     Party,
+    ProviderCapabilities,
     Target,
     TargetKind,
 )
@@ -123,6 +124,16 @@ class TempMailPlus(HttpProvider):
     kind: TargetKind = "domain"
     cache_ttl = _CACHE_TTL
     default_headers = _HEADERS
+    capabilities = ProviderCapabilities(
+        can_choose_username=True,
+        can_choose_domain=True,
+        can_set_password=True,
+        supports_delete_mailbox=True,
+        supports_delete_message=True,
+        supports_mark_read=True,
+        supports_source=True,
+        supports_attachments=True,
+    )
     BASE_URL = "https://tempmail.plus"
     API_URL = "https://tempmail.plus/api"
 

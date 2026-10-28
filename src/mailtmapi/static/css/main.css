@@ -570,6 +570,67 @@ pre.code {
 .reading-subject { font-family: var(--font-ui); font-size: var(--fs-20); font-weight: 700; letter-spacing: -0.01em; overflow-wrap: anywhere; }
 .reading-actions { display: flex; gap: var(--s-1); flex-shrink: 0; }
 
+/* ---------- Extraction Card ---------- */
+.extraction-card {
+  background: linear-gradient(135deg, rgba(124, 108, 255, 0.12), rgba(44, 198, 224, 0.08));
+  border: 1px solid rgba(124, 108, 255, 0.35);
+  border-radius: var(--r-md);
+  padding: var(--s-3) var(--s-4);
+  margin-bottom: var(--s-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+}
+.extraction-title {
+  font-family: var(--font-ui);
+  font-size: var(--fs-13);
+  font-weight: 700;
+  color: #c9c2ff;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.extraction-row {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  flex-wrap: wrap;
+}
+.extraction-label {
+  font-size: var(--fs-12);
+  color: var(--muted);
+  font-weight: 500;
+}
+.extraction-code {
+  font-size: var(--fs-18);
+  font-weight: 700;
+  color: #fff;
+  letter-spacing: 0.1em;
+  background: rgba(0, 0, 0, 0.3);
+  padding: 2px 10px;
+  border-radius: var(--r-sm);
+  border: 1px solid rgba(124, 108, 255, 0.4);
+}
+.extraction-link {
+  font-size: var(--fs-12);
+  color: var(--accent-2);
+  text-decoration: underline;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 320px;
+}
+.poll-select {
+  background: var(--surface-2);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  padding: 4px 8px;
+  font-size: var(--fs-12);
+  font-family: inherit;
+  outline: none;
+}
+
 /* ---------- Retention page ---------- */
 .ret-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(330px, 1fr)); gap: var(--s-4); margin-top: var(--s-4); }
 .ret-card { padding: var(--s-5); display: flex; flex-direction: column; gap: var(--s-4); }

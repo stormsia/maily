@@ -5,7 +5,18 @@ import json
 import httpx
 import pytest
 
-from mailtmapi.client import ApiError, MailTMAPI
+from mailtmapi.client import (
+    ApiError,
+    AuthenticationError,
+    ForbiddenError,
+    Mailbox,
+    MailTMAPI,
+    NotFoundError,
+    RateLimitError,
+    UpstreamProviderError,
+    ValidationError,
+    WaitTimeoutError,
+)
 
 BASE = "http://test"
 
@@ -411,3 +422,243 @@ async def test_url_quoting_for_message_ids():
         await api.messages.source(1, "../../etc")
     finally:
         await api.close()
+
+
+@pytest.mark.asyncio
+async def test_granular_error_hierarchy():
+    routes = {
+        ("GET", "/v1/err/401"): httpx.Response(401, json={"detail": "Unauthorized"}),
+        ("GET", "/v1/err/403"): httpx.Response(403, json={"detail": "Forbidden"}),
+        ("GET", "/v1/err/404"): httpx.Response(404, json={"detail": "Not found"}),
+        ("GET", "/v1/err/422"): httpx.Response(422, json={"detail": "Bad entity"}),
+        ("GET", "/v1/err/429"): httpx.Response(429, json={"detail": "Rate limit"}),
+        ("GET", "/v1/err/502"): httpx.Response(502, json={"detail": "Bad gateway"}),
+    }
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        key = (request.method, request.url.path)
+        return routes.get(key, httpx.Response(404))
+
+    api = _api(handler)
+    try:
+        with pytest.raises(AuthenticationError) as e:
+            await api._transport.request("GET", "/v1/err/401")
+        assert e.value.status_code == 401
+        assert isinstance(e.value, ApiError)
+
+        with pytest.raises(ForbiddenError):
+            await api._transport.request("GET", "/v1/err/403")
+
+        with pytest.raises(NotFoundError):
+            await api._transport.request("GET", "/v1/err/404")
+
+        with pytest.raises(ValidationError):
+            await api._transport.request("GET", "/v1/err/422")
+
+        with pytest.raises(RateLimitError):
+            await api._transport.request("GET", "/v1/err/429")
+
+        with pytest.raises(UpstreamProviderError):
+            await api._transport.request("GET", "/v1/err/502")
+    finally:
+        await api.close()
+
+
+@pytest.mark.asyncio
+async def test_keys_api_typed():
+    async def handler(request: httpx.Request) -> httpx.Response:
+        p = request.url.path
+        if request.method == "GET" and p == "/v1/admin/keys":
+            return httpx.Response(
+                200,
+                json=[
+                    {
+                        "id": 1,
+                        "name": "test-key",
+                        "prefix": "sk-test",
+                        "scope": {"providers": ["mail.tm"], "parent_ids": [], "actions": ["read"]},
+                        "key_retention": [],
+                    }
+                ],
+            )
+        if request.method == "POST" and p == "/v1/admin/keys":
+            return httpx.Response(
+                201,
+                json={
+                    "id": 2,
+                    "name": "new-key",
+                    "prefix": "sk-new",
+                    "secret": "sk-new-secret",
+                    "scope": {"providers": [], "parent_ids": [], "actions": []},
+                    "key_retention": [],
+                },
+            )
+        if request.method == "GET" and p == "/v1/admin/keys/1":
+            return httpx.Response(
+                200,
+                json={
+                    "id": 1,
+                    "name": "test-key",
+                    "prefix": "sk-test",
+                    "scope": {"providers": ["mail.tm"], "parent_ids": [], "actions": ["read"]},
+                    "key_retention": [],
+                },
+            )
+        if request.method == "GET" and p == "/v1/admin/keys/me":
+            return httpx.Response(200, json={"is_root": True, "name": "root"})
+        if request.method == "GET" and p == "/v1/admin/keys/1/secret":
+            return httpx.Response(200, json={"secret": "full-secret"})
+        if request.method == "PATCH" and p == "/v1/admin/keys/1":
+            return httpx.Response(
+                200,
+                json={
+                    "id": 1,
+                    "name": "renamed",
+                    "prefix": "sk-test",
+                    "scope": {"providers": ["mail.tm"], "parent_ids": [], "actions": []},
+                    "key_retention": [],
+                },
+            )
+        if request.method == "POST" and p == "/v1/admin/keys/1/rotate":
+            return httpx.Response(
+                200,
+                json={
+                    "id": 1,
+                    "name": "test-key",
+                    "prefix": "sk-test",
+                    "secret": "rotated-secret",
+                    "scope": {"providers": [], "parent_ids": [], "actions": []},
+                    "key_retention": [],
+                },
+            )
+        if request.method == "DELETE" and p == "/v1/admin/keys/1":
+            return httpx.Response(204)
+        return httpx.Response(404)
+
+    api = _api(handler)
+    try:
+        keys = await api.keys.list()
+        assert len(keys) == 1
+        assert keys[0].id == 1
+        assert keys[0].scope.providers == ["mail.tm"]
+
+        created = await api.keys.create(name="new-key")
+        assert created.secret == "sk-new-secret"
+
+        k1 = await api.keys.get(1)
+        assert k1.name == "test-key"
+
+        me = await api.keys.me()
+        assert me.is_root is True
+
+        sec = await api.keys.secret(1)
+        assert sec == "full-secret"
+
+        up = await api.keys.update(1, name="renamed")
+        assert up.name == "renamed"
+
+        rot = await api.keys.rotate(1)
+        assert rot.secret == "rotated-secret"
+
+        await api.keys.delete(1)
+    finally:
+        await api.close()
+
+
+@pytest.mark.asyncio
+async def test_wait_for_code_and_link():
+    box = Mailbox(id=1, provider="mail.tm", address="test@mail.tm", is_active=True)
+
+    async def handler(request: httpx.Request) -> httpx.Response:
+        p = request.url.path
+        if request.method == "GET" and p == "/v1/mailboxes/1/messages":
+            return httpx.Response(
+                200,
+                json=[
+                    {
+                        "id": 10,
+                        "message_api_id": "m1",
+                        "subject": "Verify code",
+                        "from_address": "support@service.com",
+                    }
+                ],
+            )
+        if request.method == "GET" and p == "/v1/mailboxes/1/messages/m1":
+            return httpx.Response(
+                200,
+                json={
+                    "id": 10,
+                    "message_api_id": "m1",
+                    "subject": "Verify code",
+                    "from_address": "support@service.com",
+                    "text": "Your verification code is 849201. Click https://service.com/confirm?token=xyz to confirm.",
+                    "html": [],
+                },
+            )
+        return httpx.Response(404)
+
+    api = _api(handler)
+    try:
+        code = await api.wait_for_code(box, timeout=2.0)
+        assert code == "849201"
+
+        link = await api.wait_for_link(box, timeout=2.0)
+        assert "https://service.com/confirm?token=xyz" in link
+
+        # Timeout scenario
+        with pytest.raises(WaitTimeoutError):
+            await api.wait_for_code(box, sender_domain="other.com", timeout=0.05, check_interval=0.01)
+    finally:
+        await api.close()
+
+
+@pytest.mark.asyncio
+async def test_iter_messages():
+    box = Mailbox(id=5, provider="mail.tm", address="box@mail.tm", is_active=True)
+    counter = 0
+
+    async def handler(request: httpx.Request) -> httpx.Response:
+        nonlocal counter
+        counter += 1
+        msgs = [{"id": 1, "message_api_id": "msg-init", "subject": "Init"}]
+        if counter > 1:
+            msgs.append({"id": 2, "message_api_id": f"msg-new-{counter}", "subject": "New!"})
+        return httpx.Response(200, json=msgs)
+
+    api = _api(handler)
+    try:
+        collected = []
+        async for msg in api.messages.iter_messages(box, poll_interval=0.02, timeout=0.1):
+            collected.append(msg.message_api_id)
+            if len(collected) >= 2:
+                break
+        assert len(collected) >= 1
+        assert "msg-init" not in collected
+    finally:
+        await api.close()
+
+
+@pytest.mark.asyncio
+async def test_create_temp_mailbox():
+    async def handler(request: httpx.Request) -> httpx.Response:
+        p = request.url.path
+        if request.method == "GET" and p == "/v1/targets":
+            return httpx.Response(
+                200,
+                json=[{"id": "d1", "kind": "domain", "provider": "mail.tm", "label": "mail.tm"}],
+            )
+        if request.method == "POST" and p == "/v1/mailboxes":
+            return httpx.Response(
+                201,
+                json={"id": 99, "provider": "mail.tm", "address": "auto@mail.tm", "is_active": True},
+            )
+        return httpx.Response(404)
+
+    api = _api(handler)
+    try:
+        box = await api.create_temp_mailbox()
+        assert box.id == 99
+        assert box.address == "auto@mail.tm"
+    finally:
+        await api.close()
+

@@ -45,13 +45,14 @@ import os
 import re
 import sys
 import time
-from collections.abc import Callable
+from collections.abc import AsyncIterator, Callable
+from contextlib import suppress
 from typing import Any
 from urllib.parse import quote
 
 import httpx
 from loguru import logger
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 __version__ = "0.3.0"
 
@@ -62,24 +63,62 @@ CLIENT_SOURCE = os.environ.get(
 )
 
 __all__ = [
+    # Клиент и секции
     "MailTMAPI",
+    "HealthAPI",
+    "ConfigAPI",
+    "ProvidersAPI",
+    "MailboxesAPI",
+    "MessagesAPI",
+    "GmailAPI",
+    "AdminAPI",
+    "KeysAPI",
+    # Ошибки
     "ClientError",
+    "WaitTimeoutError",
     "ApiError",
+    "AuthenticationError",
+    "ForbiddenError",
+    "NotFoundError",
+    "ValidationError",
+    "RateLimitError",
+    "UpstreamProviderError",
+    # Модели данных
     "HealthOut",
     "Provider",
+    "ProviderOut",
+    "ProviderCapabilities",
     "Target",
+    "TargetOut",
     "Mailbox",
+    "MailboxOut",
     "MessageSummary",
+    "MessageOut",
     "MessageDetail",
+    "MessageDetailOut",
     "MessageSource",
+    "SourceOut",
     "GmailAccount",
+    "GmailAccountOut",
     "OAuthStart",
+    "OAuthStartOut",
     "GmailCreds",
+    "GmailCredsOut",
     "Retention",
+    "RetentionOut",
     "SweepResult",
     "DomainCacheProvider",
+    "DomainCacheProviderOut",
     "DomainCache",
+    "DomainCacheOut",
     "DomainCacheRun",
+    "ApiKeyOut",
+    "ApiKeyCreatedOut",
+    "ApiKeyMeOut",
+    "KeyScopeOut",
+    "KeyRetentionOut",
+    "ExtractedConfirmation",
+    # Утилиты обновления
     "check_update",
     "self_update",
 ]
@@ -96,9 +135,21 @@ class HealthOut(_Base):
     status: str = ""
 
 
+class ProviderCapabilities(_Base):
+    can_choose_username: bool = True
+    can_choose_domain: bool = True
+    can_set_password: bool = False
+    supports_delete_mailbox: bool = True
+    supports_delete_message: bool = True
+    supports_mark_read: bool = False
+    supports_source: bool = True
+    supports_attachments: bool = True
+
+
 class ProviderOut(_Base):
     slug: str
     kind: str
+    capabilities: ProviderCapabilities | None = None
 
 
 class TargetOut(_Base):
@@ -190,6 +241,49 @@ class DomainCacheRun(_Base):
     failed: list[str] = []
 
 
+class KeyScopeOut(_Base):
+    providers: list[str] = Field(default_factory=list)
+    parent_ids: list[int] = Field(default_factory=list)
+    actions: list[str] = Field(default_factory=list)
+
+
+class KeyRetentionOut(_Base):
+    provider: str
+    mailbox_ttl_hours: int | None = None
+    message_ttl_hours: int | None = None
+
+
+class ApiKeyOut(_Base):
+    id: int
+    name: str
+    prefix: str
+    scope: KeyScopeOut = Field(default_factory=KeyScopeOut)
+    expires_at: Any = None
+    created_at: Any = None
+    updated_at: Any = None
+    key_retention: list[KeyRetentionOut] = Field(default_factory=list)
+
+
+class ApiKeyCreatedOut(ApiKeyOut):
+    secret: str
+
+
+class ApiKeyMeOut(_Base):
+    is_root: bool = False
+    name: str = ""
+    expires_at: Any = None
+    scope: KeyScopeOut | None = None
+    key_retention: list[KeyRetentionOut] = Field(default_factory=list)
+
+
+class ExtractedConfirmation(_Base):
+    message_id: str
+    from_address: str
+    subject: str
+    confirmation_link: str | None = None
+    confirmation_code: str | None = None
+
+
 Provider = ProviderOut
 Target = TargetOut
 Mailbox = MailboxOut
@@ -210,7 +304,11 @@ _URL_RE = re.compile(r"https?://[^\s<>\"')\]]+", re.IGNORECASE)
 # Ошибки
 # --------------------------------------------------------------------------- #
 class ClientError(Exception):
-    """Базовая ошибка клиента."""
+    """Базовая ошибка клиента mailtmapi."""
+
+
+class WaitTimeoutError(ClientError, TimeoutError):
+    """Истекло время ожидания входящего письма, ссылки или кода подтверждения."""
 
 
 class ApiError(ClientError):
@@ -220,6 +318,30 @@ class ApiError(ClientError):
         self.status_code = status_code
         self.detail = detail or (f"HTTP {status_code}" if status_code else "request failed")
         super().__init__(self.detail)
+
+
+class AuthenticationError(ApiError):
+    """HTTP 401: Неверный или отсутствующий API-ключ."""
+
+
+class ForbiddenError(ApiError):
+    """HTTP 403: Доступ запрещён (недостаточно прав у ключа для ресурса/действия)."""
+
+
+class NotFoundError(ApiError):
+    """HTTP 404: Запрошенный ресурс не найден."""
+
+
+class ValidationError(ApiError):
+    """HTTP 400 или 422: Ошибка валидации параметров запроса."""
+
+
+class RateLimitError(ApiError):
+    """HTTP 429: Превышен лимит запросов."""
+
+
+class UpstreamProviderError(ApiError):
+    """HTTP 502/504: Сбой или таймаут внешнего почтового сервиса."""
 
 
 # --------------------------------------------------------------------------- #
@@ -251,15 +373,23 @@ def _atomic_replace(path: str, text: str) -> None:
     tmp = path + ".tmp"
     with open(tmp, "w", encoding="utf-8", newline="") as fh:
         fh.write(text)
-    os.replace(tmp, path)
+    if os.name == "nt":
+        with open(tmp, encoding="utf-8") as src, open(path, "w", encoding="utf-8", newline="") as dst:
+            dst.write(src.read())
+        with suppress(OSError):
+            os.remove(tmp)
+    else:
+        os.replace(tmp, path)
 
 
-def self_update(source_url: str | None = None, *, after: Callable[[], None] | None = None) -> bool:
-    """Скачать новую client.py из git и заменить текущий файл на диске.
+def self_update(
+    source_url: str | None = None,
+    *,
+    after: Callable[[], None] | None = None,
+) -> bool:
+    """Обновить исполняемый файл клиента новой версией из git.
 
-    Возвращает True, если файл перезаписан. Новую версию подхватит только
-    следующий запуск; для pip-установки можно дополнительно выполнить
-    `pip install --upgrade "mailtmapi-client @ git+...#subdirectory=client"`.
+    Возвращает True если файл был перезаписан, False если версия уже актуальна.
     Переопределить источник можно env-переменной MAILTMAPI_CLIENT_SOURCE.
     """
     text = _fetch_client(source_url)
@@ -330,6 +460,18 @@ class _Transport:
             logger.warning(
                 "{} {} -> {} ({:.0f}ms): {}", method, path, resp.status_code, elapsed, detail
             )
+            if resp.status_code == 401:
+                raise AuthenticationError(resp.status_code, detail)
+            if resp.status_code == 403:
+                raise ForbiddenError(resp.status_code, detail)
+            if resp.status_code == 404:
+                raise NotFoundError(resp.status_code, detail)
+            if resp.status_code in (400, 422):
+                raise ValidationError(resp.status_code, detail)
+            if resp.status_code == 429:
+                raise RateLimitError(resp.status_code, detail)
+            if resp.status_code in (502, 504):
+                raise UpstreamProviderError(resp.status_code, detail)
             raise ApiError(resp.status_code, detail)
         logger.debug("{} {} -> {} ({:.0f}ms)", method, path, resp.status_code, elapsed)
         if resp.status_code == 204:
@@ -358,6 +500,10 @@ def _extract_detail(resp: httpx.Response) -> str:
             return detail
         return str(body)[:300]
     return str(body)[:300]
+
+
+def _mailbox_id_val(mailbox_id: int | MailboxOut) -> int:
+    return mailbox_id.id if hasattr(mailbox_id, "id") else int(mailbox_id)
 
 
 # --------------------------------------------------------------------------- #
@@ -440,11 +586,7 @@ class MailboxesAPI:
         limit: int | None = None,
         offset: int | None = None,
     ) -> list[Mailbox]:
-        """Список ящиков. active=None — без фильтра (включая удалённые).
-
-        q — подстрока адреса („%" и „_" считаются литералами), limit/offset —
-        постраничная выборка (максимальный limit — 500).
-        """
+        """Список ящиков. active=None — без фильтра (включая удалённые)."""
         params: dict[str, Any] = {}
         if provider:
             params["provider"] = provider
@@ -461,9 +603,10 @@ class MailboxesAPI:
             for m in await self._t.request("GET", "/v1/mailboxes", params=params or None)
         ]
 
-    async def get(self, mailbox_id: int) -> Mailbox:
+    async def get(self, mailbox_id: int | Mailbox) -> Mailbox:
+        mid = _mailbox_id_val(mailbox_id)
         return Mailbox.model_validate(
-            await self._t.request("GET", f"/v1/mailboxes/{mailbox_id}")
+            await self._t.request("GET", f"/v1/mailboxes/{mid}")
         )
 
     async def by_address(self, email: str) -> Mailbox:
@@ -472,9 +615,10 @@ class MailboxesAPI:
             await self._t.request("GET", f"/v1/mailboxes/by-address/{quote(email, safe='')}")
         )
 
-    async def delete(self, mailbox_id: int) -> None:
+    async def delete(self, mailbox_id: int | Mailbox) -> None:
         """Удалить ящик (и на стороне провайдера, и локально)."""
-        await self._t.request("DELETE", f"/v1/mailboxes/{mailbox_id}")
+        mid = _mailbox_id_val(mailbox_id)
+        await self._t.request("DELETE", f"/v1/mailboxes/{mid}")
 
 
 class MessagesAPI:
@@ -483,46 +627,51 @@ class MessagesAPI:
     def __init__(self, transport: _Transport) -> None:
         self._t = transport
 
-    async def list(self, mailbox_id: int, page: int = 1) -> list[MessageSummary]:
-        """Список писем (страница). Запрос к провайдеру может быть медленным."""
+    async def list(self, mailbox_id: int | Mailbox, page: int = 1) -> list[MessageSummary]:
+        """Список писем (страница)."""
+        mid = _mailbox_id_val(mailbox_id)
         return [
             MessageSummary.model_validate(m)
             for m in await self._t.request(
-                "GET", f"/v1/mailboxes/{mailbox_id}/messages", params={"page": page}
+                "GET", f"/v1/mailboxes/{mid}/messages", params={"page": page}
             )
         ]
 
-    async def get(self, mailbox_id: int, message_id: str) -> MessageDetail:
+    async def get(self, mailbox_id: int | Mailbox, message_id: str) -> MessageDetail:
         """Полное письмо с текстом и HTML."""
+        mid = _mailbox_id_val(mailbox_id)
         return MessageDetail.model_validate(
             await self._t.request(
-                "GET", f"/v1/mailboxes/{mailbox_id}/messages/{quote(message_id, safe='')}"
+                "GET", f"/v1/mailboxes/{mid}/messages/{quote(message_id, safe='')}"
             )
         )
 
-    async def mark_read(self, mailbox_id: int, message_id: str) -> MessageSummary:
+    async def mark_read(self, mailbox_id: int | Mailbox, message_id: str) -> MessageSummary:
+        mid = _mailbox_id_val(mailbox_id)
         return MessageSummary.model_validate(
             await self._t.request(
-                "POST", f"/v1/mailboxes/{mailbox_id}/messages/{quote(message_id, safe='')}/read"
+                "POST", f"/v1/mailboxes/{mid}/messages/{quote(message_id, safe='')}/read"
             )
         )
 
-    async def delete(self, mailbox_id: int, message_id: str) -> None:
+    async def delete(self, mailbox_id: int | Mailbox, message_id: str) -> None:
+        mid = _mailbox_id_val(mailbox_id)
         await self._t.request(
-            "DELETE", f"/v1/mailboxes/{mailbox_id}/messages/{quote(message_id, safe='')}"
+            "DELETE", f"/v1/mailboxes/{mid}/messages/{quote(message_id, safe='')}"
         )
 
-    async def source(self, mailbox_id: int, message_id: str) -> MessageSource:
+    async def source(self, mailbox_id: int | Mailbox, message_id: str) -> MessageSource:
         """Сырые исходники письма."""
+        mid = _mailbox_id_val(mailbox_id)
         return MessageSource.model_validate(
             await self._t.request(
-                "GET", f"/v1/mailboxes/{mailbox_id}/messages/{quote(message_id, safe='')}/source"
+                "GET", f"/v1/mailboxes/{mid}/messages/{quote(message_id, safe='')}/source"
             )
         )
 
     async def wait_for(
         self,
-        mailbox_id: int,
+        mailbox_id: int | Mailbox,
         *,
         timeout: float = 120.0,
         interval: float = 2.0,
@@ -532,22 +681,23 @@ class MessagesAPI:
         """Поллить список, пока не появится подходящее письмо (по умолчанию — любое).
 
         При mark_seen=True найденное письмо сразу помечается прочитанным.
-        По истечении timeout — TimeoutError.
+        По истечении timeout бросается WaitTimeoutError (также является TimeoutError).
         """
+        mid = _mailbox_id_val(mailbox_id)
         deadline = time.monotonic() + timeout
         while True:
-            for m in await self.list(mailbox_id):
+            for m in await self.list(mid):
                 if predicate is None or predicate(m):
                     if mark_seen:
-                        await self.mark_read(mailbox_id, m.message_api_id)
+                        await self.mark_read(mid, m.message_api_id)
                     return m
             if time.monotonic() >= deadline:
-                raise TimeoutError(f"no message arrived within {timeout}s")
+                raise WaitTimeoutError(f"no message arrived within {timeout}s")
             await asyncio.sleep(interval)
 
     async def wait_for_confirmation_email(
         self,
-        mailbox_id: int,
+        mailbox_id: int | Mailbox,
         *,
         sender_domain: str | None = None,
         url_contain: builtins.list[str] | None = None,
@@ -566,6 +716,7 @@ class MessagesAPI:
         Возвращает dict с ключами: message_id, from_address, subject,
         confirmation_link, confirmation_code. None по истечении timeout.
         """
+        mid = _mailbox_id_val(mailbox_id)
         if timeout < 0:
             raise ValueError("timeout must be >= 0")
         if check_interval <= 0:
@@ -596,7 +747,7 @@ class MessagesAPI:
         examined: set[str] = set()
 
         while loop.time() < deadline:
-            for msg in await self.list(mailbox_id):
+            for msg in await self.list(mid):
                 message_id = msg.message_api_id
                 if message_id in examined:
                     continue
@@ -605,7 +756,7 @@ class MessagesAPI:
                     continue
 
                 try:
-                    detail = await self.get(mailbox_id, message_id)
+                    detail = await self.get(mid, message_id)
                 except Exception:
                     logger.exception("Failed to load message details for %s", message_id)
                     continue
@@ -655,6 +806,81 @@ class MessagesAPI:
 
         return None
 
+    async def wait_for_code(
+        self,
+        mailbox_id: int | Mailbox,
+        *,
+        pattern: str = r"\b(\d{4,8})\b",
+        sender_domain: str | None = None,
+        timeout: float = 60.0,
+        check_interval: float = 3.0,
+    ) -> str:
+        """Ожидает письмо и возвращает цифровой код подтверждения (строку).
+
+        Бросает WaitTimeoutError по истечении timeout.
+        """
+        res = await self.wait_for_confirmation_email(
+            mailbox_id,
+            sender_domain=sender_domain,
+            digit_code_mask=pattern,
+            timeout=timeout,
+            check_interval=check_interval,
+        )
+        if not res or not res.get("confirmation_code"):
+            raise WaitTimeoutError(f"no verification code arrived within {timeout}s")
+        return str(res["confirmation_code"])
+
+    async def wait_for_link(
+        self,
+        mailbox_id: int | Mailbox,
+        *,
+        url_contain: builtins.list[str] | None = None,
+        sender_domain: str | None = None,
+        timeout: float = 60.0,
+        check_interval: float = 3.0,
+    ) -> str:
+        """Ожидает письмо и возвращает URL подтверждения.
+
+        Бросает WaitTimeoutError по истечении timeout.
+        """
+        res = await self.wait_for_confirmation_email(
+            mailbox_id,
+            sender_domain=sender_domain,
+            url_contain=url_contain or ["http"],
+            timeout=timeout,
+            check_interval=check_interval,
+        )
+        if not res or not res.get("confirmation_link"):
+            raise WaitTimeoutError(f"no confirmation link arrived within {timeout}s")
+        return str(res["confirmation_link"])
+
+    async def iter_messages(
+        self,
+        mailbox_id: int | Mailbox,
+        *,
+        poll_interval: float = 3.0,
+        timeout: float | None = None,
+    ) -> AsyncIterator[MessageSummary]:
+        """Асинхронный генератор: непрерывно поллит ящик и возвращает новые письма по мере их поступления."""
+        mid = _mailbox_id_val(mailbox_id)
+        seen_ids: set[str] = set()
+        loop = asyncio.get_running_loop()
+        deadline = (loop.time() + timeout) if timeout is not None else None
+
+        for m in await self.list(mid):
+            seen_ids.add(m.message_api_id)
+
+        while True:
+            if deadline is not None and loop.time() >= deadline:
+                break
+            for m in await self.list(mid):
+                if m.message_api_id not in seen_ids:
+                    seen_ids.add(m.message_api_id)
+                    yield m
+            if deadline is not None and loop.time() + poll_interval >= deadline:
+                break
+            await asyncio.sleep(poll_interval)
+
 
 class GmailAPI:
     """OAuth-подключение и управление Gmail-аккаунтами."""
@@ -700,11 +926,91 @@ class GmailAPI:
         )
 
 
-class AdminAPI:
-    """Админка: статистика, retention (TTL-очистка), кэш доменов, Gmail-креды."""
+class KeysAPI:
+    """Управление API-ключами: список, создание, просмотр, ротация, удаление."""
 
     def __init__(self, transport: _Transport) -> None:
         self._t = transport
+
+    async def list(self) -> builtins.list[ApiKeyOut]:
+        """Root only. Список выпущенных ключей (без секретов)."""
+        data = await self._t.request("GET", "/v1/admin/keys")
+        return [ApiKeyOut.model_validate(k) for k in data]
+
+    async def create(
+        self,
+        *,
+        name: str,
+        expires_at: str | None = None,
+        scope: dict[str, Any] | None = None,
+        retention: builtins.list[dict[str, Any]] | None = None,
+    ) -> ApiKeyCreatedOut:
+        """Root only. Создать ключ (секрет возвращается только в ответе на создание)."""
+        payload: dict[str, Any] = {
+            "name": name,
+            "expires_at": expires_at,
+            "scope": scope or {"providers": [], "parent_ids": [], "actions": []},
+            "retention": retention or [],
+        }
+        return ApiKeyCreatedOut.model_validate(
+            await self._t.request("POST", "/v1/admin/keys", json=payload)
+        )
+
+    async def get(self, key_id: int) -> ApiKeyOut:
+        """Root only. Информация о ключе по ID (без секрета)."""
+        return ApiKeyOut.model_validate(await self._t.request("GET", f"/v1/admin/keys/{key_id}"))
+
+    async def me(self) -> ApiKeyMeOut:
+        """Информация о текущем активном ключе (из заголовка X-API-Key)."""
+        return ApiKeyMeOut.model_validate(await self._t.request("GET", "/v1/admin/keys/me"))
+
+    async def secret(self, key_id: int) -> str:
+        """Root only. Раскрыть секрет ключа."""
+        data = await self._t.request("GET", f"/v1/admin/keys/{key_id}/secret")
+        return str(data.get("secret") or "")
+
+    async def update(
+        self,
+        key_id: int,
+        *,
+        name: str,
+        expires_at: str | None = None,
+        scope: dict[str, Any] | None = None,
+    ) -> ApiKeyOut:
+        """Root only. Обновить имя, дату истечения или права ключа."""
+        payload = {
+            "name": name,
+            "expires_at": expires_at,
+            "scope": scope or {"providers": [], "parent_ids": [], "actions": []},
+        }
+        return ApiKeyOut.model_validate(
+            await self._t.request("PATCH", f"/v1/admin/keys/{key_id}", json=payload)
+        )
+
+    async def retention_set(
+        self, key_id: int, retention: builtins.list[dict[str, Any]]
+    ) -> builtins.list[KeyRetentionOut]:
+        """Root only. Установить индивидуальные правила TTL для ключа."""
+        data = await self._t.request("PUT", f"/v1/admin/keys/{key_id}/retention", json=retention)
+        return [KeyRetentionOut.model_validate(r) for r in data]
+
+    async def rotate(self, key_id: int) -> ApiKeyCreatedOut:
+        """Root only. Ротировать секрет ключа (старый аннулируется, новый возвращается один раз)."""
+        return ApiKeyCreatedOut.model_validate(
+            await self._t.request("POST", f"/v1/admin/keys/{key_id}/rotate")
+        )
+
+    async def delete(self, key_id: int) -> None:
+        """Root only. Удалить ключ."""
+        await self._t.request("DELETE", f"/v1/admin/keys/{key_id}")
+
+
+class AdminAPI:
+    """Админка: статистика, retention (TTL-очистка), кэш доменов, Gmail-креды, ключи."""
+
+    def __init__(self, transport: _Transport) -> None:
+        self._t = transport
+        self.keys_api = KeysAPI(transport)
 
     async def stats(self) -> dict:
         """Статистика: ящики, письма, провайдеры, тренд за 7 дней."""
@@ -814,7 +1120,6 @@ class AdminAPI:
         retention: list[dict[str, Any]],
     ) -> dict[str, Any]:
         """Root only. Creates a key; the response includes the secret once."""
-        # Four fields are the POST /v1/admin/keys body; scope is posted as given.
         return await self._t.request(
             "POST",
             "/v1/admin/keys",
@@ -847,7 +1152,6 @@ class AdminAPI:
         scope: dict[str, Any],
     ) -> dict[str, Any]:
         """Root only. Updates name, expiry, and scope; the secret is unchanged."""
-        # name, expires_at, and scope are the PATCH body; scope is posted as given.
         return await self._t.request(
             "PATCH",
             f"/v1/admin/keys/{key_id}",
@@ -877,11 +1181,12 @@ class AdminAPI:
 class MailTMAPI:
     """Асинхронный клиент mailtmapi. Используй как `async with` или закрывай вручную.
 
-        api = MailTMAPI("http://127.0.0.1:8477", api_key="sk-…")
-        await api.mailboxes.create(provider="mail.tm")
-        await api.close()
+        async with MailTMAPI("http://127.0.0.1:8477", api_key="sk-…") as api:
+            box = await api.create_temp_mailbox()
+            code = await api.wait_for_code(box)
+            print("Verification code:", code)
 
-    Секции: .health, .config, .providers, .mailboxes, .messages, .gmail, .admin
+    Секции: .health, .config, .providers, .mailboxes, .messages, .gmail, .admin, .keys
     """
 
     def __init__(
@@ -900,17 +1205,14 @@ class MailTMAPI:
         self.messages = MessagesAPI(self._transport)
         self.gmail = GmailAPI(self._transport)
         self.admin = AdminAPI(self._transport)
+        self.keys = KeysAPI(self._transport)
 
     def set_api_key(self, api_key: str) -> None:
         """Обновить API-ключ на лету."""
         self._transport.set_api_key(api_key)
 
     async def check_client_version(self) -> str:
-        """Версия сервера из /v1/config. Предупреждает при несовпадении версий.
-
-        Если сервер новее установленного клиента — залогирует совет
-        `mailtmapi-client update`.
-        """
+        """Версия сервера из /v1/config. Предупреждает при несовпадении версий."""
         cfg = await self.config.get()
         remote = str(cfg.get("client_version") or "")
         if remote and remote != __version__:
@@ -920,6 +1222,64 @@ class MailTMAPI:
                 remote,
             )
         return remote
+
+    async def create_temp_mailbox(
+        self,
+        *,
+        provider: str | None = None,
+        domain: str | None = None,
+    ) -> Mailbox:
+        """Удобный хелпер: создать временный ящик в 1 вызов.
+
+        Если domain не указан, автоматически берёт первый доступный домен провайдера.
+        """
+        if not domain and not provider:
+            targets = await self.providers.targets()
+            domain_targets = [t for t in targets if t.kind == "domain"]
+            if domain_targets:
+                domain = domain_targets[0].label
+                provider = domain_targets[0].provider
+        elif not domain and provider:
+            targets = await self.providers.targets(provider=provider)
+            if targets:
+                domain = targets[0].label
+        return await self.mailboxes.create(provider=provider, domain=domain)
+
+    async def wait_for_code(
+        self,
+        mailbox_id: int | Mailbox,
+        *,
+        pattern: str = r"\b(\d{4,8})\b",
+        sender_domain: str | None = None,
+        timeout: float = 60.0,
+        check_interval: float = 3.0,
+    ) -> str:
+        """Поллить ящик, пока не придёт письмо с цифровым кодом подтверждения."""
+        return await self.messages.wait_for_code(
+            mailbox_id,
+            pattern=pattern,
+            sender_domain=sender_domain,
+            timeout=timeout,
+            check_interval=check_interval,
+        )
+
+    async def wait_for_link(
+        self,
+        mailbox_id: int | Mailbox,
+        *,
+        url_contain: builtins.list[str] | None = None,
+        sender_domain: str | None = None,
+        timeout: float = 60.0,
+        check_interval: float = 3.0,
+    ) -> str:
+        """Поллить ящик, пока не придёт письмо со ссылкой подтверждения."""
+        return await self.messages.wait_for_link(
+            mailbox_id,
+            url_contain=url_contain,
+            sender_domain=sender_domain,
+            timeout=timeout,
+            check_interval=check_interval,
+        )
 
     async def close(self) -> None:
         await self._transport.close()
@@ -954,28 +1314,28 @@ class MailTMAPI:
     ) -> list[Mailbox]:
         return await self.mailboxes.list(provider=provider, active=active)
 
-    async def mailbox(self, mailbox_id: int) -> Mailbox:
+    async def mailbox(self, mailbox_id: int | Mailbox) -> Mailbox:
         return await self.mailboxes.get(mailbox_id)
 
     async def mailbox_by_address(self, email: str) -> Mailbox:
         return await self.mailboxes.by_address(email)
 
-    async def delete_mailbox(self, mailbox_id: int) -> None:
+    async def delete_mailbox(self, mailbox_id: int | Mailbox) -> None:
         await self.mailboxes.delete(mailbox_id)
 
-    async def list_messages(self, mailbox_id: int, page: int = 1) -> list[MessageSummary]:
+    async def list_messages(self, mailbox_id: int | Mailbox, page: int = 1) -> list[MessageSummary]:
         return await self.messages.list(mailbox_id, page=page)
 
-    async def get_message(self, mailbox_id: int, message_id: str) -> MessageDetail:
+    async def get_message(self, mailbox_id: int | Mailbox, message_id: str) -> MessageDetail:
         return await self.messages.get(mailbox_id, message_id)
 
-    async def mark_read(self, mailbox_id: int, message_id: str) -> MessageSummary:
+    async def mark_read(self, mailbox_id: int | Mailbox, message_id: str) -> MessageSummary:
         return await self.messages.mark_read(mailbox_id, message_id)
 
-    async def delete_message(self, mailbox_id: int, message_id: str) -> None:
+    async def delete_message(self, mailbox_id: int | Mailbox, message_id: str) -> None:
         await self.messages.delete(mailbox_id, message_id)
 
-    async def get_source(self, mailbox_id: int, message_id: str) -> MessageSource:
+    async def get_source(self, mailbox_id: int | Mailbox, message_id: str) -> MessageSource:
         return await self.messages.source(mailbox_id, message_id)
 
     async def gmail_oauth_start(self) -> OAuthStart:
@@ -1012,7 +1372,7 @@ class MailTMAPI:
 
     async def wait_for_message(
         self,
-        mailbox_id: int,
+        mailbox_id: int | Mailbox,
         *,
         timeout: float = 120.0,
         interval: float = 2.0,

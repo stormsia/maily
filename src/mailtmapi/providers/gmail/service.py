@@ -14,6 +14,7 @@ from mailtmapi.providers.base import (
     MessageDetail,
     MessageSource,
     MessageSummary,
+    ProviderCapabilities,
     Target,
     TargetKind,
 )
@@ -40,6 +41,16 @@ _API_BASE = "https://gmail.googleapis.com/gmail/v1/users/me"
 class GmailProvider:
     slug = "gmail"
     kind: TargetKind = "parent"
+    capabilities = ProviderCapabilities(
+        can_choose_username=True,
+        can_choose_domain=False,
+        can_set_password=False,
+        supports_delete_mailbox=True,
+        supports_delete_message=True,
+        supports_mark_read=True,
+        supports_source=True,
+        supports_attachments=True,
+    )
 
     def __init__(
         self,

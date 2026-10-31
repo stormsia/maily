@@ -11,7 +11,12 @@ from typing import TypeVar
 import httpx
 import pytest
 from fastapi import FastAPI, HTTPException, Request
-from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+from sqlalchemy.ext.asyncio import (
+    AsyncEngine,
+    AsyncSession,
+    async_sessionmaker,
+    create_async_engine,
+)
 
 from mailtmapi.app.authz import Principal
 from mailtmapi.app.routers import gmail as gmail_router
@@ -86,12 +91,12 @@ async def _profile_http(email: str) -> HttpClient:
 
 async def _direct_store(
     tmp_path: Path, secret: str
-) -> tuple[DbGmailStore, async_sessionmaker[AsyncSession]]:
+) -> tuple[DbGmailStore, async_sessionmaker[AsyncSession], AsyncEngine]:
     engine = create_async_engine(f"sqlite+aiosqlite:///{tmp_path / 'direct.db'}")
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
     factory = async_sessionmaker(engine, expire_on_commit=False)
-    return DbGmailStore(factory, secret), factory
+    return DbGmailStore(factory, secret), factory, engine
 
 
 async def _seed_account(
@@ -150,26 +155,31 @@ def test_import_of_root_owned_email_is_403_and_token_unchanged(tmp_path: Path) -
     async def scenario() -> None:
         settings = _settings(tmp_path)
         secret = settings.resolved_secret_key()
-        store, factory = await _direct_store(tmp_path, secret)
-        await _seed_account(
-            factory,
-            secret,
-            email=_ROOT_EMAIL,
-            owner_key_id=None,
-            refresh_token=_KEPT_REFRESH,
-        )
-        http = await _profile_http(_ROOT_EMAIL)
-        provider = GmailProvider(store, GmailOAuth("cid", "sec", http), http)
-        request = _request(provider)
-        with pytest.raises(HTTPException) as caught:
-            await gmail_router._upsert_parent(
-                request,
-                {"refresh_token": "stolen", "access_token": "at"},
-                7,
+        store, factory, engine = await _direct_store(tmp_path, secret)
+        provider = None
+        try:
+            await _seed_account(
+                factory,
+                secret,
+                email=_ROOT_EMAIL,
+                owner_key_id=None,
+                refresh_token=_KEPT_REFRESH,
             )
-        assert caught.value.status_code == 403
-        assert await _stored_refresh(store, _ROOT_EMAIL) == _KEPT_REFRESH
-        await provider.close()
+            http = await _profile_http(_ROOT_EMAIL)
+            provider = GmailProvider(store, GmailOAuth("cid", "sec", http), http)
+            request = _request(provider)
+            with pytest.raises(HTTPException) as caught:
+                await gmail_router._upsert_parent(
+                    request,
+                    {"refresh_token": "stolen", "access_token": "at"},
+                    7,
+                )
+            assert caught.value.status_code == 403
+            assert await _stored_refresh(store, _ROOT_EMAIL) == _KEPT_REFRESH
+        finally:
+            if provider is not None:
+                await provider.close()
+            await engine.dispose()
 
     _run(scenario())
 
@@ -180,21 +190,26 @@ def test_new_import_records_caller_key_id(tmp_path: Path) -> None:
     async def scenario() -> None:
         settings = _settings(tmp_path)
         secret = settings.resolved_secret_key()
-        store, _factory = await _direct_store(tmp_path, secret)
-        http = await _profile_http(_OWN_EMAIL)
-        provider = GmailProvider(store, GmailOAuth("cid", "sec", http), http)
-        request = _request(provider)
-        parent = await gmail_router._upsert_parent(
-            request,
-            {"refresh_token": "fresh", "access_token": "at"},
-            7,
-        )
-        stored = await store.get_by_email(_OWN_EMAIL)
-        assert stored is not None
-        assert stored.owner_key_id == 7
-        assert stored.refresh_token == "fresh"
-        assert parent.owner_key_id == 7
-        await provider.close()
+        store, _factory, engine = await _direct_store(tmp_path, secret)
+        provider = None
+        try:
+            http = await _profile_http(_OWN_EMAIL)
+            provider = GmailProvider(store, GmailOAuth("cid", "sec", http), http)
+            request = _request(provider)
+            parent = await gmail_router._upsert_parent(
+                request,
+                {"refresh_token": "fresh", "access_token": "at"},
+                7,
+            )
+            stored = await store.get_by_email(_OWN_EMAIL)
+            assert stored is not None
+            assert stored.owner_key_id == 7
+            assert stored.refresh_token == "fresh"
+            assert parent.owner_key_id == 7
+        finally:
+            if provider is not None:
+                await provider.close()
+            await engine.dispose()
 
     _run(scenario())
 
@@ -292,18 +307,21 @@ def test_db_store_round_trips_owner_key_id(tmp_path: Path) -> None:
     async def scenario() -> None:
         settings = _settings(tmp_path)
         secret = settings.resolved_secret_key()
-        store, _factory = await _direct_store(tmp_path, secret)
-        added = await store.add(
-            GmailParent(id=0, email=_OWN_EMAIL, refresh_token="r", owner_key_id=7)
-        )
-        added.status = "expired"
-        await store.update(added)
-        loaded = await store.get(added.id)
-        assert loaded.owner_key_id == 7
-        assert loaded.status == "expired"
-        root_owned = await store.add(
-            GmailParent(id=0, email=_ROOT_EMAIL, refresh_token="r", owner_key_id=None)
-        )
-        assert (await store.get(root_owned.id)).owner_key_id is None
+        store, _factory, engine = await _direct_store(tmp_path, secret)
+        try:
+            added = await store.add(
+                GmailParent(id=0, email=_OWN_EMAIL, refresh_token="r", owner_key_id=7)
+            )
+            added.status = "expired"
+            await store.update(added)
+            loaded = await store.get(added.id)
+            assert loaded.owner_key_id == 7
+            assert loaded.status == "expired"
+            root_owned = await store.add(
+                GmailParent(id=0, email=_ROOT_EMAIL, refresh_token="r", owner_key_id=None)
+            )
+            assert (await store.get(root_owned.id)).owner_key_id is None
+        finally:
+            await engine.dispose()
 
     _run(scenario())

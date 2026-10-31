@@ -129,7 +129,7 @@ async def test_dispoemail_list_and_get_messages():
                         {
                             "id": "f6c38518-3a9b-484c-bff1-c74eba89beef",
                             "mailbox": "m690v3w4h715c",
-                            "from": {"name": "иван таран", "address": "mister.ivan.boss@gmail.com"},
+                            "from": {"name": "Ivan Taran", "address": "mister.ivan.boss@gmail.com"},
                             "subject": "test theme",
                             "receivedAt": "2026-10-28T20:49:10.745Z",
                             "expiresAt": "2026-10-29T20:49:10.745Z",
@@ -154,7 +154,7 @@ async def test_dispoemail_list_and_get_messages():
                         "mailbox": "m690v3w4h715c",
                         "address": "m690v3w4h715c@vibe-hub.ccwu.cc",
                         "subject": "test theme",
-                        "from": {"name": "иван таран", "address": "mister.ivan.boss@gmail.com"},
+                        "from": {"name": "Ivan Taran", "address": "mister.ivan.boss@gmail.com"},
                         "to": [{"name": "", "address": "m690v3w4h715c@vibe-hub.ccwu.cc"}],
                         "cc": [],
                         "receivedAt": "2026-10-28T20:49:10.745Z",
@@ -181,7 +181,7 @@ async def test_dispoemail_list_and_get_messages():
         assert len(messages) == 1
         assert messages[0].id == "f6c38518-3a9b-484c-bff1-c74eba89beef"
         assert messages[0].subject == "test theme"
-        assert messages[0].from_.name == "иван таран"
+        assert messages[0].from_.name == "Ivan Taran"
         assert messages[0].from_.address == "mister.ivan.boss@gmail.com"
 
         detail = await provider.get_message(box, "f6c38518-3a9b-484c-bff1-c74eba89beef")

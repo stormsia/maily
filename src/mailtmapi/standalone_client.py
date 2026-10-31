@@ -1,37 +1,37 @@
 """mailtmapi standalone client — CANONICAL single-file implementation.
 
-Это единственный источник истины клиента. Два способа использовать этот код:
+Single canonical source of truth for the client. Two ways to use this code:
 
-    1. Внутри серверного пакета — через тонкий прокси `mailtmapi.client`
-       (этот модуль импортируется оттуда).
-    2. Снаружи — файл `client/client.py` в корне репозитория, который
-       генерируется из этого модуля скриптом `scripts/build_client.py`
-       (добавляет only шапку «generated»). Не редактируй `client/client.py`
-       руками — правь здесь и перегенерируй; parity проверяет тест
+    1. Inside the server package — via the thin proxy `mailtmapi.client`
+       (this module is imported from there).
+    2. Outside — the `client/client.py` file in the repo root, which
+       is generated from this module via `scripts/build_client.py`
+       (adds only the 'generated' banner). Do not edit `client/client.py`
+       by hand — edit here and regenerate; parity is enforced by
        `tests/test_client_standalone.py::test_standalone_mirror_is_current`.
 
-Файл самодостаточный: не тянет серверную часть (FastAPI, SQLAlchemy,
-uvicorn и т.п.), нужны только httpx, loguru и pydantic.
+Self-contained: does not pull in server dependencies (FastAPI, SQLAlchemy,
+uvicorn, etc.), requires only httpx, loguru, and pydantic.
 
     pip install "mailtmapi-client @ git+https://github.com/stormsia/mailtmapi.git#subdirectory=client"
-    # или просто скопируй файл в свой проект:
+    # or copy the file into your project:
     #   curl -O https://raw.githubusercontent.com/stormsia/mailtmapi/main/client/client.py
 
-Автообновление: клиент умеет проверять версию на git и обновлять себя из
-    client/client.py репозитория:
+Self-update: the client can check the version on git and update itself from
+    the repo's client/client.py:
 
-        mailtmapi-client check           # есть ли новая версия на git?
-        mailtmapi-client update          # скачать и установить новую версию
+        mailtmapi-client check           # check if a new version is on git
+        mailtmapi-client update          # download and install the new version
 
-    (или `python client.py check/update`, если файл лежит локально).
+    (or `python client.py check/update` if running locally).
 
-    Из кода:
+    From code:
 
         import client
         from client import MailTMAPI, self_update, check_update
 
-        self_update()          # async-free, обновляет файл клиента на диске
-        up = check_update()    # (current, remote) если есть новая версия, иначе None
+        self_update()          # async-free, updates the client file on disk
+        up = check_update()    # (current, remote) if an update is available, else None
 """
 
 from __future__ import annotations
@@ -53,14 +53,14 @@ from pydantic import BaseModel, ConfigDict, Field
 
 __version__ = "0.3.0"
 
-# Откуда клиент берёт себя для автообновления (переопределяется env-переменной).
+# Where the client fetches itself for self-updates (override with env var).
 CLIENT_SOURCE = os.environ.get(
     "MAILTMAPI_CLIENT_SOURCE",
     "https://raw.githubusercontent.com/stormsia/mailtmapi/main/client/client.py",
 )
 
 __all__ = [
-    # Клиент и секции
+    # Client and sections
     "MailTMAPI",
     "HealthAPI",
     "ConfigAPI",
@@ -70,7 +70,7 @@ __all__ = [
     "GmailAPI",
     "AdminAPI",
     "KeysAPI",
-    # Ошибки
+    # Errors
     "ClientError",
     "WaitTimeoutError",
     "ApiError",
@@ -80,7 +80,7 @@ __all__ = [
     "ValidationError",
     "RateLimitError",
     "UpstreamProviderError",
-    # Модели данных
+    # Data models
     "HealthOut",
     "Provider",
     "ProviderOut",
@@ -115,14 +115,14 @@ __all__ = [
     "KeyScopeOut",
     "KeyRetentionOut",
     "ExtractedConfirmation",
-    # Утилиты обновления
+    # Update utilities
     "check_update",
     "self_update",
 ]
 
 
 # --------------------------------------------------------------------------- #
-# Модели ответов (самодостаточны — не зависят от mailtmapi.schemas)
+# Response models (self-contained — do not depend on mailtmapi.schemas)
 # --------------------------------------------------------------------------- #
 class _Base(BaseModel):
     model_config = ConfigDict(from_attributes=True, extra="ignore")
@@ -298,18 +298,18 @@ _URL_RE = re.compile(r"https?://[^\s<>\"')\]]+", re.IGNORECASE)
 
 
 # --------------------------------------------------------------------------- #
-# Ошибки
+# Errors
 # --------------------------------------------------------------------------- #
 class ClientError(Exception):
-    """Базовая ошибка клиента mailtmapi."""
+    """Base client error for mailtmapi."""
 
 
 class WaitTimeoutError(ClientError, TimeoutError):
-    """Истекло время ожидания входящего письма, ссылки или кода подтверждения."""
+    """Timed out waiting for incoming email, confirmation link, or verification code."""
 
 
 class ApiError(ClientError):
-    """Ошибка HTTP-ответа сервиса: не-2xx статус с detail из тела ответа."""
+    """Service HTTP error response: non-2xx status with detail from the response body."""
 
     def __init__(self, status_code: int | None, detail: str = "") -> None:
         self.status_code = status_code
@@ -318,31 +318,31 @@ class ApiError(ClientError):
 
 
 class AuthenticationError(ApiError):
-    """HTTP 401: Неверный или отсутствующий API-ключ."""
+    """HTTP 401: Invalid or missing API key."""
 
 
 class ForbiddenError(ApiError):
-    """HTTP 403: Доступ запрещён (недостаточно прав у ключа для ресурса/действия)."""
+    """HTTP 403: Access forbidden (insufficient key permissions for resource/action)."""
 
 
 class NotFoundError(ApiError):
-    """HTTP 404: Запрошенный ресурс не найден."""
+    """HTTP 404: Requested resource not found."""
 
 
 class ValidationError(ApiError):
-    """HTTP 400 или 422: Ошибка валидации параметров запроса."""
+    """HTTP 400 or 422: Request parameter validation error."""
 
 
 class RateLimitError(ApiError):
-    """HTTP 429: Превышен лимит запросов."""
+    """HTTP 429: Rate limit exceeded."""
 
 
 class UpstreamProviderError(ApiError):
-    """HTTP 502/504: Сбой или таймаут внешнего почтового сервиса."""
+    """HTTP 502/504: Upstream email provider failure or timeout."""
 
 
 # --------------------------------------------------------------------------- #
-# Автообновление с git
+# Git self-update
 # --------------------------------------------------------------------------- #
 def _parse_version(text: str) -> str | None:
     match = re.search(r"^__version__\s*=\s*[\"']([^\"']+)[\"']", text, re.MULTILINE)
@@ -357,7 +357,7 @@ def _fetch_client(source_url: str | None) -> str:
 
 
 def check_update(source_url: str | None = None) -> tuple[str, str] | None:
-    """Вернуть (локальная, удалённая) версии, если на git новая. Иначе None."""
+    """Return (local, remote) versions if a newer version exists on git, else None."""
     remote = _parse_version(_fetch_client(source_url))
     if not remote:
         raise ClientError("could not read __version__ from the client source")
@@ -384,10 +384,10 @@ def self_update(
     *,
     after: Callable[[], None] | None = None,
 ) -> bool:
-    """Обновить исполняемый файл клиента новой версией из git.
+    """Update the client file with the new version from git.
 
-    Возвращает True если файл был перезаписан, False если версия уже актуальна.
-    Переопределить источник можно env-переменной MAILTMAPI_CLIENT_SOURCE.
+    Returns True if the file was replaced, False if the version is already current.
+    The source URL can be overridden with the MAILTMAPI_CLIENT_SOURCE env var.
     """
     text = _fetch_client(source_url)
     remote = _parse_version(text)
@@ -407,10 +407,10 @@ def self_update(
 
 
 # --------------------------------------------------------------------------- #
-# Транспорт
+# Transport
 # --------------------------------------------------------------------------- #
 class _Transport:
-    """Общий HTTP-слой: один AsyncClient, ключ, логгирование, ошибки."""
+    """Common HTTP transport layer: shared AsyncClient, API key, logging, error handling."""
 
     def __init__(
         self,
@@ -429,7 +429,7 @@ class _Transport:
             self._headers["X-API-Key"] = api_key
 
     def set_api_key(self, api_key: str) -> None:
-        """Обновить API-ключ на лету (пустая строка — убрать)."""
+        """Update the API key dynamically (empty string to remove)."""
         if api_key:
             self._headers["X-API-Key"] = api_key
         else:
@@ -504,10 +504,10 @@ def _mailbox_id_val(mailbox_id: int | MailboxOut) -> int:
 
 
 # --------------------------------------------------------------------------- #
-# Ресурсные API
+# Resource APIs
 # --------------------------------------------------------------------------- #
 class HealthAPI:
-    """GET /health — проверка живости сервиса (без API-ключа)."""
+    """GET /health — service health check (no API key required)."""
 
     def __init__(self, transport: _Transport) -> None:
         self._t = transport
@@ -517,7 +517,7 @@ class HealthAPI:
 
 
 class ConfigAPI:
-    """GET /v1/config — публичные факты о сервере (без API-ключа)."""
+    """GET /v1/config — public server facts (no API key required)."""
 
     def __init__(self, transport: _Transport) -> None:
         self._t = transport
@@ -527,17 +527,17 @@ class ConfigAPI:
 
 
 class ProvidersAPI:
-    """Провайдеры и цели (домены / родительские аккаунты)."""
+    """Providers and targets (domains / parent accounts)."""
 
     def __init__(self, transport: _Transport) -> None:
         self._t = transport
 
     async def list(self) -> list[Provider]:
-        """Все доступные провайдеры."""
+        """All available providers."""
         return [Provider.model_validate(p) for p in await self._t.request("GET", "/v1/providers")]
 
     async def targets(self, provider: str | None = None) -> builtins.list[Target]:
-        """Цели создания ящика: домены (domain-провайдеры) или Gmail-аккаунты."""
+        """Mailbox creation targets: domains (domain providers) or Gmail accounts."""
         params = {"provider": provider} if provider else None
         return [
             Target.model_validate(t)
@@ -546,7 +546,7 @@ class ProvidersAPI:
 
 
 class MailboxesAPI:
-    """Создание, список, получение и удаление ящиков."""
+    """Mailbox creation, listing, retrieval, and deletion."""
 
     def __init__(self, transport: _Transport) -> None:
         self._t = transport
@@ -560,7 +560,7 @@ class MailboxesAPI:
         address: str | None = None,
         password: str | None = None,
     ) -> Mailbox:
-        """Создать ящик. Для domain-провайдеров — domain, для Gmail — parent_id."""
+        """Create a mailbox. Use domain for domain providers, or parent_id for Gmail."""
         payload = {
             k: v
             for k, v in {
@@ -583,7 +583,7 @@ class MailboxesAPI:
         limit: int | None = None,
         offset: int | None = None,
     ) -> list[Mailbox]:
-        """Список ящиков. active=None — без фильтра (включая удалённые)."""
+        """List mailboxes. active=None returns all (including deleted)."""
         params: dict[str, Any] = {}
         if provider:
             params["provider"] = provider
@@ -607,25 +607,25 @@ class MailboxesAPI:
         )
 
     async def by_address(self, email: str) -> Mailbox:
-        """Найти ящик по полному адресу."""
+        """Find mailbox by full email address."""
         return Mailbox.model_validate(
             await self._t.request("GET", f"/v1/mailboxes/by-address/{quote(email, safe='')}")
         )
 
     async def delete(self, mailbox_id: int | Mailbox) -> None:
-        """Удалить ящик (и на стороне провайдера, и локально)."""
+        """Delete mailbox (both upstream at provider and locally)."""
         mid = _mailbox_id_val(mailbox_id)
         await self._t.request("DELETE", f"/v1/mailboxes/{mid}")
 
 
 class MessagesAPI:
-    """Письма ящика: список, чтение, отметки, удаление, ожидание новой почты."""
+    """Mailbox messages: list, read, mark, delete, and wait for incoming mail."""
 
     def __init__(self, transport: _Transport) -> None:
         self._t = transport
 
     async def list(self, mailbox_id: int | Mailbox, page: int = 1) -> list[MessageSummary]:
-        """Список писем (страница)."""
+        """List messages (paginated)."""
         mid = _mailbox_id_val(mailbox_id)
         return [
             MessageSummary.model_validate(m)
@@ -635,7 +635,7 @@ class MessagesAPI:
         ]
 
     async def get(self, mailbox_id: int | Mailbox, message_id: str) -> MessageDetail:
-        """Полное письмо с текстом и HTML."""
+        """Full message detail including plain text and HTML."""
         mid = _mailbox_id_val(mailbox_id)
         return MessageDetail.model_validate(
             await self._t.request(
@@ -658,7 +658,7 @@ class MessagesAPI:
         )
 
     async def source(self, mailbox_id: int | Mailbox, message_id: str) -> MessageSource:
-        """Сырые исходники письма."""
+        """Raw message source (RFC 822 / MIME)."""
         mid = _mailbox_id_val(mailbox_id)
         return MessageSource.model_validate(
             await self._t.request(
@@ -675,10 +675,10 @@ class MessagesAPI:
         predicate: Callable[[MessageSummary], bool] | None = None,
         mark_seen: bool = False,
     ) -> MessageSummary:
-        """Поллить список, пока не появится подходящее письмо (по умолчанию — любое).
+        """Poll the message list until a matching message arrives (defaults to any).
 
-        При mark_seen=True найденное письмо сразу помечается прочитанным.
-        По истечении timeout бросается WaitTimeoutError (также является TimeoutError).
+        When mark_seen=True, the found message is immediately marked as read.
+        Raises WaitTimeoutError (also a TimeoutError) when timeout expires.
         """
         mid = _mailbox_id_val(mailbox_id)
         deadline = time.monotonic() + timeout
@@ -702,16 +702,16 @@ class MessagesAPI:
         timeout: float = 60.0,
         check_interval: float = 5.0,
     ) -> dict[str, str | None] | None:
-        """Ожидает письмо подтверждения и извлекает из него ссылку/код.
+        """Wait for a confirmation email and extract confirmation link and/or code.
 
-        Параметры (все опциональны, но нужен `url_contain` или `digit_code_mask`):
-            sender_domain    — фильтр по домену отправителя, e.g. "gmail.com"
-            url_contain      — подстроки, которые должны быть в ссылке,
+        Parameters (all optional, but either `url_contain` or `digit_code_mask` is needed):
+            sender_domain    — filter by sender domain, e.g. "gmail.com"
+            url_contain      — substrings that must be in the link,
                                e.g. ["confirm", "verify", "activate", "token"]
-            digit_code_mask  — regexp для кода подтверждения
+            digit_code_mask  — regex pattern for the confirmation code
 
-        Возвращает dict с ключами: message_id, from_address, subject,
-        confirmation_link, confirmation_code. None по истечении timeout.
+        Returns a dict with keys: message_id, from_address, subject,
+        confirmation_link, confirmation_code. Returns None when timeout expires.
         """
         mid = _mailbox_id_val(mailbox_id)
         if timeout < 0:
@@ -812,9 +812,9 @@ class MessagesAPI:
         timeout: float = 60.0,
         check_interval: float = 3.0,
     ) -> str:
-        """Ожидает письмо и возвращает цифровой код подтверждения (строку).
+        """Wait for an email and return the digit confirmation code as a string.
 
-        Бросает WaitTimeoutError по истечении timeout.
+        Raises WaitTimeoutError when timeout expires.
         """
         res = await self.wait_for_confirmation_email(
             mailbox_id,
@@ -836,9 +836,9 @@ class MessagesAPI:
         timeout: float = 60.0,
         check_interval: float = 3.0,
     ) -> str:
-        """Ожидает письмо и возвращает URL подтверждения.
+        """Wait for an email and return the confirmation URL.
 
-        Бросает WaitTimeoutError по истечении timeout.
+        Raises WaitTimeoutError when timeout expires.
         """
         res = await self.wait_for_confirmation_email(
             mailbox_id,
@@ -858,7 +858,7 @@ class MessagesAPI:
         poll_interval: float = 3.0,
         timeout: float | None = None,
     ) -> AsyncIterator[MessageSummary]:
-        """Асинхронный генератор: непрерывно поллит ящик и возвращает новые письма по мере их поступления."""
+        """Async generator: continuously polls the mailbox and yields new messages as they arrive."""
         mid = _mailbox_id_val(mailbox_id)
         seen_ids: set[str] = set()
         loop = asyncio.get_running_loop()
@@ -880,13 +880,13 @@ class MessagesAPI:
 
 
 class GmailAPI:
-    """OAuth-подключение и управление Gmail-аккаунтами."""
+    """OAuth flow and Gmail account management."""
 
     def __init__(self, transport: _Transport) -> None:
         self._t = transport
 
     async def oauth_start(self) -> OAuthStart:
-        """URL для OAuth: открой его в браузере и выбери любой Google-аккаунт."""
+        """OAuth authorization URL: open in browser to link any Google account."""
         return OAuthStart.model_validate(
             await self._t.request("POST", "/v1/gmail/oauth/start")
         )
@@ -897,7 +897,7 @@ class GmailAPI:
         refresh_token: str | None = None,
         token_json: Any = None,
     ) -> GmailAccount:
-        """Импорт уже полученного токена (refresh_token или token_json)."""
+        """Import an existing token (refresh_token or token_json)."""
         payload: dict[str, Any] = {}
         if refresh_token:
             payload["refresh_token"] = refresh_token
@@ -917,20 +917,20 @@ class GmailAPI:
         await self._t.request("DELETE", f"/v1/gmail/accounts/{parent_id}")
 
     async def sync(self, parent_id: int) -> GmailAccount:
-        """Обновить профиль и send-as алиасы аккаунта."""
+        """Sync account profile and send-as aliases."""
         return GmailAccount.model_validate(
             await self._t.request("POST", f"/v1/gmail/accounts/{parent_id}/sync")
         )
 
 
 class KeysAPI:
-    """Управление API-ключами: список, создание, просмотр, ротация, удаление."""
+    """API key management: list, create, view, rotate, delete."""
 
     def __init__(self, transport: _Transport) -> None:
         self._t = transport
 
     async def list(self) -> builtins.list[ApiKeyOut]:
-        """Root only. Список выпущенных ключей (без секретов)."""
+        """Root only. List issued keys (without secrets)."""
         data = await self._t.request("GET", "/v1/admin/keys")
         return [ApiKeyOut.model_validate(k) for k in data]
 
@@ -942,7 +942,7 @@ class KeysAPI:
         scope: dict[str, Any] | None = None,
         retention: builtins.list[dict[str, Any]] | None = None,
     ) -> ApiKeyCreatedOut:
-        """Root only. Создать ключ (секрет возвращается только в ответе на создание)."""
+        """Root only. Create a key (secret returned once in creation response)."""
         payload: dict[str, Any] = {
             "name": name,
             "expires_at": expires_at,
@@ -954,15 +954,15 @@ class KeysAPI:
         )
 
     async def get(self, key_id: int) -> ApiKeyOut:
-        """Root only. Информация о ключе по ID (без секрета)."""
+        """Root only. Get key details by ID (without secret)."""
         return ApiKeyOut.model_validate(await self._t.request("GET", f"/v1/admin/keys/{key_id}"))
 
     async def me(self) -> ApiKeyMeOut:
-        """Информация о текущем активном ключе (из заголовка X-API-Key)."""
+        """Get current active key details (from X-API-Key header)."""
         return ApiKeyMeOut.model_validate(await self._t.request("GET", "/v1/admin/keys/me"))
 
     async def secret(self, key_id: int) -> str:
-        """Root only. Раскрыть секрет ключа."""
+        """Root only. Reveal key secret."""
         data = await self._t.request("GET", f"/v1/admin/keys/{key_id}/secret")
         return str(data.get("secret") or "")
 
@@ -974,7 +974,7 @@ class KeysAPI:
         expires_at: str | None = None,
         scope: dict[str, Any] | None = None,
     ) -> ApiKeyOut:
-        """Root only. Обновить имя, дату истечения или права ключа."""
+        """Root only. Update key name, expiration date, or scope."""
         payload = {
             "name": name,
             "expires_at": expires_at,
@@ -987,30 +987,30 @@ class KeysAPI:
     async def retention_set(
         self, key_id: int, retention: builtins.list[dict[str, Any]]
     ) -> builtins.list[KeyRetentionOut]:
-        """Root only. Установить индивидуальные правила TTL для ключа."""
+        """Root only. Set custom retention TTL rules for the key."""
         data = await self._t.request("PUT", f"/v1/admin/keys/{key_id}/retention", json=retention)
         return [KeyRetentionOut.model_validate(r) for r in data]
 
     async def rotate(self, key_id: int) -> ApiKeyCreatedOut:
-        """Root only. Ротировать секрет ключа (старый аннулируется, новый возвращается один раз)."""
+        """Root only. Rotate key secret (revokes old secret, returns new secret once)."""
         return ApiKeyCreatedOut.model_validate(
             await self._t.request("POST", f"/v1/admin/keys/{key_id}/rotate")
         )
 
     async def delete(self, key_id: int) -> None:
-        """Root only. Удалить ключ."""
+        """Root only. Delete key."""
         await self._t.request("DELETE", f"/v1/admin/keys/{key_id}")
 
 
 class AdminAPI:
-    """Админка: статистика, retention (TTL-очистка), кэш доменов, Gmail-креды, ключи."""
+    """Admin API: statistics, retention (TTL cleanup), domain cache, Gmail credentials, keys."""
 
     def __init__(self, transport: _Transport) -> None:
         self._t = transport
         self.keys_api = KeysAPI(transport)
 
     async def stats(self) -> dict:
-        """Статистика: ящики, письма, провайдеры, тренд за 7 дней."""
+        """Statistics: mailboxes, messages, providers, and 7-day trend."""
         return await self._t.request("GET", "/v1/admin/stats")
 
     async def retention_list(self) -> list[Retention]:
@@ -1026,7 +1026,7 @@ class AdminAPI:
         mailbox_ttl_hours: int | None = None,
         message_ttl_hours: int | None = None,
     ) -> Retention:
-        """Включить/обновить TTL-очистку для провайдера (хотя бы один TTL нужен)."""
+        """Enable or update retention TTL for a provider (at least one TTL required)."""
         payload = {
             k: v
             for k, v in {
@@ -1047,7 +1047,7 @@ class AdminAPI:
         )
 
     async def retention_run(self, *, force_maintenance: bool = False) -> SweepResult:
-        """Прогнать очистку сейчас: удалить просроченные ящики и письма."""
+        """Run cleanup now: sweep expired mailboxes and messages."""
         return SweepResult.model_validate(
             await self._t.request(
                 "POST",
@@ -1057,7 +1057,7 @@ class AdminAPI:
         )
 
     async def domain_cache(self) -> DomainCache:
-        """Текущее состояние кэша доменов (включён ли, интервал, провайдеры)."""
+        """Current domain cache status (enabled, interval, providers)."""
         return DomainCache.model_validate(
             await self._t.request("GET", "/v1/admin/domain-cache")
         )
@@ -1068,7 +1068,7 @@ class AdminAPI:
         enabled: bool | None = None,
         interval_seconds: int | None = None,
     ) -> DomainCache:
-        """Обновить настройки кэша доменов (хотя бы один параметр нужен)."""
+        """Update domain cache settings (at least one parameter required)."""
         payload = {
             k: v
             for k, v in {
@@ -1082,7 +1082,7 @@ class AdminAPI:
         )
 
     async def domain_cache_run(self) -> DomainCacheRun:
-        """Принудительно обновить кэш доменов сейчас."""
+        """Force refresh domain cache now."""
         return DomainCacheRun.model_validate(
             await self._t.request("POST", "/v1/admin/domain-cache/run")
         )
@@ -1177,17 +1177,17 @@ class AdminAPI:
 
 
 # --------------------------------------------------------------------------- #
-# Публичный клиент
+# Public client
 # --------------------------------------------------------------------------- #
 class MailTMAPI:
-    """Асинхронный клиент mailtmapi. Используй как `async with` или закрывай вручную.
+    """Async client for mailtmapi. Use via `async with` or close manually.
 
         async with MailTMAPI("http://127.0.0.1:8477", api_key="sk-…") as api:
             box = await api.create_temp_mailbox()
             code = await api.wait_for_code(box)
             print("Verification code:", code)
 
-    Секции: .health, .config, .providers, .mailboxes, .messages, .gmail, .admin, .keys
+    Sections: .health, .config, .providers, .mailboxes, .messages, .gmail, .admin, .keys
     """
 
     def __init__(
@@ -1209,16 +1209,16 @@ class MailTMAPI:
         self.keys = KeysAPI(self._transport)
 
     def set_api_key(self, api_key: str) -> None:
-        """Обновить API-ключ на лету."""
+        """Update API key dynamically."""
         self._transport.set_api_key(api_key)
 
     async def check_client_version(self) -> str:
-        """Версия сервера из /v1/config. Предупреждает при несовпадении версий."""
+        """Server version from /v1/config. Warns on version mismatch."""
         cfg = await self.config.get()
         remote = str(cfg.get("client_version") or "")
         if remote and remote != __version__:
             logger.warning(
-                "client {} != server {} — обнови клиент: `mailtmapi-client update`",
+                "client {} != server {} — update client: `mailtmapi-client update`",
                 __version__,
                 remote,
             )
@@ -1230,9 +1230,9 @@ class MailTMAPI:
         provider: str | None = None,
         domain: str | None = None,
     ) -> Mailbox:
-        """Удобный хелпер: создать временный ящик в 1 вызов.
+        """Convenience helper: create a temporary mailbox in one call.
 
-        Если domain не указан, автоматически берёт первый доступный домен провайдера.
+        If domain is omitted, automatically picks the first available provider domain.
         """
         if not domain and not provider:
             targets = await self.providers.targets()
@@ -1255,7 +1255,7 @@ class MailTMAPI:
         timeout: float = 60.0,
         check_interval: float = 3.0,
     ) -> str:
-        """Поллить ящик, пока не придёт письмо с цифровым кодом подтверждения."""
+        """Poll mailbox until an email with a digit verification code arrives."""
         return await self.messages.wait_for_code(
             mailbox_id,
             pattern=pattern,
@@ -1273,7 +1273,7 @@ class MailTMAPI:
         timeout: float = 60.0,
         check_interval: float = 3.0,
     ) -> str:
-        """Поллить ящик, пока не придёт письмо со ссылкой подтверждения."""
+        """Poll mailbox until an email with a confirmation link arrives."""
         return await self.messages.wait_for_link(
             mailbox_id,
             url_contain=url_contain,
@@ -1291,7 +1291,7 @@ class MailTMAPI:
     async def __aexit__(self, *_exc: Any) -> None:
         await self.close()
 
-    # --- SDK-совместимые плоские методы (deprecated, используй секции выше) ---
+    # --- SDK-compatible flat methods (deprecated, use sections above) ---
 
     async def create_mailbox(
         self,
@@ -1393,10 +1393,10 @@ def _main(argv: list[str] | None = None) -> int:
         print(__doc__.split("\n\n")[1].strip(), file=sys.stderr)
         print(
             "\nusage:\n"
-            "  mailtmapi-client version     — показать версию\n"
-            "  mailtmapi-client check       — проверить новую версию на git\n"
-            "  mailtmapi-client update      — обновить файл клиента из git\n"
-            "  (или: python client.py check/update)\n",
+            "  mailtmapi-client version     - show version\n"
+            "  mailtmapi-client check       - check git for a newer version\n"
+            "  mailtmapi-client update      - update client file from git\n"
+            "  (or: python client.py check/update)\n",
             file=sys.stderr,
         )
         return 0
@@ -1423,7 +1423,7 @@ def _main(argv: list[str] | None = None) -> int:
         if not updated:
             print(f"client is up to date ({__version__})")
             return 0
-        print("updated. Перезапусти свои скрипты.")
+        print("updated. Restart your scripts.")
         return 0
     print(f"unknown command: {args[0]}", file=sys.stderr)
     return 2

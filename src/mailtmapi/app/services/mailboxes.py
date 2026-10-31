@@ -70,7 +70,7 @@ def to_mailbox_info(row: Mailbox, secret: str) -> MailboxInfo:
 
 
 def _is_valid_address(address: str) -> bool:
-    """local@domain — единственный формат, который попадает в БД."""
+    """local@domain is the only format stored in the database."""
     parts = address.split("@")
     return len(parts) == 2 and all(parts)
 

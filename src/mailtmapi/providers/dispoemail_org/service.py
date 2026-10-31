@@ -90,10 +90,10 @@ def _parse_summary(raw: dict[str, Any], mailbox_name: str, domain: str) -> Messa
 
 
 class DispoEmailOrg(HttpProvider):
-    """Провайдер dispoemail.org.
+    """dispoemail.org provider.
 
-    Работает через JSON API dispoemail.org.
-    Сервис защищён Cloudflare; для боевых запросов передаются куки/прокси.
+    Operates via dispoemail.org JSON API.
+    The service is protected by Cloudflare; cookies/proxies are used for live requests.
     """
 
     slug = "dispoemail.org"

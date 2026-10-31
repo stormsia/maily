@@ -65,7 +65,7 @@ def test_versions_stay_in_sync():
 def test_standalone_mirror_is_current():
     """client/client.py are generated from src/mailtmapi/standalone_client.py.
 
-    Правка канонического файла без перегенерации роняет этот тест (и CI).
+    Editing the canonical file without regenerating fails this test (and CI).
     """
     build = importlib.util.spec_from_file_location(
         "_build_client", Path(__file__).resolve().parents[1] / "scripts" / "build_client.py"

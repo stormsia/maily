@@ -18,9 +18,21 @@ area:tests:
   - changed-files:
       - any-glob-to-any-file: ['tests/**']
 
+area:client:
+  - changed-files:
+      - any-glob-to-any-file: ['client/**', 'src/mailtmapi/standalone_client.py', 'scripts/build_client.py']
+
+area:docs:
+  - changed-files:
+      - any-glob-to-any-file: ['docs/**', '*.md', '.github/workflows/pages.yml']
+
 area:ci:
   - changed-files:
       - any-glob-to-any-file: ['.github/**', 'Dockerfile', 'docker-compose.yml', 'pyproject.toml']
+
+security:
+  - changed-files:
+      - any-glob-to-any-file: ['src/mailtmapi/crypto.py', '.github/workflows/*audit*.yml', '.github/workflows/*gitleaks*.yml', '.github/workflows/*trivy*.yml', '.github/workflows/*codeql*.yml']
 
 dependencies:
   - changed-files:

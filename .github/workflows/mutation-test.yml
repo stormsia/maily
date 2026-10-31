@@ -3,6 +3,11 @@ name: Mutation Testing (Nightly)
 on:
   schedule:
     - cron: '0 2 * * *' # Daily at 02:00 UTC
+  pull_request:
+    paths:
+      - 'src/mailtmapi/crypto.py'
+      - 'src/mailtmapi/utils/misc.py'
+      - '.github/workflows/mutation-test.yml'
   workflow_dispatch:
 
 permissions:
@@ -12,7 +17,7 @@ jobs:
   mutmut:
     name: Mutmut Code Robustness
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 25
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -32,5 +37,19 @@ jobs:
 
       - name: Run Mutation Tests on Core Modules
         run: |
-          uvx mutmut run --paths-to-mutate=src/mailtmapi/utils/misc.py,src/mailtmapi/crypto.py || true
-          uvx mutmut results
+          uv run --with mutmut mutmut run \
+            --paths-to-mutate=src/mailtmapi/utils/misc.py,src/mailtmapi/crypto.py \
+            --runner="pytest -q -n 0 tests/test_crypto.py tests/test_benchmarks.py"
+
+      - name: Display Mutation Test Results & Summary
+        if: always()
+        run: |
+          RESULTS=$(uv run --with mutmut mutmut results || true)
+          echo "$RESULTS"
+          summary_path="$GITHUB_STEP_SUMMARY"
+          if [ -n "$summary_path" ]; then
+            echo "### 🧬 Mutation Testing Results" >> "$summary_path"
+            echo '```text' >> "$summary_path"
+            echo "$RESULTS" >> "$summary_path"
+            echo '```' >> "$summary_path"
+          fi

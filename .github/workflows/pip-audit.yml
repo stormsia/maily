@@ -5,7 +5,7 @@ on:
     branches: [main]
   pull_request:
   schedule:
-    - cron: '0 4 * * 1'
+    - cron: '0 4 * * 1' # Weekly on Monday at 04:00 UTC
   workflow_dispatch:
 
 permissions:
@@ -36,23 +36,62 @@ jobs:
       - name: Install dependencies
         run: |
           uv sync --frozen --all-extras
-          uv pip install pip
 
       - name: Run pip-audit vulnerability scan
-        uses: pypa/gh-action-pip-audit@v1.1.0
-        with:
-          virtual-environment: .venv
-          summary: true
-
-      - name: Generate pip-audit SARIF report
-        if: always()
+        id: run-audit
         run: |
-          uv run --with pip-audit pip-audit -f json -o pip-audit.json || true
+          AUDIT_EXIT=0
+          uv run --with pip-audit pip-audit -f json -o pip-audit.json || AUDIT_EXIT=$?
+          echo "audit_exit=$AUDIT_EXIT" >> "$GITHUB_OUTPUT"
           uv run python scripts/pip_audit_to_sarif.py pip-audit.json pip-audit.sarif
+
+      - name: Render Audit Summary to Job
+        if: always() && hashFiles('pip-audit.json') != ''
+        run: |
+          python3 -c "
+          import json, os
+          with open('pip-audit.json') as f:
+              data = json.load(f)
+          deps = data.get('dependencies', []) if isinstance(data, dict) else (data if isinstance(data, list) else [])
+          vulns_found = []
+          for d in deps:
+              for v in d.get('vulns', []):
+                  vulns_found.append((d.get('name'), d.get('version'), v.get('id'), ', '.join(v.get('fix_versions', []))))
+          summary = os.environ.get('GITHUB_STEP_SUMMARY')
+          if summary:
+              with open(summary, 'a', encoding='utf-8') as sf:
+                  sf.write('### 🛡️ Dependency Vulnerability Audit (pip-audit)\n\n')
+                  if not vulns_found:
+                      sf.write(f'✅ **Scanned {len(deps)} dependencies: No known vulnerabilities found.**\n\n')
+                  else:
+                      sf.write(f'⚠️ **Found {len(vulns_found)} vulnerabilities in dependencies!**\n\n')
+                      sf.write('| Package | Version | Advisory ID | Fix Versions |\n')
+                      sf.write('| :--- | :---: | :---: | :---: |\n')
+                      for pkg, ver, vid, fix in vulns_found:
+                          sf.write(f'| `{pkg}` | `{ver}` | `{vid}` | `{fix}` |\n')
+          "
+
+      - name: Upload Audit Reports Artifact
+        uses: actions/upload-artifact@v4
+        if: always() && hashFiles('pip-audit.json') != ''
+        with:
+          name: pip-audit-reports
+          path: |
+            pip-audit.json
+            pip-audit.sarif
+          retention-days: 14
 
       - name: Upload pip-audit SARIF to GitHub Security tab
         uses: github/codeql-action/upload-sarif@v4
-        if: always()
+        if: always() && hashFiles('pip-audit.sarif') != ''
         continue-on-error: true
         with:
           sarif_file: pip-audit.sarif
+
+      - name: Verify zero vulnerabilities
+        run: |
+          if [ "${{ steps.run-audit.outputs.audit_exit }}" != "0" ]; then
+            echo "::error::pip-audit detected vulnerabilities in dependencies!"
+            exit 1
+          fi
+          echo "Security audit clean: 0 vulnerabilities found."

@@ -32,21 +32,23 @@ jobs:
         with:
           python-version: "3.15"
 
-      - name: Synchronize uv.lock
-        run: uv lock
+      - name: Synchronize uv.lock & regenerate standalone client
+        run: |
+          uv sync --frozen --all-extras || uv lock
+          uv run python scripts/build_client.py
 
-      - name: Commit and push changes if uv.lock changed
+      - name: Commit and push changes if lockfile or client changed
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add uv.lock
+          git add uv.lock client/client.py
           if ! git diff --staged --quiet; then
-            git commit -m "chore(deps): auto-sync uv.lock with dependabot bump"
+            git commit -m "chore(deps): auto-sync uv.lock and standalone client with dependabot bump"
             git push
-            echo "uv.lock updated and pushed. Triggering main CI workflow..."
+            echo "Changes committed and pushed. Triggering main CI workflow..."
             gh workflow run ci.yml --ref "${{ github.head_ref }}" || true
           else
-            echo "uv.lock is already up to date."
+            echo "Lockfile and client are already up to date."
           fi
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

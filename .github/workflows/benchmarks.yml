@@ -35,7 +35,38 @@ jobs:
 
       - name: Run Pytest Benchmarks
         run: |
-          uv run python -m pytest tests/ -k "benchmark or concurrency" --benchmark-json=output.json || true
+          uv run pytest tests/test_benchmarks.py -n 0 --benchmark-only --benchmark-json=output.json
+
+      - name: Render Benchmark Summary Table
+        if: always() && hashFiles('output.json') != ''
+        run: |
+          python3 -c "
+          import json, os
+          with open('output.json') as f:
+              data = json.load(f)
+          summary = os.environ.get('GITHUB_STEP_SUMMARY')
+          if summary and 'benchmarks' in data:
+              with open(summary, 'a', encoding='utf-8') as sf:
+                  sf.write('### ⚡ Benchmark Results\n\n')
+                  sf.write('| Benchmark | Group | Mean (ms) | Ops/sec | Rounds |\n')
+                  sf.write('| :--- | :--- | :---: | :---: | :---: |\n')
+                  for b in data['benchmarks']:
+                      name = b.get('name', 'unknown')
+                      group = b.get('group', 'default') or 'default'
+                      stats = b.get('stats', {})
+                      mean_ms = f\"{stats.get('mean', 0) * 1000:.3f}\"
+                      ops = f\"{stats.get('ops', 0):,.1f}\"
+                      rounds = stats.get('rounds', 0)
+                      sf.write(f'| `{name}` | {group} | {mean_ms} | {ops} | {rounds} |\n')
+          "
+
+      - name: Upload Benchmark JSON Artifact
+        uses: actions/upload-artifact@v4
+        if: always() && hashFiles('output.json') != ''
+        with:
+          name: benchmark-results
+          path: output.json
+          retention-days: 14
 
       - name: Store benchmark results
         uses: benchmark-action/github-action-benchmark@v1
@@ -46,3 +77,6 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           auto-push: false
           summary-always: true
+          alert-threshold: '150%'
+          fail-on-alert: false
+          comment-on-alert: true

@@ -1,41 +1,43 @@
 name-template: 'v$RESOLVED_VERSION'
 tag-template: 'v$RESOLVED_VERSION'
+
 categories:
   - title: '🚀 Features & Enhancements'
-    labels:
-      - 'feature'
-      - 'enhancement'
-      - 'area:core'
-      - 'area:providers'
+    semver-increment: minor
+    when:
+      labels:
+        - 'feature'
+        - 'enhancement'
+        - 'area:core'
+        - 'area:providers'
   - title: '🐛 Bug Fixes'
-    labels:
-      - 'bug'
-      - 'fix'
+    semver-increment: patch
+    when:
+      labels:
+        - 'bug'
+        - 'fix'
   - title: '🔒 Security Updates'
-    labels:
-      - 'security'
+    semver-increment: patch
+    when:
+      labels:
+        - 'security'
   - title: '🧹 Maintenance & Dependencies'
-    labels:
-      - 'dependencies'
-      - 'area:ci'
-      - 'chore'
+    semver-increment: patch
+    when:
+      labels:
+        - 'dependencies'
+        - 'area:ci'
+        - 'chore'
+  - type: 'version-resolver'
+    semver-increment: 'major'
+    when:
+      labels:
+        - 'major'
+        - 'breaking-change'
+
 version-resolver:
-  major:
-    labels:
-      - 'major'
-      - 'breaking-change'
-  minor:
-    labels:
-      - 'minor'
-      - 'enhancement'
-      - 'feature'
-  patch:
-    labels:
-      - 'patch'
-      - 'bug'
-      - 'fix'
-      - 'dependencies'
   default: patch
+
 template: |
   ## What's Changed
 

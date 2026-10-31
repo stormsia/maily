@@ -1,11 +1,11 @@
-name: Trivy Container Security
+name: Trivy Container & Repository Security
 
 on:
   push:
     branches: [main]
   pull_request:
   schedule:
-    - cron: '0 4 * * 2'
+    - cron: '0 4 * * 2' # Weekly on Tuesday at 04:00 UTC
   workflow_dispatch:
 
 permissions:
@@ -17,25 +17,41 @@ jobs:
   trivy:
     name: Trivy Container & OS Scan
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v7
+        uses: actions/checkout@v4
 
       - name: Build local Docker image
         run: docker build -t mailtmapi:trivy-scan .
 
-      - name: Run Trivy scanner
-        uses: aquasecurity/trivy-action@master
+      - name: Run Trivy container vulnerability scanner (SARIF)
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
           image-ref: 'mailtmapi:trivy-scan'
           format: 'sarif'
           output: 'trivy-results.sarif'
           severity: 'CRITICAL,HIGH'
 
+      - name: Run Trivy container scanner (Table output for log & summary)
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          image-ref: 'mailtmapi:trivy-scan'
+          format: 'table'
+          severity: 'CRITICAL,HIGH'
+          ignore-unfixed: true
+
       - name: Upload Trivy SARIF results to Security tab
         uses: github/codeql-action/upload-sarif@v4
-        if: always()
+        if: always() && hashFiles('trivy-results.sarif') != ''
         continue-on-error: true
         with:
           sarif_file: 'trivy-results.sarif'
+
+      - name: Upload Trivy SARIF Artifact
+        uses: actions/upload-artifact@v4
+        if: always() && hashFiles('trivy-results.sarif') != ''
+        with:
+          name: trivy-container-sarif
+          path: trivy-results.sarif
+          retention-days: 14

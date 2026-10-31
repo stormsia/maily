@@ -63,6 +63,9 @@ jobs:
       - name: Verify generated standalone client mirror
         run: uv run python scripts/build_client.py --check
 
+      - name: Validate OpenAPI Schema Generation
+        run: uv run python -c "from mailtmapi.app.main import create_app; schema = create_app().openapi(); assert len(schema.get('paths', {})) > 0, 'OpenAPI paths empty'"
+
       - name: JavaScript syntax check (ESM) & Biome Lint
         run: |
           shopt -s nullglob
@@ -70,7 +73,7 @@ jobs:
             echo "Checking $f..."
             node --input-type=module --check < "$f"
           done
-          npx --yes @biomejs/biome check src/mailtmapi/static/js || true
+          npx --yes @biomejs/biome check src/mailtmapi/static/js
 
       - name: Static HTML Assets Lint (HTMLHint)
         run: npx --yes htmlhint src/mailtmapi/static/*.html
@@ -211,6 +214,14 @@ jobs:
             docker logs ci-smoke-app
             exit 1
           fi
+          echo "Verifying authenticated /v1/providers endpoint..."
+          PROVIDERS_STATUS=$(curl -s -o /dev/null -w "%{http_code}" -H "X-API-Key: ci-smoke-test-secret" http://127.0.0.1:8477/v1/providers || true)
+          if [ "$PROVIDERS_STATUS" != "200" ]; then
+            echo "::error::Authenticated API check failed with status $PROVIDERS_STATUS. Dumping logs:"
+            docker logs ci-smoke-app
+            exit 1
+          fi
+          echo "Docker smoke test passed: /health and authenticated /v1/providers verified."
           docker stop ci-smoke-app
           docker rm ci-smoke-app
 

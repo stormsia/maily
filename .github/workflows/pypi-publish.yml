@@ -9,6 +9,7 @@ on:
 permissions:
   contents: read
   id-token: write
+  attestations: write
 
 jobs:
   pypi-publish:
@@ -46,6 +47,19 @@ jobs:
 
       - name: Validate distribution metadata
         run: uvx twine check --strict dist/*
+
+      - name: Generate build provenance attestations
+        uses: actions/attest-build-provenance@v2
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          subject-path: 'dist/*'
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: python-package-release-distributions
+          path: dist/
+          retention-days: 14
 
       - name: Publish package distributions to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1

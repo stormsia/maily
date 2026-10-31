@@ -20,3 +20,4 @@ dist/
 scratch/*
 .coverage*
 htmlcov/
+output.json

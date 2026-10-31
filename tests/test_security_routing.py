@@ -51,10 +51,18 @@ def test_security_response_headers_and_config(tmp_path: Path):
     """Verify health and public config endpoints respond correctly."""
     with client_for(tmp_path) as client:
         from mailtmapi.db.models import DomainCache
+
         async def _seed():
             async with client.app.state.session_factory() as session:
-                session.add(DomainCache(provider="test_prov", domains_json='["d1.test"]', updated_at=datetime.now(timezone.utc).replace(tzinfo=None)))
+                session.add(
+                    DomainCache(
+                        provider="test_prov",
+                        domains_json='["d1.test"]',
+                        updated_at=datetime.now(timezone.utc).replace(tzinfo=None),
+                    )
+                )
                 await session.commit()
+
         client.portal.call(_seed)
 
         resp = client.get("/health")
@@ -111,12 +119,14 @@ def test_settings_secret_generation_and_credentials(tmp_path: Path):
     # Credential path parsing
     creds_file = tmp_path / "google_creds.json"
     creds_file.write_text(
-        json.dumps({
-            "installed": {
-                "client_id": "google-client-id",
-                "client_secret": "google-client-secret",
+        json.dumps(
+            {
+                "installed": {
+                    "client_id": "google-client-id",
+                    "client_secret": "google-client-secret",
+                }
             }
-        })
+        )
     )
     s3 = Settings(
         secret_key="x" * 32,
@@ -132,6 +142,7 @@ def test_settings_secret_generation_and_credentials(tmp_path: Path):
     s_proxy = Settings(proxy="   ", secret_key="x" * 32, _env_file=None)
     assert s_proxy.proxy is None
     from mailtmapi.settings import get_settings
+
     assert get_settings() is not None
 
 

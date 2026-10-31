@@ -374,7 +374,10 @@ def _atomic_replace(path: str, text: str) -> None:
     with open(tmp, "w", encoding="utf-8", newline="") as fh:
         fh.write(text)
     if os.name == "nt":
-        with open(tmp, encoding="utf-8") as src, open(path, "w", encoding="utf-8", newline="") as dst:
+        with (
+            open(tmp, encoding="utf-8") as src,
+            open(path, "w", encoding="utf-8", newline="") as dst,
+        ):
             dst.write(src.read())
         with suppress(OSError):
             os.remove(tmp)
@@ -423,9 +426,7 @@ class _Transport:
         *,
         client: httpx.AsyncClient | None = None,
     ) -> None:
-        self._client = client or httpx.AsyncClient(
-            base_url=base_url.rstrip("/"), timeout=timeout
-        )
+        self._client = client or httpx.AsyncClient(base_url=base_url.rstrip("/"), timeout=timeout)
         self._owns_client = client is None
         self._headers: dict[str, str] = {}
         if api_key:
@@ -605,9 +606,7 @@ class MailboxesAPI:
 
     async def get(self, mailbox_id: int | Mailbox) -> Mailbox:
         mid = _mailbox_id_val(mailbox_id)
-        return Mailbox.model_validate(
-            await self._t.request("GET", f"/v1/mailboxes/{mid}")
-        )
+        return Mailbox.model_validate(await self._t.request("GET", f"/v1/mailboxes/{mid}"))
 
     async def by_address(self, email: str) -> Mailbox:
         """Find mailbox by full email address."""
@@ -727,9 +726,7 @@ class MessagesAPI:
             if keyword:
                 keywords.append(keyword.casefold())
         try:
-            code_pattern = (
-                re.compile(digit_code_mask, re.IGNORECASE) if digit_code_mask else None
-            )
+            code_pattern = re.compile(digit_code_mask, re.IGNORECASE) if digit_code_mask else None
         except re.error as exc:
             raise ValueError(
                 f"Invalid regular expression digit_code_mask: {digit_code_mask!r}"
@@ -779,9 +776,7 @@ class MessagesAPI:
                 if code_pattern:
                     match = code_pattern.search(body)
                     if match:
-                        confirmation_code = (
-                            match.group(1) if match.lastindex else match.group(0)
-                        )
+                        confirmation_code = match.group(1) if match.lastindex else match.group(0)
 
                 if confirmation_link is None and confirmation_code is None:
                     continue
@@ -890,9 +885,7 @@ class GmailAPI:
 
     async def oauth_start(self) -> OAuthStart:
         """OAuth authorization URL: open in browser to link any Google account."""
-        return OAuthStart.model_validate(
-            await self._t.request("POST", "/v1/gmail/oauth/start")
-        )
+        return OAuthStart.model_validate(await self._t.request("POST", "/v1/gmail/oauth/start"))
 
     async def import_account(
         self,
@@ -1018,8 +1011,7 @@ class AdminAPI:
 
     async def retention_list(self) -> list[Retention]:
         return [
-            Retention.model_validate(r)
-            for r in await self._t.request("GET", "/v1/admin/retention")
+            Retention.model_validate(r) for r in await self._t.request("GET", "/v1/admin/retention")
         ]
 
     async def retention_set(
@@ -1045,9 +1037,7 @@ class AdminAPI:
         )
 
     async def retention_disable(self, provider: str) -> None:
-        await self._t.request(
-            "DELETE", f"/v1/admin/retention/{quote(provider, safe='')}"
-        )
+        await self._t.request("DELETE", f"/v1/admin/retention/{quote(provider, safe='')}")
 
     async def retention_run(self, *, force_maintenance: bool = False) -> SweepResult:
         """Run cleanup now: sweep expired mailboxes and messages."""
@@ -1061,9 +1051,7 @@ class AdminAPI:
 
     async def domain_cache(self) -> DomainCache:
         """Current domain cache status (enabled, interval, providers)."""
-        return DomainCache.model_validate(
-            await self._t.request("GET", "/v1/admin/domain-cache")
-        )
+        return DomainCache.model_validate(await self._t.request("GET", "/v1/admin/domain-cache"))
 
     async def domain_cache_save(
         self,
@@ -1091,9 +1079,7 @@ class AdminAPI:
         )
 
     async def gmail_creds(self) -> GmailCreds:
-        return GmailCreds.model_validate(
-            await self._t.request("GET", "/v1/admin/gmail/creds")
-        )
+        return GmailCreds.model_validate(await self._t.request("GET", "/v1/admin/gmail/creds"))
 
     async def gmail_creds_save(
         self,
@@ -1166,9 +1152,7 @@ class AdminAPI:
         self, key_id: int, retention: list[dict[str, Any]]
     ) -> list[dict[str, Any]]:
         """Root only. Replaces that key's retention rows."""
-        return await self._t.request(
-            "PUT", f"/v1/admin/keys/{key_id}/retention", json=retention
-        )
+        return await self._t.request("PUT", f"/v1/admin/keys/{key_id}/retention", json=retention)
 
     async def key_rotate(self, key_id: int) -> dict[str, Any]:
         """Root only. Rotates the secret; the response includes the new secret once."""
@@ -1348,9 +1332,7 @@ class MailTMAPI:
     async def gmail_import_account(
         self, *, refresh_token: str | None = None, token_json: Any = None
     ) -> GmailAccount:
-        return await self.gmail.import_account(
-            refresh_token=refresh_token, token_json=token_json
-        )
+        return await self.gmail.import_account(refresh_token=refresh_token, token_json=token_json)
 
     async def list_gmail_accounts(self) -> list[GmailAccount]:
         return await self.gmail.accounts()

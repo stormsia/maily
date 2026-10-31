@@ -61,7 +61,12 @@ async def test_providers_and_targets():
                 ("GET", "/v1/targets"): httpx.Response(
                     200,
                     json=[
-                        {"id": "g1", "kind": "parent", "provider": "gmail", "label": "me@gmail.com"},
+                        {
+                            "id": "g1",
+                            "kind": "parent",
+                            "provider": "gmail",
+                            "label": "me@gmail.com",
+                        },
                         {"id": "d1", "kind": "domain", "provider": "mail.tm", "label": "mail.tm"},
                     ],
                 ),
@@ -302,7 +307,9 @@ async def test_admin_flow():
                 },
             )
         if request.method == "PUT" and path == "/v1/admin/domain-cache":
-            return httpx.Response(200, json={"enabled": False, "interval_seconds": 60, "providers": []})
+            return httpx.Response(
+                200, json={"enabled": False, "interval_seconds": 60, "providers": []}
+            )
         if request.method == "POST" and path == "/v1/admin/domain-cache/run":
             return httpx.Response(200, json={"refreshed": ["mail.tm"], "failed": []})
         if request.method == "GET" and path == "/v1/admin/gmail/creds":
@@ -316,7 +323,9 @@ async def test_admin_flow():
                 },
             )
         if request.method == "PUT" and path == "/v1/admin/gmail/creds":
-            return httpx.Response(200, json={"configured": True, "source": "db", "client_id": "new"})
+            return httpx.Response(
+                200, json={"configured": True, "source": "db", "client_id": "new"}
+            )
         if request.method == "DELETE" and path == "/v1/admin/gmail/creds":
             return httpx.Response(204)
         return httpx.Response(404)
@@ -351,7 +360,9 @@ async def test_admin_flow():
 
 @pytest.mark.asyncio
 async def test_error_mapping_with_detail():
-    api = _api(_router({("GET", "/v1/mailboxes/1"): httpx.Response(404, json={"detail": "no box"})}))
+    api = _api(
+        _router({("GET", "/v1/mailboxes/1"): httpx.Response(404, json={"detail": "no box"})})
+    )
     try:
         with pytest.raises(ApiError) as exc:
             await api.mailboxes.get(1)
@@ -364,7 +375,13 @@ async def test_error_mapping_with_detail():
 @pytest.mark.asyncio
 async def test_error_mapping_without_json_body():
     api = _api(
-        _router({("GET", "/v1/mailboxes/1"): httpx.Response(500, text="internal oops", headers={"Content-Type": "text/plain"})})
+        _router(
+            {
+                ("GET", "/v1/mailboxes/1"): httpx.Response(
+                    500, text="internal oops", headers={"Content-Type": "text/plain"}
+                )
+            }
+        )
     )
     try:
         with pytest.raises(ApiError) as exc:
@@ -607,7 +624,9 @@ async def test_wait_for_code_and_link():
 
         # Timeout scenario
         with pytest.raises(WaitTimeoutError):
-            await api.wait_for_code(box, sender_domain="other.com", timeout=0.05, check_interval=0.01)
+            await api.wait_for_code(
+                box, sender_domain="other.com", timeout=0.05, check_interval=0.01
+            )
     finally:
         await api.close()
 
@@ -650,7 +669,12 @@ async def test_create_temp_mailbox():
         if request.method == "POST" and p == "/v1/mailboxes":
             return httpx.Response(
                 201,
-                json={"id": 99, "provider": "mail.tm", "address": "auto@mail.tm", "is_active": True},
+                json={
+                    "id": 99,
+                    "provider": "mail.tm",
+                    "address": "auto@mail.tm",
+                    "is_active": True,
+                },
             )
         return httpx.Response(404)
 
@@ -661,4 +685,3 @@ async def test_create_temp_mailbox():
         assert box.address == "auto@mail.tm"
     finally:
         await api.close()
-

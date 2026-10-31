@@ -194,9 +194,7 @@ def test_key_with_parents_add_imports_and_deletes_only_its_parent(tmp_path: Path
             headers=auth(secret),
         )
         assert imported.status_code == 200, imported.text
-        deleted = client.delete(
-            f"/v1/gmail/accounts/{imported.json()['id']}", headers=auth(secret)
-        )
+        deleted = client.delete(f"/v1/gmail/accounts/{imported.json()['id']}", headers=auth(secret))
     assert deleted.status_code == 204
 
 

@@ -55,6 +55,7 @@ async def test_concurrent_mailbox_and_message_writes(tmp_path):
         # Verify all 20 mailboxes and 20 messages are written
         async with session_factory() as session:
             from sqlalchemy import func, select
+
             mb_count = (await session.execute(select(func.count(Mailbox.id)))).scalar()
             msg_count = (await session.execute(select(func.count(Message.id)))).scalar()
             assert mb_count == 20

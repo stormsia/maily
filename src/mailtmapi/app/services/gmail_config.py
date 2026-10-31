@@ -5,6 +5,7 @@ or credentials file) or, alternatively, saved from the admin dashboard. When
 env credentials exist they win; the dashboard reports them as read-only
 (source="env"). The client secret is stored encrypted with the server secret.
 """
+
 from __future__ import annotations
 
 from sqlalchemy import delete, select
@@ -22,7 +23,9 @@ async def get_creds(session: AsyncSession, secret: str) -> tuple[str, str] | Non
     rows = {
         r.key: r.value
         for r in (
-            await session.execute(select(AppSetting).where(AppSetting.key.in_([KEY_CLIENT_ID, KEY_CLIENT_SECRET])))
+            await session.execute(
+                select(AppSetting).where(AppSetting.key.in_([KEY_CLIENT_ID, KEY_CLIENT_SECRET]))
+            )
         ).scalars()
     }
     cid, csec_enc = rows.get(KEY_CLIENT_ID) or "", rows.get(KEY_CLIENT_SECRET) or ""
@@ -36,7 +39,11 @@ async def get_creds(session: AsyncSession, secret: str) -> tuple[str, str] | Non
 
 
 async def save_creds(
-    session: AsyncSession, secret: str, client_id: str, client_secret: str, redirect_uri: str | None = None
+    session: AsyncSession,
+    secret: str,
+    client_id: str,
+    client_secret: str,
+    redirect_uri: str | None = None,
 ) -> None:
     for key, value in (
         (KEY_CLIENT_ID, client_id),
@@ -51,7 +58,11 @@ async def save_creds(
 
 
 async def clear_creds(session: AsyncSession) -> None:
-    await session.execute(delete(AppSetting).where(AppSetting.key.in_([KEY_CLIENT_ID, KEY_CLIENT_SECRET, KEY_REDIRECT_URI])))
+    await session.execute(
+        delete(AppSetting).where(
+            AppSetting.key.in_([KEY_CLIENT_ID, KEY_CLIENT_SECRET, KEY_REDIRECT_URI])
+        )
+    )
 
 
 async def get_redirect_uri(session: AsyncSession, default: str) -> str:

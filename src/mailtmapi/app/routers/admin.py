@@ -100,9 +100,15 @@ async def stats(
             .group_by(Message.provider)
         )
     ).all():
-        by_provider.setdefault(provider, {"mailboxes_total": 0, "mailboxes_active": 0, "mailboxes_deleted": 0, "messages_total": 0})[
-            "messages_total"
-        ] = _sum_or_zero(msg_count)
+        by_provider.setdefault(
+            provider,
+            {
+                "mailboxes_total": 0,
+                "mailboxes_active": 0,
+                "mailboxes_deleted": 0,
+                "messages_total": 0,
+            },
+        )["messages_total"] = _sum_or_zero(msg_count)
 
     gmail_total, gmail_active = (
         await session.execute(
@@ -194,7 +200,9 @@ async def set_retention(
     """Create or update TTL retention for a provider (at least one TTL required)."""
     row: Retention | KeyRetention
     if principal.is_root:
-        row = await svc.set_retention(session, provider, body.mailbox_ttl_hours, body.message_ttl_hours)
+        row = await svc.set_retention(
+            session, provider, body.mailbox_ttl_hours, body.message_ttl_hours
+        )
     else:
         _require_key_provider(principal, provider)
         row = await svc.set_key_retention(
@@ -246,7 +254,7 @@ async def run_retention_sweep(
         registry,
         settings,
         only_key_id=only_key_id,
-        lock=getattr(request.app.state, 'sweep_lock', None),
+        lock=getattr(request.app.state, "sweep_lock", None),
         force_maintenance=force_maintenance,
     )
 
@@ -325,7 +333,9 @@ async def get_gmail_creds(
     secret = settings.resolved_secret_key()
     found = await gcfg.resolved(settings, session, secret)
     if found is None:
-        return GmailCredsOut(configured=False, source="none", redirect_uri=settings.default_gmail_redirect_uri())
+        return GmailCredsOut(
+            configured=False, source="none", redirect_uri=settings.default_gmail_redirect_uri()
+        )
     cid, _, source = found
     return GmailCredsOut(
         configured=True,
@@ -349,7 +359,8 @@ async def save_gmail_creds(
     env = await gcfg.resolved(settings, session, secret)
     if env and env[2] == "env":
         raise HTTPException(
-            409, "Gmail OAuth credentials are managed by environment variables (MAILTM_GMAIL_CLIENT_ID/SECRET)."
+            409,
+            "Gmail OAuth credentials are managed by environment variables (MAILTM_GMAIL_CLIENT_ID/SECRET).",
         )
     cid, csec = body.client_id.strip(), body.client_secret.strip()
     if not cid or not csec:
@@ -378,7 +389,8 @@ async def clear_gmail_creds(
     env = await gcfg.resolved(settings, session, secret)
     if env and env[2] == "env":
         raise HTTPException(
-            409, "Gmail OAuth credentials are managed by environment variables and cannot be removed here."
+            409,
+            "Gmail OAuth credentials are managed by environment variables and cannot be removed here.",
         )
     await gcfg.clear_creds(session)
     await session.commit()

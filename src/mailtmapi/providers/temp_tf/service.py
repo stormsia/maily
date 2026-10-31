@@ -289,14 +289,8 @@ def _parse_message(
         filename = str(a.get("filename") or a.get("name") or att_id or "")
         ct = str(a.get("contentType") or a.get("content_type") or "application/octet-stream")
         size = int(a.get("size") or 0)
-        query = urlencode(
-            {"email": fallback_address, "messageId": msg_id, "attachmentId": att_id}
-        )
-        dl_url = str(
-            a.get("url")
-            or a.get("download_url")
-            or f"{base_url}/api/attachment?{query}"
-        )
+        query = urlencode({"email": fallback_address, "messageId": msg_id, "attachmentId": att_id})
+        dl_url = str(a.get("url") or a.get("download_url") or f"{base_url}/api/attachment?{query}")
         attachments.append(
             Attachment(
                 id=att_id,
@@ -375,10 +369,7 @@ class TempTF(HttpProvider):
         if not domains:
             raise MailAPIError("temp.tf: no targets available")
 
-        return [
-            Target(id=dm, kind="domain", provider=self.slug, label=dm)
-            for dm in domains
-        ]
+        return [Target(id=dm, kind="domain", provider=self.slug, label=dm) for dm in domains]
 
     @async_retry()
     async def create_mailbox(self, spec: MailboxSpec) -> MailboxInfo:
@@ -435,9 +426,7 @@ class TempTF(HttpProvider):
             return []
 
         raw_messages = (
-            data.get("data")
-            if isinstance(data, dict)
-            else (data if isinstance(data, list) else [])
+            data.get("data") if isinstance(data, dict) else (data if isinstance(data, list) else [])
         )
         if not isinstance(raw_messages, list):
             return []

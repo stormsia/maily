@@ -34,7 +34,9 @@ def _hours(row: Retention | KeyRetention, field: str) -> int | None:
     return hours
 
 
-def _append(rules: list[TtlRule], provider: str, hours: int | None, owner_key_id: int | None) -> None:
+def _append(
+    rules: list[TtlRule], provider: str, hours: int | None, owner_key_id: int | None
+) -> None:
     """One owner, one provider, one side: at most one rule."""
     if hours is None:
         return

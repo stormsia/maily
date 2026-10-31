@@ -151,7 +151,9 @@ async def test_retention_crud_and_nonexistent_deletes(tmp_path: Path):
 class FlakySweepProvider(StubProvider):
     """Stub provider with configurable deletion behaviors."""
 
-    def __init__(self, name: str, return_val: bool = True, raise_gone: bool = False, raise_err: bool = False):
+    def __init__(
+        self, name: str, return_val: bool = True, raise_gone: bool = False, raise_err: bool = False
+    ):
         super().__init__(name)
         self.return_val = return_val
         self.raise_gone = raise_gone

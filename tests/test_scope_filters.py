@@ -48,9 +48,7 @@ def _insert_key(
 ) -> int:
     import sqlite3
 
-    scope = json.dumps(
-        {"providers": providers, "parent_ids": parent_ids, "actions": actions}
-    )
+    scope = json.dumps({"providers": providers, "parent_ids": parent_ids, "actions": actions})
     conn = sqlite3.connect(str(client.app.state.settings.database_url.split("///", 1)[1]))
     conn.execute(
         "INSERT INTO api_keys (name, prefix, secret_enc, secret_sha256, scope_json)"
@@ -124,9 +122,7 @@ def test_targets_keeps_owned_and_listed_gmail_parents(tmp_path: Path) -> None:
     secret = "mk_key-a-secret"
     with _app(tmp_path) as client:
         _use_stubs(client)
-        key_id = _insert_key(
-            client, secret=secret, providers=["gmail"], parent_ids=[1], actions=[]
-        )
+        key_id = _insert_key(client, secret=secret, providers=["gmail"], parent_ids=[1], actions=[])
         _seed_parents(client, key_id)
 
         response = client.get("/v1/targets", headers={"X-API-Key": secret})
@@ -141,9 +137,7 @@ def test_targets_empty_parent_ids_keeps_owned_gmail_parent(tmp_path: Path) -> No
     secret = "mk_key-a-secret"
     with _app(tmp_path) as client:
         _use_stubs(client)
-        key_id = _insert_key(
-            client, secret=secret, providers=["gmail"], parent_ids=[], actions=[]
-        )
+        key_id = _insert_key(client, secret=secret, providers=["gmail"], parent_ids=[], actions=[])
         _seed_parents(client, key_id)
 
         response = client.get("/v1/targets", headers={"X-API-Key": secret})
@@ -194,9 +188,7 @@ def test_stats_counts_only_the_callers_rows(tmp_path: Path) -> None:
         assert received[0]["message_received"] == 1
         assert body["history"]["totals"]["message_received"] == 1
         assert body["history"]["totals"]["mailbox_created"] == 1
-        assert body["messages_last_7_days"] == [
-            {"date": received[0]["date"], "count": 1}
-        ]
+        assert body["messages_last_7_days"] == [{"date": received[0]["date"], "count": 1}]
         assert own_id != other_id
 
 

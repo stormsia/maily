@@ -84,7 +84,9 @@ async def _profile_http(email: str) -> HttpClient:
     return http
 
 
-async def _direct_store(tmp_path: Path, secret: str) -> tuple[DbGmailStore, async_sessionmaker[AsyncSession]]:
+async def _direct_store(
+    tmp_path: Path, secret: str
+) -> tuple[DbGmailStore, async_sessionmaker[AsyncSession]]:
     engine = create_async_engine(f"sqlite+aiosqlite:///{tmp_path / 'direct.db'}")
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)

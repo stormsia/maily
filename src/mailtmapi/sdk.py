@@ -5,6 +5,7 @@ The flat SDK client and the section-based client were merged into
 the re-exports below, but emits a ``DeprecationWarning`` — prefer
 ``from mailtmapi.client import MailTMAPI``.
 """
+
 from __future__ import annotations
 
 import warnings

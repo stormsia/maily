@@ -157,9 +157,7 @@ class RecordingGmail:
         if path.endswith("/profile"):
             return httpx.Response(200, json={"emailAddress": self.profile_email})
         if path.endswith("/settings/sendAs"):
-            return httpx.Response(
-                200, json={"sendAs": [{"sendAsEmail": self.profile_email}]}
-            )
+            return httpx.Response(200, json={"sendAs": [{"sendAsEmail": self.profile_email}]})
         if request.method == "GET" and path.endswith("/messages/m1") and fmt == "full":
             return httpx.Response(200, json=self.message or {})
         if request.method == "POST" and path.endswith("/trash"):
@@ -179,5 +177,3 @@ def stub_gmail(client: TestClient, recorder: RecordingGmail) -> None:
         http._client = httpx.AsyncClient(transport=httpx.MockTransport(recorder.handler))
 
     client.portal.call(_swap)
-
-

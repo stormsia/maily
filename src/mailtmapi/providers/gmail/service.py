@@ -142,9 +142,7 @@ class GmailProvider:
         )
         return resp.json()
 
-    async def _api_post(
-        self, parent: GmailParent, url: str, json_body: dict | None = None
-    ) -> dict:
+    async def _api_post(self, parent: GmailParent, url: str, json_body: dict | None = None) -> dict:
         token = await self._ensure_access(parent)
         kwargs: dict = {"headers": {"Authorization": f"Bearer {token}"}}
         if json_body is not None:
@@ -171,9 +169,7 @@ class GmailProvider:
         granted = spec.allowed_parent_ids
         if granted is not None:
             allowed = set(granted)
-            active = [
-                parent for parent in await self._store.list_active() if parent.id in allowed
-            ]
+            active = [parent for parent in await self._store.list_active() if parent.id in allowed]
             if not active:
                 raise MailValidationError("no gmail parent granted")
         else:
@@ -301,9 +297,7 @@ class GmailProvider:
     @async_retry(max_attempts=3)
     async def _full_for_mailbox(self, mailbox: MailboxInfo, message_id: str) -> dict:
         parent = await self._resolve_parent(mailbox)
-        data = await self._api_get(
-            parent, self._message_url(message_id), params={"format": "full"}
-        )
+        data = await self._api_get(parent, self._message_url(message_id), params={"format": "full"})
         if not addressed_to(data, mailbox.address or mailbox.token):
             raise MailNotFoundError(f"message {message_id} not found")
         return data
@@ -330,7 +324,5 @@ class GmailProvider:
     async def get_source(self, mailbox: MailboxInfo, message_id: str) -> MessageSource:
         await self._full_for_mailbox(mailbox, message_id)
         parent = await self._resolve_parent(mailbox)
-        data = await self._api_get(
-            parent, self._message_url(message_id), params={"format": "raw"}
-        )
+        data = await self._api_get(parent, self._message_url(message_id), params={"format": "raw"})
         return raw_to_source(data, message_id)

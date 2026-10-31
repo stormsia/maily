@@ -112,7 +112,11 @@ def parse_scope(raw: Mapping[str, object]) -> KeyScope:
     providers = raw["providers"]
     parent_ids = raw["parent_ids"]
     actions = raw["actions"]
-    if not isinstance(providers, list) or not isinstance(parent_ids, list) or not isinstance(actions, list):
+    if (
+        not isinstance(providers, list)
+        or not isinstance(parent_ids, list)
+        or not isinstance(actions, list)
+    ):
         raise InvalidKeyScope(detail="providers, parent_ids, and actions must be lists")
     if any(not isinstance(item, str) for item in providers):
         raise InvalidKeyScope(detail="providers must be strings")
@@ -171,7 +175,9 @@ def _view(row: ApiKey) -> KeyView:
 async def _load(session: AsyncSession, key_id: int) -> ApiKey:
     """Load scalar columns only. Relationship refresh would lazy-load in async."""
     row = (
-        await session.execute(select(ApiKey).where(ApiKey.id == key_id).execution_options(populate_existing=True))
+        await session.execute(
+            select(ApiKey).where(ApiKey.id == key_id).execution_options(populate_existing=True)
+        )
     ).scalar_one_or_none()
     if row is None:
         raise HTTPException(status_code=404, detail="api key not found")
@@ -259,10 +265,14 @@ async def delete_key(session: AsyncSession, key_id: int) -> None:
         select(func.count()).select_from(GmailAccount).where(GmailAccount.owner_key_id == key_id)
     )
     if live_mailboxes or gmail_accounts:
-        raise HTTPException(status_code=409, detail="key still owns live mailboxes or gmail accounts")
+        raise HTTPException(
+            status_code=409, detail="key still owns live mailboxes or gmail accounts"
+        )
     retention = (
-        await session.execute(select(KeyRetention).where(KeyRetention.key_id == key_id))
-    ).scalars().all()
+        (await session.execute(select(KeyRetention).where(KeyRetention.key_id == key_id)))
+        .scalars()
+        .all()
+    )
     for item in retention:
         await session.delete(item)
     await session.delete(row)

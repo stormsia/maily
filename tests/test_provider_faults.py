@@ -39,8 +39,11 @@ async def test_tempmail_plus_cloudflare_challenge_handling():
 @pytest.mark.asyncio
 async def test_tempmail_plus_rate_limiting_handling():
     """Verify HTTP 429 Too Many Requests response handling."""
+
     def handler(request: httpx.Request) -> httpx.Response:
-        return httpx.Response(429, json={"error": "Too Many Requests"}, headers={"Retry-After": "60"})
+        return httpx.Response(
+            429, json={"error": "Too Many Requests"}, headers={"Retry-After": "60"}
+        )
 
     transport = httpx.MockTransport(handler)
     http_client = HttpClient()
@@ -58,6 +61,7 @@ async def test_tempmail_plus_rate_limiting_handling():
 @pytest.mark.asyncio
 async def test_noopmail_network_timeout_handling():
     """Verify network connection and read timeouts map to MailTimeoutError."""
+
     def handler(request: httpx.Request) -> httpx.Response:
         raise httpx.ReadTimeout("Read timed out from upstream provider")
 

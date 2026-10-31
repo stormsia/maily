@@ -180,7 +180,6 @@ async def test_get_source_download_url_is_empty():
         await http.close()
 
 
-
 @pytest.mark.asyncio
 async def test_tempmail_plus_delete_operations_and_attachments():
     deleted = []

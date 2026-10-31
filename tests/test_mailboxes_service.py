@@ -160,7 +160,6 @@ async def test_none_token_from_provider_is_saved_safely():
     assert row.mailbox_token_enc is not None
 
 
-
 def _settings() -> Settings:
     return Settings(
         secret_key=SECRET,

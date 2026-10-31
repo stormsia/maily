@@ -45,7 +45,12 @@ jobs:
         run: uv lock --check
 
       - name: Ruff Lint (with GitHub annotations)
-        run: uv run ruff check --output-format=github src tests client scripts
+        run: |
+          uv run ruff check --output-format=github src tests client scripts
+          uv run ruff format --check src tests client scripts
+
+      - name: Dead code analysis (Vulture)
+        run: uv run --with vulture vulture src --min-confidence 80 --ignore-names "cls,model_config"
 
       - name: Alembic Migrations Consistency Check
         run: |
@@ -58,13 +63,14 @@ jobs:
       - name: Verify generated standalone client mirror
         run: uv run python scripts/build_client.py --check
 
-      - name: JavaScript syntax check (ESM)
+      - name: JavaScript syntax check (ESM) & Biome Lint
         run: |
           shopt -s nullglob
           for f in src/mailtmapi/static/js/*.js src/mailtmapi/static/js/pages/*.js; do
             echo "Checking $f..."
             node --input-type=module --check < "$f"
           done
+          npx --yes @biomejs/biome check src/mailtmapi/static/js || true
 
       - name: Static HTML Assets Lint (HTMLHint)
         run: npx --yes htmlhint src/mailtmapi/static/*.html

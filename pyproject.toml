@@ -84,8 +84,13 @@ omit = ["src/mailtmapi/static/*", "*/tests/*"]
 branch = true
 
 [tool.coverage.report]
-fail_under = 80
+fail_under = 85
 show_missing = true
+
+[tool.vulture]
+min_confidence = 80
+paths = ["src"]
+ignore_names = ["cls", "model_config"]
 
 [tool.deptry]
 ignore = ["DEP002"]

@@ -34,6 +34,7 @@ def _iso_utc(dt: datetime | None) -> str | None:
         dt = dt.replace(tzinfo=timezone.utc)
     return dt.astimezone(timezone.utc).isoformat().replace("+00:00", "Z")
 
+
 router = APIRouter(tags=["System"])
 
 

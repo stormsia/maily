@@ -54,9 +54,7 @@ def test_client_file_is_self_contained():
 def test_versions_stay_in_sync():
     mod = _load_standalone()
     assert mod.__version__ == mailtmapi.__version__
-    pyproject = (Path(__file__).resolve().parents[1] / "pyproject.toml").read_text(
-        encoding="utf-8"
-    )
+    pyproject = (Path(__file__).resolve().parents[1] / "pyproject.toml").read_text(encoding="utf-8")
     client_pyproject = (CLIENT_FILE.parent / "pyproject.toml").read_text(encoding="utf-8")
     assert f'version = "{mailtmapi.__version__}"' in pyproject
     assert f'version = "{mailtmapi.__version__}"' in client_pyproject

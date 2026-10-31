@@ -132,7 +132,10 @@ async def maintain_database(
                     try:
                         await conn.execute(text("PRAGMA wal_checkpoint(TRUNCATE)"))
                     except Exception as chk_exc:
-                        logger.debug("db maintenance: initial checkpoint contention (%s), using PASSIVE", chk_exc)
+                        logger.debug(
+                            "db maintenance: initial checkpoint contention (%s), using PASSIVE",
+                            chk_exc,
+                        )
                         await conn.execute(text("PRAGMA wal_checkpoint(PASSIVE)"))
 
                     # 3. VACUUM: compact, defragment, reclaim space freed by retention deletes
@@ -157,7 +160,9 @@ async def maintain_database(
                     check_cursor = await conn.execute(text("PRAGMA quick_check"))
                     check_rows = [r[0] for r in check_cursor.fetchall()]
                     if check_rows != ["ok"]:
-                        logger.warning("db maintenance: PRAGMA quick_check warnings: %s", check_rows)
+                        logger.warning(
+                            "db maintenance: PRAGMA quick_check warnings: %s", check_rows
+                        )
 
                 elif dialect == "postgresql":
                     await conn.execute(text("VACUUM (ANALYZE)"))

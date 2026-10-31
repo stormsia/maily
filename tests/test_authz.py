@@ -467,7 +467,9 @@ def test_require_action_needs_every_named_action(tmp_path: Path) -> None:
                 scope_json=_scope([], [], ["mailboxes:read"]),
                 expires_at=None,
             )
-            await require_action("mailboxes:read", "mailboxes:write")(Principal(is_root=False, key=key))
+            await require_action("mailboxes:read", "mailboxes:write")(
+                Principal(is_root=False, key=key)
+            )
         except HTTPException as exc:
             return exc
         else:

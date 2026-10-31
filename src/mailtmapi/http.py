@@ -43,7 +43,9 @@ def _raise_for_status(response: httpx.Response) -> None:
         if raw:
             with suppress(ValueError):
                 retry_after = float(raw)
-        raise MailRateLimitError(detail, retry_after=retry_after, status_code=code, response_data=body)
+        raise MailRateLimitError(
+            detail, retry_after=retry_after, status_code=code, response_data=body
+        )
     if code == 409:
         raise MailConflictError(detail, status_code=code, response_data=body)
     if code == 422:

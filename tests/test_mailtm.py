@@ -125,7 +125,13 @@ async def test_get_message_quotes_slash_in_id():
         assert request.url.raw_path == b"/messages/a%2Fb"
         return httpx.Response(
             200,
-            json={"id": "a/b", "subject": "x", "from": {}, "to": [], "createdAt": "2024-01-15T12:30:45+00:00"},
+            json={
+                "id": "a/b",
+                "subject": "x",
+                "from": {},
+                "to": [],
+                "createdAt": "2024-01-15T12:30:45+00:00",
+            },
         )
 
     http = _http(handler)
@@ -136,7 +142,6 @@ async def test_get_message_quotes_slash_in_id():
         assert detail.id == "a/b"
     finally:
         await http.close()
-
 
 
 @pytest.mark.asyncio
@@ -150,12 +155,16 @@ async def test_delete_mailbox_and_messages():
         if request.method == "PATCH":
             return httpx.Response(200, json={"seen": True})
         if request.method == "GET" and "/sources/" in request.url.path:
-            return httpx.Response(200, json={"id": "src1", "data": "raw-source-data", "downloadUrl": "http://dl"})
+            return httpx.Response(
+                200, json={"id": "src1", "data": "raw-source-data", "downloadUrl": "http://dl"}
+            )
         return httpx.Response(404)
 
     http = _http(handler)
     provider = MailTM(http)
-    mailbox = MailboxInfo(provider="mail.tm", address="user@mail.tm", token="jwt-token", provider_account_id="acc123")
+    mailbox = MailboxInfo(
+        provider="mail.tm", address="user@mail.tm", token="jwt-token", provider_account_id="acc123"
+    )
     try:
         # Delete mailbox
         ok = await provider.delete_mailbox(mailbox)
@@ -188,7 +197,9 @@ async def test_delete_mailbox_and_messages():
 async def test_create_mailbox_auto_domain():
     def handler(request: httpx.Request) -> httpx.Response:
         if request.method == "GET" and request.url.path == "/domains":
-            return httpx.Response(200, json={"hydra:member": [{"domain": "autodomain.com", "isActive": True}]})
+            return httpx.Response(
+                200, json={"hydra:member": [{"domain": "autodomain.com", "isActive": True}]}
+            )
         if request.method == "POST" and request.url.path == "/accounts":
             body = json.loads(request.content)
             return httpx.Response(201, json={"id": "acc_auto", "address": body["address"]})

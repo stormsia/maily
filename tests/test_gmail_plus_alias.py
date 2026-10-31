@@ -49,7 +49,11 @@ class _RecordingHttp:
         fmt = query.get("format", [None])[0]
         self.calls.append((request.method, request.url.path, fmt))
         path = request.url.path
-        if request.method == "GET" and path.endswith("/messages/m1") and fmt in {"full", "metadata"}:
+        if (
+            request.method == "GET"
+            and path.endswith("/messages/m1")
+            and fmt in {"full", "metadata"}
+        ):
             return httpx.Response(200, json=self._payload)
         if request.method == "GET" and fmt == "raw":
             return httpx.Response(200, json={"id": "m1", "raw": "RnJvbTogYQo="})
@@ -129,9 +133,7 @@ async def test_create_mailbox_rejects_unrelated_plus_alias_when_not_a_base():
     provider, _recorder = await _provider()
     try:
         with pytest.raises(MailValidationError) as exc:
-            await provider.create_mailbox(
-                MailboxSpec(parent_id=1, address="other+tag@gmail.com")
-            )
+            await provider.create_mailbox(MailboxSpec(parent_id=1, address="other+tag@gmail.com"))
     finally:
         await provider.close()
     assert PLUS_DETAIL not in str(exc.value)

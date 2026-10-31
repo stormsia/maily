@@ -7,15 +7,14 @@ from ...http import HttpClient
 
 DEFAULT_ORIGIN = "https://temp-mail.io/"
 
-_UA = (
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:133.0) "
-    "Gecko/20100101 Firefox/133.0"
-)
+_UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:133.0) Gecko/20100101 Firefox/133.0"
 _SCRIPT_RE = re.compile(r'<script[^>]+src=["\']([^"\']+)["\']', re.IGNORECASE)
 _TOKEN_RES = (
     re.compile(r'X-CORS-Header\s*[:=]\s*["\']([A-Za-z0-9+/=_-]{8,})["\']', re.IGNORECASE),
     re.compile(r"X-CORS[-_]?Header\s*[:=]\s*[\"'`]([A-Za-z0-9+/=_-]{8,})[\"'`]", re.IGNORECASE),
-    re.compile(r"cors[_-]?header[\"'`]?\s*[,:]\s*[\"'`]([A-Za-z0-9+/=_-]{8,})[\"'`]", re.IGNORECASE),
+    re.compile(
+        r"cors[_-]?header[\"'`]?\s*[,:]\s*[\"'`]([A-Za-z0-9+/=_-]{8,})[\"'`]", re.IGNORECASE
+    ),
 )
 
 

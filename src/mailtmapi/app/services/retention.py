@@ -222,6 +222,7 @@ async def _do_sweep(
                     failed_upstream = True
 
             if failed_upstream:
+
                 async def _soft_drop_box(s: AsyncSession, box_id: int = row.id) -> None:
                     await s.execute(
                         update(Mailbox)
@@ -235,6 +236,7 @@ async def _do_sweep(
 
                 await _write(factory, _soft_drop_box)
             else:
+
                 async def _drop_box(s: AsyncSession, box_id: int = row.id) -> None:
                     await s.execute(delete(Mailbox).where(Mailbox.id == box_id))
 

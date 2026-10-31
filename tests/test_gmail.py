@@ -239,9 +239,7 @@ async def test_concurrent_ensure_access_refreshes_once():
 @pytest.mark.asyncio
 async def test_refresh_invalid_grant_raises_mail_auth_error():
     def handler(request: httpx.Request) -> httpx.Response:
-        return httpx.Response(
-            400, json={"error": "invalid_grant", "error_description": "revoked"}
-        )
+        return httpx.Response(400, json={"error": "invalid_grant", "error_description": "revoked"})
 
     http = await _http(handler)
     oauth = GmailOAuth("cid", "csec", http)
@@ -406,9 +404,7 @@ async def test_list_messages_raises_when_a_detail_fetch_fails():
     def handler(request: httpx.Request) -> httpx.Response:
         path = request.url.path
         if path.endswith("/messages") and request.method == "GET":
-            return httpx.Response(
-                200, json={"messages": [{"id": "ok"}, {"id": "bad"}]}
-            )
+            return httpx.Response(200, json={"messages": [{"id": "ok"}, {"id": "bad"}]})
         if path.endswith("/messages/ok"):
             return httpx.Response(200, json=_full_message("ok"))
         return httpx.Response(500, json={"detail": "boom"})

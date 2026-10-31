@@ -72,7 +72,9 @@ def test_retention_sweep_runs_maintenance_and_records_setting(tmp_path: Path) ->
         # Verify app_settings has the maintenance timestamp
         conn = sqlite3.connect(str(db_file))
         cursor = conn.cursor()
-        cursor.execute("SELECT value FROM app_settings WHERE key = ?", (SETTING_KEY_LAST_MAINTENANCE,))
+        cursor.execute(
+            "SELECT value FROM app_settings WHERE key = ?", (SETTING_KEY_LAST_MAINTENANCE,)
+        )
         row = cursor.fetchone()
         conn.close()
 
@@ -91,7 +93,9 @@ def test_retention_sweep_throttling_skips_subsequent_runs(tmp_path: Path) -> Non
 
         conn = sqlite3.connect(str(db_file))
         cursor = conn.cursor()
-        cursor.execute("SELECT value FROM app_settings WHERE key = ?", (SETTING_KEY_LAST_MAINTENANCE,))
+        cursor.execute(
+            "SELECT value FROM app_settings WHERE key = ?", (SETTING_KEY_LAST_MAINTENANCE,)
+        )
         first_recorded = cursor.fetchone()[0]
         conn.close()
 
@@ -105,7 +109,9 @@ def test_retention_sweep_throttling_skips_subsequent_runs(tmp_path: Path) -> Non
         # Verify setting did not change
         conn = sqlite3.connect(str(db_file))
         cursor = conn.cursor()
-        cursor.execute("SELECT value FROM app_settings WHERE key = ?", (SETTING_KEY_LAST_MAINTENANCE,))
+        cursor.execute(
+            "SELECT value FROM app_settings WHERE key = ?", (SETTING_KEY_LAST_MAINTENANCE,)
+        )
         second_recorded = cursor.fetchone()[0]
         conn.close()
         assert first_recorded == second_recorded
@@ -118,7 +124,9 @@ def test_force_maintenance_bypasses_throttle(tmp_path: Path) -> None:
         client.post("/v1/admin/retention/run", headers={"X-API-Key": ROOT_KEY})
 
         # Second run with force_maintenance=true
-        with patch("mailtmapi.db.maintenance.maintain_database", wraps=maintain_database) as mock_maint:
+        with patch(
+            "mailtmapi.db.maintenance.maintain_database", wraps=maintain_database
+        ) as mock_maint:
             res = client.post(
                 "/v1/admin/retention/run?force_maintenance=true",
                 headers={"X-API-Key": ROOT_KEY},
@@ -170,7 +178,9 @@ def test_maintenance_lock_error_handled_gracefully(tmp_path: Path) -> None:
             return {"status": "skipped", "reason": "locked", "error": "database is locked"}
 
         with patch("mailtmapi.db.maintenance.maintain_database", side_effect=_fake_failing_maint):
-            res = client.post("/v1/admin/retention/run?force_maintenance=true", headers={"X-API-Key": ROOT_KEY})
+            res = client.post(
+                "/v1/admin/retention/run?force_maintenance=true", headers={"X-API-Key": ROOT_KEY}
+            )
             # Sweep completes successfully without 500 error!
             assert res.status_code == 200
             assert res.json() == {"mailboxes_deleted": 0, "messages_deleted": 0}
@@ -194,6 +204,7 @@ def test_is_maintenance_due_calculation(tmp_path: Path) -> None:
 
         # 2. Just ran at 12:00:00 -> not due at 12:15:00 (15 min elapsed, 30 min required)
         from mailtmapi.db.maintenance import record_maintenance_at
+
         await record_maintenance_at(factory, engine, now)
 
         not_due_time = now + timedelta(minutes=15)

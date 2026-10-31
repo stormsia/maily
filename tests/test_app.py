@@ -33,8 +33,9 @@ def test_app_builds_and_health_ok(tmp_path):
 
 
 def test_public_bind_without_api_key_refuses_to_start(tmp_path):
-    with pytest.raises(RuntimeError, match="MAILTM_API_KEY"), _app(
-        tmp_path, host="0.0.0.0", api_key=""
+    with (
+        pytest.raises(RuntimeError, match="MAILTM_API_KEY"),
+        _app(tmp_path, host="0.0.0.0", api_key=""),
     ):
         pass
 

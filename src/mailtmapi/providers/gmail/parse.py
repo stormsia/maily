@@ -85,12 +85,14 @@ def extract_parts(payload: dict) -> tuple[list[str], list[str], list[dict]]:
             if data:
                 html.append(decode_body(data))
         elif attachment_id or filename:
-            attachments.append({
-                "id": attachment_id or "",
-                "filename": filename,
-                "mimeType": mime,
-                "size": part_body.get("size", 0),
-            })
+            attachments.append(
+                {
+                    "id": attachment_id or "",
+                    "filename": filename,
+                    "mimeType": mime,
+                    "size": part_body.get("size", 0),
+                }
+            )
 
         if part.get("parts"):
             sub_text, sub_html, sub_attachments = extract_parts(part)
@@ -162,9 +164,7 @@ def raw_to_detail(raw: dict) -> MessageDetail:
             filename=a["filename"],
             content_type=a.get("mimeType", ""),
             size=a.get("size", 0),
-            download_url=(
-                f"{_API_BASE}/messages/{msgid}/attachments/{a['id']}" if a["id"] else ""
-            ),
+            download_url=(f"{_API_BASE}/messages/{msgid}/attachments/{a['id']}" if a["id"] else ""),
         )
         for a in attachment_dicts
     ]

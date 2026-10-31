@@ -47,7 +47,9 @@ async def test_list_targets_collects_all_domains_and_caches():
         calls += 1
         assert request.url.path == "/api/rd"
         dm = queue.pop(0) if queue else "c.com"
-        return httpx.Response(200, json={"dm": dm, "exp": "2027-04-22T01:41:10.000Z", "kept": False})
+        return httpx.Response(
+            200, json={"dm": dm, "exp": "2027-04-22T01:41:10.000Z", "kept": False}
+        )
 
     http = _http(handler)
     provider = NoopMail(http)
@@ -99,7 +101,9 @@ async def test_create_mailbox_with_address():
 async def test_create_mailbox_without_address_uses_target_domain():
     def handler(request: httpx.Request) -> httpx.Response:
         assert request.url.path == "/api/rd"
-        return httpx.Response(200, json={"dm": "b.com", "exp": "2027-01-01T00:00:00.000Z", "kept": False})
+        return httpx.Response(
+            200, json={"dm": "b.com", "exp": "2027-01-01T00:00:00.000Z", "kept": False}
+        )
 
     http = _http(handler)
     provider = NoopMail(http)

@@ -234,8 +234,10 @@ async def test_delete_removes_key_retention_and_keeps_mail_when_unreferenced(
     await session.flush()
     await key_svc.delete_key(session, created.id)
     remaining = (
-        await session.execute(select(KeyRetention).where(KeyRetention.key_id == created.id))
-    ).scalars().all()
+        (await session.execute(select(KeyRetention).where(KeyRetention.key_id == created.id)))
+        .scalars()
+        .all()
+    )
     assert remaining == []
     assert await session.get(ApiKey, created.id) is None
 

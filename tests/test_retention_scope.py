@@ -37,8 +37,8 @@ def _app(tmp_path: Path, *, api_key: str = ROOT) -> TestClient:
 
 
 def _db(tmp_path: Path) -> sqlite3.Connection:
-    conn = sqlite3.connect(str(tmp_path / 'test.db'), timeout=30.0)
-    conn.execute('PRAGMA busy_timeout = 30000')
+    conn = sqlite3.connect(str(tmp_path / "test.db"), timeout=30.0)
+    conn.execute("PRAGMA busy_timeout = 30000")
     return conn
 
 
@@ -54,9 +54,7 @@ def _insert_key(
     providers: list[str],
     expires_at: str | None = None,
 ) -> int:
-    scope = json.dumps(
-        {"providers": providers, "parent_ids": [], "actions": actions}
-    )
+    scope = json.dumps({"providers": providers, "parent_ids": [], "actions": actions})
     conn.execute(
         "INSERT INTO api_keys (name, prefix, secret_enc, secret_sha256, scope_json, expires_at)"
         " VALUES ('key-a', 'mk_aaaa', 'enc', ?, ?, ?)",
@@ -114,8 +112,7 @@ def test_key_sweep_does_not_delete_root_mailbox_when_key_ttl_is_short(tmp_path: 
         )
         _insert_mailbox(conn, address="root@x", created_at=old, owner_key_id=None)
         conn.execute(
-            "INSERT INTO key_retention (key_id, provider, mailbox_ttl_hours)"
-            " VALUES (?, 'stub', 1)",
+            "INSERT INTO key_retention (key_id, provider, mailbox_ttl_hours) VALUES (?, 'stub', 1)",
             (key_id,),
         )
         conn.commit()
@@ -146,8 +143,7 @@ def test_root_sweep_does_not_apply_key_ttl_to_root_mailbox(tmp_path: Path) -> No
         )
         _insert_mailbox(conn, address="root@x", created_at=old, owner_key_id=None)
         conn.execute(
-            "INSERT INTO key_retention (key_id, provider, mailbox_ttl_hours)"
-            " VALUES (?, 'stub', 1)",
+            "INSERT INTO key_retention (key_id, provider, mailbox_ttl_hours) VALUES (?, 'stub', 1)",
             (key_id,),
         )
         conn.commit()
@@ -339,12 +335,9 @@ def test_key_run_sweeps_only_its_mailboxes(tmp_path: Path) -> None:
         )
         _insert_mailbox(conn, address="root@x", created_at=old, owner_key_id=None)
         _insert_mailbox(conn, address="key@x", created_at=old, owner_key_id=key_id)
+        conn.execute("INSERT INTO retention (provider, mailbox_ttl_hours) VALUES ('stub', 1)")
         conn.execute(
-            "INSERT INTO retention (provider, mailbox_ttl_hours) VALUES ('stub', 1)"
-        )
-        conn.execute(
-            "INSERT INTO key_retention (key_id, provider, mailbox_ttl_hours)"
-            " VALUES (?, 'stub', 1)",
+            "INSERT INTO key_retention (key_id, provider, mailbox_ttl_hours) VALUES (?, 'stub', 1)",
             (key_id,),
         )
         conn.commit()
@@ -378,8 +371,7 @@ def test_expired_key_ttl_still_applies_on_root_sweep(tmp_path: Path) -> None:
         _insert_mailbox(conn, address="root@x", created_at=old, owner_key_id=None)
         _insert_mailbox(conn, address="owned@x", created_at=old, owner_key_id=key_id)
         conn.execute(
-            "INSERT INTO key_retention (key_id, provider, mailbox_ttl_hours)"
-            " VALUES (?, 'stub', 1)",
+            "INSERT INTO key_retention (key_id, provider, mailbox_ttl_hours) VALUES (?, 'stub', 1)",
             (key_id,),
         )
         conn.commit()
@@ -412,9 +404,7 @@ def test_full_sweep_applies_root_ttl_when_key_has_no_retention_row(tmp_path: Pat
         )
         _insert_mailbox(conn, address="root@x", created_at=old, owner_key_id=None)
         _insert_mailbox(conn, address="key@x", created_at=old, owner_key_id=key_id)
-        conn.execute(
-            "INSERT INTO retention (provider, mailbox_ttl_hours) VALUES ('stub', 1)"
-        )
+        conn.execute("INSERT INTO retention (provider, mailbox_ttl_hours) VALUES ('stub', 1)")
         conn.commit()
         conn.close()
 
@@ -444,9 +434,7 @@ def test_key_sweep_inherits_root_ttl_without_deleting_root_mailbox(tmp_path: Pat
         )
         _insert_mailbox(conn, address="root@x", created_at=old, owner_key_id=None)
         _insert_mailbox(conn, address="key@x", created_at=old, owner_key_id=key_id)
-        conn.execute(
-            "INSERT INTO retention (provider, mailbox_ttl_hours) VALUES ('stub', 1)"
-        )
+        conn.execute("INSERT INTO retention (provider, mailbox_ttl_hours) VALUES ('stub', 1)")
         conn.commit()
         conn.close()
 
@@ -475,9 +463,7 @@ def test_key_longer_ttl_keeps_key_mail_while_root_short_ttl_deletes_root(tmp_pat
         )
         _insert_mailbox(conn, address="root@x", created_at=old, owner_key_id=None)
         _insert_mailbox(conn, address="key@x", created_at=old, owner_key_id=key_id)
-        conn.execute(
-            "INSERT INTO retention (provider, mailbox_ttl_hours) VALUES ('stub', 1)"
-        )
+        conn.execute("INSERT INTO retention (provider, mailbox_ttl_hours) VALUES ('stub', 1)")
         conn.execute(
             "INSERT INTO key_retention (key_id, provider, mailbox_ttl_hours)"
             " VALUES (?, 'stub', 48)",
@@ -514,9 +500,7 @@ def test_root_sweep_message_ttl_follows_root_when_key_has_no_row(tmp_path: Path)
         key_box = _insert_mailbox(conn, address="key@x", created_at=fresh, owner_key_id=key_id)
         _insert_message(conn, mailbox_id=root_id, message_api_id="root-msg", received_at=old)
         _insert_message(conn, mailbox_id=key_box, message_api_id="key-msg", received_at=old)
-        conn.execute(
-            "INSERT INTO retention (provider, message_ttl_hours) VALUES ('stub', 1)"
-        )
+        conn.execute("INSERT INTO retention (provider, message_ttl_hours) VALUES ('stub', 1)")
         conn.commit()
         conn.close()
 
@@ -557,7 +541,9 @@ def test_retention_purges_mailbox_when_provider_reports_not_exist(tmp_path: Path
         assert left == set()
 
 
-def test_retention_marks_mailbox_deleted_when_provider_fails_and_subsequent_reap_purges_it(tmp_path: Path) -> None:
+def test_retention_marks_mailbox_deleted_when_provider_fails_and_subsequent_reap_purges_it(
+    tmp_path: Path,
+) -> None:
     """When upstream delete fails with an exception, retention marks mailbox deleted locally, and next sweep reaps it."""
 
     class ErrorProvider(StubProvider):
@@ -623,4 +609,3 @@ def test_retention_marks_mailbox_deleted_when_provider_returns_false(tmp_path: P
         ).fetchone()
         conn.close()
         assert row == ("return-false@x", 1, 0)
-

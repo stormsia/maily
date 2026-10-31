@@ -60,10 +60,16 @@ def _retention_out(rows: list[KeyRetention]) -> list[KeyRetentionOut]:
 
 async def _retention_for(session: AsyncSession, key_id: int) -> list[KeyRetentionOut]:
     rows = (
-        await session.execute(
-            select(KeyRetention).where(KeyRetention.key_id == key_id).order_by(KeyRetention.provider)
+        (
+            await session.execute(
+                select(KeyRetention)
+                .where(KeyRetention.key_id == key_id)
+                .order_by(KeyRetention.provider)
+            )
         )
-    ).scalars().all()
+        .scalars()
+        .all()
+    )
     return _retention_out(list(rows))
 
 
@@ -74,8 +80,10 @@ async def _replace_retention(
 ) -> list[KeyRetentionOut]:
     """Delete this key's key_retention rows, then insert the replacement list."""
     existing = (
-        await session.execute(select(KeyRetention).where(KeyRetention.key_id == key_id))
-    ).scalars().all()
+        (await session.execute(select(KeyRetention).where(KeyRetention.key_id == key_id)))
+        .scalars()
+        .all()
+    )
     for item in existing:
         await session.delete(item)
     await session.flush()
@@ -143,7 +151,9 @@ async def me(principal: PrincipalDep, session: SessionDep) -> RootMeOut | Issued
     summary="Create key",
     description="Root only. Returns the new row plus the secret once.",
 )
-async def create_key(body: KeyCreateIn, session: SessionDep, settings: SettingsDep) -> CreatedKeyOut:
+async def create_key(
+    body: KeyCreateIn, session: SessionDep, settings: SettingsDep
+) -> CreatedKeyOut:
     """Mint a key, store optional retention, and return the plaintext secret once."""
     created = await create_key_row(
         session,

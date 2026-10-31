@@ -34,8 +34,25 @@ jobs:
           python-version: "3.15"
 
       - name: Install dependencies
-        run: uv sync --frozen --all-extras
+        run: |
+          uv sync --frozen --all-extras
+          uv pip install pip
 
       - name: Run pip-audit vulnerability scan
+        uses: pypa/gh-action-pip-audit@v1.1.0
+        with:
+          virtual-environment: .venv
+          summary: true
+
+      - name: Generate pip-audit SARIF report
+        if: always()
         run: |
-          uv run --with pip-audit pip-audit --desc on
+          uv run --with pip-audit pip-audit -f json -o pip-audit.json || true
+          uv run python scripts/pip_audit_to_sarif.py pip-audit.json pip-audit.sarif
+
+      - name: Upload pip-audit SARIF to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v4
+        if: always()
+        continue-on-error: true
+        with:
+          sarif_file: pip-audit.sarif

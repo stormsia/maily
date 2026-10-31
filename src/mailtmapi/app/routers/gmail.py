@@ -118,9 +118,7 @@ def _out(parent: GmailParent) -> GmailAccountOut:
     )
 
 
-async def _upsert_parent(
-    request: Request, tokens: dict, caller_key_id: int | None
-) -> GmailParent:
+async def _upsert_parent(request: Request, tokens: dict, caller_key_id: int | None) -> GmailParent:
     """Insert a parent for this caller, or refresh tokens when the caller already owns it.
 
     An existing row whose owner_key_id differs (NULL equals only None) is 403.
@@ -162,7 +160,9 @@ async def oauth_start(
     principal: ParentsAdd,
 ) -> OAuthStartOut:
     if await _resolve_creds(request, settings) is None:
-        raise HTTPException(400, "Gmail OAuth credentials are not configured yet — set them up on the dashboard.")
+        raise HTTPException(
+            400, "Gmail OAuth credentials are not configured yet — set them up on the dashboard."
+        )
     states: dict[str, _OAuthState] = request.app.state.oauth_states
     _purge_stale_oauth_states(states, time.time())
     state = secrets.token_urlsafe(16)

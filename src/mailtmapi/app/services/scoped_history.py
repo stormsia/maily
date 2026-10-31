@@ -63,7 +63,6 @@ def _zero_dict() -> dict[str, int]:
     }
 
 
-
 def _today() -> date:
     return datetime.now(timezone.utc).date()
 

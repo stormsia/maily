@@ -33,7 +33,9 @@ async def list_providers(registry: RegistryDep, principal: PrincipalDep) -> list
     return out
 
 
-def _visible_providers(registry: RegistryDep, principal: PrincipalDep, slug: str | None) -> list[MailProvider]:
+def _visible_providers(
+    registry: RegistryDep, principal: PrincipalDep, slug: str | None
+) -> list[MailProvider]:
     if slug is not None:
         return [registry.get(slug)] if provider_allowed(principal, slug) else []
     return [provider for provider in registry.all() if provider_allowed(principal, provider.slug)]

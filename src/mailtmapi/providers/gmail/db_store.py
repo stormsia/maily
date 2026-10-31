@@ -67,8 +67,10 @@ class DbGmailStore:
     async def list_active(self) -> list[GmailParent]:
         async with self._factory() as s:
             rows = (
-                await s.execute(select(GmailAccount).where(GmailAccount.status == "active"))
-            ).scalars().all()
+                (await s.execute(select(GmailAccount).where(GmailAccount.status == "active")))
+                .scalars()
+                .all()
+            )
             return [self._row_to_parent(r) for r in rows]
 
     async def list_all(self) -> list[GmailParent]:

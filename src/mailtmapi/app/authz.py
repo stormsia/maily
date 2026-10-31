@@ -116,11 +116,7 @@ def _scope_from_lists(
     provider_names = _strings(providers)
     parent_id_values = _parent_ids(parent_ids)
     action_names = _strings(actions)
-    if (
-        provider_names is None
-        or parent_id_values is None
-        or action_names is None
-    ):
+    if provider_names is None or parent_id_values is None or action_names is None:
         return _deny_scope()
     return Scope(
         providers=provider_names,

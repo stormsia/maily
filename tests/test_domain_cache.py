@@ -101,9 +101,7 @@ def test_targets_served_from_cache(tmp_path):
 
         r = client.get("/v1/targets")
         assert r.status_code == 200
-        assert r.json() == [
-            {"id": "a.com", "kind": "domain", "provider": "good", "label": "a.com"}
-        ]
+        assert r.json() == [{"id": "a.com", "kind": "domain", "provider": "good", "label": "a.com"}]
         # served from DB cache, provider not called again
         assert good.list_targets_calls == 1
 
@@ -134,9 +132,14 @@ def test_run_stores_and_bumps_last_refresh(tmp_path):
         # (a naive onupdate-only column would stay stale when nothing changes).
         time.sleep(1.1)
         client.post("/v1/admin/domain-cache/run")
-        t2 = {p["provider"]: p["updated_at"] for p in client.get("/v1/admin/domain-cache").json()["providers"]}["good"]
+        t2 = {
+            p["provider"]: p["updated_at"]
+            for p in client.get("/v1/admin/domain-cache").json()["providers"]
+        }["good"]
 
-        assert datetime.fromisoformat(t2.replace("Z", "+00:00")) > datetime.fromisoformat(t1.replace("Z", "+00:00"))
+        assert datetime.fromisoformat(t2.replace("Z", "+00:00")) > datetime.fromisoformat(
+            t1.replace("Z", "+00:00")
+        )
 
 
 def test_mailbox_create_domain_resolution(tmp_path):
@@ -177,9 +180,7 @@ def test_cache_disabled_serves_live(tmp_path):
         # cache disabled -> /v1/targets goes live and does not store
         r = client.get("/v1/targets", params={"provider": "good"})
         assert r.status_code == 200
-        assert r.json() == [
-            {"id": "a.com", "kind": "domain", "provider": "good", "label": "a.com"}
-        ]
+        assert r.json() == [{"id": "a.com", "kind": "domain", "provider": "good", "label": "a.com"}]
         assert good.list_targets_calls == 2
 
         conn = _db(tmp_path)
@@ -252,9 +253,7 @@ def test_list_domain_targets_serves_fresh_cache(tmp_path):
 
         r = client.get("/v1/targets")
         assert r.status_code == 200
-        assert r.json() == [
-            {"id": "a.com", "kind": "domain", "provider": "good", "label": "a.com"}
-        ]
+        assert r.json() == [{"id": "a.com", "kind": "domain", "provider": "good", "label": "a.com"}]
         assert good.list_targets_calls == 1
 
 
@@ -335,8 +334,6 @@ def test_find_provider_for_domain_does_not_commit_session(tmp_path):
 
         assert asyncio.run(_resolve()) == "good"
         conn = _db(tmp_path)
-        stored = conn.execute(
-            "SELECT 1 FROM app_settings WHERE key = 'pending.probe'"
-        ).fetchone()
+        stored = conn.execute("SELECT 1 FROM app_settings WHERE key = 'pending.probe'").fetchone()
         conn.close()
         assert stored is None

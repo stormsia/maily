@@ -54,23 +54,23 @@ PROMPT_CHECK_DATA = {
                 '<meta http-equiv="Content-Type" content="text/html; charset=utf-8">'
                 '<meta content="IE=edge"><meta name="viewport" content="width=device-width,initial-scale=1">'
                 '<style type="text/css">\r\n'
-                '<!--\r\n'
-                '#outlook a\r\n\t{padding:0}\r\n'
-                '.ReadMsgBody\r\n\t{width:100%}\r\n'
-                '.ExternalClass\r\n\t{width:100%}\r\n'
-                'body\r\n\t{margin:0;padding:0}\r\n'
-                'h1\r\n\t{font-family:-apple-system,system-ui,BlinkMacSystemFont;font-size:24px;font-weight:600;line-height:24px;text-align:left;color:#333333;padding-bottom:18px}\r\n'
-                'p\r\n\t{font-family:-apple-system,system-ui,BlinkMacSystemFont;font-size:15px;font-weight:300;line-height:24px;text-align:left;color:#333333}\r\n'
-                '-->\r\n'
+                "<!--\r\n"
+                "#outlook a\r\n\t{padding:0}\r\n"
+                ".ReadMsgBody\r\n\t{width:100%}\r\n"
+                ".ExternalClass\r\n\t{width:100%}\r\n"
+                "body\r\n\t{margin:0;padding:0}\r\n"
+                "h1\r\n\t{font-family:-apple-system,system-ui,BlinkMacSystemFont;font-size:24px;font-weight:600;line-height:24px;text-align:left;color:#333333;padding-bottom:18px}\r\n"
+                "p\r\n\t{font-family:-apple-system,system-ui,BlinkMacSystemFont;font-size:15px;font-weight:300;line-height:24px;text-align:left;color:#333333}\r\n"
+                "-->\r\n"
                 '</style></head><body style="background-color:#ffffff">'
                 '<div style="background-color:#ffffff">'
-                '<h1>Validate your email</h1>'
-                '<p>Hi,</p>'
-                '<p>Thank you for creating a Grok Account. Please use the code below to validate your email address.</p>'
+                "<h1>Validate your email</h1>"
+                "<p>Hi,</p>"
+                "<p>Thank you for creating a Grok Account. Please use the code below to validate your email address.</p>"
                 '<table><tr><td style="text-align:center; background:#FAFAFA; padding:30px 20px; font-size:26px; font-weight:bold">865-662</td></tr></table>'
-                '<p>If you did not create a new account, please ignore this email.</p>'
-                '<p>SpaceXSI Team</p>'
-                '</div></body></html>'
+                "<p>If you did not create a new account, please ignore this email.</p>"
+                "<p>SpaceXSI Team</p>"
+                "</div></body></html>"
             ),
             "bodyContentType": "html",
             "id": "895065865791524",
@@ -117,7 +117,12 @@ def test_extract_syntaxes_from_html():
 
 
 def test_extract_domains_from_empty_html_fallback():
-    assert _extract_domains_from_html("") == ["outlook.com", "hotmail.com", "gmail.com", "high.edu.pl"]
+    assert _extract_domains_from_html("") == [
+        "outlook.com",
+        "hotmail.com",
+        "gmail.com",
+        "high.edu.pl",
+    ]
     assert _extract_syntaxes_from_html("") == ["dot", "plus"]
 
 
@@ -353,7 +358,7 @@ async def test_create_mailbox_domain_gmail_modifiers():
 def test_clean_body_text_strips_styles_and_comments():
     raw_html = (
         '<html><head><style type="text/css">body { color: #333; font-size: 14px; }</style></head>'
-        '<body><!-- comment --><h1>Title</h1><p>Hello world.</p></body></html>'
+        "<body><!-- comment --><h1>Title</h1><p>Hello world.</p></body></html>"
     )
     cleaned = _clean_body_text(raw_html)
     assert "color: #333" not in cleaned
@@ -364,7 +369,9 @@ def test_clean_body_text_strips_styles_and_comments():
 
 
 def test_parse_message_prompt_payload():
-    msg = _parse_message(PROMPT_CHECK_DATA["data"][0], "testuser+alias@outlook.com", "https://temp.tf")
+    msg = _parse_message(
+        PROMPT_CHECK_DATA["data"][0], "testuser+alias@outlook.com", "https://temp.tf"
+    )
     assert msg.id == "895065865791524"
     assert msg.subject == "Grok confirmation code: 865-662"
     assert msg.from_.address == "noreply@x.ai"
@@ -405,6 +412,7 @@ async def test_mailbox_message_isolation():
     def handler(request: httpx.Request) -> httpx.Response:
         if request.url.path == "/api/check":
             import json
+
             req_data = json.loads(request.content)
             if req_data.get("email") == box_a.address:
                 return httpx.Response(200, json=PROMPT_CHECK_DATA)
@@ -468,6 +476,7 @@ async def test_list_messages_403_returns_empty():
 @pytest.mark.asyncio
 async def test_list_messages_500_raises_server_error():
     """Server errors must NOT be silently swallowed as empty lists."""
+
     def handler(request: httpx.Request) -> httpx.Response:
         return httpx.Response(502, text="Bad Gateway")
 

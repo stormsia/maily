@@ -18,3 +18,5 @@ dist/
 *.png
 .omo/*
 scratch/*
+.coverage*
+htmlcov/

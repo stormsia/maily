@@ -366,13 +366,55 @@ html { scrollbar-color: rgba(255, 255, 255, 0.16) transparent; scrollbar-width: 
 .stat-icon--amber { background: var(--warn-soft); color: #ffd48a; border-color: rgba(255, 191, 77, 0.3); }
 .stat-label { font-size: var(--fs-12); color: var(--muted); font-weight: 500; }
 .stat-value { font-family: var(--font-mono); font-size: var(--fs-32); font-weight: 600; letter-spacing: -0.02em; line-height: 1.1; }
+.kpi-sub { font-size: var(--fs-11); color: var(--muted); margin-top: 6px; display: flex; align-items: center; gap: 5px; font-weight: 500; }
+.kpi-sub--ok { color: var(--ok); }
+.kpi-sub--warn { color: var(--warn); }
+.kpi-sub--danger { color: var(--danger); }
+
+/* overview hero banner */
+.overview-hero {
+  display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: var(--s-3);
+  padding: var(--s-4) var(--s-5); margin-bottom: var(--s-4);
+  background: linear-gradient(135deg, rgba(124, 108, 255, 0.08), rgba(63, 224, 197, 0.04));
+  border: 1px solid var(--border); border-radius: var(--r-lg);
+}
+.hero-status-group { display: flex; align-items: center; gap: var(--s-3); flex-wrap: wrap; }
+.hero-actions { display: flex; align-items: center; gap: var(--s-2); flex-wrap: wrap; }
+.pulse-dot {
+  width: 9px; height: 9px; border-radius: 50%; background: var(--ok);
+  box-shadow: 0 0 0 0 rgba(65, 217, 154, 0.6);
+  animation: pulse-ring 2s infinite cubic-bezier(0.45, 0, 0.2, 1);
+}
+.pulse-dot.is-warn { background: var(--warn); box-shadow: 0 0 0 0 rgba(255, 191, 77, 0.6); }
+@keyframes pulse-ring {
+  0% { box-shadow: 0 0 0 0 rgba(65, 217, 154, 0.6); }
+  70% { box-shadow: 0 0 0 8px rgba(65, 217, 154, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(65, 217, 154, 0); }
+}
 
 /* chart cards */
 .chart-card { padding: var(--s-5); display: flex; flex-direction: column; min-width: 0; }
-.chart-head { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--s-3); }
+.chart-head { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--s-3); flex-wrap: wrap; }
 .chart-title { font-family: var(--font-ui); font-weight: 700; font-size: var(--fs-16); }
 .chart-sub { color: var(--muted); font-size: var(--fs-13); margin-top: 2px; }
-.chart-updated { font-size: var(--fs-11); color: var(--faint); white-space: nowrap; padding-top: 4px; }
+.chart-actions { display: flex; align-items: center; gap: var(--s-2); flex-wrap: wrap; }
+.chart-updated { font-size: var(--fs-11); color: var(--faint); white-space: nowrap; }
+.chart-tabs {
+  display: inline-flex; align-items: center;
+  background: rgba(255, 255, 255, 0.05); border: 1px solid var(--border-soft);
+  border-radius: var(--r-pill); padding: 2px; gap: 2px;
+}
+.chart-tab-btn {
+  border: none; background: transparent; color: var(--muted);
+  font-size: var(--fs-11); font-weight: 600; padding: 4px 10px;
+  border-radius: var(--r-pill); transition: all var(--t-fast);
+  cursor: pointer; font-family: var(--font-ui);
+}
+.chart-tab-btn:hover { color: var(--text); }
+.chart-tab-btn.is-active {
+  background: var(--surface-3); color: var(--text);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
+}
 .chart-legend { display: flex; flex-wrap: wrap; gap: var(--s-2); margin-top: var(--s-3); }
 .legend-key {
   display: inline-flex; align-items: center; gap: 6px;
@@ -402,6 +444,20 @@ html { scrollbar-color: rgba(255, 255, 255, 0.16) transparent; scrollbar-width: 
 .prov-metric b { font-family: var(--font-mono); font-size: var(--fs-20); font-weight: 600; line-height: 1.15; }
 .prov-metric span { font-size: var(--fs-11); color: var(--faint); letter-spacing: 0.01em; white-space: nowrap; }
 .prov-metric--del b { color: var(--danger); }
+.prov-card-foot {
+  display: flex; align-items: center; justify-content: space-between; gap: var(--s-2);
+  font-size: var(--fs-11); color: var(--faint); font-family: var(--font-mono);
+  border-top: 1px solid var(--border-soft); padding-top: var(--s-2); margin-top: 2px; padding-left: var(--s-2);
+}
+
+/* domain intelligence bars */
+.domain-list { display: flex; flex-direction: column; gap: var(--s-3); margin-top: var(--s-3); }
+.domain-item { display: flex; flex-direction: column; gap: 4px; }
+.domain-item-head { display: flex; align-items: center; justify-content: space-between; font-size: var(--fs-12); }
+.domain-item-name { font-family: var(--font-mono); font-weight: 600; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.domain-item-stat { color: var(--faint); font-family: var(--font-mono); font-size: var(--fs-11); }
+.domain-bar-track { height: 6px; background: rgba(255, 255, 255, 0.05); border-radius: var(--r-pill); overflow: hidden; }
+.domain-bar-fill { height: 100%; border-radius: var(--r-pill); background: linear-gradient(90deg, var(--accent), var(--cyan)); transition: width var(--t-med); }
 
 /* provider health list (overview) */
 .health-list { display: flex; flex-direction: column; }

@@ -21,7 +21,7 @@ from ..deps import RegistryDep, SessionDep, SettingsDep
 from ..schemas import CreateMailboxIn, MailboxOut
 from ..services import domain_cache as dc
 from ..services import mailboxes as svc
-from ..services.stats_history import EVENT_MAILBOX_DELETED, record
+from ..services.stats_history import EVENT_MAILBOX_DELETED, extract_domain, record
 
 # The dashboard fetches mailbox lists in bounded pages (see static mailboxes.js).
 # Omitting limit still caps the response so a full table can't be streamed out.
@@ -81,13 +81,17 @@ def _require_owner(principal: Principal, row: Mailbox) -> None:
 
 async def _owned_parent_ids(session: SessionDep, key_id: int) -> list[int]:
     rows = (
-        await session.execute(
-            select(GmailAccount.id).where(
-                GmailAccount.owner_key_id == key_id,
-                GmailAccount.status == "active",
+        (
+            await session.execute(
+                select(GmailAccount.id).where(
+                    GmailAccount.owner_key_id == key_id,
+                    GmailAccount.status == "active",
+                )
             )
         )
-    ).scalars().all()
+        .scalars()
+        .all()
+    )
     return list(rows)
 
 
@@ -218,11 +222,19 @@ async def delete_one(
     _require_owner(principal, row)
     info = svc.to_mailbox_info(row, settings.resolved_secret_key())
     provider = row.provider
+    domain = extract_domain(row.address)
+    owner_key_id = row.owner_key_id
     # Soft-delete first. If the provider then fails, retention reaps the row
     # instead of leaving an active mailbox whose upstream account is gone.
     row.is_active = False
     row.is_deleted = True
-    await record(session, provider=provider, event=EVENT_MAILBOX_DELETED)
+    await record(
+        session,
+        provider=provider,
+        domain=domain,
+        owner_key_id=owner_key_id,
+        event=EVENT_MAILBOX_DELETED,
+    )
     await session.commit()
     try:
         prov = registry.get(provider)

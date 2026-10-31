@@ -122,7 +122,7 @@ def test_retention_sweep(tmp_path: Path):
         assert totals["message_deleted"] == 1
 
 
-def test_retention_keeps_mailbox_when_provider_delete_fails(tmp_path: Path):
+def test_retention_marks_mailbox_deleted_when_provider_delete_fails(tmp_path: Path):
     from mailtmapi.exceptions import MailAPIError
 
     class Boom(StubProvider):
@@ -152,15 +152,17 @@ def test_retention_keeps_mailbox_when_provider_delete_fails(tmp_path: Path):
 
         r = client.post("/v1/admin/retention/run")
         assert r.status_code == 200
-        assert r.json()["mailboxes_deleted"] == 0
+        assert r.json()["mailboxes_deleted"] == 1
 
         conn = _db(tmp_path)
-        row = conn.execute("SELECT address FROM mailboxes WHERE id = ?", (box_id,)).fetchone()
+        row = conn.execute(
+            "SELECT address, is_deleted, is_active FROM mailboxes WHERE id = ?", (box_id,)
+        ).fetchone()
         msg = conn.execute(
             "SELECT message_api_id FROM messages WHERE mailbox_id = ?", (box_id,)
         ).fetchone()
         conn.close()
-        assert row == ("stuck@x",)
+        assert row == ("stuck@x", 1, 0)
         assert msg == ("child",)
 
 

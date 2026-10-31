@@ -553,3 +553,72 @@ def test_retention_purges_mailbox_when_provider_reports_not_exist(tmp_path: Path
         left = {row[0] for row in conn.execute("SELECT address FROM mailboxes")}
         conn.close()
         assert left == set()
+
+
+def test_retention_marks_mailbox_deleted_when_provider_fails_and_subsequent_reap_purges_it(tmp_path: Path) -> None:
+    """When upstream delete fails with an exception, retention marks mailbox deleted locally, and next sweep reaps it."""
+
+    class ErrorProvider(StubProvider):
+        async def delete_mailbox(self, mailbox: MailboxInfo) -> bool:
+            raise MailAPIError("provider 500 error", status_code=500)
+
+    with _app(tmp_path) as client:
+        client.app.state.registry = ProviderRegistry([ErrorProvider()])
+        now = utcnow_naive()
+        old = (now - timedelta(days=10)).strftime("%Y-%m-%d %H:%M:%S")
+        conn = _db(tmp_path)
+        _insert_mailbox(conn, address="upstream-fail@x", created_at=old, owner_key_id=None)
+        conn.execute("INSERT INTO retention (provider, mailbox_ttl_hours) VALUES ('stub', 1)")
+        conn.commit()
+        conn.close()
+
+        # First sweep: provider fails, account is marked deleted locally
+        res1 = client.post("/v1/admin/retention/run", headers={"X-API-Key": ROOT})
+        assert res1.status_code == 200
+        assert res1.json()["mailboxes_deleted"] == 1
+
+        conn = _db(tmp_path)
+        row = conn.execute(
+            "SELECT address, is_deleted, is_active FROM mailboxes WHERE address = 'upstream-fail@x'"
+        ).fetchone()
+        conn.close()
+        assert row == ("upstream-fail@x", 1, 0)
+
+        # Second sweep: reap cleans up soft-deleted mailboxes
+        res2 = client.post("/v1/admin/retention/run", headers={"X-API-Key": ROOT})
+        assert res2.status_code == 200
+
+        conn = _db(tmp_path)
+        left = {row[0] for row in conn.execute("SELECT address FROM mailboxes")}
+        conn.close()
+        assert left == set()
+
+
+def test_retention_marks_mailbox_deleted_when_provider_returns_false(tmp_path: Path) -> None:
+    """When upstream delete returns False, retention marks mailbox deleted locally."""
+
+    class FalseProvider(StubProvider):
+        async def delete_mailbox(self, mailbox: MailboxInfo) -> bool:
+            return False
+
+    with _app(tmp_path) as client:
+        client.app.state.registry = ProviderRegistry([FalseProvider()])
+        now = utcnow_naive()
+        old = (now - timedelta(days=10)).strftime("%Y-%m-%d %H:%M:%S")
+        conn = _db(tmp_path)
+        _insert_mailbox(conn, address="return-false@x", created_at=old, owner_key_id=None)
+        conn.execute("INSERT INTO retention (provider, mailbox_ttl_hours) VALUES ('stub', 1)")
+        conn.commit()
+        conn.close()
+
+        res = client.post("/v1/admin/retention/run", headers={"X-API-Key": ROOT})
+        assert res.status_code == 200
+        assert res.json()["mailboxes_deleted"] == 1
+
+        conn = _db(tmp_path)
+        row = conn.execute(
+            "SELECT address, is_deleted, is_active FROM mailboxes WHERE address = 'return-false@x'"
+        ).fetchone()
+        conn.close()
+        assert row == ("return-false@x", 1, 0)
+

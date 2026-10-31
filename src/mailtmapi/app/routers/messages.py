@@ -11,7 +11,7 @@ from ..authz import Principal, PrincipalDep, action_allowed, owns_mailbox, requi
 from ..deps import RegistryDep, SessionDep, SettingsDep
 from ..schemas import MessageDetailOut, MessageOut, SourceOut
 from ..services import mailboxes as svc
-from ..services.stats_history import EVENT_MESSAGE_DELETED, record
+from ..services.stats_history import EVENT_MESSAGE_DELETED, extract_domain, record
 
 router = APIRouter(
     prefix="/v1/mailboxes/{mailbox_id}/messages",
@@ -24,7 +24,9 @@ def _summary_out(row: Message) -> MessageOut:
     return MessageOut.model_validate(row)
 
 
-async def _owned_mailbox(session: SessionDep, principal: Principal, mailbox_id: int, action: str) -> Mailbox:
+async def _owned_mailbox(
+    session: SessionDep, principal: Principal, mailbox_id: int, action: str
+) -> Mailbox:
     """Load the mailbox, then require the action and an owner match. Missing stays 404."""
     if not action_allowed(principal, action):
         raise HTTPException(status_code=403, detail="forbidden")
@@ -188,7 +190,14 @@ async def delete_message(
     ).scalar_one_or_none()
     if cached is not None and not cached.is_deleted:
         cached.is_deleted = True
-        await record(session, provider=cached.provider, event=EVENT_MESSAGE_DELETED)
+        domain = extract_domain(row.address)
+        await record(
+            session,
+            provider=cached.provider,
+            domain=domain,
+            owner_key_id=row.owner_key_id,
+            event=EVENT_MESSAGE_DELETED,
+        )
         await session.commit()
 
 
@@ -217,5 +226,7 @@ async def get_source(
         return SourceOut(id=src.id, data=src.data, download_url=src.download_url or "")
     except Exception:
         if cached is not None and (cached.body_html or cached.body_text):
-            return SourceOut(id=msg_id, data=cached.body_html or cached.body_text or "", download_url="")
+            return SourceOut(
+                id=msg_id, data=cached.body_html or cached.body_text or "", download_url=""
+            )
         raise

@@ -7,7 +7,12 @@ from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
 from mailtmapi.app.services import mailboxes as svc
 from mailtmapi.db.models import Base, Mailbox
-from mailtmapi.exceptions import MailConflictError, MailNotFoundError, MailValidationError
+from mailtmapi.exceptions import (
+    MailAPIError,
+    MailConflictError,
+    MailNotFoundError,
+    MailValidationError,
+)
 from mailtmapi.providers.base import MailboxInfo
 from mailtmapi.providers.registry import ProviderRegistry
 from mailtmapi.settings import Settings
@@ -72,6 +77,88 @@ async def test_garbage_address_from_provider_is_rejected():
     with pytest.raises(MailValidationError):
         await _create("no-at-sign", session)
     assert session.added == []
+
+
+@pytest.mark.asyncio
+async def test_none_or_missing_address_from_provider_is_rejected():
+    class MissingAddressProvider(StubProvider):
+        async def create_mailbox(self, spec):
+            return MailboxInfo(provider=self.slug, address="", token="tok")
+
+    session = FakeSession()
+    registry = ProviderRegistry([MissingAddressProvider()])
+    settings = Settings(
+        secret_key=SECRET,
+        database_url="sqlite+aiosqlite:///:memory:",
+        _env_file=None,
+    )
+    with pytest.raises(MailValidationError):
+        await svc.create_mailbox(
+            session,
+            registry,
+            settings,
+            provider="stub",
+            domain=None,
+            parent_id=None,
+            address=None,
+            password=None,
+        )
+    assert session.added == []
+
+
+@pytest.mark.asyncio
+async def test_provider_failure_does_not_save_to_db():
+    class FailingProvider(StubProvider):
+        async def create_mailbox(self, spec):
+            raise MailAPIError("provider upstream failed to confirm")
+
+    session = FakeSession()
+    registry = ProviderRegistry([FailingProvider()])
+    settings = Settings(
+        secret_key=SECRET,
+        database_url="sqlite+aiosqlite:///:memory:",
+        _env_file=None,
+    )
+    with pytest.raises(MailAPIError):
+        await svc.create_mailbox(
+            session,
+            registry,
+            settings,
+            provider="stub",
+            domain=None,
+            parent_id=None,
+            address=None,
+            password=None,
+        )
+    assert session.added == []
+
+
+@pytest.mark.asyncio
+async def test_none_token_from_provider_is_saved_safely():
+    class NoneTokenProvider(StubProvider):
+        async def create_mailbox(self, spec):
+            return MailboxInfo(provider=self.slug, address="notoken@dom.com", token=None)  # type: ignore[arg-type]
+
+    session = FakeSession()
+    registry = ProviderRegistry([NoneTokenProvider()])
+    settings = Settings(
+        secret_key=SECRET,
+        database_url="sqlite+aiosqlite:///:memory:",
+        _env_file=None,
+    )
+    row = await svc.create_mailbox(
+        session,
+        registry,
+        settings,
+        provider="stub",
+        domain=None,
+        parent_id=None,
+        address=None,
+        password=None,
+    )
+    assert row.address == "notoken@dom.com"
+    assert row.mailbox_token_enc is not None
+
 
 
 def _settings() -> Settings:

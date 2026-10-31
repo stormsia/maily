@@ -70,9 +70,7 @@ class GmailAccount(Base):
     scopes: Mapped[str] = mapped_column(Text, default="")
     send_as_json: Mapped[str] = mapped_column(Text, default="[]")
     status: Mapped[str] = mapped_column(String(32), default="active", index=True)
-    owner_key_id: Mapped[int | None] = mapped_column(
-        ForeignKey("api_keys.id"), nullable=True
-    )
+    owner_key_id: Mapped[int | None] = mapped_column(ForeignKey("api_keys.id"), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(
         DateTime, server_default=func.now(), onupdate=func.now()
@@ -185,24 +183,35 @@ class DomainCache(Base):
 class StatsEvent(Base):
     """Aggregated activity ledger that survives retention deletes.
 
-    One row per (UTC day, provider, event) with an incrementing counter, so a
-    mailbox/message deleted by retention still counts here. Rows older than a
-    window (10 days) are pruned by the retention sweep. This is what the
+    One row per (UTC day, provider, domain, owner_key_id, event) with an incrementing
+    counter, so a mailbox/message deleted by retention still counts here. Rows older
+    than a window (10 days) are pruned by the retention sweep. This is what the
     dashboard's "last 10 days" block and the 7-day trend are based on.
     """
 
     __tablename__ = "stats_events"
     __table_args__ = (
-        UniqueConstraint("day", "provider", "event", name="uq_stats_events_bucket"),
+        UniqueConstraint(
+            "day",
+            "provider",
+            "domain",
+            "owner_key_id",
+            "event",
+            name="uq_stats_events_bucket",
+        ),
         Index("ix_stats_events_day_event", "day", "event"),
+        Index("ix_stats_events_domain", "domain"),
+        Index("ix_stats_events_owner", "owner_key_id"),
     )
 
     #: mailbox_created | mailbox_deleted | message_received | message_deleted
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     day: Mapped[date] = mapped_column(Date)
     provider: Mapped[str] = mapped_column(String(64))
+    domain: Mapped[str] = mapped_column(String(255), default="", server_default="")
+    owner_key_id: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
     event: Mapped[str] = mapped_column(String(32))
-    count: Mapped[int] = mapped_column(Integer, default=1)
+    count: Mapped[int] = mapped_column(Integer, default=1, server_default="1")
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
 
 

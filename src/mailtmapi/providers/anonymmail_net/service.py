@@ -68,7 +68,9 @@ def _extract_csrf_from_cookie(http: HttpClient) -> str | None:
                 pass
             try:
                 for cookie in jar:
-                    name = getattr(cookie, "name", None) or (cookie.name if hasattr(cookie, "name") else None)
+                    name = getattr(cookie, "name", None) or (
+                        cookie.name if hasattr(cookie, "name") else None
+                    )
                     if name == "csrf_cookie_name":
                         return getattr(cookie, "value", None)
             except Exception:
@@ -91,7 +93,11 @@ def _parse_messages(raw: dict[str, Any], mailbox_address: str) -> list[MessageSu
             if not isinstance(e, dict):
                 continue
             from_raw = str(e.get("from") or "")
-            party = parse_from_value(from_raw) if "<" in from_raw or "@" in from_raw else Party(name=None, address=from_raw)
+            party = (
+                parse_from_value(from_raw)
+                if "<" in from_raw or "@" in from_raw
+                else Party(name=None, address=from_raw)
+            )
             # Try to extract address if just name
             if party.address and "@" not in party.address and from_raw:
                 m = re.search(r"[\w\.-]+@[\w\.-]+\.\w+", from_raw)
@@ -151,14 +157,18 @@ class AnonymMailNet(HttpProvider):
                 return token
             try:
                 headers = dict(self.default_headers)
-                headers["Accept"] = "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"
+                headers["Accept"] = (
+                    "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"
+                )
                 headers["Sec-Fetch-Dest"] = "document"
                 headers["Sec-Fetch-Mode"] = "navigate"
                 headers["Sec-Fetch-Site"] = "none"
                 headers["Sec-Fetch-User"] = "?1"
                 headers["Upgrade-Insecure-Requests"] = "1"
                 headers.pop("X-Requested-With", None)
-                resp = await self._http._client.get(f"{self.BASE_URL}/", headers=headers, follow_redirects=True)
+                resp = await self._http._client.get(
+                    f"{self.BASE_URL}/", headers=headers, follow_redirects=True
+                )
                 html = resp.text
                 token = _extract_csrf(html) or _extract_csrf_from_cookie(self._http)
                 if not token:
@@ -189,7 +199,9 @@ class AnonymMailNet(HttpProvider):
         headers.pop("Accept-Encoding", None)
         headers["Content-Length"] = "0"
         try:
-            resp = await self._http._client.post(f"{self.BASE_URL}/api/getDomains", headers=headers, content=b"")
+            resp = await self._http._client.post(
+                f"{self.BASE_URL}/api/getDomains", headers=headers, content=b""
+            )
         except Exception as e:
             raise MailAPIError(f"anonymmail.net: failed to get domains: {e}") from e
         try:
@@ -215,7 +227,9 @@ class AnonymMailNet(HttpProvider):
             if not domain:
                 targets = await self.list_targets()
                 if not targets:
-                    raise MailValidationError("anonymmail.net: no domains available", status_code=400)
+                    raise MailValidationError(
+                        "anonymmail.net: no domains available", status_code=400
+                    )
                 domain = targets[0].label
             address = f"{random_string(10)}@{domain}"
         name, sep, domain_part = address.partition("@")
@@ -232,7 +246,9 @@ class AnonymMailNet(HttpProvider):
         headers.pop("Accept-Encoding", None)
         data = f"email={quote(address)}"
         try:
-            resp = await self._http._client.post(f"{self.BASE_URL}/api/create", headers=headers, content=data.encode("utf-8"))
+            resp = await self._http._client.post(
+                f"{self.BASE_URL}/api/create", headers=headers, content=data.encode("utf-8")
+            )
         except Exception as e:
             raise MailAPIError(f"anonymmail.net: create failed: {e}") from e
         try:
@@ -241,7 +257,7 @@ class AnonymMailNet(HttpProvider):
             raise MailAPIError(f"anonymmail.net: create failed to parse response: {e}") from e
         if not isinstance(result, dict):
             raise MailAPIError("anonymmail.net: unexpected create response")
-        if result.get("success") is False or result.get("error"):
+        if not result.get("success") or result.get("error"):
             msg = result.get("message") or result.get("error") or "failed to create mailbox"
             raise MailValidationError(f"anonymmail.net: {msg}", status_code=400)
         email = result.get("email") or address
@@ -264,7 +280,9 @@ class AnonymMailNet(HttpProvider):
         headers.pop("Accept-Encoding", None)
         data = f"email={quote(mailbox.address)}"
         try:
-            await self._http._client.post(f"{self.BASE_URL}/api/delete", headers=headers, content=data.encode("utf-8"))
+            await self._http._client.post(
+                f"{self.BASE_URL}/api/delete", headers=headers, content=data.encode("utf-8")
+            )
             return True
         except Exception:
             return True

@@ -73,7 +73,7 @@ async def owned_report(
     """Counts and row-grouped history for mail this key owns. Never reads the ledger."""
     owned = Mailbox.owner_key_id == key_id
     mailboxes, messages, by_provider = await _live_counts(session, owned)
-    history = await owned_history(session, owned)
+    history = await owned_history(session, owned, key_id=key_id)
     trend = [
         TrendPoint(date=day["date"], count=day["message_received"])
         for day in history["days"][-_TREND_DAYS:]
@@ -97,9 +97,13 @@ async def _live_counts(
     deleted_box = case((Mailbox.is_deleted.is_(True), 1), else_=0)
     deleted_msg = case((Message.is_deleted.is_(True), 1), else_=0)
     mb_total, mb_active, mb_deleted = (
-        await session.execute(select(func.count(), func.sum(active), func.sum(deleted_box)).where(owned))
+        await session.execute(
+            select(func.count(), func.sum(active), func.sum(deleted_box)).where(owned)
+        )
     ).one()
-    joined = select(func.count(), func.sum(deleted_msg)).join(Mailbox, Message.mailbox_id == Mailbox.id)
+    joined = select(func.count(), func.sum(deleted_msg)).join(
+        Mailbox, Message.mailbox_id == Mailbox.id
+    )
     msg_total, msg_deleted = (await session.execute(joined.where(owned))).one()
     by_provider = await _providers(session, owned, active, deleted_box)
     return (
@@ -155,7 +159,9 @@ async def _gmail_counts(
     granted = GmailAccount.id.in_(parent_ids) if parent_ids else False
     visible = or_(GmailAccount.owner_key_id == key_id, _root_granted(granted))
     active = case((GmailAccount.status == "active", 1), else_=0)
-    total, live = (await session.execute(select(func.count(), func.sum(active)).where(visible))).one()
+    total, live = (
+        await session.execute(select(func.count(), func.sum(active)).where(visible))
+    ).one()
     return {"total": _sum_or_zero(total), "active": _sum_or_zero(live)}
 
 

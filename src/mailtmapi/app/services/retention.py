@@ -5,7 +5,7 @@ import logging
 from collections.abc import Awaitable, Callable
 from datetime import datetime, timedelta, timezone
 
-from sqlalchemy import delete, or_, select
+from sqlalchemy import delete, or_, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.ext.asyncio import async_sessionmaker as AsyncSessionFactory
 
@@ -19,6 +19,7 @@ from ..services.retention_rules import load_sweep_rules, owner_clause
 from ..services.stats_history import (
     EVENT_MAILBOX_DELETED,
     EVENT_MESSAGE_DELETED,
+    extract_domain,
     prune,
     record,
 )
@@ -42,19 +43,13 @@ def _check_ttls(mailbox_ttl_hours: int | None, message_ttl_hours: int | None) ->
 
 
 async def get_retention(session) -> list[Retention]:
-    return list(
-        (
-            await session.execute(select(Retention).order_by(Retention.provider))
-        ).scalars()
-    )
+    return list((await session.execute(select(Retention).order_by(Retention.provider))).scalars())
 
 
 async def get_key_retention(session, key_id: int) -> list[KeyRetention]:
     """Rows this issued key may read. Other keys and the global table stay hidden."""
     rows = await session.execute(
-        select(KeyRetention)
-        .where(KeyRetention.key_id == key_id)
-        .order_by(KeyRetention.provider)
+        select(KeyRetention).where(KeyRetention.key_id == key_id).order_by(KeyRetention.provider)
     )
     return list(rows.scalars())
 
@@ -159,8 +154,8 @@ async def _do_sweep(
     async with factory() as session:
         mailboxes_deleted = 0
         messages_deleted = 0
-        mailbox_deletes: dict[str, int] = {}
-        message_deletes: dict[str, int] = {}
+        mailbox_deletes: dict[tuple[str, str, int | None], int] = {}
+        message_deletes: dict[tuple[str, str, int | None], int] = {}
         secret = settings.resolved_secret_key()
         mailbox_rules, message_rules = await load_sweep_rules(session, only_key_id)
 
@@ -171,9 +166,7 @@ async def _do_sweep(
             delete(Message).where(
                 or_(
                     Message.is_deleted.is_(True),
-                    Message.mailbox_id.in_(
-                        select(Mailbox.id).where(Mailbox.is_deleted.is_(True))
-                    ),
+                    Message.mailbox_id.in_(select(Mailbox.id).where(Mailbox.is_deleted.is_(True))),
                 )
             )
         )
@@ -201,9 +194,16 @@ async def _do_sweep(
             )
         for row in rows:
             info = svc.to_mailbox_info(row, secret)
+            failed_upstream = False
             try:
                 prov = registry.get(rule.provider)
-                await prov.delete_mailbox(info)
+                ok = await prov.delete_mailbox(info)
+                if ok is False:
+                    logger.warning(
+                        "retention: provider delete returned False for %s; marking as deleted locally",
+                        row.address,
+                    )
+                    failed_upstream = True
             except Exception as exc:  # noqa: BLE001 - best-effort sync with provider
                 if _is_already_gone(exc):
                     logger.info(
@@ -213,16 +213,35 @@ async def _do_sweep(
                     )
                 else:
                     logger.warning(
-                        "retention: provider delete failed for %s: %s", row.address, exc
+                        "retention: provider delete failed for %s: %s; marking as deleted locally",
+                        row.address,
+                        exc,
                     )
-                    continue
+                    failed_upstream = True
 
-            async def _drop_box(s: AsyncSession, box_id: int = row.id) -> None:
-                await s.execute(delete(Mailbox).where(Mailbox.id == box_id))
+            if failed_upstream:
+                async def _soft_drop_box(s: AsyncSession, box_id: int = row.id) -> None:
+                    await s.execute(
+                        update(Mailbox)
+                        .where(Mailbox.id == box_id)
+                        .values(
+                            is_active=False,
+                            is_deleted=True,
+                            updated_at=utcnow_naive(),
+                        )
+                    )
 
-            await _write(factory, _drop_box)
+                await _write(factory, _soft_drop_box)
+            else:
+                async def _drop_box(s: AsyncSession, box_id: int = row.id) -> None:
+                    await s.execute(delete(Mailbox).where(Mailbox.id == box_id))
+
+                await _write(factory, _drop_box)
+
             mailboxes_deleted += 1
-            mailbox_deletes[rule.provider] = mailbox_deletes.get(rule.provider, 0) + 1
+            domain = extract_domain(row.address)
+            box_key = (rule.provider, domain, row.owner_key_id)
+            mailbox_deletes[box_key] = mailbox_deletes.get(box_key, 0) + 1
             logger.info("retention: expired mailbox %s deleted", row.address)
 
     # expired messages — mailbox is joined in so we don't re-fetch it per row
@@ -273,14 +292,30 @@ async def _do_sweep(
 
             await _write(factory, _drop_msg)
             messages_deleted += 1
-            message_deletes[rule.provider] = message_deletes.get(rule.provider, 0) + 1
+            domain = extract_domain(mailbox_row.address)
+            msg_key = (rule.provider, domain, mailbox_row.owner_key_id)
+            message_deletes[msg_key] = message_deletes.get(msg_key, 0) + 1
             logger.info("retention: expired message %s deleted", msg_id)
 
     async def _ledger(s: AsyncSession) -> None:
-        for prov_slug, n in mailbox_deletes.items():
-            await record(s, provider=prov_slug, event=EVENT_MAILBOX_DELETED, count=n)
-        for prov_slug, n in message_deletes.items():
-            await record(s, provider=prov_slug, event=EVENT_MESSAGE_DELETED, count=n)
+        for (prov_slug, domain, owner_id), n in mailbox_deletes.items():
+            await record(
+                s,
+                provider=prov_slug,
+                domain=domain,
+                owner_key_id=owner_id,
+                event=EVENT_MAILBOX_DELETED,
+                count=n,
+            )
+        for (prov_slug, domain, owner_id), n in message_deletes.items():
+            await record(
+                s,
+                provider=prov_slug,
+                domain=domain,
+                owner_key_id=owner_id,
+                event=EVENT_MESSAGE_DELETED,
+                count=n,
+            )
         await prune(s)
 
     await _write(factory, _ledger)
@@ -304,9 +339,7 @@ async def run_sweep(
     return await _do_sweep(factory, registry, settings, only_key_id=only_key_id)
 
 
-async def retention_worker(
-    sweep: Callable[[], Awaitable[dict]], interval_seconds: float
-) -> None:
+async def retention_worker(sweep: Callable[[], Awaitable[dict]], interval_seconds: float) -> None:
     while True:
         try:
             await sweep()

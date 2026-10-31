@@ -18,6 +18,7 @@ from . import domain_cache as dc
 from .stats_history import (
     EVENT_MAILBOX_CREATED,
     EVENT_MESSAGE_RECEIVED,
+    extract_domain,
     record,
 )
 
@@ -123,13 +124,16 @@ async def create_mailbox(
         parent_id=parent_id,
         password=password,
         allowed_parent_ids=(
-            tuple(allowed_parent_ids) if slug == "gmail" and allowed_parent_ids is not None else None
+            tuple(allowed_parent_ids)
+            if slug == "gmail" and allowed_parent_ids is not None
+            else None
         ),
     )
     info = await prov.create_mailbox(spec)
-    if not _is_valid_address(info.address):
+    if info is None or not getattr(info, "address", None) or not _is_valid_address(info.address):
+        addr_repr = getattr(info, "address", None) if info is not None else None
         raise MailValidationError(
-            f"provider {slug!r} returned invalid address {info.address!r}; expected local@domain"
+            f"provider {slug!r} returned invalid address {addr_repr!r}; expected local@domain"
         )
     if slug == "gmail" and "+" not in info.address.split("@", 1)[0]:
         raise MailValidationError("gmail address must be a plus-alias")
@@ -139,7 +143,7 @@ async def create_mailbox(
         address=info.address,
         parent_id=info.parent_id,
         password_enc=encrypt(secret, info.password) if info.password else None,
-        mailbox_token_enc=encrypt(secret, info.token),
+        mailbox_token_enc=encrypt(secret, info.token or ""),
         provider_account_id=info.provider_account_id,
         is_active=True,
         is_deleted=False,
@@ -156,7 +160,13 @@ async def create_mailbox(
         await session.rollback()
         await _undo_provider_create(prov, info)
         raise
-    await record(session, provider=row.provider, event=EVENT_MAILBOX_CREATED)
+    await record(
+        session,
+        provider=row.provider,
+        domain=extract_domain(row.address),
+        owner_key_id=row.owner_key_id,
+        event=EVENT_MAILBOX_CREATED,
+    )
     return row
 
 
@@ -210,9 +220,16 @@ async def upsert_messages(
     # Bucket the "received" event by the message's actual receipt date (not the
     # sync date) so the 7-day incoming chart reflects the true per-day inflow —
     # and survives later retention deletes, since receive events live in the ledger.
+    mailbox_domain = extract_domain(mailbox.address)
     for day, count in new_by_day.items():
         await record(
-            session, provider=mailbox.provider, event=EVENT_MESSAGE_RECEIVED, count=count, when=day
+            session,
+            provider=mailbox.provider,
+            domain=mailbox_domain,
+            owner_key_id=mailbox.owner_key_id,
+            event=EVENT_MESSAGE_RECEIVED,
+            count=count,
+            when=day,
         )
     await session.flush()
     return out

@@ -156,7 +156,11 @@ class TempMailPlus(HttpProvider):
     async def _fetch_targets(self, *, known: set[str] | None = None) -> list[Target]:
         resp = await self._http.get(
             f"{self.BASE_URL}/en/",
-            headers={**self._headers(), "Accept": "text/html,application/xhtml+xml", "X-Requested-With": ""},
+            headers={
+                **self._headers(),
+                "Accept": "text/html,application/xhtml+xml",
+                "X-Requested-With": "",
+            },
         )
         domains = _parse_domains_from_html(resp.text)
         if not domains:
@@ -174,8 +178,10 @@ class TempMailPlus(HttpProvider):
                 domain = targets[0].label
             address = f"{random_string(10)}@{domain}"
         data = await self._get_json(f"{self.API_URL}/mails", params=self._params(address, limit=1))
-        if "err" in data:
-            err = data["err"]
+        if not isinstance(data, dict):
+            raise MailAPIError("tempmail.plus: unexpected response from provider")
+        if "err" in data or "error" in data or data.get("result") is False:
+            err = data.get("err") or data.get("error") or "rejected"
             msg = err.get("msg", err) if isinstance(err, dict) else err
             raise MailValidationError(
                 f"tempmail.plus rejected address {address!r}: {msg}",
@@ -215,7 +221,9 @@ class TempMailPlus(HttpProvider):
         )
         if "err" in data:
             raise MailAPIError(f"tempmail.plus get_messages error: {data['err']}", status_code=400)
-        return [_summary(m, mailbox.address) for m in data.get("mail_list") or [] if isinstance(m, dict)]
+        return [
+            _summary(m, mailbox.address) for m in data.get("mail_list") or [] if isinstance(m, dict)
+        ]
 
     async def get_message(self, mailbox: MailboxInfo, message_id: str) -> MessageDetail:
         data = await self._get_json(

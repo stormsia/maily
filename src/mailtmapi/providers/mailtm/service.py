@@ -143,6 +143,8 @@ class MailTM(HttpProvider):
         if not isinstance(account, dict):
             raise MailAPIError("mail.tm: account response is not an object")
         account_id = str(account["id"]) if account.get("id") else ""
+        if not account_id:
+            raise MailAPIError("mail.tm: account response missing account id")
         try:
             token = await self._fetch_token(address, password)
         except MailAPIError as exc:
@@ -175,7 +177,9 @@ class MailTM(HttpProvider):
         failure: MailAPIError | None,
     ) -> None:
         if not account_id:
-            logger.warning("mail.tm: account created for %s but id is missing; cannot delete", address)
+            logger.warning(
+                "mail.tm: account created for %s but id is missing; cannot delete", address
+            )
             return
         body = failure.response_data if failure is not None else {}
         raw = body.get("token") if isinstance(body, dict) else None

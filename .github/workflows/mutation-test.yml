@@ -7,6 +7,8 @@ on:
     paths:
       - 'src/mailtmapi/crypto.py'
       - 'src/mailtmapi/utils/misc.py'
+      - 'tests/test_crypto.py'
+      - 'tests/test_misc.py'
       - '.github/workflows/mutation-test.yml'
   workflow_dispatch:
 
@@ -37,19 +39,53 @@ jobs:
 
       - name: Run Mutation Tests on Core Modules
         run: |
-          uv run --with mutmut mutmut run \
-            --paths-to-mutate=src/mailtmapi/utils/misc.py,src/mailtmapi/crypto.py \
-            --runner="pytest -q -n 0 tests/test_crypto.py tests/test_benchmarks.py"
+          uv run --with mutmut mutmut run
 
-      - name: Display Mutation Test Results & Summary
+      - name: Export CI/CD Mutation Stats
         if: always()
         run: |
-          RESULTS=$(uv run --with mutmut mutmut results || true)
-          echo "$RESULTS"
-          summary_path="$GITHUB_STEP_SUMMARY"
-          if [ -n "$summary_path" ]; then
-            echo "### 🧬 Mutation Testing Results" >> "$summary_path"
-            echo '```text' >> "$summary_path"
-            echo "$RESULTS" >> "$summary_path"
-            echo '```' >> "$summary_path"
-          fi
+          uv run --with mutmut mutmut export_cicd_stats || true
+
+      - name: Display Mutation Test Results & Gate Check
+        if: always()
+        run: |
+          python3 -c "
+          import json, os, sys
+
+          stats_file = 'mutants/mutmut-cicd-stats.json'
+          if not os.path.exists(stats_file):
+              print('::error::Mutation test stats file not found!')
+              sys.exit(1)
+
+          with open(stats_file) as f:
+              stats = json.load(f)
+
+          killed = stats.get('killed', 0)
+          survived = stats.get('survived', 0)
+          no_tests = stats.get('no_tests', 0)
+          timeout = stats.get('timeout', 0)
+          total = stats.get('total', 0)
+
+          tested = total - stats.get('skipped', 0)
+          score = 0.0 if tested <= 0 else ((killed + timeout) / tested) * 100
+
+          print(f'Mutation summary: killed={killed}, survived={survived}, no_tests={no_tests}, timeout={timeout}, total={total}, score={score:.1f}%')
+
+          summary_path = os.environ.get('GITHUB_STEP_SUMMARY')
+          if summary_path:
+              with open(summary_path, 'a', encoding='utf-8') as sf:
+                  sf.write('### 🧬 Mutation Testing Results\n\n')
+                  sf.write(f'- **Mutation Score:** {score:.1f}%\n')
+                  sf.write(f'- **Total Mutants:** {total}\n')
+                  sf.write(f'- **Killed:** {killed}\n')
+                  sf.write(f'- **Survived:** {survived}\n')
+                  sf.write(f'- **No Tests:** {no_tests}\n')
+                  sf.write(f'- **Timeout:** {timeout}\n\n')
+
+          if survived > 0 or no_tests > 0:
+              print(f'::error::Mutation testing failed quality gate: {survived} survived, {no_tests} untested!')
+              sys.exit(1)
+
+          print('Mutation testing quality gate passed: 0 survived mutants.')
+          "
+

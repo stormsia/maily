@@ -97,3 +97,20 @@ ignore = ["DEP002"]
 
 [tool.deptry.per_rule_ignores]
 DEP001 = ["starlette", "pydantic"]
+
+[tool.mutmut]
+source_paths = ["src"]
+only_mutate = [
+    "src/mailtmapi/utils/misc.py",
+    "src/mailtmapi/crypto.py",
+]
+pytest_add_cli_args_test_selection = [
+    "tests/test_crypto.py",
+    "tests/test_misc.py",
+]
+pytest_add_cli_args = [
+    "-q",
+    "-n",
+    "0",
+]
+

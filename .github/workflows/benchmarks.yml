@@ -76,8 +76,9 @@ jobs:
           tool: 'pytest'
           output-file-path: output.json
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          auto-push: false
-          skip-fetch-gh-pages: true
+          auto-push: true
+          gh-pages-branch: 'gh-pages'
+          benchmark-data-dir-path: 'dev/bench'
           summary-always: true
           alert-threshold: '150%'
           fail-on-alert: false

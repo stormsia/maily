@@ -1,7 +1,7 @@
 name: Dependabot uv.lock Auto-Fix
 
 on:
-  pull_request:
+  pull_request_target:
     types: [opened, synchronize]
 
 permissions:
@@ -18,7 +18,8 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.head_ref }}
+          ref: ${{ github.event.pull_request.head.ref }}
+          repository: ${{ github.event.pull_request.head.repo.full_name }}
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Install uv
@@ -44,9 +45,9 @@ jobs:
           git add -A
           if ! git diff --staged --quiet; then
             git commit -m "chore(deps): auto-sync uv.lock and standalone client with dependabot bump"
-            git push
+            git push origin "HEAD:${{ github.event.pull_request.head.ref }}"
             echo "Changes committed and pushed. Triggering main CI workflow..."
-            gh workflow run ci.yml --ref "${{ github.head_ref }}" || true
+            gh workflow run ci.yml --ref "${{ github.event.pull_request.head.ref }}" || true
           else
             echo "Lockfile and client are already up to date."
           fi

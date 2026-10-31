@@ -21,3 +21,4 @@ scratch/*
 .coverage*
 htmlcov/
 output.json
+WORKFLOWS_AUDIT.md

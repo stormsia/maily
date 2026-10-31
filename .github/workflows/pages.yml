@@ -55,13 +55,12 @@ jobs:
             <title>mailtmapi API Interactive Documentation (Swagger UI)</title>
             <link rel="stylesheet" href="https://unpkg.com/swagger-ui-dist@5/swagger-ui.css" />
             <style>
-              body { margin: 0; background: #0b0f19; font-family: system-ui, sans-serif; }
-              .top-nav { display: flex; align-items: center; justify-content: space-between; padding: 10px 24px; background: #111827; border-bottom: 1px solid #1f2937; color: #fff; }
-              .top-nav a { color: #60a5fa; text-decoration: none; margin-left: 16px; font-weight: 500; font-size: 14px; }
+              body { margin: 0; background: #f8fafc; font-family: system-ui, sans-serif; }
+              .top-nav { display: flex; align-items: center; justify-content: space-between; padding: 12px 24px; background: #0f172a; border-bottom: 1px solid #334155; color: #f8fafc; }
+              .top-nav a { color: #38bdf8; text-decoration: none; margin-left: 16px; font-weight: 500; font-size: 14px; }
               .top-nav a:hover { text-decoration: underline; }
               .swagger-ui .topbar { display: none; }
-              .swagger-ui { filter: invert(88%) hue-rotate(180deg); }
-              .swagger-ui .highlight-code { filter: invert(100%) hue-rotate(180deg); }
+              .swagger-ui .wrapper { max-width: 1200px; margin: 0 auto; padding: 20px; }
             </style>
           </head>
           <body>

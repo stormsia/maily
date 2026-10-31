@@ -39,10 +39,10 @@ function bindResize() {
 }
 
 const STATS = [
-  { key: "mbTotal", label: "Mailboxes · total", icon: "inbox", tone: "" },
+  { key: "mbTotal", label: "Mailboxes · live", icon: "inbox", tone: "" },
   { key: "mbActive", label: "Mailboxes · active", icon: "inbox", tone: "stat-icon--green" },
-  { key: "mbDeleted", label: "Mailboxes · deleted", icon: "trash-2", tone: "stat-icon--red" },
-  { key: "msgTotal", label: "Messages · total", icon: "mails", tone: "stat-icon--cyan" },
+  { key: "mbDeleted", label: "Mailboxes · del (10d)", icon: "trash-2", tone: "stat-icon--red" },
+  { key: "msgTotal", label: "Messages · stored", icon: "mails", tone: "stat-icon--cyan" },
   { key: "gmail", label: "Gmail accounts", icon: "at-sign", tone: "stat-icon--amber" },
 ];
 
@@ -202,12 +202,16 @@ function metric(value, label, tone) {
     h("span", {}, label));
 }
 
-function providerCard(slug, live, deleted) {
+function providerCard(slug, live, hist = {}) {
   const hue = slugHue(slug);
   const stored = live.messages_total ?? 0;
-  const boxes = live.mailboxes_total ?? 0;
   const active = live.mailboxes_active ?? 0;
-  return h("div", { class: "card prov-card", style: `--prov-hue:${hue}` },
+  const boxDel = hist.mailbox_deleted ?? 0;
+  const msgDel = hist.message_deleted ?? 0;
+  const boxCreated = hist.mailbox_created ?? 0;
+  const msgRecv = hist.message_received ?? 0;
+  const tip = `10d: +${boxCreated} / -${boxDel} boxes, +${msgRecv} / -${msgDel} msgs`;
+  return h("div", { class: "card prov-card", style: `--prov-hue:${hue}`, title: tip },
     h("div", { class: "prov-card-top" },
       h("span", { class: "prov-name" },
         h("span", { class: "prov-dot", "aria-hidden": "true" }),
@@ -215,9 +219,10 @@ function providerCard(slug, live, deleted) {
       h("span", { class: `pill ${active > 0 ? "pill--on" : "pill--off"}` },
         active > 0 ? `${active} live` : "idle")),
     h("div", { class: "prov-metrics" },
-      metric(stored, "Stored now"),
-      metric(deleted, "Deleted · 10d", deleted > 0 ? "del" : ""),
-      metric(boxes, "Mailboxes")));
+      metric(active, "Live boxes"),
+      metric(boxDel, "Boxes del · 10d", boxDel > 0 ? "del" : ""),
+      metric(stored, "Msgs stored"),
+      metric(msgDel, "Msgs del · 10d", msgDel > 0 ? "del" : "")));
 }
 
 export async function render(root, { silent = false } = {}) {
@@ -248,18 +253,18 @@ export async function render(root, { silent = false } = {}) {
   }
   if (gen !== refreshGen) return;
 
+  const hist = stats.history || {};
+  const histTotals = hist.totals || {};
+  const histByProv = hist.by_provider || {};
   const values = {
     mbTotal: stats.mailboxes?.total ?? 0,
     mbActive: stats.mailboxes?.active ?? 0,
-    mbDeleted: stats.mailboxes?.deleted ?? 0,
+    mbDeleted: (histTotals.mailbox_deleted ?? 0) || (stats.mailboxes?.deleted ?? 0),
     msgTotal: stats.messages?.total ?? 0,
     gmail: stats.gmail_accounts?.total ?? 0,
   };
   const byProvider = stats.by_provider || {};
   const ttlByProvider = Object.fromEntries((retention || []).map((r) => [r.provider, r]));
-  const hist = stats.history || {};
-  const histTotals = hist.totals || {};
-  const histByProv = hist.by_provider || {};
   // Ledger is the single source once it has activity: received+deleted survive
   // retention, live rows do not. Otherwise fall back to the live 7-day query.
   const hasLedgerActivity = (histTotals.message_received ?? 0) + (histTotals.message_deleted ?? 0) > 0;
@@ -300,7 +305,7 @@ export async function render(root, { silent = false } = {}) {
       donutEntries.length ? donutBox : h("div", { class: "chart-fallback" }, "No provider data yet — the chart will appear here."),
       donutSlugs.length
         ? h("div", { class: "prov-grid" }, ...donutSlugs.map((slug) =>
-            providerCard(slug, byProvider[slug] || {}, histByProv[slug]?.message_deleted ?? 0)))
+            providerCard(slug, byProvider[slug] || {}, histByProv[slug] || {})))
         : null),
     h("div", { class: "card chart-card" },
       h("div", { class: "chart-head" },

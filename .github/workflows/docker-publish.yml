@@ -19,19 +19,19 @@ jobs:
     timeout-minutes: 30
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Compute Lowercase Image Name
         run: |
           echo "IMAGE_NAME=ghcr.io/$(echo "${GITHUB_REPOSITORY}" | tr '[:upper:]' '[:lower:]')" >> "$GITHUB_ENV"
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v5
+        uses: astral-sh/setup-uv@v7
         with:
           enable-cache: true
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v7
         with:
           python-version: "3.15"
 
@@ -52,15 +52,15 @@ jobs:
           cp client/client.py mailtmapi-standalone-client.py
 
       - name: Set up QEMU (Multi-Arch)
-        uses: docker/setup-qemu-action@v3
+        uses: docker/setup-qemu-action@v4
         with:
           platforms: 'linux/amd64,linux/arm64'
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@v4
 
       - name: Log in to GitHub Container Registry
-        uses: docker/login-action@v3
+        uses: docker/login-action@v4
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -68,7 +68,7 @@ jobs:
 
       - name: Extract Docker metadata
         id: meta
-        uses: docker/metadata-action@v5
+        uses: docker/metadata-action@v6
         with:
           images: ${{ env.IMAGE_NAME }}
           tags: |
@@ -79,7 +79,7 @@ jobs:
 
       - name: Build and push multi-architecture image
         id: docker_build
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           context: .
           platforms: linux/amd64,linux/arm64
@@ -90,7 +90,7 @@ jobs:
           cache-to: type=gha,mode=max
 
       - name: Generate SPDX SBOM for Container
-        uses: anchore/sbom-action@v0.18.0
+        uses: anchore/sbom-action@v0.24.3
         continue-on-error: true
         with:
           image: ${{ env.IMAGE_NAME }}:${{ github.ref_name }}
@@ -98,7 +98,7 @@ jobs:
           output-file: 'mailtmapi-container-spdx.json'
 
       - name: Generate build provenance attestations for container image
-        uses: actions/attest-build-provenance@v2
+        uses: actions/attest-build-provenance@v4
         if: startsWith(github.ref, 'refs/tags/')
         with:
           subject-name: ${{ env.IMAGE_NAME }}
@@ -106,7 +106,7 @@ jobs:
           push-to-registry: true
 
       - name: Upload SBOM and Client to GitHub Release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         if: startsWith(github.ref, 'refs/tags/')
         with:
           fail_on_unmatched_files: false

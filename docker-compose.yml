@@ -107,4 +107,3 @@ networks:
 
 volumes:
   mailtmapi_data:
-    name: mailtmapi_data

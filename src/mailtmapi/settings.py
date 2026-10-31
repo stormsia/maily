@@ -5,9 +5,10 @@ import logging
 import os
 from functools import lru_cache
 from pathlib import Path
+from typing import Any
 
 from cryptography.fernet import Fernet
-from pydantic import Field
+from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 logger = logging.getLogger("mailtmapi.settings")
@@ -26,6 +27,13 @@ class Settings(BaseSettings):
     host: str = "127.0.0.1"
     port: int = 8477
     proxy: str | None = None
+
+    @field_validator("proxy", mode="before")
+    @classmethod
+    def _sanitize_proxy(cls, v: Any) -> Any:
+        if isinstance(v, str) and not v.strip():
+            return None
+        return v
     gmail_client_id: str = ""
     gmail_client_secret: str = ""
     gmail_credentials_path: str = ""

@@ -13,13 +13,14 @@ Create disposable mailboxes on demand, receive emails in real time, extract veri
 
 ## ✨ Features
 
-- **7 Supported Providers** — Aggregates public temporary-mail networks and private Gmail accounts:
+- **8 Supported Providers** — Aggregates public temporary-mail networks and private Gmail accounts:
   - `mail.tm` — High reliability, custom usernames, passwords, full MIME source
   - `tempmail.plus` — Custom usernames, PIN protection, domains, MIME source
   - `temp-mail.io` — Disposable web mailboxes with automatic CORS tokens
   - `noopmail.org` — Domain rotation and raw source inspection
   - `anonymmail.net` — Session & CSRF-managed disposable mail
   - `dispoemail.org` — Astro-session based disposable mail
+  - `temp.tf` — Real provider aliases on Outlook, Hotmail, Gmail, and high.edu.pl with plus/dot syntax
   - `gmail` — OAuth2 integration with unlimited `username+alias@gmail.com` mailboxes
 - **Magic Verification Extraction** — Wait for an incoming email and automatically extract 4–8 digit verification codes (e.g. `849201`) or confirmation action links with a single async call.
 - **Async Python Client** — Zero-dependency standalone client (`httpx`, `pydantic`, `loguru`) with async context managers, async iterators, typed pydantic models, and granular exceptions.
@@ -42,6 +43,7 @@ Create disposable mailboxes on demand, receive emails in real time, extract veri
 | **noopmail.org** | `domain` | ✅ Supported | ✅ Supported | ❌ No | ✅ Supported | ⚪ No-op |
 | **anonymmail.net** | `domain` | ✅ Supported | ✅ Supported | ❌ No | ✅ Supported | ⚪ No-op |
 | **dispoemail.org** | `domain` | ✅ Supported | ✅ Supported | ❌ No | ✅ Supported | ⚪ No-op |
+| **temp.tf** | `domain` | ✅ Supported | ✅ Supported | ❌ No | ✅ Supported | ⚪ No-op |
 | **gmail** | `parent` | ✅ `+alias` | ❌ Own Account | ❌ OAuth2 | ✅ Supported | ✅ Supported |
 
 > 💡 **Extending Providers:** Want to add your own provider? Check out the comprehensive guide for developers and AI agents in [docs/ADDING_PROVIDERS.md](docs/ADDING_PROVIDERS.md).

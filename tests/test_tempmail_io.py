@@ -281,6 +281,34 @@ async def test_delete_mailbox_is_idempotent_on_404():
 
 
 @pytest.mark.asyncio
+async def test_delete_mailbox_is_idempotent_on_400_email_not_exist():
+    def handler(request: httpx.Request) -> httpx.Response:
+        assert request.method == "DELETE"
+        return httpx.Response(400, json={"message": "tempmail: email not exist"})
+
+    http = _http(handler)
+    provider = TempMailIO(http)
+    try:
+        assert await provider.delete_mailbox(_mailbox()) is True
+    finally:
+        await http.close()
+
+
+@pytest.mark.asyncio
+async def test_delete_message_is_idempotent_on_400_not_exist():
+    def handler(request: httpx.Request) -> httpx.Response:
+        assert request.method == "DELETE"
+        return httpx.Response(400, json={"message": "tempmail: message not found"})
+
+    http = _http(handler)
+    provider = TempMailIO(http)
+    try:
+        assert await provider.delete_message(_mailbox(), "abc-123") is True
+    finally:
+        await http.close()
+
+
+@pytest.mark.asyncio
 async def test_get_source_uses_source_code_endpoint():
     def handler(request: httpx.Request) -> httpx.Response:
         assert request.method == "GET"

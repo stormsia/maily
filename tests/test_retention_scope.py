@@ -13,6 +13,8 @@ from fastapi.testclient import TestClient
 from mailtmapi.app.main import create_app
 from mailtmapi.app.services.retention import utcnow_naive
 from mailtmapi.crypto import encrypt
+from mailtmapi.exceptions import MailAPIError
+from mailtmapi.providers.base import MailboxInfo
 from mailtmapi.providers.registry import ProviderRegistry
 from mailtmapi.settings import Settings
 from tests.helpers import StubProvider
@@ -522,5 +524,32 @@ def test_root_sweep_message_ttl_follows_root_when_key_has_no_row(tmp_path: Path)
         assert response.json()["messages_deleted"] == 2
         conn = _db(tmp_path)
         left = {row[0] for row in conn.execute("SELECT message_api_id FROM messages")}
+        conn.close()
+        assert left == set()
+
+
+def test_retention_purges_mailbox_when_provider_reports_not_exist(tmp_path: Path) -> None:
+    """When upstream delete fails with 'email not exist', retention drops the local mailbox."""
+
+    class NotFoundProvider(StubProvider):
+        async def delete_mailbox(self, mailbox: MailboxInfo) -> bool:
+            raise MailAPIError("tempmail: email not exist", status_code=400)
+
+    with _app(tmp_path) as client:
+        client.app.state.registry = ProviderRegistry([NotFoundProvider()])
+        now = utcnow_naive()
+        old = (now - timedelta(days=10)).strftime("%Y-%m-%d %H:%M:%S")
+        conn = _db(tmp_path)
+        _insert_mailbox(conn, address="expired@x", created_at=old, owner_key_id=None)
+        conn.execute("INSERT INTO retention (provider, mailbox_ttl_hours) VALUES ('stub', 1)")
+        conn.commit()
+        conn.close()
+
+        response = client.post("/v1/admin/retention/run", headers={"X-API-Key": ROOT})
+        assert response.status_code == 200
+        assert response.json()["mailboxes_deleted"] == 1
+
+        conn = _db(tmp_path)
+        left = {row[0] for row in conn.execute("SELECT address FROM mailboxes")}
         conn.close()
         assert left == set()

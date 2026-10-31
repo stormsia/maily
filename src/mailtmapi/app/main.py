@@ -21,6 +21,7 @@ from ..providers.gmail.service import GmailProvider
 from ..providers.mailtm import MailTM
 from ..providers.noopmail_org import NoopMail
 from ..providers.registry import ProviderRegistry
+from ..providers.temp_tf import TempTF
 from ..providers.tempmail_io import TempMailIO
 from ..providers.tempmail_plus import TempMailPlus
 from ..settings import Settings, get_settings
@@ -147,6 +148,11 @@ async def lifespan(app: FastAPI):
             NoopMail(http=http),
             AnonymMailNet(http=http),
             DispoEmailOrg(http=http),
+            TempTF(
+                http=http,
+                gmail_dot=settings.temp_tf_gmail_dot,
+                gmail_plus=settings.temp_tf_gmail_plus,
+            ),
         ]
     )
     await ph.bootstrap(factory, http, registry, settings)

@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from contextlib import suppress
 from typing import Any
 from urllib.parse import quote
 
@@ -165,12 +164,19 @@ class TempMailIO(HttpProvider):
 
     async def delete_mailbox(self, mailbox: MailboxInfo) -> bool:
         email = quote(mailbox.address, safe="@")
-        with suppress(MailNotFoundError):
+        try:
             await self._http.delete(
                 f"{self.BASE_URL}/api/v3/email/{email}",
                 json={"token": mailbox.token},
                 headers=self._headers(),
             )
+        except MailNotFoundError:
+            pass
+        except MailAPIError as exc:
+            if "not exist" in str(exc).lower() or "not found" in str(exc).lower():
+                pass
+            else:
+                raise
         return True
 
     async def list_messages(self, mailbox: MailboxInfo, page: int = 1) -> list[MessageSummary]:
@@ -190,12 +196,19 @@ class TempMailIO(HttpProvider):
         return _detail(data)
 
     async def delete_message(self, mailbox: MailboxInfo, message_id: str) -> bool:
-        with suppress(MailNotFoundError):
+        try:
             await self._http.delete(
                 f"{self.BASE_URL}/api/v3/message/{quote(message_id, safe='')}",
                 json={"token": mailbox.token},
                 headers=self._headers(),
             )
+        except MailNotFoundError:
+            pass
+        except MailAPIError as exc:
+            if "not exist" in str(exc).lower() or "not found" in str(exc).lower():
+                pass
+            else:
+                raise
         return True
 
     async def mark_read(self, mailbox: MailboxInfo, message_id: str) -> bool:

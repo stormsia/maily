@@ -11,7 +11,7 @@ from sqlalchemy.ext.asyncio import async_sessionmaker as AsyncSessionFactory
 
 from ...db.engine import retry_on_lock
 from ...db.models import KeyRetention, Mailbox, Message, Retention
-from ...exceptions import MailValidationError
+from ...exceptions import MailNotFoundError, MailValidationError
 from ...providers.registry import ProviderRegistry
 from ...settings import Settings
 from ..services import mailboxes as svc
@@ -111,6 +111,26 @@ async def delete_key_retention(session, key_id: int, provider: str) -> bool:
     return True
 
 
+def _is_already_gone(exc: Exception) -> bool:
+    """Return True if exc indicates the mailbox or message does not exist upstream."""
+    if isinstance(exc, MailNotFoundError):
+        return True
+    msg = str(exc).lower()
+    return any(
+        phrase in msg
+        for phrase in (
+            "not exist",
+            "not found",
+            "doesn't exist",
+            "does not exist",
+            "unknown email",
+            "unknown account",
+            "no such email",
+            "no such message",
+        )
+    )
+
+
 async def _write(
     factory: AsyncSessionFactory[AsyncSession],
     operation: Callable[[AsyncSession], Awaitable[None]],
@@ -185,10 +205,17 @@ async def _do_sweep(
                 prov = registry.get(rule.provider)
                 await prov.delete_mailbox(info)
             except Exception as exc:  # noqa: BLE001 - best-effort sync with provider
-                logger.warning(
-                    "retention: provider delete failed for %s: %s", row.address, exc
-                )
-                continue
+                if _is_already_gone(exc):
+                    logger.info(
+                        "retention: provider mailbox %s already gone (%s), cleaning up locally",
+                        row.address,
+                        exc,
+                    )
+                else:
+                    logger.warning(
+                        "retention: provider delete failed for %s: %s", row.address, exc
+                    )
+                    continue
 
             async def _drop_box(s: AsyncSession, box_id: int = row.id) -> None:
                 await s.execute(delete(Mailbox).where(Mailbox.id == box_id))
@@ -225,13 +252,21 @@ async def _do_sweep(
                 prov = registry.get(rule.provider)
                 await prov.delete_message(info, msg_id)
             except Exception as exc:  # noqa: BLE001 - best-effort sync with provider
-                logger.warning(
-                    "retention: provider message delete failed for %s/%s: %s",
-                    msg_id,
-                    msg.provider,
-                    exc,
-                )
-                continue
+                if _is_already_gone(exc):
+                    logger.info(
+                        "retention: provider message %s/%s already gone (%s), cleaning up locally",
+                        msg_id,
+                        msg.provider,
+                        exc,
+                    )
+                else:
+                    logger.warning(
+                        "retention: provider message delete failed for %s/%s: %s",
+                        msg_id,
+                        msg.provider,
+                        exc,
+                    )
+                    continue
 
             async def _drop_msg(s: AsyncSession, mid: int = msg.id) -> None:
                 await s.execute(delete(Message).where(Message.id == mid))

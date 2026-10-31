@@ -39,6 +39,8 @@ class Settings(BaseSettings):
     tempmail_io_origin: str = "https://temp-mail.io/"
     tempmail_io_cors_header: str = ""
     provider_headers_ttl_seconds: int = 21600
+    temp_tf_gmail_dot: bool = True
+    temp_tf_gmail_plus: bool = True
 
     def resolved_secret_key(self) -> str:
         """Encryption key, resolved once.

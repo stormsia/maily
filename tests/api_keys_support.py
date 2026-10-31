@@ -11,11 +11,11 @@ import json
 import time
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from typing import TypedDict
 from urllib.parse import parse_qs
 
 import httpx
 from fastapi.testclient import TestClient
+from typing_extensions import TypedDict
 
 from mailtmapi.app.main import create_app
 from mailtmapi.crypto import encrypt

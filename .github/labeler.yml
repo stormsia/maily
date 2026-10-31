@@ -1,0 +1,27 @@
+area:core:
+  - changed-files:
+      - any-glob-to-any-file: ['src/mailtmapi/app/**', 'src/mailtmapi/settings.py', 'src/mailtmapi/crypto.py']
+
+area:db:
+  - changed-files:
+      - any-glob-to-any-file: ['src/mailtmapi/db/**', 'alembic/**']
+
+area:providers:
+  - changed-files:
+      - any-glob-to-any-file: ['src/mailtmapi/providers/**']
+
+area:frontend:
+  - changed-files:
+      - any-glob-to-any-file: ['src/mailtmapi/static/**']
+
+area:tests:
+  - changed-files:
+      - any-glob-to-any-file: ['tests/**']
+
+area:ci:
+  - changed-files:
+      - any-glob-to-any-file: ['.github/**', 'Dockerfile', 'docker-compose.yml', 'pyproject.toml']
+
+dependencies:
+  - changed-files:
+      - any-glob-to-any-file: ['uv.lock', 'pyproject.toml']

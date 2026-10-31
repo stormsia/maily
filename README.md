@@ -4,10 +4,16 @@
 
 Create disposable mailboxes on demand, receive emails in real time, extract verification codes and confirmation links automatically — all through one clean REST API, an async-first Python client, and a dark-themed web console. Runs locally or in Docker, stores state in SQLite, and protects access with scoped API keys and encrypted credentials.
 
-![Python](https://img.shields.io/badge/Python-3.10%2B-3776AB?logo=python&logoColor=white)
-![FastAPI](https://img.shields.io/badge/FastAPI-0.115+-009688?logo=fastapi)
-![SQLite](https://img.shields.io/badge/SQLite-3-003B57?logo=sqlite)
-![License](https://img.shields.io/badge/license-MIT-blue)
+[![CI Pipeline](https://github.com/stormsia/mailtmapi/actions/workflows/ci.yml/badge.svg)](https://github.com/stormsia/mailtmapi/actions/workflows/ci.yml)
+[![CodeQL Security](https://github.com/stormsia/mailtmapi/actions/workflows/codeql.yml/badge.svg)](https://github.com/stormsia/mailtmapi/actions/workflows/codeql.yml)
+[![Security Audit](https://github.com/stormsia/mailtmapi/actions/workflows/pip-audit.yml/badge.svg)](https://github.com/stormsia/mailtmapi/actions/workflows/pip-audit.yml)
+[![Gitleaks Scan](https://github.com/stormsia/mailtmapi/actions/workflows/gitleaks.yml/badge.svg)](https://github.com/stormsia/mailtmapi/actions/workflows/gitleaks.yml)
+[![Code Coverage](https://codecov.io/gh/stormsia/mailtmapi/branch/main/graph/badge.svg)](https://codecov.io/gh/stormsia/mailtmapi)
+[![Docker GHCR](https://img.shields.io/badge/Docker-ghcr.io-blue?logo=docker&logoColor=white)](https://github.com/stormsia/mailtmapi/pkgs/container/mailtmapi)
+[![PyPI version](https://img.shields.io/pypi/v/mailtmapi.svg)](https://pypi.org/project/mailtmapi/)
+[![API Docs](https://img.shields.io/badge/Docs-GitHub%20Pages-success?logo=github)](https://stormsia.github.io/mailtmapi/)
+[![Python](https://img.shields.io/badge/Python-3.10%20%7C%203.11%20%7C%203.12%20%7C%203.13-3776AB?logo=python&logoColor=white)](https://github.com/stormsia/mailtmapi)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 ---
 
@@ -68,141 +74,52 @@ docker compose up -d --build
 ```bash
 git clone https://github.com/stormsia/mailtmapi.git && cd mailtmapi
 python -m venv .venv
-
-# Windows
-.venv\Scripts\activate
-# Linux / macOS
-source .venv/bin/activate
-
-pip install -e ".[dev]"
-mailtmapi                       # starts on 127.0.0.1:8477
-```
-
-Development server with auto-reload:
-
-```bash
-uvicorn mailtmapi.app.main:create_app --factory --reload --port 8477
+source .venv/bin/activate   # or .venv\Scripts\activate on Windows
+pip install -e .
+cp .env.example .env
+mailtmapi
 ```
 
 ---
 
-## 🐍 Standalone Async Python Client
+## 🛡️ Architecture & CI/CD Pipeline
 
-The repository includes a dedicated, self-contained standalone Python client package located in `client/` (and mirrorable into any project with zero server dependencies).
+The project implements a state-of-the-art continuous integration and delivery architecture with multi-layer security scanning:
 
-### Installation
+```mermaid
+flowchart LR
+    subgraph CI["Fast Feedback CI (< 90s)"]
+        lint["Ruff + Biome + HTMLHint"]
+        alembic["Alembic Migrations Check"]
+        deptry["Deptry Dependencies Cleanliness"]
+        mypy["Mypy Strict Type Check"]
+        pytest["Pytest Matrix (3.10-3.13) + Coverage >= 85%"]
+        smoke["Docker Runtime Smoke Test"]
+    end
 
-```bash
-pip install "mailtmapi-client @ git+https://github.com/stormsia/mailtmapi.git#subdirectory=client"
-# or simply copy client/client.py directly into your script!
+    subgraph Security["Security & SAST"]
+        codeql["CodeQL SAST (Python + JS)"]
+        gitleaks["Gitleaks Secret Scanning"]
+        pipaudit["pip-audit PyPA Advisory CVE"]
+        trivy["Trivy Container & OS Scan"]
+    end
+
+    subgraph CD["Release & Distribution"]
+        pypi["PyPI Trusted Publisher (OIDC)"]
+        ghcr["Multi-Arch GHCR (amd64/arm64)"]
+        sbom["SPDX Signed SBOM"]
+        pages["GitHub Pages Interactive Docs"]
+    end
+
+    CI --> Security --> CD
 ```
 
-### 1-Line Mailbox & Verification Code Extraction
-
-```python
-import asyncio
-from mailtmapi.client import MailTMAPI, WaitTimeoutError
-
-async def main():
-    async with MailTMAPI("http://127.0.0.1:8477", api_key="sk-...") as api:
-        # Create a disposable mailbox with automatic domain selection
-        box = await api.create_temp_mailbox()
-        print(f"Disposable email: {box.address}")
-
-        # Send an email to box.address, then wait for the code:
-        try:
-            code = await api.wait_for_code(box, timeout=60.0)
-            print(f"Received verification code: {code}")
-        except WaitTimeoutError:
-            print("Timed out waiting for email.")
-
-asyncio.run(main())
-```
-
-### Confirmation Link Extraction
-
-```python
-async with MailTMAPI("http://127.0.0.1:8477") as api:
-    box = await api.create_temp_mailbox(provider="tempmail.plus")
-    print(f"Address: {box.address}")
-
-    # Automatically extracts URLs containing 'confirm', 'verify', or 'activate'
-    link = await api.wait_for_link(box, timeout=90.0)
-    print(f"Confirmation URL: {link}")
-```
-
-### Real-Time Email Streaming (Async Iterator)
-
-```python
-async with MailTMAPI("http://127.0.0.1:8477") as api:
-    box = await api.mailboxes.create(domain="mail.tm")
-
-    # Continuously yields new messages as they arrive
-    async for msg in api.messages.iter_messages(box, poll_interval=2.0, timeout=120.0):
-        print(f"Incoming: {msg.subject} from {msg.from_address}")
-        detail = await api.messages.get(box, msg.message_api_id)
-        print("Body text:\n", detail.text)
-```
-
-### Granular Exception Handling
-
-All API errors inherit from `ApiError`, which inherits from `ClientError`:
-
-```python
-from mailtmapi.client import (
-    AuthenticationError,    # 401: Invalid API key
-    ForbiddenError,         # 403: Scope denied
-    NotFoundError,          # 404: Mailbox or message missing
-    ValidationError,        # 422 / 400: Bad params
-    RateLimitError,         # 429: Rate limited
-    UpstreamProviderError,  # 502/504: Provider downtime
-    WaitTimeoutError,       # Timeout waiting for email/code
-)
-
-try:
-    detail = await api.messages.get(box, "unknown_id")
-except NotFoundError:
-    print("Message not found!")
-except AuthenticationError:
-    print("Check your API key!")
-```
-
-### Scoped API Key Management
-
-```python
-async with MailTMAPI("http://127.0.0.1:8477", api_key="root_secret") as api:
-    # Create key restricted to mail.tm only
-    new_key = await api.keys.create(
-        name="bot-worker",
-        scope={"providers": ["mail.tm"], "parent_ids": [], "actions": ["read", "write"]},
-    )
-    print(f"Key Prefix: {new_key.prefix} | Secret: {new_key.secret}")
-```
-
-### Retention & Database Maintenance
-
-```python
-async with MailTMAPI("http://127.0.0.1:8477", api_key="root_secret") as api:
-    # Run regular retention sweep (triggers DB maintenance if interval has elapsed)
-    res = await api.admin.retention_run()
-    print(f"Deleted: {res.mailboxes_deleted} boxes, {res.messages_deleted} messages")
-
-    # Or force immediate full database maintenance (VACUUM, REINDEX, ANALYZE):
-    res = await api.admin.retention_run(force_maintenance=True)
-```
-
----
-
-## 🖥️ Web Dashboard & Documentation Hub
-
-Access the admin console at `http://127.0.0.1:8477/`:
-
-- **Overview** — Live metrics, incoming message 7-day trend, active providers, and manual retention sweep.
-- **Mailboxes** — Instant search, filter by provider, 1-click address copy, and creation dialog with provider capability awareness.
-- **Message Reader** — Reading pane with automatic **Quick Extract** card (highlighting 6-digit codes and action links with 1-click copy), formatted HTML / Raw HTML tabs, RFC822 source viewer, and user-controllable auto-refresh interval (5s / 10s / 30s / Off).
-- **API Keys** — Create and manage scoped keys, reveal secrets, and test the dashboard under a specific key identity.
-- **Retention & Database Maintenance** — Real-time cache status, scheduled refresh intervals, TTL cleanups, and automated database maintenance (VACUUM, REINDEX, ANALYZE).
-- **Developer Hub (`/docs`)** — Multi-tab developer portal featuring interactive Swagger UI with automatic API key preauthorization, Python client snippets, provider status matrix, and dynamic cURL commands.
+### Security & Compliance Controls
+1. **GitHub CodeQL Analysis** — Deep semantic static application security testing (SAST) detecting SQL injection, path traversal, and SSRF.
+2. **Gitleaks Secret Scanning** — Pre-merge blocking of accidental token, key, or credential commits (`.gitleaks.toml` configured).
+3. **Trivy Container Scanner** — Full CVE inspection of Debian Bookworm OS packages and Python wheels exported directly to the **GitHub Security tab (SARIF)**.
+4. **pip-audit** — Automated vulnerability audit against the PyPA Advisory Database.
+5. **Hermetic Test Suite** — 360+ tests passing hermetically with 85%+ code coverage across Python 3.10, 3.11, 3.12, and 3.13.
 
 ---
 
@@ -235,17 +152,24 @@ Copy `.env.example` to `.env` and customize:
 The repository has 100% passing tests and strict typing and linting checks:
 
 ```bash
-# Run full test suite across all workers
-python -m pytest
+# Run full test suite with coverage
+uv run python -m pytest -q --cov=mailtmapi --cov-report=term-missing
+
+# Check Alembic migrations consistency
+uv run alembic check
+
+# Verify clean pyproject.toml dependencies
+uvx deptry src
 
 # Run ruff linter & formatter checks
 uv run ruff check src tests client scripts
+uv run ruff format --check src tests client scripts
 
 # Run mypy static type checking
-uv run mypy src
+uv run mypy src client scripts
 
 # Verify standalone client mirror integrity
-python scripts/build_client.py --check
+uv run python scripts/build_client.py --check
 ```
 
 ---

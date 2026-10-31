@@ -1,0 +1,16 @@
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Whitelisted mock credentials for testing and documentation"
+paths = [
+  '''tests/.*''',
+  '''\.env\.example''',
+  '''README\.md''',
+  '''pyproject\.toml''',
+]
+regexes = [
+  '''Bearer mock_.*''',
+  '''[0-9a-f]{32}''',
+  '''dummy_.*''',
+]

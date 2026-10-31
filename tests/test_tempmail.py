@@ -178,3 +178,84 @@ async def test_get_source_download_url_is_empty():
         assert "epin" not in src.download_url
     finally:
         await http.close()
+
+
+
+@pytest.mark.asyncio
+async def test_tempmail_plus_delete_operations_and_attachments():
+    deleted = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.method == "GET" and request.url.path == "/api/mails":
+            # return 1 message then empty
+            if "offset" in request.url.params and request.url.params["offset"] != "0":
+                return httpx.Response(200, json={"mail_list": []})
+            if deleted:
+                return httpx.Response(200, json={"mail_list": []})
+            return httpx.Response(
+                200,
+                json={
+                    "mail_list": [
+                        {
+                            "mail_id": "m100",
+                            "subject": "subj",
+                            "from_name": "sender",
+                            "from_mail": "sender@ex.com",
+                            "is_new": False,
+                            "date": "2024-01-01 10:00:00",
+                        }
+                    ]
+                },
+            )
+        if request.method == "DELETE" and request.url.path == "/api/mails/m100":
+            deleted.append("m100")
+            return httpx.Response(200, json={"result": True})
+        if request.method == "GET" and request.url.path == "/api/mails/att_msg":
+            return httpx.Response(
+                200,
+                json={
+                    "mail_id": "att_msg",
+                    "subject": "Attachments",
+                    "from_mail": "a@b.c",
+                    "text": "sample text",
+                    "html": "",
+                    "attachments": [
+                        {
+                            "id": "att1",
+                            "name": "photo.jpg",
+                            "content_type": "image/jpeg",
+                            "size": 2048,
+                            "url": "https://tempmail.plus/dl/att1",
+                        }
+                    ],
+                },
+            )
+        return httpx.Response(404)
+
+    http = _http(handler)
+    provider = TempMailPlus(http)
+    mailbox = MailboxInfo(
+        provider="tempmail.plus",
+        address="user@mailto.plus",
+        token="user@mailto.plus",
+        provider_account_id="user@mailto.plus",
+    )
+    try:
+        # Delete message
+        res_del = await provider.delete_message(mailbox, "m100")
+        assert res_del is True
+
+        # Mark read
+        assert await provider.mark_read(mailbox, "m100") is True
+
+        # Delete mailbox clears inbox
+        assert await provider.delete_mailbox(mailbox) is True
+
+        # Get message with attachments
+        detail = await provider.get_message(mailbox, "att_msg")
+        assert detail.has_attachments is True
+        assert len(detail.attachments) == 1
+        assert detail.attachments[0].filename == "photo.jpg"
+        assert detail.attachments[0].download_url == "https://tempmail.plus/dl/att1"
+    finally:
+        await http.close()

@@ -1,0 +1,48 @@
+name: Performance Benchmarks Tracking
+
+on:
+  push:
+    branches: [main]
+  schedule:
+    - cron: '0 2 * * 0' # Weekly on Sunday
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  deployments: write
+
+jobs:
+  benchmark:
+    name: API & Database Benchmarks
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: uv sync --frozen --all-extras
+
+      - name: Run Pytest Benchmarks
+        run: |
+          uv run python -m pytest tests/ -k "benchmark or concurrency" --benchmark-json=output.json || true
+
+      - name: Store benchmark results
+        uses: benchmark-action/github-action-benchmark@v1
+        if: hashFiles('output.json') != ''
+        with:
+          tool: 'pytest'
+          output-file-path: output.json
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          auto-push: false
+          summary-always: true

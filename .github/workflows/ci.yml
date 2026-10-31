@@ -17,23 +17,24 @@ jobs:
   lint:
     name: Lint & Quality
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v7
+        uses: actions/checkout@v4
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v7
+        uses: astral-sh/setup-uv@v5
         with:
           enable-cache: true
           cache-dependency-glob: "uv.lock"
 
       - name: Set up Python
-        uses: actions/setup-python@v7
+        uses: actions/setup-python@v5
         with:
           python-version: "3.12"
 
       - name: Set up Node.js
-        uses: actions/setup-node@v7
+        uses: actions/setup-node@v4
         with:
           node-version: "22"
 
@@ -46,14 +47,16 @@ jobs:
       - name: Ruff Lint (with GitHub annotations)
         run: uv run ruff check --output-format=github src tests client scripts
 
+      - name: Alembic Migrations Consistency Check
+        run: uv run alembic check
+
+      - name: Clean Dependency Architecture (Deptry)
+        run: uvx deptry src
+
       - name: Verify generated standalone client mirror
-        # client/client.py is generated from src/mailtmapi/standalone_client.py;
-        # a stale generated file is a build failure.
         run: uv run python scripts/build_client.py --check
 
-      - name: JavaScript syntax check
-        # Static ES modules, no build step / package.json. node --check parses
-        # each file as ESM (missing semicolons/syntax errors fail here).
+      - name: JavaScript syntax check (ESM)
         run: |
           shopt -s nullglob
           for f in src/mailtmapi/static/js/*.js src/mailtmapi/static/js/pages/*.js; do
@@ -61,21 +64,27 @@ jobs:
             node --input-type=module --check < "$f"
           done
 
+      - name: Static Frontend Assets Lint (Biome & HTMLHint)
+        run: |
+          npx --yes @biomejs/biome check src/mailtmapi/static/js
+          npx --yes htmlhint src/mailtmapi/static/*.html
+
   type-check:
     name: Type Check (mypy)
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v7
+        uses: actions/checkout@v4
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v7
+        uses: astral-sh/setup-uv@v5
         with:
           enable-cache: true
           cache-dependency-glob: "uv.lock"
 
       - name: Set up Python
-        uses: actions/setup-python@v7
+        uses: actions/setup-python@v5
         with:
           python-version: "3.12"
 
@@ -88,53 +97,55 @@ jobs:
   test:
     name: Test (Python ${{ matrix.python-version }})
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     strategy:
       fail-fast: false
       matrix:
         python-version: ["3.10", "3.11", "3.12", "3.13"]
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v7
+        uses: actions/checkout@v4
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v7
+        uses: astral-sh/setup-uv@v5
         with:
           enable-cache: true
           cache-dependency-glob: "uv.lock"
 
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v7
+        uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
 
       - name: Install dependencies
         run: uv sync --frozen --all-extras
 
-      - name: Run Pytest suite
-        # Test suite is hermetic by design: every Settings(...) in the tests
-        # passes _env_file=None so a developer's local .env (MAILTM_API_KEY,
-        # proxies, ...) can never leak into CI runs.
-        # `python -m pytest` over bare `pytest`: guarantees the repo root is on
-        # sys.path so `from tests.helpers import ...` resolves (tests is a
-        # package via tests/__init__.py).
-        # -n auto comes from addopts (pytest-xdist). Each test uses its own
-        # tmp_path SQLite database, so workers do not share state.
-        run: uv run python -m pytest -q
+      - name: Run Pytest suite with coverage
+        run: uv run python -m pytest -q --cov=mailtmapi --cov-report=xml:coverage.xml --cov-report=term-missing
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v5
+        if: matrix.python-version == '3.12'
+        with:
+          files: ./coverage.xml
+          fail_ci_if_error: false
+          token: ${{ secrets.CODECOV_TOKEN }}
 
   package:
     name: Package Distribution Check
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v7
+        uses: actions/checkout@v4
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v7
+        uses: astral-sh/setup-uv@v5
         with:
           enable-cache: true
 
       - name: Set up Python
-        uses: actions/setup-python@v7
+        uses: actions/setup-python@v5
         with:
           python-version: "3.12"
 
@@ -145,30 +156,44 @@ jobs:
         run: uvx twine check --strict dist/*
 
       - name: Upload build artifacts
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@v4
         with:
           name: python-package-distributions
           path: dist/
           retention-days: 5
 
   docker:
-    name: Docker Build Smoke Test
+    name: Docker Build & Runtime Smoke Test
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v7
+        uses: actions/checkout@v4
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v4
+        uses: docker/setup-buildx-action@v3
 
-      - name: Build Docker image
-        uses: docker/build-push-action@v7
+      - name: Build Docker image locally
+        uses: docker/build-push-action@v6
         with:
           context: .
-          push: false
+          load: true
           tags: mailtmapi:ci-test
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+      - name: Verify Docker container starts and API responds
+        run: |
+          docker run -d -p 8000:8000 --name ci-smoke-app mailtmapi:ci-test
+          sleep 4
+          curl --fail --retry 5 --retry-delay 2 http://localhost:8000/api/health || {
+            echo "::error::Container health check failed. Dumping logs:"
+            docker logs ci-smoke-app
+            exit 1
+          }
+          echo "Docker smoke test passed: /api/health responded successfully."
+          docker stop ci-smoke-app
+          docker rm ci-smoke-app
 
   ci-status:
     name: All Checks Passed
@@ -185,7 +210,7 @@ jobs:
               '🔍 Type Check (mypy)': '${{ needs.type-check.result }}',
               '🧪 Test Matrix (Python 3.10 - 3.13)': '${{ needs.test.result }}',
               '📦 Package Build & Check': '${{ needs.package.result }}',
-              '🐳 Docker Multi-Stage Build': '${{ needs.docker.result }}',
+              '🐳 Docker Multi-Stage Build & Smoke': '${{ needs.docker.result }}',
           }
           summary_path = os.environ.get('GITHUB_STEP_SUMMARY')
           if summary_path:

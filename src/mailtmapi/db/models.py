@@ -191,13 +191,14 @@ class StatsEvent(Base):
 
     __tablename__ = "stats_events"
     __table_args__ = (
-        UniqueConstraint(
+        Index(
+            "uq_stats_events_bucket",
             "day",
             "provider",
             "domain",
             "owner_key_id",
             "event",
-            name="uq_stats_events_bucket",
+            unique=True,
         ),
         Index("ix_stats_events_day_event", "day", "event"),
         Index("ix_stats_events_domain", "domain"),

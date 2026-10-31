@@ -1,0 +1,51 @@
+name: Publish to PyPI
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  pypi-publish:
+    name: Upload Release to PyPI (OIDC Trusted Publisher)
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://pypi.org/p/mailtmapi
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Verify Git Tag matches pyproject.toml version
+        run: |
+          PKG_VERSION=$(python3 -c "import tomllib; print(tomllib.load(open('pyproject.toml', 'rb'))['project']['version'])")
+          EXPECTED_TAG="v$PKG_VERSION"
+          if [ "${{ github.ref_name }}" != "$EXPECTED_TAG" ] && [ "${{ github.ref_type }}" == "tag" ]; then
+            echo "::error::Git tag (${{ github.ref_name }}) does not match package version ($EXPECTED_TAG)"
+            exit 1
+          fi
+          echo "Version check passed: Tag ${{ github.ref_name }} matches pyproject.toml ($PKG_VERSION)"
+
+      - name: Build sdist and wheel
+        run: uv build
+
+      - name: Validate distribution metadata
+        run: uvx twine check --strict dist/*
+
+      - name: Publish package distributions to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1

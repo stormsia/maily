@@ -15,29 +15,79 @@ const titleEl = document.getElementById("page-title");
 const eyebrowEl = document.getElementById("page-eyebrow");
 
 const TITLES = {
-  overview: ["Overview", "Admin console", "Service health, traffic and providers at a glance."],
-  mailboxes: ["Mailboxes", "Admin console", "Create, search and manage temporary addresses."],
-  detail: ["Mailbox", "Mailboxes", "Messages for one address."],
-  retention: ["Retention", "Admin console", "Automatic cleanup rules per provider."],
-  "domain-cache": ["Domain cache", "Admin console", "Cached provider domains and refresh schedule."],
-  gmail: ["Gmail", "Admin console", "Connect Google accounts for +alias mailboxes."],
-  keys: ["Keys", "Admin console", "Issue scoped keys, reveal secrets, and open the dashboard as one."],
-  access: ["Access", "Admin console", "What this key can do. Read-only."],
+  overview:      ["Overview",     "Admin console", "Service health, traffic and providers at a glance."],
+  mailboxes:     ["Mailboxes",    "Admin console", "Create, search and manage temporary addresses."],
+  detail:        ["Mailbox",      "Mailboxes",     "Messages for one address."],
+  retention:     ["Retention",    "Admin console", "Automatic cleanup rules per provider."],
+  "domain-cache":["Domain cache", "Admin console", "Cached provider domains and refresh schedule."],
+  gmail:         ["Gmail",        "Admin console", "Connect Google accounts for +alias mailboxes."],
+  keys:          ["Keys",         "Admin console", "Issue scoped keys, reveal secrets, and open the dashboard as one."],
+  access:        ["Access",       "Admin console", "What this key can do. Read-only."],
 };
 
 const PREV_KEY = "mailtm_api_key_prev";
 /** Latest GET /v1/admin/keys/me, or null when the call has not succeeded. */
 let currentMe = null;
-
 let currentCleanup = null;
 
-/* ---------- health + auth-mode banner ---------- */
+/* ============================================================
+   Mobile sidebar drawer
+   ============================================================ */
+const sidebar   = document.getElementById("sidebar");
+const backdrop  = document.getElementById("sidebar-backdrop");
+const hamburger = document.getElementById("hamburger-btn");
+
+function openSidebar() {
+  sidebar.classList.add("is-open");
+  backdrop.classList.add("is-open");
+  hamburger?.setAttribute("aria-expanded", "true");
+  // trap focus loosely — close on backdrop click / Escape
+  document.addEventListener("keydown", onSidebarKeydown);
+}
+
+function closeSidebar() {
+  sidebar.classList.remove("is-open");
+  backdrop.classList.remove("is-open");
+  hamburger?.setAttribute("aria-expanded", "false");
+  document.removeEventListener("keydown", onSidebarKeydown);
+}
+
+function onSidebarKeydown(e) {
+  if (e.key === "Escape") { closeSidebar(); hamburger?.focus(); }
+}
+
+hamburger?.addEventListener("click", () => {
+  sidebar.classList.contains("is-open") ? closeSidebar() : openSidebar();
+});
+backdrop?.addEventListener("click", closeSidebar);
+
+// Close drawer on nav link click (mobile)
+sidebar?.querySelectorAll(".nav-link").forEach((a) => {
+  a.addEventListener("click", () => {
+    if (window.innerWidth <= 640) closeSidebar();
+  });
+});
+
+// Skip link keyboard accessibility (focus main without corrupting SPA hash)
+document.querySelector(".skip-link")?.addEventListener("click", (e) => {
+  e.preventDefault();
+  const target = document.getElementById("app");
+  if (target) {
+    target.setAttribute("tabindex", "-1");
+    target.focus();
+  }
+});
+
+/* ============================================================
+   Health + auth-mode banner
+   ============================================================ */
 async function ping() {
-  const pill = document.getElementById("health-pill");
-  const text = document.getElementById("health-text");
+  const pill   = document.getElementById("health-pill");
+  const text   = document.getElementById("health-text");
   const pillSm = document.getElementById("health-pill-sm");
-  const dotSm = document.getElementById("health-dot-sm");
+  const dotSm  = document.getElementById("health-dot-sm");
   const textSm = document.getElementById("health-text-sm");
+
   let degraded = null;
   try {
     const body = await api.health();
@@ -45,42 +95,35 @@ async function ping() {
     const cache = (body && body.domain_cache) || {};
     const failing = Object.entries(cache).filter(([, m]) => m && m.error).map(([slug]) => slug);
     degraded = failing.length ? failing : null;
+
     if (!degraded) {
-      pill?.classList.remove("off", "warn");
-      pill?.classList.add("on");
-      if (text) { text.textContent = "online"; text.removeAttribute("title"); }
-      pillSm?.classList.remove("off", "warn");
-      pillSm?.classList.add("on");
-      if (dotSm) { dotSm.style.background = "var(--ok)"; dotSm.style.boxShadow = "0 0 10px rgba(65,217,154,.9)"; }
+      setHealthState(pill, text, "on", "online");
+      setHealthState(pillSm, null, "on");
+      if (dotSm) applyDot(dotSm, "var(--ok)", "rgba(65,217,154,.9)");
       if (textSm) { textSm.textContent = `online · ${location.host}`; textSm.removeAttribute("title"); }
     }
   } catch {
     degraded = null;
-    pill?.classList.remove("on", "warn");
-    pill?.classList.add("off");
-    if (text) { text.textContent = "offline"; text.title = ""; }
-    pillSm?.classList.remove("on", "warn");
-    pillSm?.classList.add("off");
-    if (dotSm) { dotSm.style.background = "var(--danger)"; dotSm.style.boxShadow = "0 0 10px rgba(255,125,125,.8)"; }
+    setHealthState(pill, text, "off", "offline");
+    setHealthState(pillSm, null, "off");
+    if (dotSm) applyDot(dotSm, "var(--danger)", "rgba(255,125,125,.8)");
     if (textSm) { textSm.textContent = `offline · ${location.host}`; textSm.title = ""; }
   }
+
   if (degraded) {
     const hint = `Domain cache refresh failing: ${degraded.join(", ")}`;
-    pill?.classList.remove("on", "off");
-    pill?.classList.add("warn");
-    if (text) { text.textContent = "degraded"; text.title = hint; }
-    pillSm?.classList.remove("on", "off");
-    pillSm?.classList.add("warn");
-    if (dotSm) { dotSm.style.background = "var(--warn)"; dotSm.style.boxShadow = "0 0 10px rgba(255,190,90,.9)"; }
+    setHealthState(pill, text, "warn", "degraded", hint);
+    setHealthState(pillSm, null, "warn");
+    if (dotSm) applyDot(dotSm, "var(--warn)", "rgba(255,190,90,.9)");
     if (textSm) { textSm.textContent = `degraded · ${location.host}`; textSm.title = hint; }
   }
+
   try {
     const cfg = await api.config();
     const warn = document.getElementById("key-warning");
     if (warn) warn.hidden = !!cfg.api_key_required;
-  } catch {
-    /* server too old / unreachable: keep banner state unset */
-  }
+  } catch { /* server too old / unreachable: keep banner state unset */ }
+
   try {
     currentMe = await api.keyMe();
   } catch {
@@ -91,6 +134,18 @@ async function ping() {
   redirectIfHidden();
 }
 
+function setHealthState(pill, textEl, state, label, titleText) {
+  if (!pill) return;
+  pill.classList.remove("on", "off", "warn");
+  pill.classList.add(state);
+  if (textEl && label) { textEl.textContent = label; textEl.title = titleText || ""; }
+}
+
+function applyDot(dot, bg, shadow) {
+  dot.style.background  = bg;
+  dot.style.boxShadow   = `0 0 10px ${shadow}`;
+}
+
 function hasAction(name) {
   const actions = currentMe?.scope?.actions;
   return Array.isArray(actions) && actions.includes(name);
@@ -98,18 +153,18 @@ function hasAction(name) {
 
 /** Root sees Keys, Domain cache, and Gmail credentials. Issued keys do not. */
 function applyPrincipalNav() {
-  const root = currentMe?.is_root === true;
-  const known = currentMe != null;
-  const show = (route, visible) => {
+  const isRoot = currentMe?.is_root === true;
+  const known  = currentMe != null;
+  const show   = (route, visible) => {
     const link = document.querySelector(`.nav-link[data-route="${route}"]`);
     if (link) link.hidden = !visible;
   };
-  show("keys", !known || root);
-  show("domain-cache", !known || root);
-  show("access", true);
-  const retention = !known || root || hasAction("retention:read") || hasAction("retention:write");
+  show("keys",         !known || isRoot);
+  show("domain-cache", !known || isRoot);
+  show("access",       true);
+  const retention = !known || isRoot || hasAction("retention:read") || hasAction("retention:write");
   show("retention", retention);
-  const gmail = !known || root || hasAction("parents:read") || hasAction("parents:add");
+  const gmail = !known || isRoot || hasAction("parents:read") || hasAction("parents:add");
   show("gmail", gmail);
 }
 
@@ -122,8 +177,7 @@ function redirectIfHidden() {
 }
 
 function readPrevKey() {
-  try { return localStorage.getItem(PREV_KEY) || ""; }
-  catch { return ""; }
+  try { return localStorage.getItem(PREV_KEY) || ""; } catch { return ""; }
 }
 
 function syncPrevKeyButton() {
@@ -139,7 +193,9 @@ function restorePrevKey() {
   location.reload();
 }
 
-/* ---------- settings / API key modal ---------- */
+/* ============================================================
+   Settings / API key modal
+   ============================================================ */
 function openSettings() {
   const input = h("input", {
     type: "password", value: getApiKey(), placeholder: "sk-… / your server key",
@@ -156,11 +212,13 @@ function openSettings() {
       input.focus();
     },
   }, h("i", { "data-lucide": "eye" }));
+
   const wrap = h("div", {},
     h("div", { class: "field" },
       h("label", {}, "API key"),
       h("div", { class: "pass-wrap" }, input, toggle),
       h("p", { class: "field-hint" }, "Required only if the server runs with MAILTM_API_KEY set. Stored locally in your browser.")));
+
   openModal({
     title: "Settings",
     sub: "Connection & authentication",
@@ -191,7 +249,10 @@ setAuthRequiredHandler(async () => {
   if (keyModalOpen) return false;
   keyModalOpen = true;
   const saved = await new Promise((resolve) => {
-    const input = h("input", { type: "password", placeholder: "Paste API key", "aria-label": "API key", style: "font-family:var(--font-mono)" });
+    const input = h("input", {
+      type: "password", placeholder: "Paste API key",
+      "aria-label": "API key", style: "font-family:var(--font-mono)",
+    });
     openModal({
       title: "API key required",
       sub: "The server answered 401. Paste the key configured as MAILTM_API_KEY.",
@@ -225,18 +286,20 @@ setAuthRequiredHandler(async () => {
   return saved;
 });
 
-/* ---------- router ---------- */
+/* ============================================================
+   Router
+   ============================================================ */
 function parseHash() {
   const raw = location.hash.replace(/^#/, "") || "/";
   const parts = raw.split("/").filter(Boolean);
   if (!parts.length) return { name: "overview" };
   if (parts[0] === "mailboxes" && parts[1]) return { name: "detail", id: decodeURIComponent(parts[1]) };
-  if (parts[0] === "mailboxes") return { name: "mailboxes" };
-  if (parts[0] === "retention") return { name: "retention" };
+  if (parts[0] === "mailboxes")   return { name: "mailboxes" };
+  if (parts[0] === "retention")   return { name: "retention" };
   if (parts[0] === "domain-cache") return { name: "domain-cache" };
-  if (parts[0] === "gmail") return { name: "gmail" };
-  if (parts[0] === "keys") return { name: "keys" };
-  if (parts[0] === "access") return { name: "access" };
+  if (parts[0] === "gmail")       return { name: "gmail" };
+  if (parts[0] === "keys")        return { name: "keys" };
+  if (parts[0] === "access")      return { name: "access" };
   return { name: "overview" };
 }
 
@@ -247,6 +310,7 @@ function setNav(name) {
 }
 
 async function route() {
+  closeSidebar();
   const r = parseHash();
   try { currentCleanup?.(); } catch { /* page torn down already */ }
   currentCleanup = r.name === "overview" ? cleanupOverview
@@ -254,34 +318,45 @@ async function route() {
     : null;
   setNav(r.name);
   const [title, eyebrow, sub] = TITLES[r.name] || TITLES.overview;
-  titleEl.textContent = title;
+  titleEl.textContent   = title;
   eyebrowEl.textContent = eyebrow;
+
+  // Restart page-in animation
   root.style.animation = "none";
-  void root.offsetWidth; // restart page-in animation
+  void root.offsetWidth;
   root.style.animation = "";
+
   try {
-    if (r.name === "overview") await renderOverview(root);
-    else if (r.name === "mailboxes") await renderMailboxes(root);
-    else if (r.name === "detail") await renderDetail(root, r.id);
-    else if (r.name === "retention") await renderRetention(root, currentMe);
-    else if (r.name === "domain-cache") await renderDomainCache(root);
-    else if (r.name === "gmail") await renderGmail(root, currentMe);
-    else if (r.name === "keys") await renderKeys(root);
-    else if (r.name === "access") await renderAccess(root);
+    if      (r.name === "overview")      await renderOverview(root);
+    else if (r.name === "mailboxes")     await renderMailboxes(root);
+    else if (r.name === "detail")        await renderDetail(root, r.id);
+    else if (r.name === "retention")     await renderRetention(root, currentMe);
+    else if (r.name === "domain-cache")  await renderDomainCache(root);
+    else if (r.name === "gmail")         await renderGmail(root, currentMe);
+    else if (r.name === "keys")          await renderKeys(root);
+    else if (r.name === "access")        await renderAccess(root);
   } catch (e) {
     root.innerHTML = "";
     root.append(h("div", { class: "error-box" },
       h("i", { "data-lucide": "alert-triangle" }),
       h("span", {}, e?.detail || e?.message || "Something went wrong rendering this page.")));
   }
+
   refreshIcons();
+
+  // Inject page subtitle
   document.querySelectorAll(".page-sub").forEach((el) => el.remove());
   if (sub) titleEl.after(h("p", { class: "page-sub" }, sub));
+
+  // Scroll to top on route change (helps mobile UX)
+  window.scrollTo({ top: 0, behavior: "instant" });
 }
 
 window.addEventListener("hashchange", route);
 
-/* ---------- wiring ---------- */
+/* ============================================================
+   Wiring
+   ============================================================ */
 document.getElementById("settings-btn")?.addEventListener("click", openSettings);
 document.getElementById("key-btn")?.addEventListener("click", openSettings);
 document.getElementById("prev-key-btn")?.addEventListener("click", restorePrevKey);

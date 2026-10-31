@@ -1,14 +1,14 @@
 # ==============================================================================
 # Production Docker Compose for mailtmapi
 # ==============================================================================
-# Запуск:
+# Start:
 #   docker compose up -d --build
-# Просмотр логов:
+# View logs:
 #   docker compose logs -f mailtmapi
-# Остановка:
+# Stop:
 #   docker compose down
 #
-# Настройки можно переопределять через файл .env в корне проекта.
+# Settings can be overridden via .env file in the project root.
 # ==============================================================================
 
 name: mailtmapi
@@ -30,13 +30,13 @@ services:
       - "${MAILTM_PORT:-8477}:8477"
 
     volumes:
-      # Постоянное хранилище для базы SQLite (mailtm.db) и ключа шифрования (mailtm.key)
+      # Persistent storage for SQLite DB (mailtm.db) and encryption key (mailtm.key)
       - mailtmapi_data:/data
-      # Для локальной разработки с live-кодом можно раскомментировать:
+      # For local development with live code reloading:
       # - ./src:/app/src:ro
 
     tmpfs:
-      # Быстрый /tmp в оперативной памяти (ускоряет работу, снижает износ диска)
+      # Fast in-memory /tmp (speeds up operations, reduces disk wear)
       - /tmp:size=32M,mode=1777
 
     env_file:
@@ -44,34 +44,34 @@ services:
         required: false
 
     environment:
-      # --- Сетевые настройки ---
+      # --- Network settings ---
       - MAILTM_HOST=0.0.0.0
       - MAILTM_PORT=${MAILTM_PORT:-8477}
 
-      # --- Безопасность и авторизация ---
-      # При MAILTM_HOST=0.0.0.0 сервис строго требует непустой API-ключ.
-      # По умолчанию задан безопасный ключ для быстрого старта, переопределите его в .env!
+      # --- Security and authentication ---
+      # When MAILTM_HOST=0.0.0.0, the service strictly requires a non-empty API key.
+      # A safe default key is provided for quick start; override it in .env!
       - MAILTM_API_KEY=${MAILTM_API_KEY:-mailtm_secret_api_key_2026}
       - MAILTM_SECRET_KEY=${MAILTM_SECRET_KEY:-}
       - MAILTM_SECRET_KEY_PATH=${MAILTM_SECRET_KEY_PATH:-/data/mailtm.key}
 
-      # --- База данных ---
+      # --- Database ---
       - MAILTM_DATABASE_URL=${MAILTM_DATABASE_URL:-sqlite+aiosqlite:////data/mailtm.db}
 
-      # --- Проксирование и очистка ---
+      # --- Proxying and retention ---
       - MAILTM_PROXY=${MAILTM_PROXY:-}
       - MAILTM_RETENTION_INTERVAL_SECONDS=${MAILTM_RETENTION_INTERVAL_SECONDS:-60}
 
-      # --- Кеш доменов провайдеров ---
+      # --- Provider domain cache ---
       - MAILTM_DOMAIN_CACHE_ENABLED=${MAILTM_DOMAIN_CACHE_ENABLED:-true}
       - MAILTM_DOMAIN_CACHE_INTERVAL_SECONDS=${MAILTM_DOMAIN_CACHE_INTERVAL_SECONDS:-1800}
       - MAILTM_PROVIDER_HEADERS_TTL_SECONDS=${MAILTM_PROVIDER_HEADERS_TTL_SECONDS:-21600}
 
-      # --- Настройки провайдеров ---
+      # --- Provider settings ---
       - MAILTM_TEMP_TF_GMAIL_DOT=${MAILTM_TEMP_TF_GMAIL_DOT:-true}
       - MAILTM_TEMP_TF_GMAIL_PLUS=${MAILTM_TEMP_TF_GMAIL_PLUS:-true}
 
-      # --- Gmail OAuth (опционально) ---
+      # --- Gmail OAuth (optional) ---
       - MAILTM_GMAIL_CLIENT_ID=${MAILTM_GMAIL_CLIENT_ID:-}
       - MAILTM_GMAIL_CLIENT_SECRET=${MAILTM_GMAIL_CLIENT_SECRET:-}
       - MAILTM_GMAIL_REDIRECT_URI=${MAILTM_GMAIL_REDIRECT_URI:-}
@@ -107,4 +107,3 @@ networks:
 
 volumes:
   mailtmapi_data:
-    name: mailtmapi_data

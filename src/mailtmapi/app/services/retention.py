@@ -10,6 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.ext.asyncio import async_sessionmaker as AsyncSessionFactory
 
 from ...db.engine import retry_on_lock
+from ...db.maintenance import maybe_run_maintenance
 from ...db.models import KeyRetention, Mailbox, Message, Retention
 from ...exceptions import MailNotFoundError, MailValidationError
 from ...providers.registry import ProviderRegistry
@@ -150,6 +151,7 @@ async def _do_sweep(
     settings: Settings,
     *,
     only_key_id: int | None = None,
+    force_maintenance: bool = False,
 ) -> dict:
     async with factory() as session:
         mailboxes_deleted = 0
@@ -319,6 +321,11 @@ async def _do_sweep(
         await prune(s)
 
     await _write(factory, _ledger)
+    if only_key_id is None:
+        try:
+            await maybe_run_maintenance(factory, settings, force=force_maintenance)
+        except Exception:  # noqa: BLE001
+            logger.exception("retention: unexpected error during database maintenance")
     return {
         "mailboxes_deleted": mailboxes_deleted,
         "messages_deleted": messages_deleted,
@@ -331,18 +338,33 @@ async def run_sweep(
     settings: Settings,
     *,
     only_key_id: int | None = None,
+    force_maintenance: bool = False,
     lock: asyncio.Lock | None = None,
 ) -> dict:
     if lock is not None:
         async with lock:
-            return await _do_sweep(factory, registry, settings, only_key_id=only_key_id)
-    return await _do_sweep(factory, registry, settings, only_key_id=only_key_id)
+            return await _do_sweep(
+                factory,
+                registry,
+                settings,
+                only_key_id=only_key_id,
+                force_maintenance=force_maintenance,
+            )
+    return await _do_sweep(
+        factory,
+        registry,
+        settings,
+        only_key_id=only_key_id,
+        force_maintenance=force_maintenance,
+    )
 
 
 async def retention_worker(sweep: Callable[[], Awaitable[dict]], interval_seconds: float) -> None:
+    if interval_seconds <= 0:
+        return
     while True:
+        await asyncio.sleep(interval_seconds)
         try:
             await sweep()
         except Exception:  # noqa: BLE001 - worker must never die
             logger.exception("retention sweep failed")
-        await asyncio.sleep(interval_seconds)

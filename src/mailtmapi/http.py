@@ -56,7 +56,7 @@ def _raise_for_status(response: httpx.Response) -> None:
 class HttpClient:
     def __init__(self, *, proxy: str | None = None, headers: dict[str, str] | None = None) -> None:
         self._client = httpx.AsyncClient(
-            proxy=proxy,
+            proxy=proxy or None,
             headers=headers,
             timeout=httpx.Timeout(30.0, connect=10.0),
             follow_redirects=False,

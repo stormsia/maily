@@ -2,10 +2,10 @@ from __future__ import annotations
 
 import secrets
 import time
-from typing import TypedDict
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import HTMLResponse, PlainTextResponse
+from typing_extensions import TypedDict
 
 from ...exceptions import MailValidationError
 from ...providers.gmail.oauth import GmailOAuth

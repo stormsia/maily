@@ -324,10 +324,10 @@ def _parse_message(
 
 
 class TempTF(HttpProvider):
-    """Провайдер temp.tf.
+    """temp.tf provider.
 
-    Сервис генерирует временные ящики на доменах outlook.com, hotmail.com,
-    gmail.com и high.edu.pl с использованием плюс- и дот-алиасов.
+    The service generates temporary mailboxes on outlook.com, hotmail.com,
+    gmail.com, and high.edu.pl domains using plus- and dot-aliases.
     """
 
     slug = "temp.tf"

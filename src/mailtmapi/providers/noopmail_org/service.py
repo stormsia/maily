@@ -26,8 +26,8 @@ from ..base import (
 logger = logging.getLogger(__name__)
 
 _CACHE_TTL = 600.0
-_RD_MAX_ITERATIONS = 100  # верхний предел попыток собрать все домены
-_RD_STOP_AFTER = 15  # стоп после N подряд вызовов, вернувших уже известный домен
+_RD_MAX_ITERATIONS = 100  # upper limit of attempts to collect all domains
+_RD_STOP_AFTER = 15  # stop after N consecutive calls returning an already known domain
 _HEADERS = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:155.0) Gecko/20100101 Firefox/155.0",
     "Accept": "application/json",
@@ -74,11 +74,11 @@ def _detail(raw: dict[str, Any]) -> MessageDetail:
 
 
 class NoopMail(HttpProvider):
-    """Провайдер noopmail.org.
+    """noopmail.org provider.
 
-    noopmail.org защищён Cloudflare; для работы в бою требуются куки
-    cf_clearance (получи их в браузере и передавай через HttpClient/proxy-настройки).
-    Если API отвечает 403/Cloudflare-challenge — причина в отсутствии/протухшей
+    noopmail.org is protected by Cloudflare; live requests require cf_clearance cookies
+    (obtain them in a browser and pass via HttpClient/proxy settings).
+    If the API responds with 403/Cloudflare challenge, it is due to a missing or expired
     cf_clearance.
     """
 
@@ -131,8 +131,8 @@ class NoopMail(HttpProvider):
                     raise MailValidationError("noopmail.org: no domains available", status_code=400)
                 domain = targets[0].label
             address = f"{random_string(10)}@{domain}"
-        # Эндпоинта создания ящика у noopmail нет — адрес просто начинает
-        # существовать. Api-token тоже нет, поэтому token="".
+        # noopmail has no mailbox creation endpoint — the address simply starts
+        # existing. There is also no api-token, hence token="".
         return MailboxInfo(
             provider=self.slug,
             address=address,
@@ -142,7 +142,7 @@ class NoopMail(HttpProvider):
         )
 
     async def delete_mailbox(self, mailbox: MailboxInfo) -> bool:
-        # У noopmail нет эндпоинта удаления ящика — no-op.
+        # noopmail has no mailbox deletion endpoint — no-op.
         return True
 
     async def list_messages(self, mailbox: MailboxInfo, page: int = 1) -> list[MessageSummary]:
@@ -162,8 +162,8 @@ class NoopMail(HttpProvider):
         return _detail(data)
 
     async def delete_message(self, mailbox: MailboxInfo, message_id: str) -> bool:
-        # Эндпоинт удаления требует id и m_id: /api/i/{id}/{m_id}.
-        # Список и удаление ходят по-разному, поэтому m_id достаём из детали.
+        # Deletion endpoint requires id and m_id: /api/i/{id}/{m_id}.
+        # List and delete use different identifiers, so m_id is retrieved from detail.
         try:
             data = await self._get_json(f"{self.BASE_URL}/api/i/{quote(message_id, safe='')}")
             m_id = data.get("m_id") if isinstance(data, dict) else None
@@ -176,7 +176,7 @@ class NoopMail(HttpProvider):
         return True
 
     async def mark_read(self, mailbox: MailboxInfo, message_id: str) -> bool:
-        # У noopmail нет флага "прочитано" — no-op.
+        # noopmail has no "read" flag — no-op.
         return True
 
     async def get_source(self, mailbox: MailboxInfo, message_id: str) -> MessageSource:
@@ -204,7 +204,7 @@ class NoopMail(HttpProvider):
             payload = resp.text
         if isinstance(payload, dict):
             payload = payload.get("data") or ""
-        # Снимаем base64-обёртку, если это валидный base64; иначе возвращаем как есть.
+        # Unwrap base64 if valid; otherwise return as is.
         if isinstance(payload, str):
             try:
                 return base64.b64decode(payload).decode("utf-8")

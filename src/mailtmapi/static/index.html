@@ -5,17 +5,26 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="description" content="mailtmapi — local multi-provider temporary email admin dashboard" />
   <meta name="theme-color" content="#0b0e14" />
+  <meta name="color-scheme" content="dark" />
   <title>mailtmapi · Admin</title>
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%237c6cff'/%3E%3Cpath d='M8 12l8 6 8-6' stroke='white' stroke-width='2.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3Crect x='7' y='10' width='18' height='13' rx='2.5' stroke='white' stroke-width='2.5' fill='none'/%3E%3C/svg%3E" />
+  <!-- Fonts: preconnect first, then load with swap to avoid layout shifts -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+  <!-- CSS -->
   <link rel="stylesheet" href="./css/main.css" />
-  <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.1/dist/echarts.min.js"></script>
+  <!-- Charts: defer so it doesn't block first paint -->
+  <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.1/dist/echarts.min.js" defer></script>
+  <!-- Icons -->
   <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+  <!-- App -->
   <script type="module" src="./js/app.js"></script>
 </head>
 <body>
+  <!-- Skip to main content for keyboard/screen reader users -->
+  <a class="skip-link" href="#app">Skip to main content</a>
+
   <div class="bg-decor" aria-hidden="true">
     <div class="bg-orb bg-orb--violet"></div>
     <div class="bg-orb bg-orb--cyan"></div>
@@ -25,54 +34,64 @@
   <div class="app">
     <!-- ============ Sidebar ============ -->
     <aside class="sidebar" id="sidebar" aria-label="Primary navigation">
-      <a class="brand" href="#/" aria-label="mailtmapi home">
-        <span class="brand-mark" aria-hidden="true">
-          <i data-lucide="mails"></i>
-        </span>
-        <span class="brand-text">
-          <span class="brand-name">mailtmapi</span>
-          <span class="brand-sub">temp-mail admin</span>
-        </span>
-      </a>
+      <div class="sidebar-inner">
+        <a class="brand" href="#/" aria-label="mailtmapi home">
+          <span class="brand-mark" aria-hidden="true">
+            <i data-lucide="mails"></i>
+          </span>
+          <span class="brand-text">
+            <span class="brand-name">mailtmapi</span>
+            <span class="brand-sub">temp-mail admin</span>
+          </span>
+        </a>
 
-      <nav class="nav" aria-label="Pages">
-        <a class="nav-link" href="#/" data-route="overview" title="Overview">
-          <i data-lucide="layout-dashboard"></i><span>Overview</span>
-        </a>
-        <a class="nav-link" href="#/mailboxes" data-route="mailboxes" title="Mailboxes">
-          <i data-lucide="inbox"></i><span>Mailboxes</span>
-        </a>
-        <a class="nav-link" href="#/retention" data-route="retention" title="Retention">
-          <i data-lucide="timer"></i><span>Retention</span>
-        </a>
-        <a class="nav-link" href="#/domain-cache" data-route="domain-cache" title="Domain cache">
-          <i data-lucide="database"></i><span>Domain cache</span>
-        </a>
-        <a class="nav-link" href="#/gmail" data-route="gmail" title="Gmail">
-          <i data-lucide="at-sign"></i><span>Gmail</span>
-        </a>
-        <a class="nav-link" href="#/keys" data-route="keys" title="Keys">
-          <i data-lucide="key-round"></i><span>Keys</span>
-        </a>
-        <a class="nav-link" href="#/access" data-route="access" title="Access">
-          <i data-lucide="shield"></i><span>Access</span>
-        </a>
-      </nav>
+        <nav class="nav" aria-label="Pages">
+          <a class="nav-link" href="#/" data-route="overview" title="Overview">
+            <i data-lucide="layout-dashboard"></i><span>Overview</span>
+          </a>
+          <a class="nav-link" href="#/mailboxes" data-route="mailboxes" title="Mailboxes">
+            <i data-lucide="inbox"></i><span>Mailboxes</span>
+          </a>
+          <a class="nav-link" href="#/retention" data-route="retention" title="Retention">
+            <i data-lucide="timer"></i><span>Retention</span>
+          </a>
+          <a class="nav-link" href="#/domain-cache" data-route="domain-cache" title="Domain cache">
+            <i data-lucide="database"></i><span>Domain cache</span>
+          </a>
+          <a class="nav-link" href="#/gmail" data-route="gmail" title="Gmail">
+            <i data-lucide="at-sign"></i><span>Gmail</span>
+          </a>
+          <a class="nav-link" href="#/keys" data-route="keys" title="Keys">
+            <i data-lucide="key-round"></i><span>Keys</span>
+          </a>
+          <a class="nav-link" href="#/access" data-route="access" title="Access">
+            <i data-lucide="shield"></i><span>Access</span>
+          </a>
+        </nav>
 
-      <div class="sidebar-foot">
-        <div class="health" id="health-pill" role="status" aria-live="polite">
-          <span class="health-dot" id="health-dot"></span>
-          <span class="health-text" id="health-text">checking…</span>
+        <div class="sidebar-foot">
+          <div class="health" id="health-pill" role="status" aria-live="polite">
+            <span class="health-dot" id="health-dot"></span>
+            <span class="health-text" id="health-text">checking…</span>
+          </div>
+          <button class="icon-btn" id="settings-btn" aria-label="Open settings" title="Settings">
+            <i data-lucide="settings-2"></i>
+          </button>
         </div>
-        <button class="icon-btn" id="settings-btn" aria-label="Open settings" title="Settings">
-          <i data-lucide="settings-2"></i>
-        </button>
       </div>
     </aside>
+
+    <!-- Mobile sidebar backdrop -->
+    <div class="sidebar-backdrop" id="sidebar-backdrop" aria-hidden="true"></div>
 
     <!-- ============ Main ============ -->
     <div class="main">
       <header class="topbar">
+        <!-- Mobile hamburger -->
+        <button class="hamburger" id="hamburger-btn" aria-label="Open navigation" aria-expanded="false" aria-controls="sidebar">
+          <i data-lucide="menu"></i>
+        </button>
+
         <div class="topbar-titles">
           <p class="eyebrow" id="page-eyebrow">Admin console</p>
           <h1 class="page-title" id="page-title">Overview</h1>
@@ -102,7 +121,7 @@
         <span>The server has no MAILTM_API_KEY set — anyone who can reach it can administer this dashboard.</span>
       </div>
 
-      <main class="content" id="app" aria-live="polite">
+      <main class="content" id="app" aria-live="polite" aria-label="Page content">
         <!-- pages render here -->
       </main>
 
@@ -117,11 +136,13 @@
   </div>
 
   <!-- modal + toast roots -->
-  <div class="modal-root" id="modal-root"></div>
-  <div class="toast-root" id="toast-root" aria-live="assertive" aria-atomic="false"></div>
+  <div class="modal-root" id="modal-root" role="region" aria-label="Dialogs"></div>
+  <div class="toast-root" id="toast-root" aria-live="assertive" aria-atomic="false" aria-label="Notifications"></div>
 
   <noscript>
-    <div style="padding:2rem;text-align:center">mailtmapi admin needs JavaScript enabled.</div>
+    <div style="padding:2rem;text-align:center;font-family:sans-serif;color:#eceef4;background:#0b0e14">
+      mailtmapi admin needs JavaScript enabled.
+    </div>
   </noscript>
 </body>
 </html>

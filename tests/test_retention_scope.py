@@ -37,7 +37,9 @@ def _app(tmp_path: Path, *, api_key: str = ROOT) -> TestClient:
 
 
 def _db(tmp_path: Path) -> sqlite3.Connection:
-    return sqlite3.connect(str(tmp_path / "test.db"))
+    conn = sqlite3.connect(str(tmp_path / 'test.db'), timeout=30.0)
+    conn.execute('PRAGMA busy_timeout = 30000')
+    return conn
 
 
 def _sha256(secret: str) -> str:

@@ -2,11 +2,10 @@
 
 from __future__ import annotations
 
-from typing import TypedDict
-
 from sqlalchemy import case, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.sql.elements import ColumnElement
+from typing_extensions import TypedDict
 
 from ...db.models import GmailAccount, Mailbox, Message
 from .scoped_history import HistoryView, owned_history

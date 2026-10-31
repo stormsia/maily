@@ -175,7 +175,10 @@ export const api = {
     request(`/v1/admin/retention/${encodeURIComponent(provider)}`, {
       method: "DELETE",
     }),
-  runRetention: () => request("/v1/admin/retention/run", { method: "POST" }),
+  runRetention: (forceMaintenance = false) =>
+    request(forceMaintenance ? "/v1/admin/retention/run?force_maintenance=true" : "/v1/admin/retention/run", {
+      method: "POST",
+    }),
   domainCache: () => request("/v1/admin/domain-cache"),
   saveDomainCache: (body) =>
     request("/v1/admin/domain-cache", { method: "PUT", body }),

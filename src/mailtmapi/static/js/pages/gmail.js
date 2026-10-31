@@ -136,7 +136,7 @@ export async function render(root, me = null) {
     let dir = 1;
 
     const wrap = h("div", { class: "wizard" });
-    const progress = h("div", { class: "wizard-progress", role: "list" });
+    const progress = h("div", { class: "wizard-track", role: "list" });
     const stepEl = h("div", { class: "wizard-step" });
     wrap.append(progress, stepEl);
 

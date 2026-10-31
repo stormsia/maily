@@ -4,11 +4,11 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 from datetime import date, datetime, timedelta, timezone
-from typing import TypedDict
 
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.sql.elements import ColumnElement
+from typing_extensions import TypedDict
 
 from ...db.models import Mailbox, Message, StatsEvent
 from .stats_history import (

@@ -27,7 +27,7 @@ Create disposable mailboxes on demand, receive emails in real time, extract veri
 - **Real-Time Streaming** — Stream incoming messages via `async for message in api.messages.iter_messages(box): ...`.
 - **Admin Dashboard & Developer Hub** — Modern dark-mode UI with live charts, message preview with verification highlights, auto-refresh polling, and an integrated Swagger / API documentation explorer at `/docs`.
 - **Scoped API Keys** — Root keys and granular issued keys with provider/action/parent restrictions and custom TTL cleanup rules.
-- **Automatic Retention** — Configurable background worker sweeps expired mailboxes and messages based on provider or per-key TTL policies.
+- **Automatic Retention & DB Maintenance** — Configurable background worker sweeps expired mailboxes and messages based on TTL policies, paired with automatic throttled database maintenance (WAL truncate, VACUUM, REINDEX, ANALYZE, PRAGMA optimize, quick_check) to defragment storage and optimize query performance without downtime.
 - **Domain Cache** — Periodic background cache of provider domains with instant refresh.
 - **Docker-Ready** — Hermetic multi-stage Docker build with SQLite volume persistence.
 
@@ -179,6 +179,18 @@ async with MailTMAPI("http://127.0.0.1:8477", api_key="root_secret") as api:
     print(f"Key Prefix: {new_key.prefix} | Secret: {new_key.secret}")
 ```
 
+### Retention & Database Maintenance
+
+```python
+async with MailTMAPI("http://127.0.0.1:8477", api_key="root_secret") as api:
+    # Run regular retention sweep (triggers DB maintenance if interval has elapsed)
+    res = await api.admin.retention_run()
+    print(f"Deleted: {res.mailboxes_deleted} boxes, {res.messages_deleted} messages")
+
+    # Or force immediate full database maintenance (VACUUM, REINDEX, ANALYZE):
+    res = await api.admin.retention_run(force_maintenance=True)
+```
+
 ---
 
 ## 🖥️ Web Dashboard & Documentation Hub
@@ -189,7 +201,7 @@ Access the admin console at `http://127.0.0.1:8477/`:
 - **Mailboxes** — Instant search, filter by provider, 1-click address copy, and creation dialog with provider capability awareness.
 - **Message Reader** — Reading pane with automatic **Quick Extract** card (highlighting 6-digit codes and action links with 1-click copy), formatted HTML / Raw HTML tabs, RFC822 source viewer, and user-controllable auto-refresh interval (5s / 10s / 30s / Off).
 - **API Keys** — Create and manage scoped keys, reveal secrets, and test the dashboard under a specific key identity.
-- **Retention & Domain Cache** — Real-time cache status, scheduled refresh intervals, and TTL cleanups.
+- **Retention & Database Maintenance** — Real-time cache status, scheduled refresh intervals, TTL cleanups, and automated database maintenance (VACUUM, REINDEX, ANALYZE).
 - **Developer Hub (`/docs`)** — Multi-tab developer portal featuring interactive Swagger UI with automatic API key preauthorization, Python client snippets, provider status matrix, and dynamic cURL commands.
 
 ---
@@ -206,7 +218,10 @@ Copy `.env.example` to `.env` and customize:
 | `MAILTM_DATABASE_URL` | `sqlite+aiosqlite:///mailtm.db` | SQLite database URI |
 | `MAILTM_SECRET_KEY` | *(auto-generated)* | Fernet encryption key used to protect credentials |
 | `MAILTM_PROXY` | *(empty)* | Optional HTTP/SOCKS5 proxy for upstream provider requests |
-| `MAILTM_RETENTION_INTERVAL_SECONDS` | `300` | Background retention sweep frequency |
+| `MAILTM_RETENTION_INTERVAL_SECONDS` | `60` | Background retention sweep frequency |
+| `MAILTM_DB_MAINTENANCE_ENABLED` | `true` | Enable periodic database maintenance during retention |
+| `MAILTM_DB_MAINTENANCE_INTERVAL_MINUTES` | `60` | Minimum interval between database maintenance runs (in minutes) |
+| `MAILTM_SQLITE_BUSY_TIMEOUT_MS` | `60000` | SQLite lock wait timeout in ms to prevent request drops during maintenance |
 | `MAILTM_DOMAIN_CACHE_INTERVAL_SECONDS` | `1800` | Background domain refresh frequency |
 | `MAILTM_GMAIL_CLIENT_ID` | *(empty)* | Google OAuth2 Client ID |
 | `MAILTM_GMAIL_CLIENT_SECRET` | *(empty)* | Google OAuth2 Client Secret |

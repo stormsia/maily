@@ -1,9 +1,9 @@
 """In-package alias for the canonical standalone client.
 
-Реализация живёт в одном месте — :mod:`mailtmapi.standalone_client`
-(самодостаточный однофайловый клиент). Этот модуль просто пробрасывает её,
-сохраняя совместимость с ``from mailtmapi.client import MailTMAPI``
-(используется дашбордом, тестами и ``mailtmapi.sdk``).
+The implementation lives in one place — :mod:`mailtmapi.standalone_client`
+(the self-contained single-file client). This module re-exports it,
+preserving compatibility with ``from mailtmapi.client import MailTMAPI``
+(used by the dashboard, tests, and ``mailtmapi.sdk``).
 """
 
 from __future__ import annotations
@@ -67,7 +67,7 @@ from .standalone_client import (
 )
 
 __all__ = [
-    # Клиент и секции
+    # Client and sections
     "MailTMAPI",
     "HealthAPI",
     "ConfigAPI",
@@ -77,7 +77,7 @@ __all__ = [
     "GmailAPI",
     "AdminAPI",
     "KeysAPI",
-    # Ошибки
+    # Errors
     "ClientError",
     "WaitTimeoutError",
     "ApiError",
@@ -87,7 +87,7 @@ __all__ = [
     "ValidationError",
     "RateLimitError",
     "UpstreamProviderError",
-    # Модели данных
+    # Data models
     "HealthOut",
     "Provider",
     "ProviderOut",
@@ -122,7 +122,7 @@ __all__ = [
     "KeyScopeOut",
     "KeyRetentionOut",
     "ExtractedConfirmation",
-    # Утилиты обновления
+    # Update utilities
     "check_update",
     "self_update",
     "__version__",

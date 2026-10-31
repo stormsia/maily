@@ -1,7 +1,7 @@
-"""Тесты провайдера noopmail.org.
+"""Tests for the noopmail.org provider.
 
-noopmail.org защищён Cloudflare; при живых запросах нужны куки cf_clearance
-(см. docstring класса NoopMail) — в тестах они не нужны, т.к. сеть замокана.
+noopmail.org is protected by Cloudflare; live requests require cf_clearance cookies
+(see docstring for NoopMail) — not needed in tests since network calls are mocked.
 """
 
 from __future__ import annotations
@@ -40,7 +40,7 @@ def _mailbox() -> MailboxInfo:
 @pytest.mark.asyncio
 async def test_list_targets_collects_all_domains_and_caches():
     calls = 0
-    queue = ["a.com", "b.com", "c.com"]  # уникальные, потом только повторы
+    queue = ["a.com", "b.com", "c.com"]  # unique first, then repeats only
 
     def handler(request: httpx.Request) -> httpx.Response:
         nonlocal calls
@@ -53,14 +53,14 @@ async def test_list_targets_collects_all_domains_and_caches():
     provider = NoopMail(http)
     try:
         targets = await provider.list_targets()
-        # 3 уникальных + 15 подряд повторов для остановки, но не больше 100
+        # 3 unique + 15 consecutive repeats to stop, up to 100 max
         assert calls == 18
         assert {t.id for t in targets} == {"a.com", "b.com", "c.com"}
-        assert len(targets) == 3  # без дубликатов
+        assert len(targets) == 3  # no duplicates
         assert all(t.kind == "domain" and t.provider == "noopmail.org" for t in targets)
         assert targets[0].label == "a.com"
 
-        # TTL-кэш: второй вызов не бьёт по сети
+        # TTL cache: second call does not hit network
         calls_before = calls
         again = await provider.list_targets()
         assert calls == calls_before
@@ -88,7 +88,7 @@ async def test_create_mailbox_with_address():
         box = await provider.create_mailbox(MailboxSpec(address="al234tf05o@yzcalo.com"))
         assert box.provider == "noopmail.org"
         assert box.address == "al234tf05o@yzcalo.com"
-        assert box.token == ""  # у noopmail нет api-token
+        assert box.token == ""  # noopmail does not have api-tokens
         assert box.provider_account_id == "al234tf05o@yzcalo.com"
         assert box.password is None
     finally:

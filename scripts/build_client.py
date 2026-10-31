@@ -1,12 +1,12 @@
 """Generate the deployable standalone client at client/client.py.
 
-Единственный источник истины клиента — `src/mailtmapi/standalone_client.py`.
-Этот скрипт копирует его в `client/client.py` и дописывает шапку «generated»,
-чтобы скачиваемые/устанавливаемые по pip артефакты не расходились с реализацией.
+The canonical single source of truth for the client is `src/mailtmapi/standalone_client.py`.
+This script copies it to `client/client.py` and prepends the "generated" banner
+so that pip-installable or downloaded artifacts remain in sync with the implementation.
 
-    python scripts/build_client.py            # перегенерировать (без записи: --check)
+    python scripts/build_client.py            # regenerate (dry-run: --check)
 
-Тот же результат проверяет тест tests/test_client_standalone.py::
+The same check is enforced by tests/test_client_standalone.py::
 `test_standalone_mirror_is_current`.
 """
 

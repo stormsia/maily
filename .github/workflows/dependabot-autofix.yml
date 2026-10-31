@@ -41,7 +41,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add uv.lock client/client.py
+          git add -A
           if ! git diff --staged --quiet; then
             git commit -m "chore(deps): auto-sync uv.lock and standalone client with dependabot bump"
             git push

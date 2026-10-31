@@ -11,8 +11,7 @@
         "noNonNullAssertion": "off"
       },
       "correctness": {
-        "noUnusedVariables": "warn",
-        "noUndef": "off"
+        "noUnusedVariables": "warn"
       },
       "suspicious": {
         "noExplicitAny": "off"

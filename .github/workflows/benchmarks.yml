@@ -70,13 +70,15 @@ jobs:
 
       - name: Store benchmark results
         uses: benchmark-action/github-action-benchmark@v1
-        if: hashFiles('output.json') != ''
+        if: always() && hashFiles('output.json') != ''
+        continue-on-error: true
         with:
           tool: 'pytest'
           output-file-path: output.json
           github-token: ${{ secrets.GITHUB_TOKEN }}
           auto-push: false
+          skip-fetch-gh-pages: true
           summary-always: true
           alert-threshold: '150%'
           fail-on-alert: false
-          comment-on-alert: true
+          comment-on-alert: false

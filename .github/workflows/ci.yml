@@ -198,7 +198,8 @@ jobs:
 
       - name: Verify Docker container starts and API responds
         run: |
-          docker run -d -p 8477:8477 -e MAILTM_API_KEY=ci-smoke-test-secret --name ci-smoke-app mailtmapi:ci-test
+          SMOKE_KEY="dummy_ci_smoke_key"
+          docker run -d -p 8477:8477 -e MAILTM_API_KEY="$SMOKE_KEY" --name ci-smoke-app mailtmapi:ci-test
           READY=0
           for i in $(seq 1 30); do
             if curl -s -f http://127.0.0.1:8477/health > /dev/null 2>&1; then
@@ -215,7 +216,8 @@ jobs:
             exit 1
           fi
           echo "Verifying authenticated /v1/providers endpoint..."
-          PROVIDERS_STATUS=$(curl -s -o /dev/null -w "%{http_code}" -H "X-API-Key: ci-smoke-test-secret" http://127.0.0.1:8477/v1/providers || true)
+          AUTH_HEADER="X-API-Key: ${SMOKE_KEY}"
+          PROVIDERS_STATUS=$(curl -s -o /dev/null -w "%{http_code}" -H "$AUTH_HEADER" http://127.0.0.1:8477/v1/providers || true)
           if [ "$PROVIDERS_STATUS" != "200" ]; then
             echo "::error::Authenticated API check failed with status $PROVIDERS_STATUS. Dumping logs:"
             docker logs ci-smoke-app

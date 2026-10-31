@@ -8,9 +8,11 @@ paths = [
   '''\.env\.example''',
   '''README\.md''',
   '''pyproject\.toml''',
+  '''\.github/workflows/ci\.yml''',
 ]
 regexes = [
   '''Bearer mock_.*''',
   '''[0-9a-f]{32}''',
   '''dummy_.*''',
+  '''ci-smoke-test-secret''',
 ]

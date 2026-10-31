@@ -1,7 +1,18 @@
-title = "mailtmapi gitleaks config"
+[extend]
+useDefault = true
 
 [allowlist]
-description = "Allowlist for test fixtures and dummy tokens in tests"
+description = "Allowlist for mock credentials, test fixtures, and documentation examples"
 paths = [
-    '''tests/''',
+  '''tests/.*''',
+  '''\.env\.example''',
+  '''README\.md''',
+  '''pyproject\.toml''',
+  '''\.github/workflows/.*''',
+]
+regexes = [
+  '''Bearer mock_.*''',
+  '''[0-9a-f]{32}''',
+  '''dummy_.*''',
+  '''ci-smoke-test-secret''',
 ]

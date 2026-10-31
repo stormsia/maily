@@ -189,7 +189,7 @@ jobs:
 
       - name: Verify Docker container starts and API responds
         run: |
-          docker run -d -p 8477:8477 --name ci-smoke-app mailtmapi:ci-test
+          docker run -d -p 8477:8477 -e MAILTM_API_KEY=ci-smoke-test-secret --name ci-smoke-app mailtmapi:ci-test
           sleep 4
           curl --fail --retry 5 --retry-delay 2 http://localhost:8477/health || {
             echo "::error::Container health check failed. Dumping logs:"

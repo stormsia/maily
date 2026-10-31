@@ -44,7 +44,7 @@ jobs:
             git commit -m "chore(deps): auto-sync uv.lock with dependabot bump"
             git push
             echo "uv.lock updated and pushed. Triggering main CI workflow..."
-            gh workflow run ci.yml --ref "${{ github.head_ref }}"
+            gh workflow run ci.yml --ref "${{ github.head_ref }}" || true
           else
             echo "uv.lock is already up to date."
           fi
@@ -53,7 +53,7 @@ jobs:
 
       - name: Auto-approve and enable auto-merge for Dependabot PR
         run: |
-          gh pr review --approve "$PR_URL"
+          gh pr review --approve "$PR_URL" || echo "Auto-approve skipped (enable 'Allow GitHub Actions to create and approve pull requests' in repository settings if desired)."
           gh pr merge --auto --merge "$PR_URL" || true
         env:
           PR_URL: ${{ github.event.pull_request.html_url }}

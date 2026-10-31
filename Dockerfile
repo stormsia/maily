@@ -4,7 +4,7 @@
 # ==============================================================================
 
 # ---------- Stage 1: Build & Dependencies ----------
-FROM ghcr.io/astral-sh/uv:python3.14-bookworm-slim AS builder
+FROM ghcr.io/astral-sh/uv:python3.12-bookworm-slim AS builder
 
 ENV UV_LINK_MODE=copy \
     UV_PYTHON_DOWNLOADS=never \
@@ -26,7 +26,7 @@ RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --frozen --no-dev
 
 # ---------- Stage 2: Minimal Runtime ----------
-FROM python:3.15-slim-bookworm AS runner
+FROM python:3.12-slim-bookworm AS runner
 
 WORKDIR /app
 

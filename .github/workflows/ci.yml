@@ -48,7 +48,9 @@ jobs:
         run: uv run ruff check --output-format=github src tests client scripts
 
       - name: Alembic Migrations Consistency Check
-        run: uv run alembic check
+        run: |
+          uv run alembic upgrade head
+          uv run alembic check
 
       - name: Clean Dependency Architecture (Deptry)
         run: uvx deptry src
@@ -120,8 +122,13 @@ jobs:
       - name: Install dependencies
         run: uv sync --frozen --all-extras
 
-      - name: Run Pytest suite with coverage
-        run: uv run python -m pytest -q --cov=mailtmapi --cov-report=xml:coverage.xml --cov-report=term-missing
+      - name: Run Pytest suite
+        if: matrix.python-version != '3.12'
+        run: uv run python -m pytest -q
+
+      - name: Run Pytest suite with coverage (Python 3.12)
+        if: matrix.python-version == '3.12'
+        run: uv run python -m pytest -q -n 0 --cov=mailtmapi --cov-report=xml:coverage.xml --cov-report=term-missing
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v5
@@ -184,14 +191,14 @@ jobs:
 
       - name: Verify Docker container starts and API responds
         run: |
-          docker run -d -p 8000:8000 --name ci-smoke-app mailtmapi:ci-test
+          docker run -d -p 8477:8477 --name ci-smoke-app mailtmapi:ci-test
           sleep 4
-          curl --fail --retry 5 --retry-delay 2 http://localhost:8000/api/health || {
+          curl --fail --retry 5 --retry-delay 2 http://localhost:8477/health || {
             echo "::error::Container health check failed. Dumping logs:"
             docker logs ci-smoke-app
             exit 1
           }
-          echo "Docker smoke test passed: /api/health responded successfully."
+          echo "Docker smoke test passed: /health responded successfully."
           docker stop ci-smoke-app
           docker rm ci-smoke-app
 

@@ -36,20 +36,20 @@ export function timeAgo(iso) {
   const t = new Date(iso).getTime();
   if (Number.isNaN(t)) return "—";
   const s = Math.max(1, Math.floor((Date.now() - t) / 1000));
-  if (s < 60) return `${s}s ago`;
+  if (s < 60)  return `${s}s ago`;
   const m = Math.floor(s / 60);
-  if (m < 60) return `${m}m ago`;
+  if (m < 60)  return `${m}m ago`;
   const hh = Math.floor(m / 60);
   if (hh < 24) return `${hh}h ago`;
   const d = Math.floor(hh / 24);
-  if (d < 30) return `${d}d ago`;
+  if (d < 30)  return `${d}d ago`;
   return new Date(t).toLocaleDateString();
 }
 
 export function fmtDate(iso) {
   if (!iso) return "—";
   const d = new Date(iso);
-  return Number.isNaN(d) ? "—" : d.toLocaleString();
+  return Number.isNaN(d.getTime()) ? "—" : d.toLocaleString();
 }
 
 /* ---------- clipboard ---------- */
@@ -57,11 +57,13 @@ export async function copyText(text, label = "Copied to clipboard") {
   try {
     await navigator.clipboard.writeText(text);
   } catch {
+    /* Fallback for non-HTTPS environments */
     const ta = document.createElement("textarea");
     ta.value = text;
+    ta.style.cssText = "position:fixed;opacity:0;pointer-events:none";
     document.body.append(ta);
     ta.select();
-    document.execCommand("copy");
+    try { document.execCommand("copy"); } catch { /* best effort */ }
     ta.remove();
   }
   toast(label, "ok", "copy");
@@ -69,6 +71,10 @@ export async function copyText(text, label = "Copied to clipboard") {
 
 /* ---------- toasts ---------- */
 const ICONS = { ok: "check-circle-2", err: "alert-circle", info: "info" };
+/** Duration scales with message length — short messages vanish faster. */
+function toastDuration(message) {
+  return Math.max(3000, Math.min(8000, 2000 + message.length * 50));
+}
 
 export function toast(message, type = "info", icon) {
   const root = document.getElementById("toast-root");
@@ -77,27 +83,67 @@ export function toast(message, type = "info", icon) {
     h("span", {}, message));
   root.append(el);
   refreshIcons();
+  const dur = toastDuration(message);
   setTimeout(() => {
     el.classList.add("out");
-    setTimeout(() => el.remove(), 240);
-  }, 3600);
+    setTimeout(() => el.remove(), 260);
+  }, dur);
 }
 
 /* ---------- modals ---------- */
 const modalRoot = () => document.getElementById("modal-root");
 let lastFocus = null;
 
+/** All focusable elements inside `el`, in DOM order. */
+function focusable(el) {
+  return [...el.querySelectorAll(
+    'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+  )].filter((n) => !n.hidden && n.offsetParent !== null);
+}
+
+function trapFocus(dialog) {
+  function onKeydown(e) {
+    if (e.key !== "Tab") return;
+    const nodes = focusable(dialog);
+    if (!nodes.length) { e.preventDefault(); return; }
+    const first = nodes[0];
+    const last  = nodes[nodes.length - 1];
+    if (e.shiftKey) {
+      if (document.activeElement === first) { e.preventDefault(); last.focus(); }
+    } else {
+      if (document.activeElement === last)  { e.preventDefault(); first.focus(); }
+    }
+  }
+  dialog.addEventListener("keydown", onKeydown);
+  return () => dialog.removeEventListener("keydown", onKeydown);
+}
+
+let removeTrap = null;
+
 export function openModal({ title, sub = "", body, actions = [], wide = false }) {
   closeModal(true);
   lastFocus = document.activeElement;
   const overlay = h("div", { class: "modal-overlay" });
-  const dialog = h("div", { class: `modal${wide ? " modal--wide" : ""}`, role: "dialog", "aria-modal": "true", "aria-label": title });
+  const dialog  = h("div", {
+    class: `modal${wide ? " modal--wide" : ""}`,
+    role: "dialog",
+    "aria-modal": "true",
+    "aria-label": title,
+  });
   const head = h("div", { class: "modal-head" },
-    h("div", {}, h("h3", {}, title), sub ? h("p", {}, sub) : null),
-    h("button", { class: "icon-btn", "aria-label": "Close dialog", onclick: () => closeModal() }, h("i", { "data-lucide": "x" })));
+    h("div", {},
+      h("h3", {}, title),
+      sub ? h("p", {}, sub) : null),
+    h("button", {
+      class: "icon-btn",
+      "aria-label": "Close dialog",
+      onclick: () => closeModal(),
+    }, h("i", { "data-lucide": "x" })));
+
   const bodyEl = h("div", { class: "modal-body" });
   if (typeof body === "string") bodyEl.innerHTML = body;
   else if (body?.nodeType) bodyEl.append(body);
+
   const foot = h("div", { class: "modal-foot" });
   for (const a of actions) {
     if (a.spacer) { foot.append(h("span", { class: "spacer" })); continue; }
@@ -113,14 +159,22 @@ export function openModal({ title, sub = "", body, actions = [], wide = false })
       },
     }, a.label));
   }
+
   dialog.append(head, bodyEl);
   if (actions.length) dialog.append(foot);
   overlay.append(dialog);
   overlay.addEventListener("mousedown", (e) => { if (e.target === overlay) closeModal(); });
   modalRoot().append(overlay);
   refreshIcons();
-  const focusable = dialog.querySelector("input, select, textarea, button.btn");
-  (focusable || dialog.querySelector(".icon-btn"))?.focus();
+
+  // Focus first interactive element
+  const firstFocus = dialog.querySelector("input, select, textarea, button.btn-primary, button.btn");
+  (firstFocus || dialog.querySelector(".icon-btn"))?.focus();
+
+  // Install focus trap
+  removeTrap?.();
+  removeTrap = trapFocus(dialog);
+
   return { overlay, dialog, body: bodyEl, close: () => closeModal() };
 }
 
@@ -128,6 +182,8 @@ export function closeModal(silent = false) {
   const root = modalRoot();
   if (!root.firstChild && silent) return;
   root.innerHTML = "";
+  removeTrap?.();
+  removeTrap = null;
   if (!silent && lastFocus?.focus) lastFocus.focus();
   lastFocus = null;
 }
@@ -145,7 +201,7 @@ export function confirmDialog({ title, message, confirmLabel = "Delete", danger 
       title,
       body: h("p", { class: "muted" }, message),
       actions: [
-        { label: "Cancel", noClose: true, onClick: () => done(false) },
+        { label: "Cancel",       noClose: true, onClick: () => done(false) },
         { label: confirmLabel, kind: danger ? "btn-danger" : "btn-primary", noClose: true, onClick: () => done(true) },
       ],
     });

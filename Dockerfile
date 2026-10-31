@@ -4,7 +4,10 @@
 # ==============================================================================
 
 # ---------- Stage 1: Build & Dependencies ----------
-FROM ghcr.io/astral-sh/uv:python3.15-bookworm-slim AS builder
+FROM python:3.15-slim-bookworm AS builder
+
+# Install uv by copying standalone binaries from official Astral image
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 
 ENV UV_LINK_MODE=copy \
     UV_PYTHON_DOWNLOADS=never \

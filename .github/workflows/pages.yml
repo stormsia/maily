@@ -38,9 +38,10 @@ jobs:
       - name: Export OpenAPI Schema and generate static Swagger UI
         run: |
           mkdir -p public
-          python3 -c "
+          uv run python -c "
           import json
-          from mailtmapi.app.main import app
+          from mailtmapi.app.main import create_app
+          app = create_app()
           schema = app.openapi()
           with open('public/openapi.json', 'w', encoding='utf-8') as f:
               json.dump(schema, f, indent=2)
@@ -95,4 +96,5 @@ jobs:
     steps:
       - name: Deploy to GitHub Pages
         id: deployment
+        continue-on-error: true
         uses: actions/deploy-pages@v4

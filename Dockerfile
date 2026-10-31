@@ -26,7 +26,7 @@ RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --frozen --no-dev
 
 # ---------- Stage 2: Minimal Runtime ----------
-FROM python:3.14-slim-bookworm AS runner
+FROM python:3.15-slim-bookworm AS runner
 
 WORKDIR /app
 

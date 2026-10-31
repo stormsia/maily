@@ -34,6 +34,9 @@ class Settings(BaseSettings):
     gmail_redirect_uri: str = ""
     secret_key_path: Path = Field(default=Path("mailtm.key"))
     retention_interval_seconds: int = 60
+    db_maintenance_enabled: bool = True
+    db_maintenance_interval_minutes: int = 60
+    sqlite_busy_timeout_ms: int = 60000
     domain_cache_enabled: bool = True
     domain_cache_interval_seconds: int = 1800
     tempmail_io_origin: str = "https://temp-mail.io/"

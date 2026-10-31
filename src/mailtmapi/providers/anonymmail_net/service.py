@@ -228,8 +228,7 @@ class AnonymMailNet(HttpProvider):
             cookies.append(f"ci_session={ci_session}")
         if am_uid:
             cookies.append(f"am_uid={am_uid}")
-        if ci_session or am_uid:
-            headers["Cookie"] = "; ".join(cookies)
+        headers["Cookie"] = "; ".join(cookies)
         return headers
 
     @async_retry()
@@ -380,6 +379,8 @@ class AnonymMailNet(HttpProvider):
                 return []
             summaries = _parse_messages(result, mailbox.address)
             addr = mailbox.address.strip().lower()
+            if addr in self._messages:
+                self._messages[addr] = self._messages.pop(addr)
             box_cache = self._messages.setdefault(addr, {})
             details: list[MessageSummary] = []
             for s in summaries:
@@ -403,10 +404,12 @@ class AnonymMailNet(HttpProvider):
                 )
                 box_cache[s.id] = detail
                 details.append(detail)
-            # Evict old mailboxes if overall cache grows excessively
-            if len(self._messages) > 1000:
-                for k in list(self._messages.keys())[:500]:
-                    self._messages.pop(k, None)
+            # Evict least recently used mailboxes if overall cache grows excessively
+            while len(self._messages) > 1000:
+                oldest = next(iter(self._messages))
+                if oldest == addr:
+                    break
+                self._messages.pop(oldest, None)
             return details
         except MailNotFoundError:
             raise
@@ -416,6 +419,8 @@ class AnonymMailNet(HttpProvider):
     @async_retry()
     async def get_message(self, mailbox: MailboxInfo, message_id: str) -> MessageDetail:
         addr = mailbox.address.strip().lower()
+        if addr in self._messages:
+            self._messages[addr] = self._messages.pop(addr)
         box_cache = self._messages.setdefault(addr, {})
         if message_id in box_cache:
             detail = box_cache[message_id]
@@ -450,6 +455,8 @@ class AnonymMailNet(HttpProvider):
             box_cache[message_id] = detail
             return detail
         except Exception as e:
+            if not box_cache and addr in self._messages:
+                self._messages.pop(addr, None)
             raise MailNotFoundError(
                 f"anonymmail.net: message {message_id!r} not found", status_code=404
             ) from e

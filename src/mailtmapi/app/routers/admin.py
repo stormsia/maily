@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 from datetime import timedelta
 
@@ -232,8 +232,14 @@ async def run_retention_sweep(
     registry: RegistryDep,
     settings: SettingsDep,
     principal: RetentionWrite,
+    force_maintenance: bool = False,
 ) -> dict:
-    """Run the retention cleanup sweep right now. A key sweeps only its mailboxes."""
+    """Run the retention cleanup sweep right now. A key sweeps only its mailboxes.
+
+    Pass `force_maintenance=true` to force full database maintenance (VACUUM,
+    REINDEX, ANALYZE, WAL checkpoints, quick_check) immediately regardless of the
+    configured throttling interval.
+    """
     only_key_id = None if principal.is_root else _issued_key_id(principal)
     return await svc.run_sweep(
         request.app.state.session_factory,
@@ -241,6 +247,7 @@ async def run_retention_sweep(
         settings,
         only_key_id=only_key_id,
         lock=getattr(request.app.state, 'sweep_lock', None),
+        force_maintenance=force_maintenance,
     )
 
 

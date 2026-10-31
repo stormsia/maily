@@ -530,6 +530,20 @@ asyncio.run(main())</pre>
     )
     print(f"Issued Key: {key.prefix}... Secret: {key.secret}")</pre>
       </div>
+
+      <div class="code-box">
+        <div class="code-box-header">
+          <span>Retention sweep & database maintenance</span>
+          <button class="copy-btn" onclick="copySnippet(this)">Copy</button>
+        </div>
+        <pre class="code-content">async with MailTMAPI("http://127.0.0.1:8477", api_key="root_secret") as api:
+    # Run regular retention sweep (performs VACUUM / maintenance if interval is due)
+    res = await api.admin.retention_run()
+    print(f"Deleted: {res.mailboxes_deleted} mailboxes, {res.messages_deleted} messages")
+
+    # Or force thorough database maintenance (VACUUM, REINDEX, ANALYZE) immediately:
+    res = await api.admin.retention_run(force_maintenance=True)</pre>
+      </div>
     </div>
 
     <!-- TAB 3: PROVIDERS -->
@@ -681,6 +695,15 @@ asyncio.run(main())</pre>
           <button class="copy-btn" onclick="copySnippet(this)">Copy</button>
         </div>
         <pre class="code-content"><span class="curl-cmd">curl -X GET "${window.location.origin}/v1/mailboxes/1/messages/MESSAGE_ID" \
+  -H "X-API-Key: ${getSavedKey() || 'YOUR_API_KEY'}"</span></pre>
+      </div>
+
+      <div class="code-box">
+        <div class="code-box-header">
+          <span>Run retention sweep & database maintenance</span>
+          <button class="copy-btn" onclick="copySnippet(this)">Copy</button>
+        </div>
+        <pre class="code-content"><span class="curl-cmd">curl -X POST "${window.location.origin}/v1/admin/retention/run?force_maintenance=true" \
   -H "X-API-Key: ${getSavedKey() || 'YOUR_API_KEY'}"</span></pre>
       </div>
     </div>

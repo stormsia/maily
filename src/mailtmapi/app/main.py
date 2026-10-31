@@ -103,7 +103,10 @@ async def lifespan(app: FastAPI):
     _refuse_open_bind(settings)
     # Resolve (and pin) the Fernet key before any request can race to mint one.
     settings.resolved_secret_key()
-    engine: AsyncEngine = make_engine(settings.database_url)
+    engine: AsyncEngine = make_engine(
+        settings.database_url,
+        busy_timeout_ms=settings.sqlite_busy_timeout_ms,
+    )
     _run_migrations(settings.database_url)
     factory = SessionFactory(engine)
     # Seed the ledger's receive-counters from messages that predate the ledger,

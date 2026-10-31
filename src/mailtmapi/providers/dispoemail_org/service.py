@@ -205,38 +205,36 @@ class DispoEmailOrg(HttpProvider):
 
         # Extract astro-session cookie from response headers if present
         astro_session: str | None = None
-        try:
-            jar = getattr(resp, "cookies", None)
-            if jar is not None:
-                astro_session = jar.get("astro-session")
-        except Exception:
-            pass
 
+        # 1. Check raw Set-Cookie headers using regex (handles Cloudflare multi-cookie and comma folding)
+        raw_cookies: list[str] = []
+        resp_headers = getattr(resp, "headers", None)
+        if resp_headers is not None:
+            if hasattr(resp_headers, "get_list"):
+                raw_cookies = resp_headers.get_list("set-cookie")
+            elif hasattr(resp_headers, "get"):
+                val = resp_headers.get("set-cookie")
+                if val:
+                    raw_cookies = [val]
+
+        for header_val in raw_cookies:
+            match = re.search(r"(?:^|[;,\s])astro-session=([^;,\s]+)", header_val)
+            if match:
+                astro_session = match.group(1).strip().strip("\"'")
+                break
+
+        # 2. Fall back to cookie jar if not found in raw headers
         if not astro_session:
-            raw_cookies: list[str] = []
-            resp_headers = getattr(resp, "headers", None)
-            if resp_headers is not None:
-                if hasattr(resp_headers, "get_list"):
-                    raw_cookies = resp_headers.get_list("set-cookie")
-                elif hasattr(resp_headers, "get"):
-                    val = resp_headers.get("set-cookie")
-                    if val:
-                        raw_cookies = [val]
-
-            for header_val in raw_cookies:
-                for cookie_part in header_val.split(";"):
-                    cookie_part = cookie_part.strip()
-                    if cookie_part.startswith("astro-session="):
-                        astro_session = cookie_part.split("=", 1)[1].strip()
-                        break
-                    if "astro-session=" in cookie_part:
-                        for subpart in cookie_part.split(","):
-                            subpart = subpart.strip()
-                            if subpart.startswith("astro-session="):
-                                astro_session = subpart.split("=", 1)[1].strip()
-                                break
-                if astro_session:
-                    break
+            try:
+                jar = getattr(resp, "cookies", None)
+                if jar is not None:
+                    cookie_val = jar.get("astro-session")
+                    if cookie_val:
+                        astro_session = (
+                            str(cookie_val).split(",")[0].split(";")[0].strip().strip("\"'")
+                        )
+            except Exception:
+                pass
 
         full_token = f"{mailbox_token}:{astro_session}" if astro_session else mailbox_token
 
@@ -271,10 +269,10 @@ class DispoEmailOrg(HttpProvider):
         url = f"{self.BASE_URL}/api/inboxes/{quote(mailbox_name)}?domain={quote(domain)}"
         try:
             resp = await self._http._client.get(url, headers=headers)
-            if resp.status_code == 403:
+            if resp.status_code in (401, 403):
                 raise MailAuthError(
                     f"dispoemail.org: access forbidden for mailbox {mailbox.address!r}",
-                    status_code=403,
+                    status_code=resp.status_code,
                 )
             if resp.status_code == 404:
                 return []
@@ -306,10 +304,10 @@ class DispoEmailOrg(HttpProvider):
         url = f"{self.BASE_URL}/api/messages/{quote(message_id)}?mailbox={quote(mailbox_name)}&domain={quote(domain)}"
         try:
             resp = await self._http._client.get(url, headers=headers)
-            if resp.status_code == 403:
+            if resp.status_code in (401, 403):
                 raise MailAuthError(
                     f"dispoemail.org: access forbidden for message {message_id!r}",
-                    status_code=403,
+                    status_code=resp.status_code,
                 )
             if resp.status_code == 404:
                 raise MailNotFoundError(

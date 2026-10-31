@@ -1049,10 +1049,14 @@ class AdminAPI:
             "DELETE", f"/v1/admin/retention/{quote(provider, safe='')}"
         )
 
-    async def retention_run(self) -> SweepResult:
+    async def retention_run(self, *, force_maintenance: bool = False) -> SweepResult:
         """Прогнать очистку сейчас: удалить просроченные ящики и письма."""
         return SweepResult.model_validate(
-            await self._t.request("POST", "/v1/admin/retention/run")
+            await self._t.request(
+                "POST",
+                "/v1/admin/retention/run",
+                params={"force_maintenance": "true"} if force_maintenance else None,
+            )
         )
 
     async def domain_cache(self) -> DomainCache:

@@ -10,7 +10,7 @@ from mailtmapi.app.main import create_app
 from mailtmapi.exceptions import MailNotFoundError
 from mailtmapi.http import HttpClient
 from mailtmapi.providers.anonymmail_net import AnonymMailNet
-from mailtmapi.providers.base import MailboxInfo, MailboxSpec, MessageDetail
+from mailtmapi.providers.base import MailboxInfo, MailboxSpec, MessageDetail, Party
 from mailtmapi.providers.registry import ProviderRegistry
 from mailtmapi.settings import Settings
 
@@ -467,5 +467,112 @@ async def test_anonymmail_cache_isolation_per_mailbox():
         # mb2's message is STILL cached and accessible!
         d2_again = await provider.get_message(mb2, "tok_user2")
         assert d2_again.subject == "User 2 Secret"
+    finally:
+        await http.close()
+
+
+@pytest.mark.asyncio
+async def test_anonymmail_lru_cache_eviction_protects_active_mailbox():
+    """Verify that when cache exceeds 1000 mailboxes, least recently used mailboxes
+    are evicted, and the active mailbox (even if originally inserted early) is preserved."""
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.path == "/":
+            return httpx.Response(200, text='<input name="csrf_test_name" value="csrf123">')
+        if request.url.path == "/api/get":
+            return httpx.Response(
+                200,
+                json={
+                    "target@anonymmail.net": {
+                        "emails": [
+                            {
+                                "id": "1",
+                                "token": "tok_target",
+                                "from": "sender@test.com",
+                                "subject": "Target Message",
+                                "read": 0,
+                                "images": 0,
+                            }
+                        ]
+                    }
+                },
+            )
+        if request.url.path == "/email":
+            return httpx.Response(200, text="Target Body")
+        return httpx.Response(404)
+
+    http = _http(handler)
+    provider = AnonymMailNet(http)
+    try:
+        # Pre-seed cache with 1000 mailboxes; "target@anonymmail.net" is the very first (oldest) key
+        target_addr = "target@anonymmail.net"
+        provider._messages[target_addr] = {}
+        for i in range(1, 1000):
+            provider._messages[f"dummy_{i}@anonymmail.net"] = {
+                f"msg_{i}": MessageDetail(
+                    id=f"msg_{i}",
+                    subject="Old",
+                    from_=Party(name=None, address=""),
+                    to=[],
+                    intro="",
+                    seen=False,
+                    has_attachments=False,
+                    size=0,
+                    received_at=None,
+                    text="",
+                    html=[],
+                    attachments=[],
+                )
+            }
+
+        mb_target = MailboxInfo(
+            provider="anonymmail.net",
+            address=target_addr,
+            token="sess_t:uid_t",
+            provider_account_id=target_addr,
+        )
+
+        # Access target mailbox via list_messages - this moves target to end (MRU)
+        msgs = await provider.list_messages(mb_target)
+        assert len(msgs) == 1
+        assert msgs[0].id == "tok_target"
+
+        # Now add one more mailbox to trigger > 1000 eviction
+        mb_extra = MailboxInfo(
+            provider="anonymmail.net",
+            address="extra@anonymmail.net",
+            token="sess_e:uid_e",
+            provider_account_id="extra@anonymmail.net",
+        )
+        await provider.list_messages(mb_extra)
+
+        # Cache size should be <= 1000
+        assert len(provider._messages) <= 1000
+
+        # target_addr MUST NOT have been evicted because it was recently used!
+        assert target_addr in provider._messages
+        assert "tok_target" in provider._messages[target_addr]
+
+        # dummy_1@anonymmail.net (the actual oldest unaccessed mailbox) WAS evicted!
+        assert "dummy_1@anonymmail.net" not in provider._messages
+    finally:
+        await http.close()
+
+
+@pytest.mark.asyncio
+async def test_anonymmail_mailbox_headers_always_sets_cookie():
+    """Verify that _mailbox_headers always sets Cookie even when token has no ci_session or am_uid."""
+    http = _http(lambda req: httpx.Response(200))
+    provider = AnonymMailNet(http)
+    try:
+        mb = MailboxInfo(
+            provider="anonymmail.net",
+            address="clean@anonymmail.net",
+            token="",
+            provider_account_id="clean@anonymmail.net",
+        )
+        headers = provider._mailbox_headers(mb, "csrf_abc")
+        assert "Cookie" in headers
+        assert "csrf_cookie_name=csrf_abc" in headers["Cookie"]
     finally:
         await http.close()

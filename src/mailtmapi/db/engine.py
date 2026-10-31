@@ -13,24 +13,34 @@ from sqlalchemy.ext.asyncio import (
     create_async_engine,
 )
 
+_DEFAULT_SQLITE_BUSY_TIMEOUT_MS = 60000
+
 _SQLITE_PRAGMAS = (
     "PRAGMA journal_mode=WAL",
     "PRAGMA synchronous=NORMAL",
     "PRAGMA foreign_keys=ON",
-    "PRAGMA busy_timeout=5000",
+    f"PRAGMA busy_timeout={_DEFAULT_SQLITE_BUSY_TIMEOUT_MS}",
     "PRAGMA temp_store=MEMORY",
     "PRAGMA wal_autocheckpoint=200",
 )
 
 
-def make_engine(url: str) -> AsyncEngine:
+def make_engine(url: str, *, busy_timeout_ms: int = _DEFAULT_SQLITE_BUSY_TIMEOUT_MS) -> AsyncEngine:
     engine = create_async_engine(url, echo=False)
     if url.startswith("sqlite"):
 
         @event.listens_for(engine.sync_engine, "connect")
         def _on_connect(dbapi_conn, _connection_record) -> None:  # noqa: ANN001
             cur = dbapi_conn.cursor()
-            for pragma in _SQLITE_PRAGMAS:
+            pragmas = (
+                "PRAGMA journal_mode=WAL",
+                "PRAGMA synchronous=NORMAL",
+                "PRAGMA foreign_keys=ON",
+                f"PRAGMA busy_timeout={busy_timeout_ms}",
+                "PRAGMA temp_store=MEMORY",
+                "PRAGMA wal_autocheckpoint=200",
+            )
+            for pragma in pragmas:
                 cur.execute(pragma)
             cur.close()
 
@@ -54,7 +64,12 @@ async def session_scope(
             raise
 
 
-async def retry_on_lock(operation: Callable[[], Awaitable[None]], *, attempts: int = 3, delay: float = 0.2) -> None:
+async def retry_on_lock(
+    operation: Callable[[], Awaitable[None]],
+    *,
+    attempts: int = 5,
+    delay: float = 0.3,
+) -> None:
     """Run a short write transaction, retrying on transient SQLite locks.
 
     ``SQLITE_BUSY`` (database is locked) is expected under concurrent Asyncio
@@ -67,6 +82,8 @@ async def retry_on_lock(operation: Callable[[], Awaitable[None]], *, attempts: i
             await operation()
             return
         except OperationalError as exc:
-            if attempt == attempts - 1 or "locked" not in str(exc):
+            err = str(exc).lower()
+            is_lock_error = any(phrase in err for phrase in ("locked", "busy", "timeout"))
+            if attempt == attempts - 1 or not is_lock_error:
                 raise
             await asyncio.sleep(delay * (attempt + 1))

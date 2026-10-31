@@ -42,15 +42,19 @@ export async function render(root, me = null) {
 
   root.innerHTML = "";
   const sweepBtn = writable
-    ? h("button", { class: "btn btn-primary", onclick: runSweep },
-        h("i", { "data-lucide": "timer" }), h("span", {}, "Run sweep now"))
+    ? h("button", { class: "btn btn-ghost", onclick: (e) => runSweep(e, false) },
+        h("i", { "data-lucide": "timer" }), h("span", {}, "Run sweep"))
+    : null;
+  const maintBtn = writable
+    ? h("button", { class: "btn btn-primary", onclick: (e) => runSweep(e, true) },
+        h("i", { "data-lucide": "database" }), h("span", {}, "Sweep & DB maintenance"))
     : null;
   root.append(h("div", { class: "toolbar toolbar--top" },
     h("p", { class: "muted", style: "flex:1;min-width:220px" },
       writable
-        ? "Automatic cleanup for old mailboxes and messages. Empty fields mean disabled."
+        ? "Automatic cleanup for old mailboxes and messages paired with periodic database maintenance. Empty fields mean disabled."
         : "Read-only. A blank provider follows root retention."),
-    sweepBtn));
+    h("div", { style: "display:flex;gap:8px" }, sweepBtn, maintBtn)));
 
   if (!slugs.length) {
     root.append(emptyState({
@@ -135,15 +139,20 @@ export async function render(root, me = null) {
     h("span", {},
       "Mailboxes are deleted automatically after their TTL expires; messages after theirs. ",
       "Provider-side deletion is best-effort — local records are always removed.")));
+  root.append(h("div", { class: "note", style: "margin-top:12px" },
+    h("i", { "data-lucide": "database" }),
+    h("span", {},
+      "Database maintenance (WAL checkpoint TRUNCATE, VACUUM, REINDEX, ANALYZE, PRAGMA optimize, quick_check) runs automatically alongside retention (not more often than once every X minutes from config) to defragment storage and optimize query performance without downtime.")));
   refreshIcons();
 
-  async function runSweep(e) {
+  async function runSweep(e, forceMaintenance = false) {
     const btn = e.currentTarget;
     btn.disabled = true;
     btn.classList.add("is-loading");
     try {
-      const res = await api.runRetention();
-      toast(`Deleted ${res.mailboxes_deleted ?? 0} mailboxes, ${res.messages_deleted ?? 0} messages.`, "ok", "timer");
+      const res = await api.runRetention(forceMaintenance);
+      const maintMsg = forceMaintenance ? " (full DB maintenance completed)" : "";
+      toast(`Deleted ${res.mailboxes_deleted ?? 0} mailboxes, ${res.messages_deleted ?? 0} messages${maintMsg}.`, "ok", "timer");
     } catch (err) {
       toast(err.detail || "Sweep failed.", "err");
     } finally {

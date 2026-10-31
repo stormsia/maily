@@ -247,10 +247,10 @@ def test_datetimes_serialized_with_explicit_utc_z(tmp_path):
         assert mb.status_code == 200
         created = mb.json()["created_at"]
         assert created.endswith("Z")
-        assert datetime.fromisoformat(created).tzinfo is not None
+        assert datetime.fromisoformat(created.replace("Z", "+00:00")).tzinfo is not None
 
         # messages deserialize their provider timestamps into UTC as well
         msgs = client.get(f"/v1/mailboxes/{mb.json()['id']}/messages").json()
         received = msgs[0]["received_at"]
         assert received.endswith("Z")
-        assert datetime.fromisoformat(received).tzinfo is not None
+        assert datetime.fromisoformat(received.replace("Z", "+00:00")).tzinfo is not None

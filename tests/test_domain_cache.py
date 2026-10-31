@@ -136,7 +136,7 @@ def test_run_stores_and_bumps_last_refresh(tmp_path):
         client.post("/v1/admin/domain-cache/run")
         t2 = {p["provider"]: p["updated_at"] for p in client.get("/v1/admin/domain-cache").json()["providers"]}["good"]
 
-        assert datetime.fromisoformat(t2) > datetime.fromisoformat(t1)
+        assert datetime.fromisoformat(t2.replace("Z", "+00:00")) > datetime.fromisoformat(t1.replace("Z", "+00:00"))
 
 
 def test_mailbox_create_domain_resolution(tmp_path):

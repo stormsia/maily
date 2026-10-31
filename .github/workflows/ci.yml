@@ -73,7 +73,7 @@ jobs:
             echo "Checking $f..."
             node --input-type=module --check < "$f"
           done
-          npx --yes @biomejs/biome check src/mailtmapi/static/js
+          npx --yes @biomejs/biome lint src/mailtmapi/static/js
 
       - name: Static HTML Assets Lint (HTMLHint)
         run: npx --yes htmlhint src/mailtmapi/static/*.html

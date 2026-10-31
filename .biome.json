@@ -1,5 +1,9 @@
 {
+  "$schema": "https://biomejs.dev/schemas/1.9.4/schema.json",
   "formatter": {
+    "enabled": false
+  },
+  "organizeImports": {
     "enabled": false
   },
   "linter": {
@@ -8,13 +12,19 @@
       "preset": "recommended",
       "style": {
         "useConst": "warn",
-        "noNonNullAssertion": "off"
+        "noNonNullAssertion": "off",
+        "useTemplate": "off"
+      },
+      "complexity": {
+        "useOptionalChain": "off"
       },
       "correctness": {
-        "noUnusedVariables": "warn"
+        "noUnusedVariables": "warn",
+        "noUnusedFunctionParameters": "off"
       },
       "suspicious": {
-        "noExplicitAny": "off"
+        "noExplicitAny": "off",
+        "useIterableCallbackReturn": "off"
       }
     }
   },

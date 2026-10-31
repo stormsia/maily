@@ -1,10 +1,11 @@
 from __future__ import annotations
 
 import logging
+import re
 from typing import Any
 from urllib.parse import quote
 
-from ...exceptions import MailAPIError, MailNotFoundError, MailValidationError
+from ...exceptions import MailAPIError, MailAuthError, MailNotFoundError, MailValidationError
 from ...http import HttpClient
 from ...utils.retry import async_retry
 from ..base import (
@@ -123,6 +124,8 @@ class DispoEmailOrg(HttpProvider):
             headers["X-Mailbox-Token"] = token
         if session:
             headers["Cookie"] = f"astro-session={session}"
+        else:
+            headers["Cookie"] = ""
         return headers
 
     @async_retry()
@@ -131,7 +134,9 @@ class DispoEmailOrg(HttpProvider):
         headers.pop("Origin", None)
         headers.pop("Content-Type", None)
         try:
-            resp = await self._http._client.get(f"{self.BASE_URL}/api/active-domains", headers=headers)
+            resp = await self._http._client.get(
+                f"{self.BASE_URL}/api/active-domains", headers=headers
+            )
         except Exception as e:
             raise MailAPIError(f"dispoemail.org: failed to get active domains: {e}") from e
 
@@ -166,12 +171,15 @@ class DispoEmailOrg(HttpProvider):
 
         headers = dict(self.default_headers)
         headers["Content-Type"] = "application/json"
+        headers["Cookie"] = ""
         body: dict[str, str] = {"domain": domain}
         if custom_mailbox:
             body["mailbox"] = custom_mailbox
 
         try:
-            resp = await self._http._client.post(f"{self.BASE_URL}/api/session/mailboxes", headers=headers, json=body)
+            resp = await self._http._client.post(
+                f"{self.BASE_URL}/api/session/mailboxes", headers=headers, json=body
+            )
         except Exception as e:
             raise MailAPIError(f"dispoemail.org: create failed: {e}") from e
 
@@ -187,7 +195,9 @@ class DispoEmailOrg(HttpProvider):
 
         tokens = result.get("tokens") or {}
         if not tokens:
-            raise MailValidationError("dispoemail.org: failed to create mailbox (no tokens returned)", status_code=400)
+            raise MailValidationError(
+                "dispoemail.org: failed to create mailbox (no tokens returned)", status_code=400
+            )
 
         # Get generated/created address and token
         created_address = next(iter(tokens.keys()))
@@ -195,12 +205,38 @@ class DispoEmailOrg(HttpProvider):
 
         # Extract astro-session cookie from response headers if present
         astro_session: str | None = None
-        set_cookie = resp.headers.get("set-cookie") or ""
-        for cookie_part in set_cookie.split(";"):
-            cookie_part = cookie_part.strip()
-            if cookie_part.startswith("astro-session="):
-                astro_session = cookie_part.split("=", 1)[1]
-                break
+        try:
+            jar = getattr(resp, "cookies", None)
+            if jar is not None:
+                astro_session = jar.get("astro-session")
+        except Exception:
+            pass
+
+        if not astro_session:
+            raw_cookies: list[str] = []
+            resp_headers = getattr(resp, "headers", None)
+            if resp_headers is not None:
+                if hasattr(resp_headers, "get_list"):
+                    raw_cookies = resp_headers.get_list("set-cookie")
+                elif hasattr(resp_headers, "get"):
+                    val = resp_headers.get("set-cookie")
+                    if val:
+                        raw_cookies = [val]
+
+            for header_val in raw_cookies:
+                for cookie_part in header_val.split(";"):
+                    cookie_part = cookie_part.strip()
+                    if cookie_part.startswith("astro-session="):
+                        astro_session = cookie_part.split("=", 1)[1].strip()
+                        break
+                    if "astro-session=" in cookie_part:
+                        for subpart in cookie_part.split(","):
+                            subpart = subpart.strip()
+                            if subpart.startswith("astro-session="):
+                                astro_session = subpart.split("=", 1)[1].strip()
+                                break
+                if astro_session:
+                    break
 
         full_token = f"{mailbox_token}:{astro_session}" if astro_session else mailbox_token
 
@@ -235,10 +271,17 @@ class DispoEmailOrg(HttpProvider):
         url = f"{self.BASE_URL}/api/inboxes/{quote(mailbox_name)}?domain={quote(domain)}"
         try:
             resp = await self._http._client.get(url, headers=headers)
-            if resp.status_code in (403, 404):
+            if resp.status_code == 403:
+                raise MailAuthError(
+                    f"dispoemail.org: access forbidden for mailbox {mailbox.address!r}",
+                    status_code=403,
+                )
+            if resp.status_code == 404:
                 return []
             if resp.status_code >= 400:
-                raise MailAPIError(f"dispoemail.org: list messages returned status {resp.status_code}")
+                raise MailAPIError(
+                    f"dispoemail.org: list messages returned status {resp.status_code}"
+                )
             data = resp.json()
         except MailAPIError:
             raise
@@ -263,10 +306,19 @@ class DispoEmailOrg(HttpProvider):
         url = f"{self.BASE_URL}/api/messages/{quote(message_id)}?mailbox={quote(mailbox_name)}&domain={quote(domain)}"
         try:
             resp = await self._http._client.get(url, headers=headers)
-            if resp.status_code in (403, 404):
-                raise MailNotFoundError(f"dispoemail.org: message {message_id!r} not found", status_code=404)
+            if resp.status_code == 403:
+                raise MailAuthError(
+                    f"dispoemail.org: access forbidden for message {message_id!r}",
+                    status_code=403,
+                )
+            if resp.status_code == 404:
+                raise MailNotFoundError(
+                    f"dispoemail.org: message {message_id!r} not found", status_code=404
+                )
             if resp.status_code >= 400:
-                raise MailAPIError(f"dispoemail.org: get message returned status {resp.status_code}")
+                raise MailAPIError(
+                    f"dispoemail.org: get message returned status {resp.status_code}"
+                )
             data = resp.json()
         except (MailNotFoundError, MailAPIError):
             raise
@@ -274,11 +326,15 @@ class DispoEmailOrg(HttpProvider):
             raise MailAPIError(f"dispoemail.org: failed to get message: {e}") from e
 
         if not isinstance(data, dict) or "message" not in data:
-            raise MailNotFoundError(f"dispoemail.org: message {message_id!r} not found", status_code=404)
+            raise MailNotFoundError(
+                f"dispoemail.org: message {message_id!r} not found", status_code=404
+            )
 
         msg = data["message"]
         if not isinstance(msg, dict):
-            raise MailNotFoundError(f"dispoemail.org: message {message_id!r} not found", status_code=404)
+            raise MailNotFoundError(
+                f"dispoemail.org: message {message_id!r} not found", status_code=404
+            )
 
         summary = _parse_summary(msg, mailbox_name, domain)
         body_text = str(msg.get("text") or "")

@@ -7,6 +7,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from mailtmapi.app.main import create_app
+from mailtmapi.exceptions import MailAuthError
 from mailtmapi.http import HttpClient
 from mailtmapi.providers.base import MailboxInfo, MailboxSpec
 from mailtmapi.providers.dispoemail_org import DispoEmailOrg
@@ -204,9 +205,7 @@ def test_dispoemail_full_api_flow(tmp_path: Path):
                 200,
                 json={
                     "ok": True,
-                    "tokens": {
-                        "m690v3w4h715c@vibe-hub.ccwu.cc": "token-xyz"
-                    },
+                    "tokens": {"m690v3w4h715c@vibe-hub.ccwu.cc": "token-xyz"},
                     "denied": [],
                 },
             )
@@ -301,3 +300,97 @@ def test_dispoemail_full_api_flow(tmp_path: Path):
         # 5. Delete mailbox
         r = client.delete(f"/v1/mailboxes/{box_id}")
         assert r.status_code == 204
+
+
+@pytest.mark.asyncio
+async def test_dispoemail_create_multiple_mailboxes_no_cookie_leak():
+    recorded_cookies: list[str] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.path == "/api/session/mailboxes":
+            cookie_header = request.headers.get("cookie", "")
+            recorded_cookies.append(cookie_header)
+            mb_num = len(recorded_cookies)
+            email = f"user{mb_num}@vibe-hub.ccwu.cc"
+            sess = f"session_{mb_num}"
+            tok = f"token_{mb_num}"
+            return httpx.Response(
+                200,
+                headers=[("Set-Cookie", f"astro-session={sess}; Path=/")],
+                json={"ok": True, "tokens": {email: tok}},
+            )
+        return httpx.Response(404)
+
+    http = _http(handler)
+    provider = DispoEmailOrg(http)
+    try:
+        box1 = await provider.create_mailbox(MailboxSpec(address="user1@vibe-hub.ccwu.cc"))
+        box2 = await provider.create_mailbox(MailboxSpec(address="user2@vibe-hub.ccwu.cc"))
+
+        assert box1.token == "token_1:session_1"
+        assert box2.token == "token_2:session_2"
+
+        # Neither create_mailbox call leaked previous cookies into the request
+        assert len(recorded_cookies) == 2
+        assert recorded_cookies[0] == ""
+        assert recorded_cookies[1] == ""
+        assert "session_1" not in recorded_cookies[1]
+    finally:
+        await http.close()
+
+
+@pytest.mark.asyncio
+async def test_dispoemail_astro_session_multi_cookie_parsing():
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.path == "/api/session/mailboxes":
+            return httpx.Response(
+                200,
+                headers=[
+                    (
+                        "Set-Cookie",
+                        "__cf_bm=token_cf_123; path=/; expires=Sat, 31-Oct-2026 12:00:00 GMT; HttpOnly",
+                    ),
+                    (
+                        "Set-Cookie",
+                        "astro-session=cf_session_abcdef123456; path=/; HttpOnly; Secure",
+                    ),
+                    ("Set-Cookie", "_cfuvid=uvid_789; path=/"),
+                ],
+                json={
+                    "ok": True,
+                    "tokens": {"cf_user@vibe-hub.ccwu.cc": "mb_tok_999"},
+                },
+            )
+        return httpx.Response(404)
+
+    http = _http(handler)
+    provider = DispoEmailOrg(http)
+    try:
+        box = await provider.create_mailbox(MailboxSpec(address="cf_user@vibe-hub.ccwu.cc"))
+        assert box.token == "mb_tok_999:cf_session_abcdef123456"
+    finally:
+        await http.close()
+
+
+@pytest.mark.asyncio
+async def test_dispoemail_list_and_get_messages_forbidden_raises_auth_error():
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.path.startswith("/api/inboxes/"):
+            return httpx.Response(403, json={"error": "forbidden"})
+        if request.url.path.startswith("/api/messages/"):
+            return httpx.Response(403, json={"error": "forbidden"})
+        return httpx.Response(404)
+
+    http = _http(handler)
+    provider = DispoEmailOrg(http)
+    box = _mailbox()
+    try:
+        with pytest.raises(MailAuthError) as exc_info:
+            await provider.list_messages(box)
+        assert exc_info.value.status_code == 403
+
+        with pytest.raises(MailAuthError) as exc_info:
+            await provider.get_message(box, "any-msg")
+        assert exc_info.value.status_code == 403
+    finally:
+        await http.close()

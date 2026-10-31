@@ -172,7 +172,7 @@ class AnonymMailNet(HttpProvider):
         super().__init__(http=http, proxy=proxy)
         self._csrf_token: str | None = None
         self._csrf_lock = asyncio.Lock()
-        self._messages: dict[str, MessageDetail] = {}
+        self._messages: dict[str, dict[str, MessageDetail]] = {}
 
     async def _ensure_session(self) -> str:
         if self._csrf_token:
@@ -316,7 +316,7 @@ class AnonymMailNet(HttpProvider):
 
     @async_retry()
     async def delete_mailbox(self, mailbox: MailboxInfo) -> bool:
-        self._messages.clear()
+        self._messages.pop(mailbox.address.strip().lower(), None)
         token = await self._ensure_session()
         headers = self._mailbox_headers(mailbox, token)
         headers["Content-Type"] = "application/x-www-form-urlencoded; charset=UTF-8"
@@ -379,6 +379,8 @@ class AnonymMailNet(HttpProvider):
             if not isinstance(result, dict):
                 return []
             summaries = _parse_messages(result, mailbox.address)
+            addr = mailbox.address.strip().lower()
+            box_cache = self._messages.setdefault(addr, {})
             details: list[MessageSummary] = []
             for s in summaries:
                 body_text = ""
@@ -399,8 +401,12 @@ class AnonymMailNet(HttpProvider):
                     html=[html] if html else [],
                     attachments=[],
                 )
-                self._messages[s.id] = detail
+                box_cache[s.id] = detail
                 details.append(detail)
+            # Evict old mailboxes if overall cache grows excessively
+            if len(self._messages) > 1000:
+                for k in list(self._messages.keys())[:500]:
+                    self._messages.pop(k, None)
             return details
         except MailNotFoundError:
             raise
@@ -409,8 +415,10 @@ class AnonymMailNet(HttpProvider):
 
     @async_retry()
     async def get_message(self, mailbox: MailboxInfo, message_id: str) -> MessageDetail:
-        if message_id in self._messages:
-            detail = self._messages[message_id]
+        addr = mailbox.address.strip().lower()
+        box_cache = self._messages.setdefault(addr, {})
+        if message_id in box_cache:
+            detail = box_cache[message_id]
             if detail.text or detail.html:
                 return detail
             try:
@@ -439,7 +447,7 @@ class AnonymMailNet(HttpProvider):
                 html=[html] if html else [],
                 attachments=[],
             )
-            self._messages[message_id] = detail
+            box_cache[message_id] = detail
             return detail
         except Exception as e:
             raise MailNotFoundError(
@@ -448,7 +456,9 @@ class AnonymMailNet(HttpProvider):
 
     @async_retry()
     async def delete_message(self, mailbox: MailboxInfo, message_id: str) -> bool:
-        self._messages.pop(message_id, None)
+        addr = mailbox.address.strip().lower()
+        if addr in self._messages:
+            self._messages[addr].pop(message_id, None)
         token = await self._ensure_session()
         headers = self._mailbox_headers(mailbox, token)
         headers["Content-Type"] = "application/x-www-form-urlencoded"
@@ -469,8 +479,10 @@ class AnonymMailNet(HttpProvider):
             return True
 
     async def mark_read(self, mailbox: MailboxInfo, message_id: str) -> bool:
-        if message_id in self._messages:
-            self._messages[message_id].seen = True
+        addr = mailbox.address.strip().lower()
+        msg = self._messages.get(addr, {}).get(message_id)
+        if msg:
+            msg.seen = True
         return True
 
     @async_retry()

@@ -7,6 +7,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from mailtmapi.app.main import create_app
+from mailtmapi.exceptions import MailNotFoundError
 from mailtmapi.http import HttpClient
 from mailtmapi.providers.anonymmail_net import AnonymMailNet
 from mailtmapi.providers.base import MailboxInfo, MailboxSpec, MessageDetail
@@ -284,7 +285,9 @@ def test_anonymmail_full_api_flow(tmp_path: Path):
     with TestClient(app) as client:
         client.app.state.registry = ProviderRegistry([provider])
         # 1. Create mailbox
-        r = client.post("/v1/mailboxes", json={"provider": "anonymmail.net", "address": "test@anonymmail.net"})
+        r = client.post(
+            "/v1/mailboxes", json={"provider": "anonymmail.net", "address": "test@anonymmail.net"}
+        )
         assert r.status_code == 200, r.json()
         mb_id = r.json()["id"]
 
@@ -340,3 +343,129 @@ def test_anonymmail_full_api_flow(tmp_path: Path):
         # 9. Get detail after delete should 404
         r_get_del = client.get(f"/v1/mailboxes/{mb_id}/messages/tok_99")
         assert r_get_del.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_anonymmail_cache_isolation_per_mailbox():
+    """Verify that AnonymMailNet caches messages per mailbox address and deleting one mailbox
+    does not clear the cache for other mailboxes."""
+    feed_counts = {"user1@anonymmail.net": 0, "user2@anonymmail.net": 0}
+    deleted = {"mb1": False, "mb2": False}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        cookie = request.headers.get("cookie", "")
+        if request.url.path == "/":
+            return httpx.Response(200, text='<input name="csrf_test_name" value="csrf123">')
+        if request.url.path == "/api/get":
+            body = request.read().decode("utf-8")
+            if "user1%40anonymmail.net" in body or "user1@anonymmail.net" in body:
+                feed_counts["user1@anonymmail.net"] += 1
+                if feed_counts["user1@anonymmail.net"] == 1:
+                    return httpx.Response(
+                        200,
+                        json={
+                            "user1@anonymmail.net": {
+                                "emails": [
+                                    {
+                                        "id": "1",
+                                        "token": "tok_user1",
+                                        "from": "alice@test.com",
+                                        "subject": "User 1 Secret",
+                                        "read": 0,
+                                        "images": 0,
+                                    }
+                                ]
+                            }
+                        },
+                    )
+                return httpx.Response(200, json={"user1@anonymmail.net": {"emails": []}})
+            if "user2%40anonymmail.net" in body or "user2@anonymmail.net" in body:
+                feed_counts["user2@anonymmail.net"] += 1
+                if feed_counts["user2@anonymmail.net"] == 1:
+                    return httpx.Response(
+                        200,
+                        json={
+                            "user2@anonymmail.net": {
+                                "emails": [
+                                    {
+                                        "id": "2",
+                                        "token": "tok_user2",
+                                        "from": "bob@test.com",
+                                        "subject": "User 2 Secret",
+                                        "read": 0,
+                                        "images": 0,
+                                    }
+                                ]
+                            }
+                        },
+                    )
+                return httpx.Response(200, json={"user2@anonymmail.net": {"emails": []}})
+            return httpx.Response(200, json={})
+        if request.url.path == "/email":
+            msg_id = request.url.params.get("id")
+            if msg_id == "tok_user1" and "sess_1" in cookie and not deleted["mb1"]:
+                return httpx.Response(200, text="Body for user 1")
+            if msg_id == "tok_user2" and "sess_2" in cookie and not deleted["mb2"]:
+                return httpx.Response(200, text="Body for user 2")
+            return httpx.Response(404)
+        if request.url.path == "/api/delete":
+            if "sess_1" in cookie:
+                deleted["mb1"] = True
+            if "sess_2" in cookie:
+                deleted["mb2"] = True
+            return httpx.Response(200, json={"success": True})
+        return httpx.Response(404)
+
+    http = _http(handler)
+    provider = AnonymMailNet(http)
+    mb1 = MailboxInfo(
+        provider="anonymmail.net",
+        address="user1@anonymmail.net",
+        token="sess_1:uid_1",
+        provider_account_id="user1@anonymmail.net",
+    )
+    mb2 = MailboxInfo(
+        provider="anonymmail.net",
+        address="user2@anonymmail.net",
+        token="sess_2:uid_2",
+        provider_account_id="user2@anonymmail.net",
+    )
+
+    try:
+        # Initial list populates cache for each mailbox
+        msgs1 = await provider.list_messages(mb1)
+        msgs2 = await provider.list_messages(mb2)
+        assert len(msgs1) == 1
+        assert msgs1[0].id == "tok_user1"
+        assert len(msgs2) == 1
+        assert msgs2[0].id == "tok_user2"
+
+        # Subsequent list returns empty upstream feeds
+        assert await provider.list_messages(mb1) == []
+        assert await provider.list_messages(mb2) == []
+
+        # Both mailboxes can read their own cached messages
+        d1 = await provider.get_message(mb1, "tok_user1")
+        assert d1.subject == "User 1 Secret"
+        d2 = await provider.get_message(mb2, "tok_user2")
+        assert d2.subject == "User 2 Secret"
+
+        # Cross-mailbox isolation: mb1 cannot get mb2's message
+        with pytest.raises(MailNotFoundError):
+            await provider.get_message(mb1, "tok_user2")
+
+        # Deleting mb1 purges only mb1's cache, not mb2's
+        await provider.delete_mailbox(mb1)
+        assert "user1@anonymmail.net" not in provider._messages
+        assert "user2@anonymmail.net" in provider._messages
+        assert "tok_user2" in provider._messages["user2@anonymmail.net"]
+
+        # mb1's message is gone
+        with pytest.raises(MailNotFoundError):
+            await provider.get_message(mb1, "tok_user1")
+
+        # mb2's message is STILL cached and accessible!
+        d2_again = await provider.get_message(mb2, "tok_user2")
+        assert d2_again.subject == "User 2 Secret"
+    finally:
+        await http.close()

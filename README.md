@@ -210,6 +210,8 @@ Copy `.env.example` to `.env` and customize:
 | `MAILTM_DOMAIN_CACHE_INTERVAL_SECONDS` | `1800` | Background domain refresh frequency |
 | `MAILTM_GMAIL_CLIENT_ID` | *(empty)* | Google OAuth2 Client ID |
 | `MAILTM_GMAIL_CLIENT_SECRET` | *(empty)* | Google OAuth2 Client Secret |
+| `MAILTM_TEMP_TF_GMAIL_DOT` | `true` | Enable dot-aliased Gmail addresses for temp.tf (`user.name@gmail.com`) |
+| `MAILTM_TEMP_TF_GMAIL_PLUS` | `true` | Enable plus-aliased Gmail addresses for temp.tf (`username+tag@gmail.com`) |
 
 ---
 

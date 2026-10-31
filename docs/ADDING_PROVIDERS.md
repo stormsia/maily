@@ -335,6 +335,7 @@ In `src/mailtmapi/app/main.py`:
            NoopMail(http=http),
            AnonymMailNet(http=http),
            DispoEmailOrg(http=http),
+           TempTF(http=http),
            MyProvider(http=http),  # <--- Added here
        ]
    )
@@ -437,7 +438,28 @@ async def test_message_not_found():
 
 ---
 
-## ✅ 7. AI Agent Pre-flight Verification Checklist
+## 📖 7. Updating Documentation & Configuration
+
+Whenever a new provider is added or updated, ensure project documentation and configuration files are kept in sync:
+
+1. **`README.md`**:
+   - Increment the supported providers count in the **✨ Features** section.
+   - Add the provider name and a concise description to the features list.
+   - Add a row to the **🌐 Supported Providers & Capabilities** table detailing its capabilities (`Target Kind`, `Custom Username`, `Custom Domain`, `Passwords / PIN`, `Raw Source`, `Read Tracking`).
+   - If the provider introduces new settings in `src/mailtmapi/settings.py`, document all environment variables in the **⚙️ Configuration Reference** table.
+
+2. **Web Dashboard & Developer Hub (`src/mailtmapi/static/docs.html`)**:
+   - Add a corresponding row to the **Supported Providers** table in `#tab-providers` with appropriate badge classes (`badge--domain`, `badge--yes`, `badge--no`, etc.).
+
+3. **Environment Template (`.env.example`)**:
+   - If the provider has optional or configurable settings (e.g. custom headers, origins, syntax toggles), document them with commented defaults and explanatory notes.
+
+4. **This Guide (`docs/ADDING_PROVIDERS.md`)**:
+   - Keep provider lists, capabilities matrix, and registry examples up to date.
+
+---
+
+## ✅ 8. AI Agent Pre-flight Verification Checklist
 
 Before finalizing any new provider implementation, execute the following commands in the workspace:
 
@@ -461,3 +483,5 @@ Before finalizing any new provider implementation, execute the following command
    ```bash
    python scripts/build_client.py --check
    ```
+6. **Verify documentation and configuration sync**:
+   - Verify `README.md`, `src/mailtmapi/static/docs.html`, and `.env.example` include the new provider and any new settings.

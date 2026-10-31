@@ -121,8 +121,10 @@ function trapFocus(dialog) {
 let removeTrap = null;
 
 export function openModal({ title, sub = "", body, actions = [], wide = false }) {
+  if (!modalRoot().contains(document.activeElement)) {
+    lastFocus = document.activeElement;
+  }
   closeModal(true);
-  lastFocus = document.activeElement;
   const overlay = h("div", { class: "modal-overlay" });
   const dialog  = h("div", {
     class: `modal${wide ? " modal--wide" : ""}`,

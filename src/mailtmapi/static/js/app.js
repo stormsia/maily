@@ -68,6 +68,16 @@ sidebar?.querySelectorAll(".nav-link").forEach((a) => {
   });
 });
 
+// Skip link keyboard accessibility (focus main without corrupting SPA hash)
+document.querySelector(".skip-link")?.addEventListener("click", (e) => {
+  e.preventDefault();
+  const target = document.getElementById("app");
+  if (target) {
+    target.setAttribute("tabindex", "-1");
+    target.focus();
+  }
+});
+
 /* ============================================================
    Health + auth-mode banner
    ============================================================ */
@@ -300,6 +310,7 @@ function setNav(name) {
 }
 
 async function route() {
+  closeSidebar();
   const r = parseHash();
   try { currentCleanup?.(); } catch { /* page torn down already */ }
   currentCleanup = r.name === "overview" ? cleanupOverview

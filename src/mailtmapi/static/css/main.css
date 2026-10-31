@@ -852,19 +852,8 @@ pre.code {
 }
 .acct-main { flex: 1; min-width: 200px; }
 .acct-email { font-family: var(--font-mono); font-weight: 600; font-size: var(--fs-14); overflow-wrap: anywhere; word-break: break-all; }
-.acct-meta { font-size: var(--fs-12); color: var(--muted); margin-top: 2px; }
-.acct-status { font-size: var(--fs-12); margin-top: var(--s-1); }
+.sendas { display: flex; flex-wrap: wrap; gap: var(--s-1); margin-top: var(--s-1); }
 .acct-actions { display: flex; gap: var(--s-2); flex-shrink: 0; flex-wrap: wrap; }
-
-/* ---------- Keys page ---------- */
-.key-list { display: flex; flex-direction: column; gap: var(--s-3); }
-.key-row { display: flex; align-items: center; gap: var(--s-4); padding: var(--s-4) var(--s-5); flex-wrap: wrap; }
-.key-main { flex: 1; min-width: 200px; }
-.key-name { font-weight: 700; font-size: var(--fs-14); }
-.key-meta { font-size: var(--fs-12); color: var(--muted); margin-top: 2px; }
-.key-actions { display: flex; gap: var(--s-2); flex-shrink: 0; flex-wrap: wrap; }
-.scope-tags { display: flex; flex-wrap: wrap; gap: var(--s-2); margin-top: var(--s-3); }
-.scope-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: var(--s-2); }
 
 /* ---------- Wizard ---------- */
 .wizard-track {
@@ -1043,9 +1032,6 @@ pre.code {
   .topbar-titles { flex: 1; min-width: 0; }
   .page-title { font-size: 1.4rem; }
   .eyebrow { display: none; }
-
-  /* Show hamburger again (override rail-collapse rule above) */
-  .brand-text { display: none; }
 
   /* Action bar */
   .topbar-actions { width: auto; gap: var(--s-1); }

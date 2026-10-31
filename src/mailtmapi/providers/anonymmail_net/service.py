@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import re
+import secrets
 from contextlib import suppress
 from typing import Any
 from urllib.parse import quote
@@ -78,6 +79,34 @@ def _extract_csrf_from_cookie(http: HttpClient) -> str | None:
     except Exception:
         pass
     return None
+
+
+def _extract_cookie(resp: Any, name: str) -> str | None:
+    try:
+        jar = getattr(resp, "cookies", None)
+        if jar is not None:
+            val = jar.get(name)
+            if val:
+                return val
+    except Exception:
+        pass
+    try:
+        set_cookie = resp.headers.get("set-cookie") or ""
+        for part in set_cookie.split(";"):
+            part = part.strip()
+            if part.startswith(f"{name}="):
+                return part.split("=", 1)[1]
+    except Exception:
+        pass
+    return None
+
+
+def _parse_mailbox_token(raw_token: str | None) -> tuple[str | None, str | None]:
+    """Parse combined token format 'ci_session:am_uid'."""
+    if not raw_token or ":" not in raw_token:
+        return None, None
+    ci_session, _, am_uid = raw_token.partition(":")
+    return (ci_session.strip() or None), (am_uid.strip() or None)
 
 
 def _parse_messages(raw: dict[str, Any], mailbox_address: str) -> list[MessageSummary]:
@@ -191,6 +220,18 @@ class AnonymMailNet(HttpProvider):
         headers["X-Requested-With"] = "XMLHttpRequest"
         return headers
 
+    def _mailbox_headers(self, mailbox: MailboxInfo, csrf_token: str) -> dict[str, str]:
+        headers = self._headers_with_csrf(csrf_token)
+        ci_session, am_uid = _parse_mailbox_token(mailbox.token)
+        cookies: list[str] = [f"csrf_cookie_name={csrf_token}"]
+        if ci_session:
+            cookies.append(f"ci_session={ci_session}")
+        if am_uid:
+            cookies.append(f"am_uid={am_uid}")
+        if ci_session or am_uid:
+            headers["Cookie"] = "; ".join(cookies)
+        return headers
+
     @async_retry()
     async def _fetch_targets(self, *, known: set[str] | None = None) -> list[Target]:
         token = await self._ensure_session()
@@ -239,10 +280,12 @@ class AnonymMailNet(HttpProvider):
                 status_code=400,
             )
         token = await self._ensure_session()
+        am_uid = secrets.token_hex(32)
         headers = dict(self.default_headers)
         headers["X-CSRF-TOKEN"] = token
         headers["X-Requested-With"] = "XMLHttpRequest"
         headers["Content-Type"] = "application/x-www-form-urlencoded; charset=UTF-8"
+        headers["Cookie"] = f"csrf_cookie_name={token}; am_uid={am_uid}"
         headers.pop("Accept-Encoding", None)
         data = f"email={quote(address)}"
         try:
@@ -260,11 +303,13 @@ class AnonymMailNet(HttpProvider):
         if not result.get("success") or result.get("error"):
             msg = result.get("message") or result.get("error") or "failed to create mailbox"
             raise MailValidationError(f"anonymmail.net: {msg}", status_code=400)
+        ci_session = _extract_cookie(resp, "ci_session")
+        full_token = f"{ci_session}:{am_uid}" if ci_session else am_uid
         email = result.get("email") or address
         return MailboxInfo(
             provider=self.slug,
             address=email,
-            token=email,
+            token=full_token,
             provider_account_id=email,
             password=spec.password,
         )
@@ -273,9 +318,7 @@ class AnonymMailNet(HttpProvider):
     async def delete_mailbox(self, mailbox: MailboxInfo) -> bool:
         self._messages.clear()
         token = await self._ensure_session()
-        headers = dict(self.default_headers)
-        headers["X-CSRF-TOKEN"] = token
-        headers["X-Requested-With"] = "XMLHttpRequest"
+        headers = self._mailbox_headers(mailbox, token)
         headers["Content-Type"] = "application/x-www-form-urlencoded; charset=UTF-8"
         headers.pop("Accept-Encoding", None)
         data = f"email={quote(mailbox.address)}"
@@ -287,10 +330,15 @@ class AnonymMailNet(HttpProvider):
         except Exception:
             return True
 
-    async def _fetch_message_body(self, message_id: str) -> tuple[str, str]:
+    async def _fetch_message_body(
+        self, message_id: str, mailbox: MailboxInfo | None = None
+    ) -> tuple[str, str]:
         token = await self._ensure_session()
-        headers = dict(self.default_headers)
-        headers["X-CSRF-TOKEN"] = token
+        if mailbox:
+            headers = self._mailbox_headers(mailbox, token)
+        else:
+            headers = dict(self.default_headers)
+            headers["X-CSRF-TOKEN"] = token
         headers["Content-Type"] = "application/x-www-form-urlencoded"
         headers.pop("X-Requested-With", None)
         headers.pop("Accept-Encoding", None)
@@ -316,9 +364,7 @@ class AnonymMailNet(HttpProvider):
     @async_retry()
     async def list_messages(self, mailbox: MailboxInfo, page: int = 1) -> list[MessageSummary]:
         token = await self._ensure_session()
-        headers = dict(self.default_headers)
-        headers["X-CSRF-TOKEN"] = token
-        headers["X-Requested-With"] = "XMLHttpRequest"
+        headers = self._mailbox_headers(mailbox, token)
         headers["Content-Type"] = "application/x-www-form-urlencoded; charset=UTF-8"
         headers.pop("Accept-Encoding", None)
         data = f"email={quote(mailbox.address)}"
@@ -338,7 +384,7 @@ class AnonymMailNet(HttpProvider):
                 body_text = ""
                 html = ""
                 with suppress(Exception):
-                    body_text, html = await self._fetch_message_body(s.id)
+                    body_text, html = await self._fetch_message_body(s.id, mailbox=mailbox)
                 detail = MessageDetail(
                     id=s.id,
                     subject=s.subject,
@@ -368,7 +414,7 @@ class AnonymMailNet(HttpProvider):
             if detail.text or detail.html:
                 return detail
             try:
-                body_text, html = await self._fetch_message_body(message_id)
+                body_text, html = await self._fetch_message_body(message_id, mailbox=mailbox)
                 detail.text = body_text
                 detail.html = [html] if html else []
                 detail.size = len(body_text) + len(html)
@@ -378,7 +424,7 @@ class AnonymMailNet(HttpProvider):
 
         # Try to fetch directly from upstream
         try:
-            body_text, html = await self._fetch_message_body(message_id)
+            body_text, html = await self._fetch_message_body(message_id, mailbox=mailbox)
             detail = MessageDetail(
                 id=message_id,
                 subject="",
@@ -404,8 +450,7 @@ class AnonymMailNet(HttpProvider):
     async def delete_message(self, mailbox: MailboxInfo, message_id: str) -> bool:
         self._messages.pop(message_id, None)
         token = await self._ensure_session()
-        headers = dict(self.default_headers)
-        headers["X-CSRF-TOKEN"] = token
+        headers = self._mailbox_headers(mailbox, token)
         headers["Content-Type"] = "application/x-www-form-urlencoded"
         headers["Referer"] = f"{self.BASE_URL}/"
         headers["Origin"] = self.BASE_URL

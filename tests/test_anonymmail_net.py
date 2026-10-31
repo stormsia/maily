@@ -86,6 +86,80 @@ async def test_anonymmail_create_and_delete_mailbox():
 
 
 @pytest.mark.asyncio
+async def test_anonymmail_unique_identity_per_mailbox():
+    """Verify that each mailbox creation sends a unique am_uid, stores session in token,
+    and forwards that mailbox's session cookies in subsequent requests."""
+    captured_uids: list[str] = []
+    received_cookies: dict[str, str] = {}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        cookie_header = request.headers.get("cookie", "")
+        if request.url.path == "/":
+            return httpx.Response(
+                200,
+                text='<input name="csrf_test_name" value="csrf123">',
+                headers={"Set-Cookie": "csrf_cookie_name=csrf123; path=/"},
+            )
+        if request.url.path == "/api/getDomains":
+            return httpx.Response(200, json=[{"domain": "anonymmail.net"}])
+        if request.url.path == "/api/create":
+            for part in cookie_header.split(";"):
+                part = part.strip()
+                if part.startswith("am_uid="):
+                    captured_uids.append(part.split("=", 1)[1])
+            sess_id = f"sess_{len(captured_uids)}"
+            return httpx.Response(
+                200,
+                json={"success": True, "email": request.read().decode("utf-8").split("email=")[1]},
+                headers={"Set-Cookie": f"ci_session={sess_id}; path=/"},
+            )
+        if request.url.path == "/api/get":
+            received_cookies["get"] = cookie_header
+            return httpx.Response(200, json={})
+        if request.url.path == "/api/delete":
+            received_cookies["delete"] = cookie_header
+            return httpx.Response(200, json={"success": True})
+        if request.url.path == "/email" and request.method == "POST":
+            received_cookies["delete_msg"] = cookie_header
+            return httpx.Response(200, text="Deleted")
+        return httpx.Response(404)
+
+    http = _http(handler)
+    provider = AnonymMailNet(http)
+    try:
+        # Create 3 mailboxes
+        b1 = await provider.create_mailbox(MailboxSpec(address="box1@anonymmail.net"))
+        b2 = await provider.create_mailbox(MailboxSpec(address="box2@anonymmail.net"))
+        b3 = await provider.create_mailbox(MailboxSpec(address="box3@anonymmail.net"))
+
+        # 1. Verify each has a unique am_uid
+        assert len(captured_uids) == 3
+        assert len(set(captured_uids)) == 3
+
+        # 2. Verify token format is ci_session:am_uid
+        assert b1.token == f"sess_1:{captured_uids[0]}"
+        assert b2.token == f"sess_2:{captured_uids[1]}"
+        assert b3.token == f"sess_3:{captured_uids[2]}"
+
+        # 3. Verify list_messages sends box2's specific session and am_uid
+        await provider.list_messages(b2)
+        assert "ci_session=sess_2" in received_cookies["get"]
+        assert f"am_uid={captured_uids[1]}" in received_cookies["get"]
+
+        # 4. Verify delete_mailbox sends box3's specific session and am_uid
+        await provider.delete_mailbox(b3)
+        assert "ci_session=sess_3" in received_cookies["delete"]
+        assert f"am_uid={captured_uids[2]}" in received_cookies["delete"]
+
+        # 5. Verify delete_message sends box1's specific session and am_uid
+        await provider.delete_message(b1, "msg_test")
+        assert "ci_session=sess_1" in received_cookies["delete_msg"]
+        assert f"am_uid={captured_uids[0]}" in received_cookies["delete_msg"]
+    finally:
+        await http.close()
+
+
+@pytest.mark.asyncio
 async def test_anonymmail_feed_disappears_on_second_request_provider_level():
     """Test provider adapter behavior when /api/get returns message only once."""
     calls_get = 0

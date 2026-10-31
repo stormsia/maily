@@ -154,7 +154,8 @@ def test_delete_of_key_with_live_mailbox_is_409(tmp_path: Path) -> None:
 def _seed_live_mailbox(tmp_path: Path, key_id: int) -> None:
     """Insert a live mailbox owned by key_id. Mailbox create does not stamp ownership yet."""
     db = tmp_path / "keys.db"
-    conn = sqlite3.connect(db)
+    conn = sqlite3.connect(db, timeout=30.0)
+    conn.execute("PRAGMA busy_timeout = 30000")
     try:
         conn.execute(
             """

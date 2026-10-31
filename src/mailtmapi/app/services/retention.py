@@ -360,9 +360,11 @@ async def run_sweep(
 
 
 async def retention_worker(sweep: Callable[[], Awaitable[dict]], interval_seconds: float) -> None:
+    if interval_seconds <= 0:
+        return
     while True:
+        await asyncio.sleep(interval_seconds)
         try:
             await sweep()
         except Exception:  # noqa: BLE001 - worker must never die
             logger.exception("retention sweep failed")
-        await asyncio.sleep(interval_seconds)

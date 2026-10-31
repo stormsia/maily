@@ -171,7 +171,7 @@ async def lifespan(app: FastAPI):
 
     sweep_task = asyncio.create_task(
         retention_worker(
-            lambda: run_sweep(factory, registry, settings, lock=sweep_lock),
+            lambda: run_sweep(factory, getattr(app.state, "registry", registry), settings, lock=sweep_lock),
             settings.retention_interval_seconds,
         )
     )

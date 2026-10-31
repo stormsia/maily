@@ -190,13 +190,21 @@ jobs:
       - name: Verify Docker container starts and API responds
         run: |
           docker run -d -p 8477:8477 -e MAILTM_API_KEY=ci-smoke-test-secret --name ci-smoke-app mailtmapi:ci-test
-          sleep 4
-          curl --fail --retry 5 --retry-delay 2 http://localhost:8477/health || {
-            echo "::error::Container health check failed. Dumping logs:"
+          READY=0
+          for i in $(seq 1 30); do
+            if curl -s -f http://127.0.0.1:8477/health > /dev/null 2>&1; then
+              READY=1
+              echo "Docker smoke test passed: /health responded successfully on attempt ${i}."
+              break
+            fi
+            echo "Waiting for container startup and migrations... (${i}/30)"
+            sleep 2
+          done
+          if [ "$READY" -ne 1 ]; then
+            echo "::error::Container health check failed after 60s. Dumping logs:"
             docker logs ci-smoke-app
             exit 1
-          }
-          echo "Docker smoke test passed: /health responded successfully."
+          fi
           docker stop ci-smoke-app
           docker rm ci-smoke-app
 

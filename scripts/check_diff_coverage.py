@@ -176,6 +176,12 @@ def main() -> int:
         help="Optional path to output markdown summary file",
     )
     parser.add_argument(
+        "--json-output",
+        type=Path,
+        default=None,
+        help="Optional path to output raw json summary file",
+    )
+    parser.add_argument(
         "--sticky-pr",
         action="store_true",
         help="Post or update sticky PR comment via GitHub CLI",
@@ -205,6 +211,8 @@ def main() -> int:
 
         with open(tmp_json, encoding="utf-8") as f:
             data = json.load(f)
+        if args.json_output:
+            args.json_output.write_text(json.dumps(data, indent=2), encoding="utf-8")
     finally:
         with contextlib.suppress(Exception):
             tmp_json.unlink()

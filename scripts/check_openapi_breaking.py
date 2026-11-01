@@ -7,8 +7,10 @@ OpenAPI specification (e.g. from a PR branch) to catch backwards-incompatible AP
 
 from __future__ import annotations
 
+import argparse
 import json
 import os
+import subprocess
 import sys
 from pathlib import Path
 from typing import Any
@@ -110,19 +112,69 @@ def find_breaking_changes(
     return breaking, non_breaking
 
 
+def post_sticky_pr_comment(comment_body: str) -> None:
+    """Post or update sticky PR comment using GitHub CLI."""
+    pr_number = os.environ.get("PR_NUMBER") or os.environ.get("GITHUB_PR_NUMBER")
+    repo = os.environ.get("REPO") or os.environ.get("GITHUB_REPOSITORY")
+    gh_token = os.environ.get("GH_TOKEN") or os.environ.get("GITHUB_TOKEN")
+
+    if not pr_number or not repo or not gh_token:
+        print("Note: Sticky PR OpenAPI comment skipped (missing PR_NUMBER or REPO or GH_TOKEN).")
+        return
+
+    marker = "<!-- mailtmapi-pr-openapi-breaking -->"
+    full_body = f"{marker}\n\n{comment_body}"
+
+    try:
+        cmd_find = [
+            "gh",
+            "api",
+            f"repos/{repo}/issues/{pr_number}/comments",
+            "--jq",
+            f'.[] | select(.body | startswith("{marker}")) | .id',
+        ]
+        out = subprocess.check_output(cmd_find, text=True, stderr=subprocess.DEVNULL)
+        existing_id = out.strip().splitlines()[0] if out.strip() else None
+
+        if existing_id:
+            print(f"Updating existing PR OpenAPI comment (ID: {existing_id})...")
+            cmd_update = [
+                "gh",
+                "api",
+                "-X",
+                "PATCH",
+                f"repos/{repo}/issues/comments/{existing_id}",
+                "-f",
+                f"body={full_body}",
+            ]
+            subprocess.run(cmd_update, check=True, stdout=subprocess.DEVNULL)
+        else:
+            print("Posting new PR OpenAPI comment...")
+            cmd_create = ["gh", "pr", "comment", str(pr_number), "--body", full_body]
+            subprocess.run(cmd_create, check=True, stdout=subprocess.DEVNULL)
+    except Exception as exc:
+        print(f"Warning: Failed to update sticky OpenAPI comment: {exc}", file=sys.stderr)
+
+
 def main() -> int:
     if hasattr(sys.stdout, "reconfigure"):
         sys.stdout.reconfigure(encoding="utf-8", errors="replace")
-    if len(sys.argv) < 3:
-        print(f"Usage: {sys.argv[0]} <base_openapi.json> <head_openapi.json>")
-        return 2
 
-    base_file = sys.argv[1]
-    head_file = sys.argv[2]
+    parser = argparse.ArgumentParser(
+        description="Check OpenAPI specifications for breaking changes"
+    )
+    parser.add_argument("base_file", help="Path to base OpenAPI JSON file")
+    parser.add_argument("head_file", help="Path to head OpenAPI JSON file")
+    parser.add_argument(
+        "--sticky-pr",
+        action="store_true",
+        help="Post or update sticky PR comment via GitHub CLI",
+    )
+    args = parser.parse_args()
 
     try:
-        base = load_spec(base_file)
-        head = load_spec(head_file)
+        base = load_spec(args.base_file)
+        head = load_spec(args.head_file)
     except Exception as e:
         print(f"::error::Failed to load OpenAPI specs: {e}")
         return 1
@@ -153,6 +205,9 @@ def main() -> int:
     if summary_path:
         with open(summary_path, "a", encoding="utf-8") as sf:
             sf.write(summary_text + "\n")
+
+    if args.sticky_pr and (breaking or non_breaking):
+        post_sticky_pr_comment(summary_text)
 
     if breaking:
         print(f"::error::{len(breaking)} breaking changes found in OpenAPI schema!")

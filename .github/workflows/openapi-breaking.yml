@@ -18,6 +18,10 @@ jobs:
   check-breaking-changes:
     name: Check API Backwards Compatibility
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: write
     steps:
       - name: Checkout PR head
         uses: actions/checkout@v7
@@ -52,9 +56,13 @@ jobs:
           git worktree remove --force /tmp/base-branch || true
 
       - name: Compare OpenAPI specifications
+        env:
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
         run: |
           if [ -f base_openapi.json ]; then
-            uv run python scripts/check_openapi_breaking.py base_openapi.json head_openapi.json
+            uv run python scripts/check_openapi_breaking.py base_openapi.json head_openapi.json --sticky-pr
           else
             echo "Base OpenAPI spec could not be generated; skipping breaking check."
           fi

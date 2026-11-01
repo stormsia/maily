@@ -57,17 +57,17 @@ Create disposable mailboxes on demand, receive emails in real time, extract veri
 <!-- provider-status:start -->
 ### 🌐 Live Provider Operational Status
 
-> **Last Verified:** `2026-11-01 03:31 UTC` | **Overall Health:** 🟡 **Degraded Performance**
+> **Last Verified:** `2026-11-01 03:33 UTC` | **Overall Health:** 🟡 **Degraded Performance**
 
 | Provider | Slug | Targets | API Health | E2E Delivery | Latency | Status |
 | :--- | :--- | :---: | :---: | :---: | :---: | :---: |
-| [Mail.tm](https://mail.tm) | `mail.tm` | 1 | 🟢 PASS | 🔴 Failed | `1.73s` | 🔴 Delivery Outage |
-| [TempMail Plus](https://tempmail.plus) | `tempmail.plus` | 8 | 🟢 PASS | 🟢 `6.3s` | `1.36s` | 🟢 Operational |
-| [TempMail.io](https://temp-mail.io) | `temp-mail.io` | 7 | 🟢 PASS | 🟢 `3.8s` | `0.95s` | 🟢 Operational |
-| [Temp.tf](https://temp.tf) | `temp.tf` | 4 | 🟢 PASS | 🟢 `10.1s` | `0.93s` | 🟢 Operational |
+| [Mail.tm](https://mail.tm) | `mail.tm` | 1 | 🟢 PASS | 🟢 `6.1s` | `1.26s` | 🟢 Operational |
+| [TempMail Plus](https://tempmail.plus) | `tempmail.plus` | 8 | 🟢 PASS | 🟢 `3.4s` | `1.21s` | 🟢 Operational |
+| [TempMail.io](https://temp-mail.io) | `temp-mail.io` | 7 | 🟢 PASS | 🟢 `3.6s` | `0.90s` | 🟢 Operational |
+| [Temp.tf](https://temp.tf) | `temp.tf` | 4 | 🟢 PASS | 🟢 `9.8s` | `0.65s` | 🟢 Operational |
 | [AnonymMail.net](https://anonymmail.net) | `anonymmail.net` | — | 🔴 FAIL | — | `0.25s` | 🔴 API Outage |
-| [DispoEmail.org](https://dispoemail.org) | `dispoemail.org` | 4 | 🟢 PASS | 🔴 Failed | `0.71s` | 🔴 Delivery Outage |
-| [NoopMail.org](https://noopmail.org) | `noopmail.org` | 12 | 🟢 PASS | 🟢 `3.6s` | `13.61s` | 🟢 Operational |
+| [DispoEmail.org](https://dispoemail.org) | `dispoemail.org` | 4 | 🟢 PASS | 🔴 Failed | `0.65s` | 🔴 Delivery Outage |
+| [NoopMail.org](https://noopmail.org) | `noopmail.org` | 14 | 🟢 PASS | 🟢 `3.5s` | `17.83s` | 🟢 Operational |
 
 *Automated health checks run twice daily via GitHub Actions.*
 <!-- provider-status:end -->

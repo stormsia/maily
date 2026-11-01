@@ -5,6 +5,15 @@ on:
     # Run twice daily at 06:00 and 18:00 UTC
     - cron: '0 6,18 * * *'
   workflow_dispatch:
+    inputs:
+      simulate_api_outage:
+        description: 'Provider slug to simulate API failure (e.g. anonymmail.net)'
+        required: false
+        default: ''
+      simulate_delivery_outage:
+        description: 'Provider slug to simulate Delivery failure (e.g. tempmail.plus)'
+        required: false
+        default: ''
 
 concurrency:
   group: provider-health
@@ -45,6 +54,8 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_REPOSITORY: ${{ github.repository }}
           GITHUB_RUN_ID: ${{ github.run_id }}
+          SIMULATE_API_OUTAGE: ${{ inputs.simulate_api_outage }}
+          SIMULATE_DELIVERY_OUTAGE: ${{ inputs.simulate_delivery_outage }}
         run: |
           uv run python scripts/test_providers_live.py \
             --all \

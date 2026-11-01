@@ -99,10 +99,22 @@ async def execute_provider_operations(
     name: str,
     website: str,
     timeout_s: float = 25.0,
+    simulate_outage: bool = False,
 ) -> ProviderTestResult:
     """Execute live CRUD operations for a single mail provider."""
     slug = provider.slug
     t0 = time.monotonic()
+    if simulate_outage:
+        return ProviderTestResult(
+            slug=slug,
+            name=name,
+            website=website,
+            success=False,
+            stage="create",
+            duration_s=0.25,
+            error="Simulated upstream 503 Service Unavailable (API Outage Injection)",
+            mailbox_address=f"fault-sim@{slug}",
+        )
     created_mb: MailboxInfo | None = None
 
     try:
@@ -175,8 +187,15 @@ async def execute_email_delivery(
     provider: Any,
     client: HttpClient,
     poll_timeout_s: float = 30.0,
+    simulate_outage: bool = False,
 ) -> tuple[bool, float, str]:
     """Test actual end-to-end email delivery using TestEmailSender."""
+    if simulate_outage:
+        return (
+            False,
+            30.0,
+            "Simulated upstream message delivery timeout (Delivery Outage Injection)",
+        )
     t0 = time.monotonic()
     mailbox: MailboxInfo | None = None
     try:
@@ -268,12 +287,30 @@ def manage_github_issues(
                 )
                 try:
                     subprocess.run(
-                        ["gh", "issue", "comment", str(issue_num), "--body", close_comment],
+                        [
+                            "gh",
+                            "issue",
+                            "comment",
+                            str(issue_num),
+                            "--repo",
+                            repo,
+                            "--body",
+                            close_comment,
+                        ],
                         check=True,
                         capture_output=True,
                     )
                     subprocess.run(
-                        ["gh", "issue", "close", str(issue_num), "--reason", "completed"],
+                        [
+                            "gh",
+                            "issue",
+                            "close",
+                            str(issue_num),
+                            "--repo",
+                            repo,
+                            "--reason",
+                            "completed",
+                        ],
                         check=True,
                         capture_output=True,
                     )
@@ -328,6 +365,8 @@ def manage_github_issues(
                         "gh",
                         "issue",
                         "create",
+                        "--repo",
+                        repo,
                         "--title",
                         title,
                         "--body",
@@ -512,6 +551,18 @@ async def async_main() -> int:
         help="Skip e2e email delivery test",
     )
     parser.add_argument(
+        "--simulate-api-outage",
+        type=str,
+        default=os.environ.get("SIMULATE_API_OUTAGE", ""),
+        help="Provider slug to simulate API failure",
+    )
+    parser.add_argument(
+        "--simulate-delivery-outage",
+        type=str,
+        default=os.environ.get("SIMULATE_DELIVERY_OUTAGE", ""),
+        help="Provider slug to simulate email delivery failure",
+    )
+    parser.add_argument(
         "--update-readme", action="store_true", help="Update README.md status table"
     )
     parser.add_argument(
@@ -547,15 +598,20 @@ async def async_main() -> int:
             or f"https://{slug}"
         )
 
-        print(f"Testing provider: {name:<16} ({slug})...", end=" ", flush=True)
-        res = await execute_provider_operations(provider, name, website, timeout_s=args.timeout)
+        do_sim_api = slug == args.simulate_api_outage.strip()
+        do_sim_deliv = slug == args.simulate_delivery_outage.strip()
 
-        # Optional Email Delivery check on supported providers
+        print(f"Testing provider: {name:<16} ({slug})...", end=" ", flush=True)
+        res = await execute_provider_operations(
+            provider, name, website, timeout_s=args.timeout, simulate_outage=do_sim_api
+        )
+
+        # Email Delivery check on all successfully operational providers
         if args.with_delivery and res.success:
             print("testing delivery...", end=" ", flush=True)
             res.delivery_tested = True
             d_ok, d_dur, d_err = await execute_email_delivery(
-                provider, client, poll_timeout_s=args.timeout
+                provider, client, poll_timeout_s=args.timeout, simulate_outage=do_sim_deliv
             )
             res.delivery_success = d_ok
             res.delivery_duration_s = d_dur
@@ -601,7 +657,7 @@ async def async_main() -> int:
         post_sticky_pr_comment(results, now_iso)
 
     print("\nSummary:")
-    passed_count = sum(1 for r in results if r.success)
+    passed_count = sum(1 for r in results if r.fully_operational)
     print(f"Total: {len(results)} | Passed: {passed_count} | Failed: {len(results) - passed_count}")
 
     return 0

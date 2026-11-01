@@ -11,7 +11,7 @@ permissions:
 
 jobs:
   fix-lockfile:
-    if: github.actor == 'dependabot[bot]'
+    if: github.actor == 'dependabot[bot]' && github.event.pull_request.user.login == 'dependabot[bot]'
     name: Sync uv.lock and auto-merge
     runs-on: ubuntu-latest
     steps:
@@ -44,20 +44,21 @@ jobs:
           uv run python scripts/build_client.py
 
       - name: Commit and push changes if lockfile or client changed
+        env:
+          HEAD_REF: ${{ github.event.pull_request.head.ref }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add -A
           if ! git diff --staged --quiet; then
             git commit -m "chore(deps): auto-sync uv.lock and standalone client with dependabot bump"
-            git push origin "HEAD:${{ github.event.pull_request.head.ref }}"
+            git push origin "HEAD:$HEAD_REF"
             echo "Changes committed and pushed. Triggering main CI workflow..."
-            gh workflow run ci.yml --ref "${{ github.event.pull_request.head.ref }}" || true
+            gh workflow run ci.yml --ref "$HEAD_REF" || true
           else
             echo "Lockfile and client are already up to date."
           fi
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Auto-approve and merge Dependabot PR
         run: |

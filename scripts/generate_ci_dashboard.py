@@ -314,6 +314,9 @@ def main() -> None:
         f"| **API & Client Mirror** | OpenAPI & `build_client.py` | Schema export & standalone sync | {format_status_icon(lint_status)} |"
     )
     lines.append(
+        f"| **SemVer & Version Parity** | `check_version_consistency.py` | `pyproject.toml`, package & client | {format_status_icon(lint_status)} |"
+    )
+    lines.append(
         f"| **Package Distribution** | Twine Check | Sdist & Wheel metadata | {format_status_icon(pkg_status)} |"
     )
     lines.append(
@@ -329,7 +332,16 @@ def main() -> None:
         "| **Semantic PR Titles** | Conventional Commits | Validates `feat:`, `fix:`, `chore:`, etc. | 🛡️ Active |"
     )
     lines.append(
+        "| **Clean PR Commits History** | Conventional Commits + Linear | Enforces clean commit messages | 🛡️ Active |"
+    )
+    lines.append(
+        "| **PR Performance Regressions** | pytest-benchmark Delta Engine | Compares PR vs main latency (<25%) | 🛡️ Active |"
+    )
+    lines.append(
         "| **OpenAPI Breaking Changes** | AST & Schema Diff Engine | Prevents breaking API modifications | 🛡️ Active |"
+    )
+    lines.append(
+        "| **Actions Workflow Security** | Zizmor static analyzer | Hardens against script injections | 🛡️ Active |"
     )
     lines.append(
         "| **Container Vulnerabilities** | Trivy Container & OS Scanner | Suppressed upstream via `.trivyignore` | 🛡️ Active |"

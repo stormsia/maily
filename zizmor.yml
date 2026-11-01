@@ -1,0 +1,47 @@
+rules:
+  unpinned-uses:
+    ignore:
+      - benchmarks.yml
+      - ci.yml
+      - codeql.yml
+      - dependabot-autofix.yml
+      - docker-publish.yml
+      - gitleaks.yml
+      - labeler.yml
+      - mutation-test.yml
+      - openapi-breaking.yml
+      - pages.yml
+      - pip-audit.yml
+      - pypi-publish.yml
+      - release-drafter.yml
+      - semantic-pr.yml
+      - stale.yml
+      - trivy.yml
+      - zizmor.yml
+      - commit-lint.yml
+      - pr-benchmark.yml
+  dangerous-triggers:
+    ignore:
+      - semantic-pr.yml
+      - release-drafter.yml
+      - dependabot-autofix.yml
+      - labeler.yml
+  bot-conditions:
+    ignore:
+      - dependabot-autofix.yml
+  superfluous-actions:
+    ignore:
+      - docker-publish.yml
+  dependabot-cooldown:
+    ignore:
+      - dependabot.yml
+  artipacked:
+    ignore:
+      - benchmarks.yml
+      - ci.yml
+      - codeql.yml
+      - dependabot-autofix.yml
+      - gitleaks.yml
+      - mutation-test.yml
+      - openapi-breaking.yml
+      - trivy.yml

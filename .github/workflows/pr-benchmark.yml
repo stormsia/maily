@@ -1,0 +1,88 @@
+name: PR Performance Regression Gate
+
+on:
+  pull_request:
+    paths:
+      - 'src/mailtmapi/**'
+      - 'client/**'
+      - 'tests/test_benchmarks.py'
+      - 'pyproject.toml'
+      - 'scripts/compare_benchmarks.py'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  benchmark-regression:
+    name: Micro-Benchmarks Regression Check
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout PR HEAD
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: true
+          cache-suffix: "pr-bench"
+
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.15"
+
+      - name: Install dependencies
+        run: uv sync --frozen --all-extras
+
+      - name: Run benchmarks on PR HEAD
+        run: |
+          uv run pytest tests/test_benchmarks.py -n 0 --benchmark-only --benchmark-json=head_bench.json
+
+      - name: Run benchmarks on Base branch
+        env:
+          BASE_REF: ${{ github.base_ref }}
+        run: |
+          git fetch origin "$BASE_REF" --depth=1
+          git worktree add /tmp/base-bench "origin/$BASE_REF"
+          (cd /tmp/base-bench && uv sync --frozen --all-extras && uv run pytest tests/test_benchmarks.py -n 0 --benchmark-only --benchmark-json="$GITHUB_WORKSPACE/base_bench.json") || true
+          git worktree remove --force /tmp/base-bench || true
+
+      - name: Compare benchmarks and detect regressions
+        id: compare
+        run: |
+          if [ -f base_bench.json ] && [ -f head_bench.json ]; then
+            uv run python scripts/compare_benchmarks.py base_bench.json head_bench.json --threshold 25.0 > bench_summary.md
+            cat bench_summary.md >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "::warning::Could not compare benchmarks: missing base or head benchmark files."
+          fi
+
+      - name: Post or update PR sticky comment with benchmark metrics
+        if: always() && hashFiles('bench_summary.md') != ''
+        env:
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          COMMENT_HEADER="<!-- mailtmapi-pr-benchmark-summary -->"
+          COMMENT_BODY=$(printf "%s\n\n%s" "$COMMENT_HEADER" "$(cat bench_summary.md)")
+
+          # Find existing comment from this action
+          EXISTING_ID=$(gh api "repos/${{ github.repository }}/issues/${PR_NUMBER}/comments" \
+            --jq ".[] | select(.body | startswith(\"$COMMENT_HEADER\")) | .id" | head -n 1)
+
+          if [ -n "$EXISTING_ID" ]; then
+            echo "Updating existing PR benchmark comment (ID: $EXISTING_ID)..."
+            gh api -X PATCH "repos/${{ github.repository }}/issues/comments/${EXISTING_ID}" -f body="$COMMENT_BODY" > /dev/null
+          else
+            echo "Posting new PR benchmark comment..."
+            gh pr comment "$PR_NUMBER" --body "$COMMENT_BODY" || true
+          fi

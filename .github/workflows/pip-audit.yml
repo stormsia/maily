@@ -25,6 +25,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7
+        with:
+          persist-credentials: false
 
       - name: Install uv
         uses: astral-sh/setup-uv@v7
@@ -93,8 +95,10 @@ jobs:
           sarif_file: pip-audit.sarif
 
       - name: Verify zero vulnerabilities
+        env:
+          AUDIT_EXIT: ${{ steps.run-audit.outputs.audit_exit }}
         run: |
-          if [ "${{ steps.run-audit.outputs.audit_exit }}" != "0" ]; then
+          if [ "$AUDIT_EXIT" != "0" ]; then
             echo "::error::pip-audit detected vulnerabilities in dependencies!"
             exit 1
           fi

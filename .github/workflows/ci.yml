@@ -65,6 +65,9 @@ jobs:
       - name: Clean Dependency Architecture (Deptry)
         run: uvx deptry src
 
+      - name: Verify SemVer and Package Version Consistency
+        run: uv run python scripts/check_version_consistency.py
+
       - name: Verify generated standalone client mirror
         run: uv run python scripts/build_client.py --check
 

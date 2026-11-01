@@ -165,7 +165,7 @@ async def execute_provider_operations(
 async def execute_email_delivery(
     provider: Any,
     client: HttpClient,
-    poll_timeout_s: float = 25.0,
+    poll_timeout_s: float = 30.0,
 ) -> tuple[bool, float, str]:
     """Test actual end-to-end email delivery using TestEmailSender."""
     t0 = time.monotonic()
@@ -475,7 +475,7 @@ async def async_main() -> int:
         "--state-file", type=Path, default=ROOT_DIR / ".github" / "provider_health_state.json"
     )
     parser.add_argument(
-        "--timeout", type=float, default=25.0, help="Per-provider timeout in seconds"
+        "--timeout", type=float, default=30.0, help="Per-provider timeout in seconds"
     )
     args = parser.parse_args()
 
@@ -498,7 +498,7 @@ async def async_main() -> int:
         res = await execute_provider_operations(provider, name, website, timeout_s=args.timeout)
 
         # Optional Email Delivery check on supported providers
-        if args.with_delivery and res.success and slug in ("tempmail.plus", "mail.tm"):
+        if args.with_delivery and res.success:
             print("testing delivery...", end=" ", flush=True)
             res.delivery_tested = True
             d_ok, d_dur, d_err = await execute_email_delivery(

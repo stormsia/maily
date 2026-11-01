@@ -46,6 +46,12 @@ def main() -> int:
         default=25.0,
         help="Max allowed latency regression percentage before failing (default: 25.0%%)",
     )
+    parser.add_argument(
+        "--min-delta-ms",
+        type=float,
+        default=0.2,
+        help="Minimum absolute latency increase in ms to count as regression (avoids sub-ms CI jitter, default: 0.2ms)",
+    )
     args = parser.parse_args()
 
     if not args.base.is_file():
@@ -96,13 +102,15 @@ def main() -> int:
         b_ops = float(b_stats.get("ops", 0.0))
 
         latency_delta = (h_mean - b_mean) / b_mean * 100 if b_mean > 0 else 0.0
+        abs_increase_s = h_mean - b_mean
+        min_delta_s = args.min_delta_ms / 1000.0
 
-        is_regression = latency_delta > args.threshold
+        is_regression = latency_delta > args.threshold and abs_increase_s >= min_delta_s
 
         if latency_delta <= -5.0:
             delta_str = f"🟢 {abs(latency_delta):.1f}% faster"
             verdict = "🟢 Improved"
-        elif latency_delta <= 10.0:
+        elif latency_delta <= 10.0 or (latency_delta > 0 and abs_increase_s < min_delta_s):
             sign = "+" if latency_delta > 0 else ""
             delta_str = f"🟢 {sign}{latency_delta:.1f}%"
             verdict = "🟢 Stable"

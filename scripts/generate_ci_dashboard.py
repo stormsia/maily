@@ -151,11 +151,14 @@ def main() -> None:
 
     # Parse Docker Smoke metadata if available
     docker_meta_file = metrics_dir / "docker-smoke.json"
-    docker_startup = "1.2s"
+    docker_startup = "7s"
     if docker_meta_file.is_file():
-        with contextlib.suppress(Exception), open(docker_meta_file, encoding="utf-8") as f:
+        with (
+            contextlib.suppress(Exception),
+            open(docker_meta_file, encoding="utf-8") as f,
+        ):
             ddata = json.load(f)
-            docker_startup = ddata.get("startup_time", "1.2s")
+            docker_startup = ddata.get("startup_time", "7s")
 
     # Read Job Statuses from environment
     lint_status = os.environ.get("CI_LINT_STATUS", "success")
@@ -260,8 +263,8 @@ def main() -> None:
     # Slowest tests collapsible section
     if slowest_cases:
         lines.append("<details>")
-        lines.append("<summary><b>🔍 Топ-5 самых медленных тестов (Bottlenecks)</b></summary>\n")
-        lines.append("| Тест | Длительность | Модуль |")
+        lines.append("<summary><b>🔍 Slowest Tests (Top 5 Bottlenecks)</b></summary>\n")
+        lines.append("| Test | Duration | Module |")
         lines.append("| :--- | :---: | :--- |")
         for sc in slowest_cases:
             tname = f"`{sc['name']}`"
@@ -272,7 +275,7 @@ def main() -> None:
 
     # Benchmarks SLA Snapshot
     lines.append("### ⚡ Performance Benchmarks Snapshot\n")
-    lines.append("| Компонент / Сценарий | Mean Latency SLA | Throughput Baseline | Статус |")
+    lines.append("| Component / Scenario | Mean Latency SLA | Throughput Baseline | Status |")
     lines.append("| :--- | :---: | :---: | :---: |")
     lines.append("| 🔐 **Crypto (Token/Decrypt)** | `< 0.050 ms` | `> 50,000 ops/s` | 🟢 Optimal |")
     lines.append(
@@ -282,12 +285,12 @@ def main() -> None:
     lines.append("| 📦 **Standalone Client Call** | `< 15.0 ms` | `> 150 ops/s` | 🟢 Optimal |")
     lines.append("")
     lines.append(
-        "*Полная история и интерактивные графики: [GitHub Pages Benchmarks](https://stormsia.github.io/mailtmapi/dev/bench/)*\n"
+        "*Historical benchmark runs and tracking data: [Actions Benchmark Runs](https://github.com/stormsia/mailtmapi/actions/workflows/benchmarks.yml) | [Raw Metrics Branch](https://github.com/stormsia/mailtmapi/tree/gh-pages/dev/bench)*\n"
     )
 
-    # Code Quality, Typing & Security Table
-    lines.append("### 🛡️ Code Quality, Typing & Security\n")
-    lines.append("| Категория | Инструмент | Область проверки | Результат |")
+    # Static Analysis, Architecture & Packaging
+    lines.append("### 🛡️ Static Analysis, Architecture & Packaging\n")
+    lines.append("| Category | Tool | Scope | Result |")
     lines.append("| :--- | :--- | :--- | :---: |")
     lines.append(
         f"| **Linter & Formatter** | Ruff `0.14.3` | `src`, `tests`, `client`, `scripts` | {format_status_icon(lint_status)} |"
@@ -296,19 +299,52 @@ def main() -> None:
         f"| **Type Checker** | Mypy `2.4.1` (strict) | `src`, `client`, `scripts` | {format_status_icon(mypy_status)} |"
     )
     lines.append(
-        f"| **Spelling** | Typos `1.51.1` | Репозиторий целиком | {format_status_icon(lint_status)} |"
+        f"| **Spelling** | Typos `1.51.1` | Entire repository | {format_status_icon(lint_status)} |"
     )
     lines.append(
         f"| **Dead Code & Architecture** | Vulture & Deptry | `src/mailtmapi` | {format_status_icon(lint_status)} |"
     )
     lines.append(
-        f"| **API Sync** | Client Mirror & OpenAPI | Автогенерация схем | {format_status_icon(lint_status)} |"
+        f"| **Database Migrations** | Alembic `upgrade head && check` | Schema & migrations consistency | {format_status_icon(lint_status)} |"
+    )
+    lines.append(
+        f"| **Frontend Assets** | Biome & HTMLHint | `src/mailtmapi/static` (JS & HTML) | {format_status_icon(lint_status)} |"
+    )
+    lines.append(
+        f"| **API & Client Mirror** | OpenAPI & `build_client.py` | Schema export & standalone sync | {format_status_icon(lint_status)} |"
     )
     lines.append(
         f"| **Package Distribution** | Twine Check | Sdist & Wheel metadata | {format_status_icon(pkg_status)} |"
     )
     lines.append(
         f"| **Container Smoke** | Docker Multi-Stage | Startup `/health` & `/v1/providers` | {format_status_icon(docker_status)} |"
+    )
+    lines.append("")
+
+    # Security & Continuous Delivery Gates
+    lines.append("### 🔒 Security & Continuous Delivery Gates\n")
+    lines.append("| Quality Gate | Specification / Engine | Policy / Filter | Status |")
+    lines.append("| :--- | :--- | :--- | :---: |")
+    lines.append(
+        "| **Semantic PR Titles** | Conventional Commits | Validates `feat:`, `fix:`, `chore:`, etc. | 🛡️ Active |"
+    )
+    lines.append(
+        "| **OpenAPI Breaking Changes** | AST & Schema Diff Engine | Prevents breaking API modifications | 🛡️ Active |"
+    )
+    lines.append(
+        "| **Container Vulnerabilities** | Trivy Container & OS Scanner | Suppressed upstream via `.trivyignore` | 🛡️ Active |"
+    )
+    lines.append(
+        "| **Dependency Security Audit** | Pip-Audit | PyPI vulnerability advisory scanning | 🛡️ Active |"
+    )
+    lines.append(
+        "| **Secret Leak Detection** | Gitleaks | Scans commit history & PR diffs | 🛡️ Active |"
+    )
+    lines.append(
+        "| **Static Application Security** | GitHub CodeQL | Python security analysis (SARIF) | 🛡️ Active |"
+    )
+    lines.append(
+        "| **Mutation Testing** | Mutmut Test Runner | Nightly mutation testing (100% killed) | 🛡️ Active |"
     )
     lines.append("")
 

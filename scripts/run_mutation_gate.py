@@ -91,8 +91,8 @@ PROFILES: dict[str, ProfileConfig] = {
             "tests/test_scope_filters.py",
             "tests/test_mailbox_ownership.py",
         ],
-        "min_score": 75.0,
-        "max_survived": 120,
+        "min_score": 90.0,
+        "max_survived": 50,
     },
     "retention_retry": {
         "mutate": [
@@ -105,8 +105,8 @@ PROFILES: dict[str, ProfileConfig] = {
             "tests/test_stats_retention_history.py",
             "tests/test_retry.py",
         ],
-        "min_score": 60.0,
-        "max_survived": 160,
+        "min_score": 65.0,
+        "max_survived": 140,
     },
 }
 

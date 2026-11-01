@@ -25,15 +25,27 @@ from typing_extensions import TypedDict
 FILE_TO_TESTS_MAP: dict[str, list[str]] = {
     "src/mailtmapi/crypto.py": ["tests/test_crypto.py"],
     "src/mailtmapi/utils/misc.py": ["tests/test_misc.py"],
-    "src/mailtmapi/app/authz.py": ["tests/test_authz.py"],
+    "src/mailtmapi/app/authz.py": [
+        "tests/test_authz.py",
+        "tests/test_authz_properties.py",
+        "tests/test_scope_filters.py",
+        "tests/test_mailbox_ownership.py",
+        "tests/test_security_routing.py",
+    ],
     "src/mailtmapi/app/services/keys.py": [
         "tests/test_keys_service.py",
         "tests/test_keys_router.py",
+        "tests/test_api_keys.py",
+        "tests/test_authz_properties.py",
     ],
-    "src/mailtmapi/app/middleware/origin.py": ["tests/test_security_routing.py"],
+    "src/mailtmapi/app/middleware/origin.py": [
+        "tests/test_security_routing.py",
+        "tests/test_authz_properties.py",
+    ],
     "src/mailtmapi/app/services/retention.py": [
         "tests/test_retention_lifecycle.py",
         "tests/test_retention_scope.py",
+        "tests/test_stats_retention_history.py",
     ],
     "src/mailtmapi/utils/retry.py": ["tests/test_retry.py"],
     "src/mailtmapi/app/services/mailboxes.py": [
@@ -45,11 +57,8 @@ FILE_TO_TESTS_MAP: dict[str, list[str]] = {
 
 class ProfileConfig(TypedDict):
     mutate: list[str]
-
     tests: list[str]
-
     min_score: float
-
     max_survived: int
 
 
@@ -77,10 +86,13 @@ PROFILES: dict[str, ProfileConfig] = {
             "tests/test_authz_properties.py",
             "tests/test_keys_service.py",
             "tests/test_keys_router.py",
+            "tests/test_api_keys.py",
             "tests/test_security_routing.py",
+            "tests/test_scope_filters.py",
+            "tests/test_mailbox_ownership.py",
         ],
-        "min_score": 70.0,
-        "max_survived": 130,
+        "min_score": 75.0,
+        "max_survived": 120,
     },
     "retention_retry": {
         "mutate": [
@@ -90,6 +102,7 @@ PROFILES: dict[str, ProfileConfig] = {
         "tests": [
             "tests/test_retention_lifecycle.py",
             "tests/test_retention_scope.py",
+            "tests/test_stats_retention_history.py",
             "tests/test_retry.py",
         ],
         "min_score": 60.0,
@@ -314,12 +327,10 @@ def main() -> int:
 
     stats_file = Path("mutants/mutmut-cicd-stats.json")
     min_score = 70.0
-
     max_survived = 0
 
     if args.profile and args.profile in PROFILES:
         min_score = float(PROFILES[args.profile].get("min_score", 70.0))
-
         max_survived = int(PROFILES[args.profile].get("max_survived", 0))
 
     return evaluate_mutation_results(

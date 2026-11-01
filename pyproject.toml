@@ -126,7 +126,14 @@ pytest_add_cli_args_test_selection = [
     "tests/test_authz.py",
     "tests/test_authz_properties.py",
     "tests/test_keys_service.py",
+    "tests/test_keys_router.py",
+    "tests/test_api_keys.py",
+    "tests/test_security_routing.py",
+    "tests/test_scope_filters.py",
+    "tests/test_mailbox_ownership.py",
     "tests/test_retention_lifecycle.py",
+    "tests/test_retention_scope.py",
+    "tests/test_stats_retention_history.py",
     "tests/test_retry.py",
 ]
 pytest_add_cli_args = [

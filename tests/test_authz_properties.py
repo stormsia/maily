@@ -4,6 +4,8 @@ import hashlib
 import json
 from datetime import datetime, timezone
 
+import pytest
+from fastapi import HTTPException
 from hypothesis import given
 from hypothesis import strategies as st
 
@@ -22,6 +24,8 @@ from mailtmapi.app.authz import (
     provider_allowed,
     secret_sha256,
 )
+from mailtmapi.app.middleware.origin import OriginGuard, _netloc, _same_netloc
+from mailtmapi.app.services import keys as key_svc
 from mailtmapi.db.models import ApiKey, Mailbox
 
 # --- Hypothesis Property Tests ---
@@ -267,3 +271,175 @@ def test_owns_mailbox_rules():
     assert owns_mailbox(p2, box_owned_1) is False
     assert owns_mailbox(p1, box_unowned) is False
     assert owns_mailbox(p_none, box_owned_1) is False
+
+
+# --- OriginGuard & Middleware Invariant Tests ---
+
+
+@pytest.mark.asyncio
+async def test_origin_guard_non_http_scope():
+    called = False
+
+    async def app(scope, receive, send):
+        nonlocal called
+        called = True
+
+    guard = OriginGuard(app)
+    await guard({"type": "lifespan"}, None, None)
+    assert called is True
+
+
+@pytest.mark.asyncio
+async def test_origin_guard_cross_origin_blocked():
+    sent_messages = []
+
+    async def send(msg):
+        sent_messages.append(msg)
+
+    async def app(scope, receive, send):
+        pass
+
+    guard = OriginGuard(app)
+    scope = {
+        "type": "http",
+        "path": "/v1/mailboxes",
+        "headers": [
+            (b"origin", b"https://attacker.example"),
+            (b"host", b"api.example.com"),
+        ],
+    }
+    await guard(scope, None, send)
+    assert len(sent_messages) == 2
+    assert sent_messages[0]["status"] == 403
+    body = json.loads(sent_messages[1]["body"].decode("utf-8"))
+    assert body["code"] == "cross_origin"
+    assert body["detail"] == "Cross-origin API access is not allowed"
+
+
+@pytest.mark.asyncio
+async def test_origin_guard_same_origin_and_non_v1_allowed():
+    called = False
+
+    async def app(scope, receive, send):
+        nonlocal called
+        called = True
+
+    guard = OriginGuard(app)
+    # 1. Non-v1 path is allowed even cross-origin
+    scope1 = {
+        "type": "http",
+        "path": "/docs",
+        "headers": [(b"origin", b"https://attacker.example"), (b"host", b"api.example.com")],
+    }
+    await guard(scope1, None, None)
+    assert called is True
+
+    # 2. Same-origin on /v1/ is allowed
+    called = False
+    scope2 = {
+        "type": "http",
+        "path": "/v1/mailboxes",
+        "headers": [(b"origin", b"https://api.example.com"), (b"host", b"api.example.com")],
+    }
+    await guard(scope2, None, None)
+    assert called is True
+
+    # 3. Missing origin is allowed
+    called = False
+    scope3 = {
+        "type": "http",
+        "path": "/v1/mailboxes",
+        "headers": [(b"host", b"api.example.com")],
+    }
+    await guard(scope3, None, None)
+    assert called is True
+
+
+def test_origin_netloc_helpers():
+    assert _netloc("example.com:8477") == "example.com:8477"
+    assert _netloc("API.EXAMPLE.COM") == "api.example.com"
+    assert _netloc("host/path/noise") == "host"
+
+    assert _same_netloc("https://api.example.com:8080", "api.example.com:8080") is True
+    assert _same_netloc("http://API.EXAMPLE.COM", "api.example.com") is True
+    assert _same_netloc("ftp://api.example.com", "api.example.com") is False
+    assert _same_netloc("javascript:void(0)", "api.example.com") is False
+    assert _same_netloc("http://", "api.example.com") is False
+    assert _same_netloc("https://api.example.com", "") is False
+    assert _same_netloc("invalid://///", "api.example.com") is False
+
+
+# --- Services Keys Invariant & Mutant Tests ---
+
+
+def test_keys_parse_scope_strict_validation():
+    # 1. Exception string representation
+    exc = key_svc.InvalidKeyScope(detail="custom detail message")
+    assert str(exc) == "custom detail message"
+
+    # 2. Scope keys must match exactly
+    with pytest.raises(
+        key_svc.InvalidKeyScope, match="^scope requires providers, parent_ids, and actions$"
+    ):
+        key_svc.parse_scope({"providers": [], "parent_ids": []})
+    with pytest.raises(
+        key_svc.InvalidKeyScope, match="^scope requires providers, parent_ids, and actions$"
+    ):
+        key_svc.parse_scope({"providers": [], "parent_ids": [], "actions": [], "extra": 1})
+
+    # 3. Must be lists
+    with pytest.raises(
+        key_svc.InvalidKeyScope, match="^providers, parent_ids, and actions must be lists$"
+    ):
+        key_svc.parse_scope({"providers": "not-list", "parent_ids": [], "actions": []})
+    with pytest.raises(
+        key_svc.InvalidKeyScope, match="^providers, parent_ids, and actions must be lists$"
+    ):
+        key_svc.parse_scope({"providers": [], "parent_ids": 123, "actions": []})
+    with pytest.raises(
+        key_svc.InvalidKeyScope, match="^providers, parent_ids, and actions must be lists$"
+    ):
+        key_svc.parse_scope({"providers": [], "parent_ids": [], "actions": None})
+
+    # 4. Item types
+    with pytest.raises(key_svc.InvalidKeyScope, match="^providers must be strings$"):
+        key_svc.parse_scope({"providers": [123], "parent_ids": [], "actions": []})
+    with pytest.raises(key_svc.InvalidKeyScope, match="^parent_ids must be ints$"):
+        key_svc.parse_scope({"providers": [], "parent_ids": ["7"], "actions": []})
+    with pytest.raises(key_svc.InvalidKeyScope, match="^parent_ids must be ints$"):
+        key_svc.parse_scope({"providers": [], "parent_ids": [True], "actions": []})
+    with pytest.raises(key_svc.InvalidKeyScope, match="^actions must be strings$"):
+        key_svc.parse_scope({"providers": [], "parent_ids": [], "actions": [123]})
+
+    # 5. Unknown action
+    with pytest.raises(key_svc.InvalidKeyScope, match="^unknown action$"):
+        key_svc.parse_scope({"providers": [], "parent_ids": [], "actions": ["not:real"]})
+
+    # 6. Valid scope
+    valid = key_svc.parse_scope(
+        {"providers": ["mail.tm"], "parent_ids": [1, 2], "actions": ["mailboxes:read"]}
+    )
+    assert valid.providers == ("mail.tm",)
+    assert valid.parent_ids == (1, 2)
+    assert valid.actions == ("mailboxes:read",)
+
+
+def test_keys_internal_helpers():
+    # _sha256_hex
+    assert key_svc._sha256_hex("secret123") == hashlib.sha256(b"secret123").hexdigest()
+
+    # _mint_secret never returns root_key and has mk_ prefix
+    minted = key_svc._mint_secret("root_secret")
+    assert minted.startswith("mk_")
+    assert len(minted) > 35
+    assert minted != "root_secret"
+
+    # _scope_json valid formatting and HTTP 422 on invalid
+    raw = {"providers": ["p1"], "parent_ids": [10], "actions": ["stats:read"]}
+    dumped = key_svc._scope_json(raw)
+    assert dumped == '{"providers":["p1"],"parent_ids":[10],"actions":["stats:read"]}'
+
+    with pytest.raises(HTTPException) as exc_info:
+        key_svc._scope_json({"bad": 1})
+    assert exc_info.value.status_code == 422
+    assert "scope requires providers" in str(exc_info.value.detail)

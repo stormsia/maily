@@ -112,6 +112,21 @@ async def test_rate_limit_retry_after_is_honored_and_capped(sleep_spy):
     assert sleep_spy == [10.0, 2.0]
 
 
+async def test_rate_limit_without_retry_after_falls_back_to_exponential(sleep_spy):
+    calls = 0
+
+    @async_retry(max_attempts=2, base_delay=1.0, jitter=False)
+    async def limited_no_after():
+        nonlocal calls
+        calls += 1
+        raise MailRateLimitError("limited", retry_after=None)
+
+    with pytest.raises(MailRateLimitError):
+        await limited_no_after()
+    assert calls == 2
+    assert sleep_spy == [1.0]
+
+
 async def test_backoff_caps_at_max_delay(sleep_spy):
     @async_retry(max_attempts=5, base_delay=1.0, max_delay=3.0, jitter=False)
     async def fail():
@@ -172,5 +187,25 @@ async def test_preserves_function_metadata():
 
 
 def test_max_attempts_below_one_raises_value_error():
-    with pytest.raises(ValueError, match="max_attempts"):
+    with pytest.raises(ValueError, match="^max_attempts must be >= 1$"):
         async_retry(max_attempts=0)
+    with pytest.raises(ValueError, match="^max_attempts must be >= 1$"):
+        async_retry(max_attempts=-1)
+    # max_attempts=1 is valid
+    decorated = async_retry(max_attempts=1)
+    assert callable(decorated)
+
+
+async def test_max_attempts_one_never_sleeps_on_failure(sleep_spy):
+    calls = 0
+
+    @async_retry(max_attempts=1)
+    async def fail_once():
+        nonlocal calls
+        calls += 1
+        raise MailAPIError("single fail")
+
+    with pytest.raises(MailAPIError, match="single fail"):
+        await fail_once()
+    assert calls == 1
+    assert sleep_spy == []

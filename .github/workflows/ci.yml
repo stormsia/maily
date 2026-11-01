@@ -138,11 +138,13 @@ jobs:
 
       - name: Run Pytest suite
         if: matrix.python-version != '3.15'
-        run: uv run python -m pytest -q
+        run: uv run python -m pytest -q --junitxml=junit-${{ matrix.python-version }}.xml
 
       - name: Run Pytest suite with coverage (Python 3.15)
         if: matrix.python-version == '3.15'
-        run: uv run python -m pytest -q -n 0 --cov=mailtmapi --cov-report=xml:coverage.xml --cov-report=term-missing
+        run: |
+          uv run python -m pytest -q -n 0 --cov=mailtmapi --cov-report=xml:coverage.xml --cov-report=term-missing --junitxml=junit-3.15.xml
+          uv run coverage json -o coverage.json
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v7
@@ -151,6 +153,17 @@ jobs:
           files: ./coverage.xml
           fail_ci_if_error: false
           token: ${{ secrets.CODECOV_TOKEN }}
+
+      - name: Upload test & coverage metrics artifact
+        uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: test-results-${{ matrix.python-version }}
+          path: |
+            junit-*.xml
+            coverage.json
+          if-no-files-found: ignore
+          retention-days: 1
 
   package:
     name: Package Distribution Check
@@ -207,12 +220,17 @@ jobs:
       - name: Verify Docker container starts and API responds
         run: |
           SMOKE_KEY="dummy_ci_smoke_key"
+          START_TIME=$(date +%s)
           docker run -d -p 8477:8477 -e MAILTM_API_KEY="$SMOKE_KEY" --name ci-smoke-app mailtmapi:ci-test
           READY=0
           for i in $(seq 1 30); do
             if curl -s -f http://127.0.0.1:8477/health > /dev/null 2>&1; then
               READY=1
-              echo "Docker smoke test passed: /health responded successfully on attempt ${i}."
+              END_TIME=$(date +%s)
+              DURATION=$(( END_TIME - START_TIME ))
+              echo "Docker smoke test passed: /health responded successfully in ${DURATION}s on attempt ${i}."
+              mkdir -p test-metrics
+              echo "{\"startup_time\": \"${DURATION}s\", \"status\": \"Healthy\"}" > test-metrics/docker-smoke.json
               break
             fi
             echo "Waiting for container startup and migrations... (${i}/30)"
@@ -235,32 +253,46 @@ jobs:
           docker stop ci-smoke-app
           docker rm ci-smoke-app
 
+      - name: Upload Docker smoke metrics artifact
+        uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: docker-smoke-results
+          path: test-metrics/docker-smoke.json
+          if-no-files-found: ignore
+          retention-days: 1
+
   ci-status:
     name: All Checks Passed
     runs-on: ubuntu-latest
     needs: [lint, type-check, test, package, docker]
     if: always()
     steps:
-      - name: Generate summary report
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Download test & smoke metrics
+        uses: actions/download-artifact@v7
+        with:
+          pattern: "*-results*"
+          merge-multiple: true
+          path: test-metrics
+        continue-on-error: true
+
+      - name: Generate Executive Step Summary Dashboard
         run: |
-          python3 -c "
-          import os
-          results = {
-              '🧹 Lint & Quality': '${{ needs.lint.result }}',
-              '🔍 Type Check (mypy)': '${{ needs.type-check.result }}',
-              '🧪 Test Matrix (Python 3.13 - 3.15)': '${{ needs.test.result }}',
-              '📦 Package Build & Check': '${{ needs.package.result }}',
-              '🐳 Docker Multi-Stage Build & Smoke': '${{ needs.docker.result }}',
-          }
-          summary_path = os.environ.get('GITHUB_STEP_SUMMARY')
-          if summary_path:
-              with open(summary_path, 'a', encoding='utf-8') as f:
-                  f.write('## 🚀 CI Pipeline Results\n\n')
-                  f.write('| Stage | Status |\n| :--- | :---: |\n')
-                  for name, status in results.items():
-                      icon = '✅ Passed' if status == 'success' else ('⏭️ Skipped' if status == 'skipped' else '❌ Failed')
-                      f.write(f'| {name} | {icon} |\n')
-          "
+          python3 scripts/generate_ci_dashboard.py
+        env:
+          METRICS_DIR: test-metrics
+          CI_LINT_STATUS: ${{ needs.lint.result }}
+          CI_MYPY_STATUS: ${{ needs.type-check.result }}
+          CI_TEST_STATUS: ${{ needs.test.result }}
+          CI_PKG_STATUS: ${{ needs.package.result }}
+          CI_DOCKER_STATUS: ${{ needs.docker.result }}
+          GITHUB_SHA: ${{ github.sha }}
+          GITHUB_REF_NAME: ${{ github.ref_name }}
+          GITHUB_EVENT_NAME: ${{ github.event_name }}
+          GITHUB_STEP_SUMMARY: ${{ env.GITHUB_STEP_SUMMARY }}
 
       - name: Verify all required jobs succeeded
         run: |

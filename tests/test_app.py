@@ -59,6 +59,15 @@ def test_health_includes_domain_cache_status(tmp_path):
             assert isinstance(meta["domains"], int)
 
 
+def test_health_verbose_includes_timestamp(tmp_path):
+    with _app(tmp_path) as client:
+        body = client.get("/health?verbose=true").json()
+        assert body["status"] == "ok"
+        assert "timestamp" in body
+        assert isinstance(body["timestamp"], str)
+        assert body["timestamp"].endswith("Z")
+
+
 def test_config_exposes_client_version(tmp_path):
     import mailtmapi
 

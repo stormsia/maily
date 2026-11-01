@@ -133,6 +133,7 @@ class _Base(BaseModel):
 
 class HealthOut(_Base):
     status: str = ""
+    timestamp: str | None = None
 
 
 class ProviderCapabilities(_Base):
@@ -516,8 +517,9 @@ class HealthAPI:
     def __init__(self, transport: _Transport) -> None:
         self._t = transport
 
-    async def ping(self) -> HealthOut:
-        return HealthOut.model_validate(await self._t.request("GET", "/health"))
+    async def ping(self, verbose: bool = False) -> HealthOut:
+        params = {"verbose": "true"} if verbose else None
+        return HealthOut.model_validate(await self._t.request("GET", "/health", params=params))
 
 
 class ConfigAPI:

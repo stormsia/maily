@@ -50,6 +50,25 @@ async def test_health():
 
 
 @pytest.mark.asyncio
+async def test_health_verbose():
+    api = _api(
+        _router(
+            {
+                ("GET", "/health"): httpx.Response(
+                    200, json={"status": "ok", "timestamp": "2026-11-01T00:00:00Z"}
+                )
+            }
+        )
+    )
+    try:
+        h = await api.health.ping(verbose=True)
+        assert h.status == "ok"
+        assert h.timestamp == "2026-11-01T00:00:00Z"
+    finally:
+        await api.close()
+
+
+@pytest.mark.asyncio
 async def test_providers_and_targets():
     api = _api(
         _router(

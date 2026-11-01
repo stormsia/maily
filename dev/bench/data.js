@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1793491790872,
+  "lastUpdate": 1793492007164,
   "repoUrl": "https://github.com/stormsia/mailtmapi",
   "entries": {
     "Benchmark": [
@@ -217,6 +217,79 @@ window.BENCHMARK_DATA = {
             "unit": "iter/sec",
             "range": "stddev: 0.000769894069612913",
             "extra": "mean: 5.17229624999942 msec\nrounds: 180"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "sf_root@outlook.com",
+            "name": "stormsia",
+            "username": "stormsia"
+          },
+          "committer": {
+            "email": "sf_root@outlook.com",
+            "name": "stormsia",
+            "username": "stormsia"
+          },
+          "distinct": true,
+          "id": "e2601d046a02cf8db36b06e66f7cc8fa79786be5",
+          "message": "ci(workflows): add cache-suffix to prevent UV cache collisions and enable direct merge fallback for Dependabot",
+          "timestamp": "2026-11-01T03:12:45+03:00",
+          "tree_id": "449e788b7aa60ff7c796e9cce03bcc68ee398172",
+          "url": "https://github.com/stormsia/mailtmapi/commit/e2601d046a02cf8db36b06e66f7cc8fa79786be5"
+        },
+        "date": 1793492006007,
+        "tool": "pytest",
+        "benches": [
+          {
+            "name": "tests/test_benchmarks.py::test_benchmark_crypto_encrypt_1kb",
+            "value": 89485.43841743613,
+            "unit": "iter/sec",
+            "range": "stddev: 0.00000148592159868097",
+            "extra": "mean: 11.175002522032134 usec\nrounds: 793"
+          },
+          {
+            "name": "tests/test_benchmarks.py::test_benchmark_crypto_decrypt_1kb",
+            "value": 85623.78703888335,
+            "unit": "iter/sec",
+            "range": "stddev: 0.0000018813467560301665",
+            "extra": "mean: 11.67899756110859 usec\nrounds: 20091"
+          },
+          {
+            "name": "tests/test_benchmarks.py::test_benchmark_random_string",
+            "value": 102833.60766719443,
+            "unit": "iter/sec",
+            "range": "stddev: 0.0000034733473173219965",
+            "extra": "mean: 9.72444731528189 usec\nrounds: 31698"
+          },
+          {
+            "name": "tests/test_benchmarks.py::test_benchmark_random_password",
+            "value": 71417.9140435688,
+            "unit": "iter/sec",
+            "range": "stddev: 0.000002029535281574236",
+            "extra": "mean: 14.002089159170147 usec\nrounds: 46703"
+          },
+          {
+            "name": "tests/test_benchmarks.py::test_benchmark_health_endpoint",
+            "value": 379.38961190925346,
+            "unit": "iter/sec",
+            "range": "stddev: 0.0010696159969701136",
+            "extra": "mean: 2.635812812500493 msec\nrounds: 80"
+          },
+          {
+            "name": "tests/test_benchmarks.py::test_benchmark_domain_cache_settings",
+            "value": 268.53305150831295,
+            "unit": "iter/sec",
+            "range": "stddev: 0.00012531763652655714",
+            "extra": "mean: 3.7239363809525066 msec\nrounds: 21"
+          },
+          {
+            "name": "tests/test_benchmarks.py::test_benchmark_client_init",
+            "value": 260.83796549458077,
+            "unit": "iter/sec",
+            "range": "stddev: 0.00021883181127745608",
+            "extra": "mean: 3.83379772995805 msec\nrounds: 237"
           }
         ]
       }

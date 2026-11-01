@@ -685,3 +685,22 @@ async def test_create_temp_mailbox():
         assert box.address == "auto@mail.tm"
     finally:
         await api.close()
+
+
+@pytest.mark.asyncio
+async def test_client_health_ping_verbose():
+    async def handler(request: httpx.Request) -> httpx.Response:
+        if request.method == "GET" and request.url.path == "/health":
+            assert request.url.params.get("verbose") == "true"
+            return httpx.Response(
+                200,
+                json={"status": "ok", "uptime_status": "healthy"},
+            )
+        return httpx.Response(404)
+
+    api = _api(handler)
+    try:
+        h = await api.health.ping(verbose=True)
+        assert h.status == "ok"
+    finally:
+        await api.close()

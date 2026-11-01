@@ -255,3 +255,14 @@ def test_datetimes_serialized_with_explicit_utc_z(tmp_path):
         received = msgs[0]["received_at"]
         assert received.endswith("Z")
         assert datetime.fromisoformat(received.replace("Z", "+00:00")).tzinfo is not None
+
+
+def test_health_verbose(tmp_path):
+    with _app(tmp_path) as client:
+        r = client.get("/health?verbose=true")
+        assert r.status_code == 200
+        body = r.json()
+        assert body["status"] == "ok"
+        assert body["uptime_status"] == "healthy"
+        assert "timestamp" in body
+        assert body["active_providers"] >= 0

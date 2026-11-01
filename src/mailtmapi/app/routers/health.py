@@ -39,11 +39,16 @@ router = APIRouter(tags=["System"])
 
 
 @router.get("/health")
-async def health(session: SessionDep, registry: RegistryDep) -> dict:
+async def health(
+    session: SessionDep,
+    registry: RegistryDep,
+    verbose: bool = False,
+) -> dict:
     """Brief liveness + degradation view for monitoring.
 
     `status` mirrors the previous shape; `domain_cache` reports per-provider
     last refresh time, cached domain count and the latest refresh error.
+    When `verbose` is enabled, additional system inspection metadata is returned.
     """
     cache: dict[str, dict] = {}
     rows = (await session.execute(select(DomainCache))).scalars().all()
@@ -60,7 +65,12 @@ async def health(session: SessionDep, registry: RegistryDep) -> dict:
                 provider.slug,
                 {"last_refresh": None, "domains": 0, "error": None},
             )
-    return {"status": "ok", "domain_cache": providers}
+    payload: dict[str, Any] = {"status": "ok", "domain_cache": providers}
+    if verbose:
+        payload["timestamp"] = _iso_utc(datetime.now(timezone.utc))
+        payload["uptime_status"] = "healthy"
+        payload["active_providers"] = len(providers)
+    return payload
 
 
 def _json_len(raw: str) -> int:

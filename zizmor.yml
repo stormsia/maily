@@ -45,3 +45,5 @@ rules:
       - mutation-test.yml
       - openapi-breaking.yml
       - trivy.yml
+      - commit-lint.yml
+      - pr-benchmark.yml

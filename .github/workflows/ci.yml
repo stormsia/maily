@@ -18,27 +18,33 @@ jobs:
     name: Detect Changes
     runs-on: ubuntu-latest
     outputs:
-      code: ${{ steps.filter.outputs.code }}
+      code: ${{ steps.check.outputs.code }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7
-
-      - name: Filter changed paths
-        id: filter
-        uses: dorny/paths-filter@v3
         with:
-          filters: |
-            code:
-              - 'src/**'
-              - 'client/**'
-              - 'tests/**'
-              - 'scripts/**'
-              - 'pyproject.toml'
-              - 'uv.lock'
-              - 'Dockerfile'
-              - 'alembic.ini'
-              - 'alembic/**'
-              - '.github/workflows/ci.yml'
+          fetch-depth: 100
+
+      - name: Check changed paths
+        id: check
+        env:
+          BASE_REF: ${{ github.base_ref }}
+          EVENT_NAME: ${{ github.event_name }}
+        run: |
+          CODE_CHANGED="false"
+          if [ "$EVENT_NAME" = "pull_request" ] && [ -n "$BASE_REF" ]; then
+            git fetch origin "$BASE_REF" --depth=100
+            CHANGED_FILES=$(git diff --name-only "origin/$BASE_REF...HEAD" || git diff --name-only "origin/$BASE_REF..HEAD")
+            echo "Changed files in PR:"
+            echo "$CHANGED_FILES"
+            if echo "$CHANGED_FILES" | grep -qvE '^(\.github/|docs/|.*\.md$|lychee\.toml|\.gitignore)'; then
+              CODE_CHANGED="true"
+            fi
+          else
+            CODE_CHANGED="true"
+          fi
+          echo "code=${CODE_CHANGED}" >> "$GITHUB_OUTPUT"
+          echo "Code changes detected: ${CODE_CHANGED}"
 
   lint:
     name: Lint & Quality

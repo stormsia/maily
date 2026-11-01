@@ -63,7 +63,7 @@ def find_breaking_changes(
             }
 
             # Check for removed parameters
-            for (p_name, p_in), p_def in base_params.items():
+            for (p_name, p_in), _p_def in base_params.items():
                 if (p_name, p_in) not in head_params:
                     breaking.append(
                         f"Removed parameter `{p_name}` ({p_in}) from `{method.upper()} {path}`"

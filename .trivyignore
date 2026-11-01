@@ -4,6 +4,7 @@
 
 # msgpack: Denial of Service via memory leak during map deserialization
 CVE-2026-114613
+GHSA-6v7p-g79w-8964
 
 # setuptools: Path Traversal Vulnerability in setuptools PackageIndex
 CVE-2025-47273

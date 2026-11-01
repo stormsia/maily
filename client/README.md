@@ -259,28 +259,31 @@ with SyncMailTMAPI("http://127.0.0.1:8477", api_key="sk-your-key") as api:
 
 ---
 
-## All 16 Flat Facade Shortcut Methods
+## Flat Facade Shortcut Methods
 
-Both `MailTMAPI` (async) and `SyncMailTMAPI` (sync) provide direct top-level facade shortcuts for rapid automation. All 16 methods forward directly to their respective section implementations:
+Both `MailTMAPI` (async) and `SyncMailTMAPI` (sync) provide direct top-level facade shortcuts for rapid automation. All 19 flat shortcut methods forward directly to their respective section implementations:
 
 | # | Facade Method Signature | Return Type | Description |
 |---|---|---|---|
 | 1 | `create_mailbox(*, provider=None, domain=None, parent_id=None, address=None, password=None)` | `Mailbox` | Creates a new disposable or parent mailbox. |
-| 2 | `delete_mailbox(mailbox_id: int \| Mailbox)` | `None` | Deletes a mailbox and purges all its stored messages. |
-| 3 | `list_messages(mailbox_id: int \| Mailbox, page: int = 1)` | `list[MessageSummary]` | Lists message headers/summaries received by the mailbox. |
-| 4 | `get_message(mailbox_id: int \| Mailbox, message_id: str)` | `MessageDetail` | Retrieves complete message body, HTML, attachments, and text. |
-| 5 | `mark_read(mailbox_id: int \| Mailbox, message_id: str)` | `MessageSummary` | Marks the specified message as read on the upstream provider. |
-| 6 | `delete_message(mailbox_id: int \| Mailbox, message_id: str)` | `None` | Permanently deletes a message from the mailbox. |
-| 7 | `get_source(mailbox_id: int \| Mailbox, message_id: str)` | `MessageSource` | Fetches the raw RFC822 MIME source data and download URL. |
-| 8 | `gmail_oauth_start()` | `OAuthStart` | Initiates Google OAuth2 consent flow, returning `auth_url` and `state`. |
-| 9 | `gmail_import_account(*, refresh_token=None, token_json=None)` | `GmailAccount` | Connects a Gmail parent account via OAuth refresh token or JSON credential. |
-| 10 | `list_gmail_accounts()` | `list[GmailAccount]` | Lists all registered Gmail parent accounts and their `send_as` aliases. |
-| 11 | `delete_gmail_account(parent_id: int)` | `None` | Removes a connected Gmail parent account and disables its aliases. |
-| 12 | `sync_gmail_account(parent_id: int)` | `GmailAccount` | Triggers immediate upstream IMAP/REST synchronization for a Gmail account. |
-| 13 | `domain_cache_settings()` | `DomainCache` | Inspects provider domain background cache status and refresh interval. |
-| 14 | `save_domain_cache_settings(*, enabled=None, interval_seconds=None)` | `DomainCache` | Updates background domain cache configuration. |
-| 15 | `refresh_domain_cache()` | `DomainCacheRun` | Triggers an immediate cache refresh sweep across all providers. |
-| 16 | `wait_for_message(mailbox_id, *, timeout=120.0, interval=2.0, predicate=None)` | `MessageSummary` | Polls mailbox until a message arrives matching an optional predicate filter. |
+| 2 | `list_mailboxes(provider=None, active=None)` | `list[Mailbox]` | Lists mailboxes registered under the active API key. |
+| 3 | `mailbox(mailbox_id: int \| Mailbox)` | `Mailbox` | Retrieves details and metadata for a specific mailbox ID. |
+| 4 | `mailbox_by_address(email: str)` | `Mailbox` | Finds a mailbox by its exact email address string. |
+| 5 | `delete_mailbox(mailbox_id: int \| Mailbox)` | `None` | Deletes a mailbox and purges all its stored messages. |
+| 6 | `list_messages(mailbox_id: int \| Mailbox, page: int = 1)` | `list[MessageSummary]` | Lists message headers/summaries received by the mailbox. |
+| 7 | `get_message(mailbox_id: int \| Mailbox, message_id: str)` | `MessageDetail` | Retrieves complete message body, HTML, attachments, and text. |
+| 8 | `mark_read(mailbox_id: int \| Mailbox, message_id: str)` | `MessageSummary` | Marks the specified message as read on the upstream provider. |
+| 9 | `delete_message(mailbox_id: int \| Mailbox, message_id: str)` | `None` | Permanently deletes a message from the mailbox. |
+| 10 | `get_source(mailbox_id: int \| Mailbox, message_id: str)` | `MessageSource` | Fetches the raw RFC822 MIME source data and download URL. |
+| 11 | `gmail_oauth_start()` | `OAuthStart` | Initiates Google OAuth2 consent flow, returning `auth_url` and `state`. |
+| 12 | `gmail_import_account(*, refresh_token=None, token_json=None)` | `GmailAccount` | Connects a Gmail parent account via OAuth refresh token or JSON credential. |
+| 13 | `list_gmail_accounts()` | `list[GmailAccount]` | Lists all registered Gmail parent accounts and their `send_as` aliases. |
+| 14 | `delete_gmail_account(parent_id: int)` | `None` | Removes a connected Gmail parent account and disables its aliases. |
+| 15 | `sync_gmail_account(parent_id: int)` | `GmailAccount` | Triggers immediate upstream IMAP/REST synchronization for a Gmail account. |
+| 16 | `domain_cache_settings()` | `DomainCache` | Inspects provider domain background cache status and refresh interval. |
+| 17 | `save_domain_cache_settings(*, enabled=None, interval_seconds=None)` | `DomainCache` | Updates background domain cache configuration. |
+| 18 | `refresh_domain_cache()` | `DomainCacheRun` | Triggers an immediate cache refresh sweep across all providers. |
+| 19 | `wait_for_message(mailbox_id, *, timeout=120.0, interval=2.0, predicate=None)` | `MessageSummary` | Polls mailbox until a message arrives matching an optional predicate filter. |
 
 ### Additional Root Convenience Methods
 

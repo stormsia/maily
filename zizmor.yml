@@ -24,6 +24,7 @@ rules:
       - pr-size.yml
       - provider-health.yml
       - provider-pr-check.yml
+      - load-test.yml
   dangerous-triggers:
     ignore:
       - semantic-pr.yml
@@ -54,3 +55,4 @@ rules:
       - pr-size.yml
       - provider-health.yml
       - provider-pr-check.yml
+      - load-test.yml

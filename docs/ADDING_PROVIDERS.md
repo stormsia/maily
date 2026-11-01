@@ -357,9 +357,9 @@ The repository includes an autonomous live test runner (`scripts/test_providers_
 Ensure your provider class defines these 3 class attributes:
 ```python
 class MyProvider(HttpProvider):
-    slug = "myprovider.com"            # Unique provider key used in API routes and state
-    name = "MyProvider"                # Human-readable display title for tables and alerts
-    website = "https://myprovider.com" # Official service homepage URL
+    slug = "myprovider.com"  # Unique provider key used in API routes and state
+    name = "MyProvider"  # Human-readable display title for tables and alerts
+    website = "https://myprovider.com"  # Official service homepage URL
 ```
 
 #### 2. What Gets Verified Live in CI

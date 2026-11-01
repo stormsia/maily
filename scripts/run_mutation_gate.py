@@ -74,6 +74,7 @@ PROFILES: dict[str, ProfileConfig] = {
         ],
         "tests": [
             "tests/test_authz.py",
+            "tests/test_authz_properties.py",
             "tests/test_keys_service.py",
             "tests/test_keys_router.py",
             "tests/test_security_routing.py",

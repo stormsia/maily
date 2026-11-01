@@ -22,3 +22,5 @@ scratch/*
 htmlcov/
 output.json
 WORKFLOWS_AUDIT.md
+benchmarks/*.html
+benchmarks/*.csv

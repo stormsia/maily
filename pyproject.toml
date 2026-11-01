@@ -31,6 +31,8 @@ dev = [
     "pytest-cov>=7.1.0",
     "pytest-benchmark>=5.3.0",
     "diff-cover>=11.0.0",
+    "hypothesis>=6.170.14",
+    "locust>=2.47.0",
 ]
 
 [project.scripts]
@@ -122,6 +124,7 @@ pytest_add_cli_args_test_selection = [
     "tests/test_crypto.py",
     "tests/test_misc.py",
     "tests/test_authz.py",
+    "tests/test_authz_properties.py",
     "tests/test_keys_service.py",
     "tests/test_retention_lifecycle.py",
     "tests/test_retry.py",
@@ -130,4 +133,10 @@ pytest_add_cli_args = [
     "-q",
     "-n",
     "0",
+]
+
+[dependency-groups]
+dev = [
+    "hypothesis>=6.170.14",
+    "locust>=2.47.0",
 ]

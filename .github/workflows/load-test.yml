@@ -1,0 +1,78 @@
+name: Macro Load & Stress Testing
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'benchmarks/**'
+      - 'scripts/run_load_test.py'
+      - '.github/workflows/load-test.yml'
+  schedule:
+    - cron: '0 3 * * 0' # Weekly on Sunday at 03:00 UTC
+  workflow_dispatch:
+    inputs:
+      users:
+        description: 'Number of concurrent virtual users'
+        required: true
+        default: '25'
+        type: string
+      spawn_rate:
+        description: 'User spawn rate per second'
+        required: true
+        default: '10'
+        type: string
+      run_time:
+        description: 'Load test duration (e.g. 15s, 30s)'
+        required: true
+        default: '15s'
+        type: string
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
+permissions:
+  contents: read
+
+jobs:
+  load-test:
+    name: Locust Macro Load Test
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: true
+          cache-suffix: "load-test"
+
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.15"
+
+      - name: Install dependencies
+        run: uv sync --frozen --all-extras
+
+      - name: Run Macro Load & Stress Test
+        env:
+          USERS: ${{ inputs.users || '25' }}
+          SPAWN_RATE: ${{ inputs.spawn_rate || '10' }}
+          RUN_TIME: ${{ inputs.run_time || '15s' }}
+        run: |
+          uv run python scripts/run_load_test.py --users "$USERS" --spawn-rate "$SPAWN_RATE" --run-time "$RUN_TIME"
+
+      - name: Upload Locust Benchmark Reports
+        uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: locust-load-test-reports
+          path: |
+            benchmarks/locust_report.html
+            benchmarks/locust_stats*.csv
+          retention-days: 14

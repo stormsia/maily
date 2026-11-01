@@ -221,9 +221,7 @@ def test_benchmark_health_endpoint(benchmark, benchmark_app: TestClient):
 
 @pytest.mark.benchmark(group="api")
 def test_benchmark_domain_cache_settings(benchmark, benchmark_app: TestClient):
-    response = benchmark(
-        benchmark_app.get, "/v1/admin/domain-cache", headers={"X-API-Key": SECRET}
-    )
+    response = benchmark(benchmark_app.get, "/v1/admin/domain-cache", headers={"X-API-Key": SECRET})
     assert response.status_code == 200
 
 

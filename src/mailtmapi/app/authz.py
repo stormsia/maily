@@ -79,7 +79,7 @@ def secret_sha256(secret: str) -> str:
 def _is_root_secret(presented: str, expected: str) -> bool:
     if not expected or not presented:
         return False
-    return secrets.compare_digest(presented, expected)
+    return secrets.compare_digest(presented.encode("utf-8"), expected.encode("utf-8"))
 
 
 def _deny_scope() -> Scope:

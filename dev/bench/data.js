@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1793493782808,
+  "lastUpdate": 1793493939377,
   "repoUrl": "https://github.com/stormsia/mailtmapi",
   "entries": {
     "Benchmark": [
@@ -436,6 +436,79 @@ window.BENCHMARK_DATA = {
             "unit": "iter/sec",
             "range": "stddev: 0.000796537439745175",
             "extra": "mean: 5.470550175438778 msec\nrounds: 171"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "sf_root@outlook.com",
+            "name": "stormsia",
+            "username": "stormsia"
+          },
+          "committer": {
+            "email": "sf_root@outlook.com",
+            "name": "stormsia",
+            "username": "stormsia"
+          },
+          "distinct": true,
+          "id": "87a4fcd7fdf61be7a1a62c8ae55e5293a846b6bc",
+          "message": "fix(ci): add GHSA-6v7p-g79w-8964 to .trivyignore and resolve ruff unused variable in openapi script",
+          "timestamp": "2026-11-01T03:45:13+03:00",
+          "tree_id": "3129bfe866906b92c786813d8a0f6a56c4ed961d",
+          "url": "https://github.com/stormsia/mailtmapi/commit/87a4fcd7fdf61be7a1a62c8ae55e5293a846b6bc"
+        },
+        "date": 1793493938531,
+        "tool": "pytest",
+        "benches": [
+          {
+            "name": "tests/test_benchmarks.py::test_benchmark_crypto_encrypt_1kb",
+            "value": 117577.35321736822,
+            "unit": "iter/sec",
+            "range": "stddev: 0.0000018402269466840988",
+            "extra": "mean: 8.50503921576866 usec\nrounds: 765"
+          },
+          {
+            "name": "tests/test_benchmarks.py::test_benchmark_crypto_decrypt_1kb",
+            "value": 119283.41095739737,
+            "unit": "iter/sec",
+            "range": "stddev: 0.0000010118125002867107",
+            "extra": "mean: 8.38339541075963 usec\nrounds: 18783"
+          },
+          {
+            "name": "tests/test_benchmarks.py::test_benchmark_random_string",
+            "value": 142077.95787673094,
+            "unit": "iter/sec",
+            "range": "stddev: 0.00000138801135767902",
+            "extra": "mean: 7.038389451427896 usec\nrounds: 22714"
+          },
+          {
+            "name": "tests/test_benchmarks.py::test_benchmark_random_password",
+            "value": 96349.25089112463,
+            "unit": "iter/sec",
+            "range": "stddev: 0.0000015212604080680889",
+            "extra": "mean: 10.378907887203061 usec\nrounds: 52414"
+          },
+          {
+            "name": "tests/test_benchmarks.py::test_benchmark_health_endpoint",
+            "value": 562.7843967409838,
+            "unit": "iter/sec",
+            "range": "stddev: 0.00025214732900868497",
+            "extra": "mean: 1.776879397849121 msec\nrounds: 93"
+          },
+          {
+            "name": "tests/test_benchmarks.py::test_benchmark_domain_cache_settings",
+            "value": 359.74326408038064,
+            "unit": "iter/sec",
+            "range": "stddev: 0.0005534285216340733",
+            "extra": "mean: 2.7797601785715744 msec\nrounds: 28"
+          },
+          {
+            "name": "tests/test_benchmarks.py::test_benchmark_client_init",
+            "value": 344.4419843951697,
+            "unit": "iter/sec",
+            "range": "stddev: 0.00025788674839246066",
+            "extra": "mean: 2.903246541666433 msec\nrounds: 216"
           }
         ]
       }

@@ -108,16 +108,24 @@ uvicorn mailtmapi.app.main:create_app --factory --reload --port 8477
 
 ---
 
-## 🐍 Standalone Async Python Client
+## 🐍 Standalone Python Client SDK (`mailtmapi-client`)
 
-The repository includes a dedicated, self-contained standalone Python client package located in `client/` (and mirrorable into any project with zero server dependencies).
+The repository includes a dedicated, self-contained standalone Python client package (`mailtmapi-client`) requiring only `httpx`, `pydantic`, and `loguru`. It supports both high-concurrency `async/await` (`MailTMAPI`) and a synchronous facade (`SyncMailTMAPI`).
+
+> 📖 **Full Documentation:** See [docs/CLIENT_GUIDE.md](docs/CLIENT_GUIDE.md) and [client/README.md](client/README.md) for comprehensive recipes (Pytest fixtures, Playwright/Selenium automation, streaming, and retry policies).
 
 ### Installation
 
 ```bash
-pip install "mailtmapi-client @ git+https://github.com/stormsia/mailtmapi.git#subdirectory=client"
-# or simply copy client/client.py directly into your script!
+pip install mailtmapi-client
+# or copy client/client.py directly into your script!
 ```
+
+> ⚠️ **Important: Attribute Access vs Dictionary Key Access**
+>
+> In `mailtmapi-client`, native dot/attribute access is supported **ONLY on Pydantic models and specifically `ExtractedConfirmation`** (which implements `Mapping` and supports dual access: e.g. `res.subject`, `res.confirmation_code` as well as `res["confirmation_link"]`).
+>
+> All other client methods returning standard Python dictionaries (such as `await api.config.get()`) **DO NOT support attribute/dot access**. You MUST use standard dictionary key indexing (`dict["key"]`), never dot access (`dict.key`).
 
 ### 1-Line Mailbox & Verification Code Extraction
 
@@ -141,6 +149,35 @@ async def main():
 
 
 asyncio.run(main())
+```
+
+### Confirmation Extraction (`ExtractedConfirmation` Dual Access)
+
+```python
+async with MailTMAPI("http://127.0.0.1:8477") as api:
+    box = await api.create_temp_mailbox()
+
+    # Wait for email and extract both verification code and activation link
+    res = await api.wait_for_confirmation_email(box, digit_code_mask=r"\b(\d{6})\b")
+    if res is not None:
+        # 1. Attribute / dot access:
+        print(f"Subject: {res.subject}")
+        print(f"Code: {res.confirmation_code}")
+
+        # 2. Key mapping access:
+        print(f"Link: {res['confirmation_link']}")
+        print(f"Code: {res['confirmation_code']}")
+```
+
+### Synchronous Client (`SyncMailTMAPI`)
+
+```python
+from mailtmapi.client import SyncMailTMAPI
+
+with SyncMailTMAPI("http://127.0.0.1:8477", api_key="sk-...") as api:
+    box = api.create_temp_mailbox()
+    code = api.wait_for_code(box, timeout=45.0)
+    print(f"Received code synchronously: {code}")
 ```
 
 ### Confirmation Link Extraction

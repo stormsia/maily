@@ -6,13 +6,17 @@ import ast
 import importlib.util
 import inspect
 import json
+import sys
 from pathlib import Path
+from typing import Any
 
 import httpx
 import pytest
 
 import mailtmapi
 import mailtmapi.client as pkg_client
+from mailtmapi import standalone_client
+from mailtmapi.standalone_client import ClientError, _main
 
 CLIENT_FILE = Path(__file__).resolve().parents[1] / "client" / "client.py"
 ALLOWED_TOP_LEVEL_IMPORTS = {"httpx", "loguru", "pydantic"}
@@ -94,52 +98,77 @@ class _Resp:
         pass
 
 
-def test_parse_version_and_check_update(monkeypatch):
-    mod = _load_standalone()
-
-    assert mod._parse_version('x = 1\n__version__ = "1.2.3"\n') == "1.2.3"
-    assert mod._parse_version("no version here") is None
+def test_parse_version_and_check_update(monkeypatch: pytest.MonkeyPatch) -> None:
+    assert standalone_client._parse_version('x = 1\n__version__ = "1.2.3"\n') == "1.2.3"
+    assert standalone_client._parse_version("no version here") is None
 
     # remote equals local -> no update
     monkeypatch.setattr(
-        mod.httpx, "get", lambda *a, **k: _Resp(f'__version__ = "{mod.__version__}"')
+        standalone_client.httpx,
+        "get",
+        lambda *a, **k: _Resp(f'__version__ = "{standalone_client.__version__}"'),
     )
-    assert mod.check_update("https://example.invalid/client.py") is None
+    assert standalone_client.check_update("https://example.invalid/client.py") is None
 
     # remote is newer -> tuple of versions
-    monkeypatch.setattr(mod.httpx, "get", lambda *a, **k: _Resp('__version__ = "9.9.9"'))
-    assert mod.check_update("https://example.invalid/client.py") == (
-        mod.__version__,
+    monkeypatch.setattr(
+        standalone_client.httpx, "get", lambda *a, **k: _Resp('__version__ = "9.9.9"')
+    )
+    assert standalone_client.check_update("https://example.invalid/client.py") == (
+        standalone_client.__version__,
         "9.9.9",
     )
 
+    # remote has no version -> raises ClientError
+    monkeypatch.setattr(standalone_client.httpx, "get", lambda *a, **k: _Resp("no version here"))
+    with pytest.raises(ClientError, match="could not read __version__"):
+        standalone_client.check_update("https://example.invalid/client.py")
 
-def test_self_update_replaces_target_file(monkeypatch, tmp_path):
-    mod = _load_standalone()
+
+def test_self_update_replaces_target_file(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     target = tmp_path / "client.py"
-    target.write_text(f'__version__ = "{mod.__version__}"\n', encoding="utf-8")
+    target.write_text(f'__version__ = "{standalone_client.__version__}"\n', encoding="utf-8")
 
     monkeypatch.setattr(inspect, "getsourcefile", lambda *_a, **_k: str(target))
 
     # same version -> nothing to do
     monkeypatch.setattr(
-        mod.httpx, "get", lambda *a, **k: _Resp(f'__version__ = "{mod.__version__}"')
+        standalone_client.httpx,
+        "get",
+        lambda *a, **k: _Resp(f'__version__ = "{standalone_client.__version__}"'),
     )
-    assert mod.self_update("https://example.invalid/client.py") is False
+    assert standalone_client.self_update("https://example.invalid/client.py") is False
 
-    # newer version -> file replaced atomically
+    # invalid remote version -> raises ClientError
+    monkeypatch.setattr(standalone_client.httpx, "get", lambda *a, **k: _Resp("no version here"))
+    with pytest.raises(ClientError, match="could not read __version__"):
+        standalone_client.self_update("https://example.invalid/client.py")
+
+    # newer version -> file replaced atomically, after callback executed
+    after_called = False
+
+    def on_after() -> None:
+        nonlocal after_called
+        after_called = True
+
     monkeypatch.setattr(
-        mod.httpx, "get", lambda *a, **k: _Resp('__version__ = "9.9.9"\nprint("hi")')
+        standalone_client.httpx, "get", lambda *a, **k: _Resp('__version__ = "9.9.9"\nprint("hi")')
     )
-    assert mod.self_update("https://example.invalid/client.py") is True
+    assert (
+        standalone_client.self_update("https://example.invalid/client.py", after=on_after) is True
+    )
+    assert after_called is True
     assert '__version__ = "9.9.9"' in target.read_text(encoding="utf-8")
     assert not (tmp_path / "client.py.tmp").exists()
+
+    # newer version without after callback
+    target.write_text(f'__version__ = "{standalone_client.__version__}"\n', encoding="utf-8")
+    assert standalone_client.self_update("https://example.invalid/client.py") is True
 
 
 @pytest.mark.asyncio
 async def test_key_me_requests_current_key():
     """Given a mocked server, key_me hits GET /v1/admin/keys/me and returns its JSON."""
-    mod = _load_standalone()
     seen: list[httpx.Request] = []
 
     def handler(request: httpx.Request) -> httpx.Response:
@@ -149,7 +178,7 @@ async def test_key_me_requests_current_key():
     transport_client = httpx.AsyncClient(
         base_url="http://test", transport=httpx.MockTransport(handler)
     )
-    api = mod.MailTMAPI(client=transport_client)
+    api = standalone_client.MailTMAPI(client=transport_client)
     try:
         assert await api.admin.key_me() == {"is_root": True}
     finally:
@@ -163,14 +192,14 @@ async def test_key_me_requests_current_key():
 @pytest.mark.asyncio
 async def test_key_create_posts_scope_body_unchanged():
     """Given empty scope lists, key_create posts them as given and returns the secret JSON."""
-    mod = _load_standalone()
     seen: list[httpx.Request] = []
-    scope = {"providers": [], "parent_ids": [], "actions": ["mailboxes:read"]}
-    body = {
+    scope: dict[str, Any] = {"providers": [], "parent_ids": [], "actions": ["mailboxes:read"]}
+    retention: list[dict[str, Any]] = []
+    body: dict[str, Any] = {
         "name": "reader",
         "expires_at": None,
         "scope": scope,
-        "retention": [],
+        "retention": retention,
     }
 
     def handler(request: httpx.Request) -> httpx.Response:
@@ -180,13 +209,13 @@ async def test_key_create_posts_scope_body_unchanged():
     transport_client = httpx.AsyncClient(
         base_url="http://test", transport=httpx.MockTransport(handler)
     )
-    api = mod.MailTMAPI(client=transport_client)
+    api = standalone_client.MailTMAPI(client=transport_client)
     try:
         created = await api.admin.key_create(
-            name=body["name"],
-            expires_at=body["expires_at"],
+            name="reader",
+            expires_at=None,
             scope=scope,
-            retention=body["retention"],
+            retention=retention,
         )
     finally:
         await api.close()
@@ -200,8 +229,6 @@ async def test_key_create_posts_scope_body_unchanged():
 
 @pytest.mark.asyncio
 async def test_check_client_version_reports_server_version():
-    mod = _load_standalone()
-
     def handler(request: httpx.Request) -> httpx.Response:
         assert request.url.path == "/v1/config"
         return httpx.Response(200, json={"client_version": "9.9.9"})
@@ -209,9 +236,185 @@ async def test_check_client_version_reports_server_version():
     transport_client = httpx.AsyncClient(
         base_url="http://test", transport=httpx.MockTransport(handler)
     )
-    api = mod.MailTMAPI(client=transport_client)
+    api = standalone_client.MailTMAPI(client=transport_client)
     try:
         assert await api.check_client_version() == "9.9.9"
         assert await api.config.get() == {"client_version": "9.9.9"}
     finally:
         await api.close()
+
+
+# =========================================================================== #
+# CLI _main(argv) Test Suite
+# =========================================================================== #
+def test_cli_help_no_args(capsys: pytest.CaptureFixture[str]) -> None:
+    """_main([]) returns 0 and prints usage doc to stderr."""
+    code = _main([])
+    assert code == 0
+    captured = capsys.readouterr()
+    assert "usage:" in captured.err
+    assert "mailtmapi-client version" in captured.err
+    assert captured.out == ""
+
+
+@pytest.mark.parametrize("flag", ["--help", "-h", "help"])
+def test_cli_help_flags(capsys: pytest.CaptureFixture[str], flag: str) -> None:
+    """_main([flag]) returns 0 and prints usage doc to stderr."""
+    code = _main([flag])
+    assert code == 0
+    captured = capsys.readouterr()
+    assert "usage:" in captured.err
+    assert captured.out == ""
+
+
+def test_cli_default_argv_sys_argv(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """_main(None) falls back to sys.argv[1:]."""
+    monkeypatch.setattr(sys, "argv", ["client.py", "--help"])
+    code = _main()
+    assert code == 0
+    captured = capsys.readouterr()
+    assert "usage:" in captured.err
+
+
+def test_cli_version(capsys: pytest.CaptureFixture[str]) -> None:
+    """_main(['version']) prints __version__ to stdout and returns 0."""
+    code = _main(["version"])
+    assert code == 0
+    captured = capsys.readouterr()
+    assert captured.out.strip() == standalone_client.__version__
+    assert captured.err == ""
+
+
+def test_cli_check_up_to_date(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """_main(['check']) when client is up to date returns 0."""
+    monkeypatch.setattr(
+        "mailtmapi.standalone_client.check_update",
+        lambda source_url=None: None,
+    )
+    code = _main(["check"])
+    assert code == 0
+    captured = capsys.readouterr()
+    assert f"client is up to date ({standalone_client.__version__})" in captured.out
+
+
+def test_cli_check_update_available(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """_main(['check']) when update is available returns 2 and prints version delta."""
+    monkeypatch.setattr(
+        "mailtmapi.standalone_client.check_update",
+        lambda source_url=None: ("0.2.0", "0.3.0"),
+    )
+    code = _main(["check"])
+    assert code == 2
+    captured = capsys.readouterr()
+    assert "update available: 0.2.0 -> 0.3.0" in captured.out
+
+
+def test_cli_check_forwards_custom_source_url(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """_main(['check', url]) forwards custom URL to check_update."""
+    recorded_url: list[str | None] = []
+
+    def fake_check(url: str | None = None) -> tuple[str, str] | None:
+        recorded_url.append(url)
+        return None
+
+    monkeypatch.setattr("mailtmapi.standalone_client.check_update", fake_check)
+    code = _main(["check", "https://custom.host/client.py"])
+    assert code == 0
+    assert recorded_url == ["https://custom.host/client.py"]
+
+
+def test_cli_check_failure_network_or_parse_error(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """_main(['check']) when check_update raises returns 1 and prints error to stderr."""
+
+    def fake_check(url: str | None = None) -> tuple[str, str] | None:
+        raise httpx.ConnectError("Connection refused")
+
+    monkeypatch.setattr("mailtmapi.standalone_client.check_update", fake_check)
+    code = _main(["check"])
+    assert code == 1
+    captured = capsys.readouterr()
+    assert "check failed: Connection refused" in captured.err
+
+
+def test_cli_update_already_current(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """_main(['update']) when already current returns 0."""
+    monkeypatch.setattr(
+        "mailtmapi.standalone_client.self_update",
+        lambda source_url=None: False,
+    )
+    code = _main(["update"])
+    assert code == 0
+    captured = capsys.readouterr()
+    assert f"client is up to date ({standalone_client.__version__})" in captured.out
+
+
+def test_cli_update_success(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """_main(['update']) when update succeeds returns 0 and prints restart notice."""
+    monkeypatch.setattr(
+        "mailtmapi.standalone_client.self_update",
+        lambda source_url=None: True,
+    )
+    code = _main(["update"])
+    assert code == 0
+    captured = capsys.readouterr()
+    assert "updated. Restart your scripts." in captured.out
+
+
+def test_cli_update_forwards_custom_source_url(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """_main(['update', url]) forwards custom URL to self_update."""
+    recorded_url: list[str | None] = []
+
+    def fake_update(url: str | None = None) -> bool:
+        recorded_url.append(url)
+        return True
+
+    monkeypatch.setattr("mailtmapi.standalone_client.self_update", fake_update)
+    code = _main(["update", "https://custom.host/client.py"])
+    assert code == 0
+    assert recorded_url == ["https://custom.host/client.py"]
+
+
+def test_cli_update_failure(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """_main(['update']) when self_update raises returns 1 and prints error to stderr."""
+
+    def fake_update(url: str | None = None) -> bool:
+        raise PermissionError("Access denied writing file")
+
+    monkeypatch.setattr("mailtmapi.standalone_client.self_update", fake_update)
+    code = _main(["update"])
+    assert code == 1
+    captured = capsys.readouterr()
+    assert "update failed: Access denied writing file" in captured.err
+
+
+def test_cli_unknown_command(capsys: pytest.CaptureFixture[str]) -> None:
+    """_main(['foo']) prints unknown command to stderr and returns 2."""
+    code = _main(["foo"])
+    assert code == 2
+    captured = capsys.readouterr()
+    assert "unknown command: foo" in captured.err
+
+
+def test_cli_system_exit_entrypoint() -> None:
+    """Verifies entrypoint SystemExit handling."""
+    with pytest.raises(SystemExit) as exc:
+        raise SystemExit(_main(["version"]))
+    assert exc.value.code == 0

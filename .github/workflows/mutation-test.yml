@@ -1,16 +1,27 @@
-name: Mutation Testing (Nightly)
+name: Mutation Testing Suite
 
 on:
   schedule:
     - cron: '0 2 * * *' # Daily at 02:00 UTC
   pull_request:
     paths:
-      - 'src/mailtmapi/crypto.py'
-      - 'src/mailtmapi/utils/misc.py'
-      - 'tests/test_crypto.py'
-      - 'tests/test_misc.py'
+      - 'src/mailtmapi/**'
+      - 'tests/**'
+      - 'scripts/run_mutation_gate.py'
+      - 'pyproject.toml'
       - '.github/workflows/mutation-test.yml'
   workflow_dispatch:
+    inputs:
+      profile:
+        description: 'Mutation Profile to Run'
+        required: true
+        default: 'all'
+        type: choice
+        options:
+          - all
+          - crypto_misc
+          - auth_security
+          - retention_retry
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -20,19 +31,22 @@ permissions:
   contents: read
 
 jobs:
-  mutmut:
-    name: Mutmut Code Robustness
+  pr-diff-mutation:
+    name: PR Diff Mutation Gate
+    if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 15
     steps:
-      - name: Checkout repository
+      - name: Checkout PR HEAD with Base
         uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
 
       - name: Install uv
         uses: astral-sh/setup-uv@v7
         with:
           enable-cache: true
-          cache-suffix: "mutmut"
+          cache-suffix: "mutmut-pr"
 
       - name: Set up Python
         uses: actions/setup-python@v7
@@ -42,54 +56,40 @@ jobs:
       - name: Install dependencies
         run: uv sync --frozen --all-extras
 
-      - name: Run Mutation Tests on Core Modules
+      - name: Run Diff-Aware Mutation Tests
+        env:
+          BASE_REF: ${{ github.base_ref }}
         run: |
-          uv run --with mutmut mutmut run
+          git fetch origin "$BASE_REF" --depth=1
+          uv run --with mutmut python scripts/run_mutation_gate.py --diff-base "origin/$BASE_REF"
 
-      - name: Export CI/CD Mutation Stats
-        if: always()
+  matrix-mutation:
+    name: Module Robustness (${{ matrix.profile }})
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        profile: [crypto_misc, auth_security, retention_retry]
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: true
+          cache-suffix: "mutmut-matrix-${{ matrix.profile }}"
+
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.15"
+
+      - name: Install dependencies
+        run: uv sync --frozen --all-extras
+
+      - name: Run Profile Mutation Tests
         run: |
-          uv run --with mutmut mutmut export-cicd-stats || true
-
-      - name: Display Mutation Test Results & Gate Check
-        if: always()
-        run: |
-          python3 -c "
-          import json, os, sys
-
-          stats_file = 'mutants/mutmut-cicd-stats.json'
-          if not os.path.exists(stats_file):
-              print('::error::Mutation test stats file not found!')
-              sys.exit(1)
-
-          with open(stats_file) as f:
-              stats = json.load(f)
-
-          killed = stats.get('killed', 0)
-          survived = stats.get('survived', 0)
-          no_tests = stats.get('no_tests', 0)
-          timeout = stats.get('timeout', 0)
-          total = stats.get('total', 0)
-
-          tested = total - stats.get('skipped', 0)
-          score = 0.0 if tested <= 0 else ((killed + timeout) / tested) * 100
-
-          print(f'Mutation summary: killed={killed}, survived={survived}, no_tests={no_tests}, timeout={timeout}, total={total}, score={score:.1f}%')
-
-          summary_path = os.environ.get('GITHUB_STEP_SUMMARY')
-          if summary_path:
-              with open(summary_path, 'a', encoding='utf-8') as sf:
-                  sf.write('### 🧬 Mutation Testing Results\n\n')
-                  sf.write(f'- **Mutation Score:** {score:.1f}%\n')
-                  sf.write(f'- **Total Mutants:** {total}\n')
-                  sf.write(f'- **Killed:** {killed}\n')
-                  sf.write(f'- **Survived:** {survived}\n')
-                  sf.write(f'- **No Tests:** {no_tests}\n')
-                  sf.write(f'- **Timeout:** {timeout}\n\n')
-
-          if survived > 0 or no_tests > 0:
-              print(f'::error::Mutation testing failed quality gate: {survived} survived, {no_tests} untested!')
-              sys.exit(1)
-
-          print('Mutation testing quality gate passed: 0 survived mutants.')
-          "
+          uv run --with mutmut python scripts/run_mutation_gate.py --profile ${{ matrix.profile }}

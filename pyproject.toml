@@ -109,10 +109,18 @@ source_paths = ["src"]
 only_mutate = [
     "src/mailtmapi/utils/misc.py",
     "src/mailtmapi/crypto.py",
+    "src/mailtmapi/app/authz.py",
+    "src/mailtmapi/app/services/keys.py",
+    "src/mailtmapi/app/services/retention.py",
+    "src/mailtmapi/utils/retry.py",
 ]
 pytest_add_cli_args_test_selection = [
     "tests/test_crypto.py",
     "tests/test_misc.py",
+    "tests/test_authz.py",
+    "tests/test_keys_service.py",
+    "tests/test_retention_lifecycle.py",
+    "tests/test_retry.py",
 ]
 pytest_add_cli_args = [
     "-q",

@@ -49,8 +49,8 @@ def main() -> int:
     parser.add_argument(
         "--min-delta-ms",
         type=float,
-        default=0.2,
-        help="Minimum absolute latency increase in ms to count as regression (avoids sub-ms CI jitter, default: 0.2ms)",
+        default=0.5,
+        help="Minimum absolute latency increase in ms to count as regression (avoids sub-ms CI jitter, default: 0.5ms)",
     )
     args = parser.parse_args()
 

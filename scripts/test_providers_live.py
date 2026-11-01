@@ -58,6 +58,31 @@ class ProviderTestResult:
     delivery_duration_s: float = 0.0
     delivery_error: str = ""
 
+    @property
+    def fully_operational(self) -> bool:
+        """True if basic API operations passed, and if delivery was tested, delivery also passed."""
+        if not self.success:
+            return False
+        if self.delivery_tested:
+            return bool(self.delivery_success)
+        return True
+
+    @property
+    def effective_stage(self) -> str:
+        if not self.success:
+            return self.stage
+        if self.delivery_tested and not self.delivery_success:
+            return "delivery"
+        return "ok"
+
+    @property
+    def effective_error(self) -> str:
+        if not self.success:
+            return self.error
+        if self.delivery_tested and not self.delivery_success:
+            return self.delivery_error or "Delivery timed out or message not received"
+        return ""
+
 
 PROVIDER_FACTORIES = [
     ("mail.tm", "Mail.tm", "https://mail.tm", lambda client: MailTM(http=client)),
@@ -238,17 +263,23 @@ def manage_github_issues(
             {"consecutive_failures": 0, "issue_number": None, "last_status": "unknown"},
         )
 
-        if r.success:
+        if r.fully_operational:
             # Check if this provider was previously in outage with an open issue
             issue_num = p_state.get("issue_number")
             if issue_num:
                 print(f"Provider {r.slug} recovered! Auto-closing issue #{issue_num}...")
+                deliv_info = (
+                    f"🟢 Delivered in {r.delivery_duration_s:.1f}s"
+                    if r.delivery_tested
+                    else "Not tested"
+                )
                 close_comment = (
                     f"🎉 **Provider Outage Resolved**\n\n"
                     f"The health check suite verified that `{r.name}` (`{r.slug}`) has fully recovered.\n"
                     f"* **Verification Time:** `{now_iso}`\n"
                     f"* **Targets Available:** `{r.targets_count}`\n"
-                    f"* **Operation Latency:** `{r.duration_s:.2f}s`\n\n"
+                    f"* **API Latency:** `{r.duration_s:.2f}s`\n"
+                    f"* **E2E Email Delivery:** {deliv_info}\n\n"
                     f"Closing this issue automatically."
                 )
                 try:
@@ -274,14 +305,17 @@ def manage_github_issues(
         else:
             p_state["consecutive_failures"] = p_state.get("consecutive_failures", 0) + 1
             failures = p_state["consecutive_failures"]
-            p_state["last_status"] = "outage" if failures >= 3 else "degraded"
+            outage_type = "Email Delivery" if r.effective_stage == "delivery" else "API Operations"
+            p_state["last_status"] = f"{r.effective_stage}_outage" if failures >= 3 else "degraded"
 
-            print(f"Provider {r.slug} failed ({failures} consecutive failure(s)).")
+            print(
+                f"Provider {r.slug} failed at stage '{r.effective_stage}' ({failures} consecutive failure(s))."
+            )
 
             # Circuit breaker: open an issue after exactly 3 consecutive failures
             if failures >= 3 and not p_state.get("issue_number"):
                 print(f"Opening degradation issue for {r.slug} (3 consecutive failures)...")
-                title = f"[Provider Outage] {r.name} ({r.slug}) failed 3 consecutive health checks"
+                title = f"[Provider Outage] {r.name} ({r.slug}) {outage_type} failed 3 consecutive checks"
                 body = (
                     f"<!-- automated-provider-outage-issue -->\n"
                     f"## 🚨 Automated Provider Degradation Alert: {r.name}\n\n"
@@ -289,16 +323,19 @@ def manage_github_issues(
                     f"* **Provider:** `{r.name}` (`{r.slug}`)\n"
                     f"* **Website:** {r.website}\n"
                     f"* **Consecutive Failures:** `{failures}`\n"
+                    f"* **Outage Type:** `{outage_type}`\n"
                     f"* **Detected At:** `{now_iso}`\n"
                     f"* **Action Run:** {run_url or 'Scheduled Health Run'}\n\n"
                     f"### ❌ Failure Diagnostic\n"
-                    f"* **Failed Stage:** `{r.stage}`\n"
-                    f"* **Error Message:** `{r.error}`\n"
+                    f"* **Failed Stage:** `{r.effective_stage}`\n"
+                    f"* **Error Message:** `{r.effective_error}`\n"
+                    f"* **API Health:** {'🟢 PASS' if r.success else f'🔴 FAIL ({r.stage})'}\n"
+                    f"* **E2E Delivery:** {'🟢 PASS' if r.delivery_success else ('🔴 FAIL' if r.delivery_tested else '—')}\n"
                     f"* **Mailbox Tested:** `{r.mailbox_address or 'N/A'}`\n\n"
                     f"### 🛠️ Recommended Actions\n"
-                    f"1. Check if upstream domain or API signatures changed at [{r.name}]({r.website}).\n"
+                    f"1. Check if upstream domain, MX records, or API signatures changed at [{r.name}]({r.website}).\n"
                     f"2. Inspect recent commits touching `src/mailtmapi/providers/{r.slug.replace('.', '_')}/`.\n"
-                    f"3. Verify if provider IP ranges are blocking GitHub Actions runners.\n\n"
+                    f"3. Verify if provider IP ranges are blocking GitHub Actions runners or test mail dispatchers.\n\n"
                     f"---\n"
                     f"*This issue was automatically created by the Provider Health Suite and will automatically close once restored.*"
                 )
@@ -329,7 +366,7 @@ def generate_status_markdown(
     timestamp: str,
 ) -> str:
     """Generate Markdown status table for README.md and Step Summary."""
-    all_ok = all(r.success for r in results)
+    all_ok = all(r.fully_operational for r in results)
     overall_badge = "🟢 **All Systems Operational**" if all_ok else "🟡 **Degraded Performance**"
 
     lines = [
@@ -341,7 +378,6 @@ def generate_status_markdown(
     ]
 
     for r in results:
-        status_icon = "🟢 Operational" if r.success else "🔴 Degraded"
         dur = f"{r.duration_s:.2f}s"
         targets = str(r.targets_count) if r.success else "—"
 
@@ -350,8 +386,17 @@ def generate_status_markdown(
         else:
             deliv_str = "—"
 
+        if r.fully_operational:
+            status_icon = "🟢 Operational"
+        elif not r.success:
+            status_icon = "🔴 API Outage"
+        else:
+            status_icon = "🔴 Delivery Outage"
+
+        api_icon = "🟢 PASS" if r.success else "🔴 FAIL"
+
         lines.append(
-            f"| [{r.name}]({r.website}) | `{r.slug}` | {targets} | {'🟢 PASS' if r.success else '🔴 FAIL'} | {deliv_str} | `{dur}` | {status_icon} |"
+            f"| [{r.name}]({r.website}) | `{r.slug}` | {targets} | {api_icon} | {deliv_str} | `{dur}` | {status_icon} |"
         )
 
     lines.append("")
@@ -390,7 +435,7 @@ def post_sticky_pr_comment(results: list[ProviderTestResult], timestamp: str) ->
         return
 
     marker = "<!-- mailtmapi-pr-provider-health -->"
-    all_ok = all(r.success for r in results)
+    all_ok = all(r.fully_operational for r in results)
     verdict = (
         "🟢 **PASS (All 7 Providers Verified)**"
         if all_ok
@@ -413,7 +458,13 @@ def post_sticky_pr_comment(results: list[ProviderTestResult], timestamp: str) ->
             if r.delivery_success
             else ("🔴 Fail" if r.delivery_tested else "—")
         )
-        diag = "None (Operational)" if r.success else f"Stage `{r.stage}`: {r.error}"
+        if r.fully_operational:
+            diag = "None (Operational)"
+        elif not r.success:
+            diag = f"API `{r.stage}`: {r.error}"
+        else:
+            diag = f"Delivery: {r.delivery_error or 'Timed out or not received'}"
+
         lines.append(
             f"| [{r.name}]({r.website}) | `{r.slug}` | {api_icon} | {deliv} | `{dur}` | `{diag}` |"
         )
@@ -463,7 +514,19 @@ async def async_main() -> int:
     parser.add_argument(
         "--providers", type=str, default="", help="Comma-separated provider slugs to test"
     )
-    parser.add_argument("--with-delivery", action="store_true", help="Test real email delivery e2e")
+    parser.add_argument(
+        "--with-delivery",
+        dest="with_delivery",
+        action="store_true",
+        default=True,
+        help="Test real email delivery e2e (default: True)",
+    )
+    parser.add_argument(
+        "--no-delivery",
+        dest="with_delivery",
+        action="store_false",
+        help="Skip e2e email delivery test",
+    )
     parser.add_argument(
         "--update-readme", action="store_true", help="Update README.md status table"
     )

@@ -173,6 +173,8 @@ def _detail(raw: dict[str, Any], fallback_address: str = "") -> MessageDetail:
 
 class MyProvider(HttpProvider):
     slug = "myprovider.com"
+    name = "MyProvider"
+    website = "https://myprovider.com"
     kind: TargetKind = "domain"
     cache_ttl = _CACHE_TTL
     default_headers = _HEADERS
@@ -316,7 +318,7 @@ class MyProvider(HttpProvider):
 
 ---
 
-## 🔌 5. Registration in the Application
+## 🔌 5. Registration & Live Test Integration
 
 Provider registration is centralized in `src/mailtmapi/providers/registry.py`:
 
@@ -324,7 +326,7 @@ Provider registration is centralized in `src/mailtmapi/providers/registry.py`:
    ```python
    from .my_provider import MyProvider
    ```
-2. Add it to `create_public_providers()`:
+2. Register it in `create_public_providers()`:
    ```python
    def create_public_providers(
        http: Any = None,
@@ -335,29 +337,50 @@ Provider registration is centralized in `src/mailtmapi/providers/registry.py`:
            MailTM(http=http),
            TempMailPlus(http=http),
            TempMailIO(http=http),
-           TempTF(http=http, ...),
+           TempTF(http=http, gmail_dot=temp_tf_dot, gmail_plus=temp_tf_plus),
            AnonymMailNet(http=http),
            DispoEmailOrg(http=http),
            NoopMail(http=http),
-           MyProvider(http=http),  # <--- Added here
+           MyProvider(http=http),  # <--- Registered here
        ]
    ```
 
-Both `src/mailtmapi/app/main.py` and the automated live testing suite load providers from `create_public_providers()`.
+Both `src/mailtmapi/app/main.py` and the live verification suite (`scripts/test_providers_live.py`) load active adapters directly from `create_public_providers()`.
 
 ---
 
-### ⚡ Automated Live Health Testing, E2E Email Delivery & Issue Tracking
+### 🌐 Live Verification Suite, E2E Delivery & Issue Automation
 
-When you add a provider to `create_public_providers()`:
-* **Automatic Live Health Suite (`scripts/test_providers_live.py`)**:
-  The suite dynamically discovers all public providers without modifying test scripts. It automatically tests target discovery, mailbox creation, inbox listing, real email delivery via `test_mail_sender`, and mailbox deletion.
-* **Automatic Failure & Issue State Tracking (`.github/provider_health_state.json`)**:
-  On its first run, `.github/provider_health_state.json` dynamically registers the new provider slug and begins tracking consecutive failures. If the provider experiences 3 consecutive failures on API operations OR email delivery, an automated GitHub Issue is created with failure diagnostics.
-* **Dynamic README Status Table (`README.md`)**:
-  The scheduled health check workflow (`.github/workflows/provider-health.yml`) automatically adds and maintains a live operational row in `README.md` (`<!-- provider-status:start -->`).
-* **PR Live Compatibility Gate (`.github/workflows/provider-pr-check.yml`)**:
-  Pull requests modifying provider code automatically run the live test suite and publish sticky PR reports including the new provider.
+The repository includes an autonomous live test runner (`scripts/test_providers_live.py`). It dynamically instantiates providers as factories `(slug, name, website, lambda client: Provider(http=client))`.
+
+#### 1. Required Provider Metadata Attributes
+Ensure your provider class defines these 3 class attributes:
+```python
+class MyProvider(HttpProvider):
+    slug = "myprovider.com"            # Unique provider key used in API routes and state
+    name = "MyProvider"                # Human-readable display title for tables and alerts
+    website = "https://myprovider.com" # Official service homepage URL
+```
+
+#### 2. What Gets Verified Live in CI
+* **Target Discovery (`list_targets`)**: Verifies domain acquisition from upstream.
+* **Mailbox Creation (`create_mailbox`)**: Generates an ephemeral mailbox with a random address.
+* **Inbox Listing (`list_messages`)**: Tests polling messages from upstream servers.
+* **Real E2E Email Delivery (`execute_email_delivery`)**:
+  * Dispatches an external email with a unique verification token via `scripts/test_mail_sender`;
+  * Polls the inbox until the message arrives, measuring real latency (typically 3–15s).
+* **Mailbox Cleanup (`delete_mailbox`)**: Destroys the test mailbox on the remote service.
+
+#### 3. Automatic Health State Tracking & Circuit Breaker
+* **State File (`.github/provider_health_state.json`)**:
+  Tracks consecutive failures per provider. Automatically initializes newly registered slugs on first run with `consecutive_failures: 0` without manual JSON editing.
+* **Circuit Breaker (3 Consecutive Failures)**:
+  If a provider experiences **3 consecutive failures** on API operations OR email delivery during scheduled runs, an automated GitHub Issue is created with diagnostic logs and labels (`bug`, `provider-outage`, `automated-health`).
+* **Auto-recovery**:
+  When the provider recovers (both API and delivery pass), the issue is automatically commented and closed by the bot.
+* **README & PR Badges**:
+  - Live status table in `README.md` (`<!-- provider-status:start -->`) updates twice daily;
+  - Sticky notice (`<!-- mailtmapi-pr-provider-health -->`) posts to Pull Requests affecting provider code.
 
 > 🔒 **Excluded Providers (`EXCLUDED_LIVE_TEST_PROVIDERS`):**
 > By default, **all** registered providers are automatically included in live health and delivery tests. The only exceptions are providers requiring pre-authenticated user credentials or private OAuth accounts (such as Gmail), which are registered in `EXCLUDED_LIVE_TEST_PROVIDERS = frozenset({"gmail"})`.
@@ -509,13 +532,17 @@ Before finalizing any new provider implementation, execute the following command
    ```bash
    uv run pytest
    ```
-5. **Verify standalone client mirror integrity**:
+5. **Verify live provider operations & real email delivery**:
+   ```bash
+   # Quick API-only check (skips external email delivery):
+   uv run python scripts/test_providers_live.py --providers <my_slug> --no-delivery
+
+   # Full live E2E check (including real email dispatch & inbox polling):
+   uv run python scripts/test_providers_live.py --providers <my_slug>
+   ```
+6. **Verify standalone client mirror integrity**:
    ```bash
    python scripts/build_client.py --check
    ```
-6. **Verify documentation and configuration sync**:
+7. **Verify documentation and configuration sync**:
    - Verify `README.md`, `src/mailtmapi/static/docs.html`, and `.env.example` include the new provider and any new settings.
-7. **Verify live upstream operations & E2E email delivery**:
-   ```bash
-   uv run python scripts/test_providers_live.py --providers <my_provider_slug>
-   ```

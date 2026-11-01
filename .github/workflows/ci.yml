@@ -27,6 +27,7 @@ jobs:
         with:
           enable-cache: true
           cache-dependency-glob: "uv.lock"
+          cache-suffix: "lint"
 
       - name: Set up Python
         uses: actions/setup-python@v7
@@ -92,6 +93,7 @@ jobs:
         with:
           enable-cache: true
           cache-dependency-glob: "uv.lock"
+          cache-suffix: "mypy"
 
       - name: Set up Python
         uses: actions/setup-python@v7
@@ -121,6 +123,7 @@ jobs:
         with:
           enable-cache: true
           cache-dependency-glob: "uv.lock"
+          cache-suffix: "test-${{ matrix.python-version }}"
 
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v7
@@ -158,6 +161,7 @@ jobs:
         uses: astral-sh/setup-uv@v7
         with:
           enable-cache: true
+          cache-suffix: "pkg"
 
       - name: Set up Python
         uses: actions/setup-python@v7

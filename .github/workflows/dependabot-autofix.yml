@@ -21,6 +21,7 @@ jobs:
           ref: ${{ github.event.pull_request.head.ref }}
           repository: ${{ github.event.pull_request.head.repo.full_name }}
           token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
 
       - name: Install uv
         uses: astral-sh/setup-uv@v7
@@ -35,6 +36,10 @@ jobs:
 
       - name: Synchronize uv.lock & regenerate standalone client
         run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git fetch origin main
+          git merge origin/main --no-edit || true
           uv sync --frozen --all-extras || uv lock
           uv run python scripts/build_client.py
 
@@ -54,10 +59,10 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Auto-approve and enable auto-merge for Dependabot PR
+      - name: Auto-approve and merge Dependabot PR
         run: |
           gh pr review --approve "$PR_URL" || echo "Auto-approve skipped (enable 'Allow GitHub Actions to create and approve pull requests' in repository settings if desired)."
-          gh pr merge --auto --merge "$PR_URL" || true
+          gh pr merge --auto --merge "$PR_URL" || gh pr merge --merge "$PR_URL" || true
         env:
           PR_URL: ${{ github.event.pull_request.html_url }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

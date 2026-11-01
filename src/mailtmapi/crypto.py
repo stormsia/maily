@@ -15,7 +15,7 @@ def is_fernet_key(secret: str) -> bool:
     try:
         Fernet(secret.encode())
         return True
-    except (ValueError, TypeError):
+    except ValueError:
         return False
 
 
@@ -23,7 +23,7 @@ def _fernet(secret: str) -> Fernet:
     raw = secret.encode()
     try:
         return Fernet(raw)
-    except (ValueError, TypeError):
+    except ValueError:
         digest = hashlib.sha256(raw).digest()
         logger.warning(
             "secret is not a valid Fernet key; deriving a key via sha256(secret). "

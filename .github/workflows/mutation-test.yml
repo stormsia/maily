@@ -28,6 +28,7 @@ jobs:
         uses: astral-sh/setup-uv@v7
         with:
           enable-cache: true
+          cache-suffix: "mutmut"
 
       - name: Set up Python
         uses: actions/setup-python@v7
@@ -44,7 +45,7 @@ jobs:
       - name: Export CI/CD Mutation Stats
         if: always()
         run: |
-          uv run --with mutmut mutmut export_cicd_stats || true
+          uv run --with mutmut mutmut export-cicd-stats || true
 
       - name: Display Mutation Test Results & Gate Check
         if: always()
@@ -88,4 +89,3 @@ jobs:
 
           print('Mutation testing quality gate passed: 0 survived mutants.')
           "
-

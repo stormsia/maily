@@ -83,6 +83,8 @@ class NoopMail(HttpProvider):
     """
 
     slug = "noopmail.org"
+    name = "NoopMail.org"
+    website = "https://noopmail.org"
     kind: TargetKind = "domain"
     cache_ttl = _CACHE_TTL
     default_headers = _HEADERS

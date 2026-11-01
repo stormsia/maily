@@ -83,3 +83,39 @@ class ProviderRegistry:
         """Close all registered providers gracefully."""
         for p in self._by_slug.values():
             await p.close()
+
+
+# Provider slugs that require pre-configured user credentials or private OAuth
+# accounts and must be excluded from automated public health and e2e delivery tests.
+EXCLUDED_LIVE_TEST_PROVIDERS: frozenset[str] = frozenset({"gmail"})
+
+
+def create_public_providers(
+    http: Any = None,
+    settings: Any = None,
+) -> list[MailProvider]:
+    """Instantiate and return all public mail providers.
+
+    All providers returned by this function are public disposable email services
+    that support automated live health checks and E2E email delivery.
+    """
+    from .anonymmail_net import AnonymMailNet
+    from .dispoemail_org import DispoEmailOrg
+    from .mailtm import MailTM
+    from .noopmail_org import NoopMail
+    from .temp_tf import TempTF
+    from .tempmail_io import TempMailIO
+    from .tempmail_plus import TempMailPlus
+
+    temp_tf_dot = getattr(settings, "temp_tf_gmail_dot", True) if settings else True
+    temp_tf_plus = getattr(settings, "temp_tf_gmail_plus", True) if settings else True
+
+    return [
+        MailTM(http=http),
+        TempMailPlus(http=http),
+        TempMailIO(http=http),
+        TempTF(http=http, gmail_dot=temp_tf_dot, gmail_plus=temp_tf_plus),
+        AnonymMailNet(http=http),
+        DispoEmailOrg(http=http),
+        NoopMail(http=http),
+    ]

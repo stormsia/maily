@@ -16,7 +16,7 @@ from .base import (
     parse_iso,
     split_address,
 )
-from .registry import ProviderRegistry
+from .registry import EXCLUDED_LIVE_TEST_PROVIDERS, ProviderRegistry, create_public_providers
 
 __all__ = [
     "MailProvider",
@@ -36,4 +36,6 @@ __all__ = [
     "parse_iso",
     "parse_from_value",
     "ProviderRegistry",
+    "create_public_providers",
+    "EXCLUDED_LIVE_TEST_PROVIDERS",
 ]

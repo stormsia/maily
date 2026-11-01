@@ -29,14 +29,8 @@ sys.path.insert(0, str(ROOT_DIR / "src"))
 sys.path.insert(0, str(ROOT_DIR / "scripts"))
 
 from mailtmapi.http import HttpClient
-from mailtmapi.providers.anonymmail_net import AnonymMailNet
+from mailtmapi.providers import EXCLUDED_LIVE_TEST_PROVIDERS, create_public_providers
 from mailtmapi.providers.base import MailboxInfo, MailboxSpec
-from mailtmapi.providers.dispoemail_org import DispoEmailOrg
-from mailtmapi.providers.mailtm import MailTM
-from mailtmapi.providers.noopmail_org import NoopMail
-from mailtmapi.providers.temp_tf import TempTF
-from mailtmapi.providers.tempmail_io import TempMailIO
-from mailtmapi.providers.tempmail_plus import TempMailPlus
 from test_mail_sender import TestEmailSender
 
 __test__ = False
@@ -84,30 +78,20 @@ class ProviderTestResult:
         return ""
 
 
-PROVIDER_FACTORIES = [
-    ("mail.tm", "Mail.tm", "https://mail.tm", lambda client: MailTM(http=client)),
-    (
-        "tempmail.plus",
-        "TempMail Plus",
-        "https://tempmail.plus",
-        lambda client: TempMailPlus(http=client),
-    ),
-    ("temp-mail.io", "TempMail.io", "https://temp-mail.io", lambda client: TempMailIO(http=client)),
-    ("temp.tf", "Temp.tf", "https://temp.tf", lambda client: TempTF(http=client)),
-    (
-        "anonymmail.net",
-        "AnonymMail.net",
-        "https://anonymmail.net",
-        lambda client: AnonymMailNet(http=client),
-    ),
-    (
-        "dispoemail.org",
-        "DispoEmail.org",
-        "https://dispoemail.org",
-        lambda client: DispoEmailOrg(http=client),
-    ),
-    ("noopmail.org", "NoopMail.org", "https://noopmail.org", lambda client: NoopMail(http=client)),
-]
+def discover_live_providers(
+    client: HttpClient,
+    target_slugs: list[str] | None = None,
+) -> list[Any]:
+    """Dynamically discover all registered public providers for live testing.
+
+    Automatically includes all providers created by create_public_providers(),
+    excluding only providers requiring authenticated user accounts (such as Gmail).
+    """
+    providers = create_public_providers(http=client)
+    filtered = [p for p in providers if p.slug not in EXCLUDED_LIVE_TEST_PROVIDERS]
+    if target_slugs:
+        filtered = [p for p in filtered if p.slug in target_slugs]
+    return filtered
 
 
 async def execute_provider_operations(
@@ -545,19 +529,25 @@ async def async_main() -> int:
     client = HttpClient()
     results: list[ProviderTestResult] = []
 
-    # Filter target providers
+    # Automatically discover all public providers (excluding e.g. Gmail)
     target_slugs = [s.strip() for s in args.providers.split(",") if s.strip()]
+    providers_to_test = discover_live_providers(client, target_slugs=target_slugs)
 
     print("=================================================================")
     print("      🚀 MailTM API Live Provider & E2E Delivery Suite")
+    print(f"      Discovered {len(providers_to_test)} public provider(s) (auto-synced)")
     print("=================================================================")
 
-    for slug, name, website, factory in PROVIDER_FACTORIES:
-        if target_slugs and slug not in target_slugs:
-            continue
+    for provider in providers_to_test:
+        slug = provider.slug
+        name = getattr(provider, "name", "") or slug.capitalize()
+        website = (
+            getattr(provider, "website", "")
+            or getattr(provider, "BASE_URL", "")
+            or f"https://{slug}"
+        )
 
         print(f"Testing provider: {name:<16} ({slug})...", end=" ", flush=True)
-        provider = factory(client)
         res = await execute_provider_operations(provider, name, website, timeout_s=args.timeout)
 
         # Optional Email Delivery check on supported providers

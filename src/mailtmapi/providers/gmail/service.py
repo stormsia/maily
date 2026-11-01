@@ -40,6 +40,8 @@ _API_BASE = "https://gmail.googleapis.com/gmail/v1/users/me"
 
 class GmailProvider:
     slug = "gmail"
+    name = "Gmail"
+    website = "https://mail.google.com"
     kind: TargetKind = "parent"
     capabilities = ProviderCapabilities(
         can_choose_username=True,

@@ -325,6 +325,8 @@ class TempTF(HttpProvider):
     """
 
     slug = "temp.tf"
+    name = "Temp.tf"
+    website = "https://temp.tf"
     kind: TargetKind = "domain"
     cache_ttl = _CACHE_TTL
     default_headers = _HEADERS

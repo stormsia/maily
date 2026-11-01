@@ -121,6 +121,8 @@ def _detail(raw: dict[str, Any], address: str) -> MessageDetail:
 
 class TempMailPlus(HttpProvider):
     slug = "tempmail.plus"
+    name = "TempMail Plus"
+    website = "https://tempmail.plus"
     kind: TargetKind = "domain"
     cache_ttl = _CACHE_TTL
     default_headers = _HEADERS

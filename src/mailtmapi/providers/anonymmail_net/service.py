@@ -153,6 +153,8 @@ def _parse_messages(raw: dict[str, Any], mailbox_address: str) -> list[MessageSu
 
 class AnonymMailNet(HttpProvider):
     slug = "anonymmail.net"
+    name = "AnonymMail.net"
+    website = "https://anonymmail.net"
     kind: TargetKind = "domain"
     cache_ttl = _CACHE_TTL
     default_headers = _HEADERS

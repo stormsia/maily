@@ -96,6 +96,8 @@ def _detail(raw: dict[str, Any]) -> MessageDetail:
 
 class MailTM(HttpProvider):
     slug = "mail.tm"
+    name = "Mail.tm"
+    website = "https://mail.tm"
     kind: TargetKind = "domain"
     cache_ttl = _CACHE_TTL
     API_URL = "https://api.mail.tm"

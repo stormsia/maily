@@ -85,6 +85,8 @@ def _detail(raw: dict[str, Any]) -> MessageDetail:
 
 class TempMailIO(HttpProvider):
     slug = "temp-mail.io"
+    name = "TempMail.io"
+    website = "https://temp-mail.io"
     kind: TargetKind = "domain"
     cache_ttl = _CACHE_TTL
     default_headers = _HEADERS

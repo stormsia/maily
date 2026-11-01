@@ -97,6 +97,8 @@ class DispoEmailOrg(HttpProvider):
     """
 
     slug = "dispoemail.org"
+    name = "DispoEmail.org"
+    website = "https://dispoemail.org"
     kind: TargetKind = "domain"
     cache_ttl = _CACHE_TTL
     default_headers = _HEADERS

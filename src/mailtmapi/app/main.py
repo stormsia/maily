@@ -13,17 +13,10 @@ from sqlalchemy.ext.asyncio import AsyncEngine
 from .. import __version__
 from ..db.engine import SessionFactory, make_engine
 from ..http import HttpClient
-from ..providers.anonymmail_net import AnonymMailNet
-from ..providers.dispoemail_org import DispoEmailOrg
 from ..providers.gmail.db_store import DbGmailStore
 from ..providers.gmail.oauth import GmailOAuth
 from ..providers.gmail.service import GmailProvider
-from ..providers.mailtm import MailTM
-from ..providers.noopmail_org import NoopMail
-from ..providers.registry import ProviderRegistry
-from ..providers.temp_tf import TempTF
-from ..providers.tempmail_io import TempMailIO
-from ..providers.tempmail_plus import TempMailPlus
+from ..providers.registry import ProviderRegistry, create_public_providers
 from ..settings import Settings, get_settings
 from .errors import register_errors
 from .middleware.origin import OriginGuard
@@ -145,17 +138,7 @@ async def lifespan(app: FastAPI):
     registry = ProviderRegistry(
         [
             gmail,
-            MailTM(http=http),
-            TempMailPlus(http=http),
-            TempMailIO(http=http),
-            NoopMail(http=http),
-            AnonymMailNet(http=http),
-            DispoEmailOrg(http=http),
-            TempTF(
-                http=http,
-                gmail_dot=settings.temp_tf_gmail_dot,
-                gmail_plus=settings.temp_tf_gmail_plus,
-            ),
+            *create_public_providers(http=http, settings=settings),
         ]
     )
     await ph.bootstrap(factory, http, registry, settings)

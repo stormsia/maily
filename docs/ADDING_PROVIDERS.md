@@ -318,28 +318,49 @@ class MyProvider(HttpProvider):
 
 ## 🔌 5. Registration in the Application
 
-In `src/mailtmapi/app/main.py`:
+Provider registration is centralized in `src/mailtmapi/providers/registry.py`:
 
-1. Import your new provider:
+1. Import your new provider in `src/mailtmapi/providers/registry.py`:
    ```python
-   from ..providers.my_provider import MyProvider
+   from .my_provider import MyProvider
    ```
-2. Add it to `registry = ProviderRegistry([...])`:
+2. Add it to `create_public_providers()`:
    ```python
-   registry = ProviderRegistry(
-       [
-           gmail,
+   def create_public_providers(
+       http: Any = None,
+       settings: Any = None,
+   ) -> list[MailProvider]:
+       ...
+       return [
            MailTM(http=http),
            TempMailPlus(http=http),
            TempMailIO(http=http),
-           NoopMail(http=http),
+           TempTF(http=http, ...),
            AnonymMailNet(http=http),
            DispoEmailOrg(http=http),
-           TempTF(http=http),
+           NoopMail(http=http),
            MyProvider(http=http),  # <--- Added here
        ]
-   )
    ```
+
+Both `src/mailtmapi/app/main.py` and the automated live testing suite load providers from `create_public_providers()`.
+
+---
+
+### ⚡ Automated Live Health Testing, E2E Email Delivery & Issue Tracking
+
+When you add a provider to `create_public_providers()`:
+* **Automatic Live Health Suite (`scripts/test_providers_live.py`)**:
+  The suite dynamically discovers all public providers without modifying test scripts. It automatically tests target discovery, mailbox creation, inbox listing, real email delivery via `test_mail_sender`, and mailbox deletion.
+* **Automatic Failure & Issue State Tracking (`.github/provider_health_state.json`)**:
+  On its first run, `.github/provider_health_state.json` dynamically registers the new provider slug and begins tracking consecutive failures. If the provider experiences 3 consecutive failures on API operations OR email delivery, an automated GitHub Issue is created with failure diagnostics.
+* **Dynamic README Status Table (`README.md`)**:
+  The scheduled health check workflow (`.github/workflows/provider-health.yml`) automatically adds and maintains a live operational row in `README.md` (`<!-- provider-status:start -->`).
+* **PR Live Compatibility Gate (`.github/workflows/provider-pr-check.yml`)**:
+  Pull requests modifying provider code automatically run the live test suite and publish sticky PR reports including the new provider.
+
+> 🔒 **Excluded Providers (`EXCLUDED_LIVE_TEST_PROVIDERS`):**
+> By default, **all** registered providers are automatically included in live health and delivery tests. The only exceptions are providers requiring pre-authenticated user credentials or private OAuth accounts (such as Gmail), which are registered in `EXCLUDED_LIVE_TEST_PROVIDERS = frozenset({"gmail"})`.
 
 ---
 
@@ -494,3 +515,7 @@ Before finalizing any new provider implementation, execute the following command
    ```
 6. **Verify documentation and configuration sync**:
    - Verify `README.md`, `src/mailtmapi/static/docs.html`, and `.env.example` include the new provider and any new settings.
+7. **Verify live upstream operations & E2E email delivery**:
+   ```bash
+   uv run python scripts/test_providers_live.py --providers <my_provider_slug>
+   ```

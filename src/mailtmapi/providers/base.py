@@ -166,6 +166,8 @@ class HttpProvider:
     double-checked-lock target cache, and JSON/HTML fetch helpers."""
 
     slug: str = ""
+    name: str = ""
+    website: str = ""
     kind: TargetKind = "domain"
     cache_ttl: float = 300.0
     default_headers: dict[str, str] | None = None

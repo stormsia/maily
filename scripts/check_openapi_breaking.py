@@ -53,14 +53,8 @@ def find_breaking_changes(
             head_op = head_methods[method]
 
             # 3. Check parameters
-            base_params = {
-                (p.get("name"), p.get("in")): p
-                for p in base_op.get("parameters", [])
-            }
-            head_params = {
-                (p.get("name"), p.get("in")): p
-                for p in head_op.get("parameters", [])
-            }
+            base_params = {(p.get("name"), p.get("in")): p for p in base_op.get("parameters", [])}
+            head_params = {(p.get("name"), p.get("in")): p for p in head_op.get("parameters", [])}
 
             # Check for removed parameters
             for (p_name, p_in), _p_def in base_params.items():
@@ -85,9 +79,7 @@ def find_breaking_changes(
             base_rb = base_op.get("requestBody", {})
             head_rb = head_op.get("requestBody", {})
             if not base_rb.get("required", False) and head_rb.get("required", False):
-                breaking.append(
-                    f"Request body made required on `{method.upper()} {path}`"
-                )
+                breaking.append(f"Request body made required on `{method.upper()} {path}`")
 
             # 5. Check removed success response codes
             base_responses = base_op.get("responses", {})
@@ -109,7 +101,10 @@ def find_breaking_changes(
             non_breaking.append(f"Added endpoint: `{', '.join(methods)} {path}`")
         else:
             for method in head_methods:
-                if method.lower() in ("get", "post", "put", "delete", "patch") and method not in base_paths[path]:
+                if (
+                    method.lower() in ("get", "post", "put", "delete", "patch")
+                    and method not in base_paths[path]
+                ):
                     non_breaking.append(f"Added method: `{method.upper()} {path}`")
 
     return breaking, non_breaking

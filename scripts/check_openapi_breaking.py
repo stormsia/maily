@@ -112,7 +112,7 @@ def find_breaking_changes(
     return breaking, non_breaking
 
 
-def post_sticky_pr_comment(comment_body: str) -> None:
+def post_sticky_pr_comment(comment_body: str, has_changes: bool = True) -> None:
     """Post or update sticky PR comment using GitHub CLI."""
     pr_number = os.environ.get("PR_NUMBER") or os.environ.get("GITHUB_PR_NUMBER")
     repo = os.environ.get("REPO") or os.environ.get("GITHUB_REPOSITORY")
@@ -148,7 +148,7 @@ def post_sticky_pr_comment(comment_body: str) -> None:
                 f"body={full_body}",
             ]
             subprocess.run(cmd_update, check=True, stdout=subprocess.DEVNULL)
-        else:
+        elif has_changes:
             print("Posting new PR OpenAPI comment...")
             cmd_create = ["gh", "pr", "comment", str(pr_number), "--body", full_body]
             subprocess.run(cmd_create, check=True, stdout=subprocess.DEVNULL)
@@ -206,8 +206,9 @@ def main() -> int:
         with open(summary_path, "a", encoding="utf-8") as sf:
             sf.write(summary_text + "\n")
 
-    if args.sticky_pr and (breaking or non_breaking):
-        post_sticky_pr_comment(summary_text)
+    if args.sticky_pr:
+        has_api_changes = bool(breaking or non_breaking)
+        post_sticky_pr_comment(summary_text, has_changes=has_api_changes)
 
     if breaking:
         print(f"::error::{len(breaking)} breaking changes found in OpenAPI schema!")

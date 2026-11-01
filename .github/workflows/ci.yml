@@ -109,7 +109,9 @@ jobs:
 
       - name: JavaScript syntax check (ESM) & Biome Lint
         run: |
-          node -e "import('./src/mailtmapi/static/dashboard.js')"
+          for f in src/mailtmapi/static/js/*.js src/mailtmapi/static/js/pages/*.js; do
+            [ -f "$f" ] && node --check "$f"
+          done
           npx --yes @biomejs/biome check src/mailtmapi/static/js || true
 
       - name: Static HTML Assets Lint (HTMLHint)

@@ -1,0 +1,65 @@
+name: Live Provider Health & E2E Delivery
+
+on:
+  schedule:
+    # Run twice daily at 06:00 and 18:00 UTC
+    - cron: '0 6,18 * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: provider-health
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+  issues: write
+
+jobs:
+  health-check:
+    name: Verify Upstream Providers & Delivery
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          persist-credentials: true
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: true
+          cache-suffix: "provider-health"
+
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.15"
+
+      - name: Install dependencies
+        run: uv sync --frozen --all-extras
+
+      - name: Run live provider and email delivery tests
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          GITHUB_RUN_ID: ${{ github.run_id }}
+        run: |
+          uv run python scripts/test_providers_live.py \
+            --all \
+            --with-delivery \
+            --update-readme \
+            --manage-issues
+
+      - name: Commit and push status updates
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add README.md .github/provider_health_state.json
+          if ! git diff --staged --quiet; then
+            git commit -m "chore(health): update live provider operational status [skip ci]"
+            git push origin main
+          else
+            echo "No status or state changes to commit."
+          fi

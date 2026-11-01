@@ -50,7 +50,8 @@ addopts = "-n auto"
 # "src" makes the package importable; "." (repo root) makes `tests` importable
 # as a package (`tests.helpers`) even when pytest is invoked as a bare script
 # instead of `python -m pytest`.
-pythonpath = ["src", "."]
+pythonpath = ["src", ".", "scripts"]
+testpaths = ["tests"]
 filterwarnings = [
     "ignore::pytest.PytestUnhandledThreadExceptionWarning",
     "ignore:.*Event loop is closed.*:RuntimeWarning",

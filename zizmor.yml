@@ -22,6 +22,8 @@ rules:
       - pr-benchmark.yml
       - links.yml
       - pr-size.yml
+      - provider-health.yml
+      - provider-pr-check.yml
   dangerous-triggers:
     ignore:
       - semantic-pr.yml
@@ -50,3 +52,5 @@ rules:
       - commit-lint.yml
       - pr-benchmark.yml
       - pr-size.yml
+      - provider-health.yml
+      - provider-pr-check.yml

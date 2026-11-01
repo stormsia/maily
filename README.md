@@ -54,6 +54,24 @@ Create disposable mailboxes on demand, receive emails in real time, extract veri
 
 > 💡 **Extending Providers:** Want to add your own provider? Check out the comprehensive guide for developers and AI agents in [docs/ADDING_PROVIDERS.md](docs/ADDING_PROVIDERS.md).
 
+<!-- provider-status:start -->
+### 🌐 Live Provider Operational Status
+
+> **Last Verified:** `2026-11-01 02:36 UTC` | **Overall Health:** 🟢 **All Systems Operational**
+
+| Provider | Slug | Targets | API Health | E2E Delivery | Latency | Status |
+| :--- | :--- | :---: | :---: | :---: | :---: | :---: |
+| [Mail.tm](https://mail.tm) | `mail.tm` | 1 | 🟢 PASS | 🟢 `4.4s` | `0.72s` | 🟢 Operational |
+| [TempMail Plus](https://tempmail.plus) | `tempmail.plus` | 8 | 🟢 PASS | 🟢 `5.9s` | `0.33s` | 🟢 Operational |
+| [TempMail.io](https://temp-mail.io) | `temp-mail.io` | 7 | 🟢 PASS | — | `0.39s` | 🟢 Operational |
+| [Temp.tf](https://temp.tf) | `temp.tf` | 4 | 🟢 PASS | — | `0.39s` | 🟢 Operational |
+| [AnonymMail.net](https://anonymmail.net) | `anonymmail.net` | 6 | 🟢 PASS | — | `1.22s` | 🟢 Operational |
+| [DispoEmail.org](https://dispoemail.org) | `dispoemail.org` | 4 | 🟢 PASS | — | `1.58s` | 🟢 Operational |
+| [NoopMail.org](https://noopmail.org) | `noopmail.org` | 16 | 🟢 PASS | — | `21.81s` | 🟢 Operational |
+
+*Automated health checks run twice daily via GitHub Actions.*
+<!-- provider-status:end -->
+
 ---
 
 ## 🚀 Quick Start

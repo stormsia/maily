@@ -1,0 +1,56 @@
+name: PR Live Provider Compatibility Gate
+
+on:
+  pull_request:
+    paths:
+      - 'src/mailtmapi/providers/**'
+      - 'src/mailtmapi/app/routers/**'
+      - 'src/mailtmapi/http.py'
+      - 'scripts/test_providers_live.py'
+      - 'scripts/test_mail_sender/**'
+      - '.github/workflows/provider-pr-check.yml'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  test-live-providers:
+    name: Check Live Provider Compatibility
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: true
+          cache-suffix: "provider-pr"
+
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.15"
+
+      - name: Install dependencies
+        run: uv sync --frozen --all-extras
+
+      - name: Verify live providers and post sticky PR report
+        env:
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+        run: |
+          uv run python scripts/test_providers_live.py \
+            --all \
+            --with-delivery \
+            --sticky-pr

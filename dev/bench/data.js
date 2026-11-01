@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1793496589138,
+  "lastUpdate": 1793496852834,
   "repoUrl": "https://github.com/stormsia/mailtmapi",
   "entries": {
     "Benchmark": [
@@ -1020,6 +1020,79 @@ window.BENCHMARK_DATA = {
             "unit": "iter/sec",
             "range": "stddev: 0.00039690845489279137",
             "extra": "mean: 4.181730686098662 msec\nrounds: 223"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "sf_root@outlook.com",
+            "name": "stormsia",
+            "username": "stormsia"
+          },
+          "committer": {
+            "email": "sf_root@outlook.com",
+            "name": "stormsia",
+            "username": "stormsia"
+          },
+          "distinct": true,
+          "id": "177bb4896caf25d0575577b2a1ef712a60e17788",
+          "message": "fix(ci): grant issues:write and map env in pr-benchmark workflow",
+          "timestamp": "2026-11-01T04:33:41+03:00",
+          "tree_id": "374602800c96bb4b7f22766689d9d7a4f13698db",
+          "url": "https://github.com/stormsia/mailtmapi/commit/177bb4896caf25d0575577b2a1ef712a60e17788"
+        },
+        "date": 1793496851522,
+        "tool": "pytest",
+        "benches": [
+          {
+            "name": "tests/test_benchmarks.py::test_benchmark_crypto_encrypt_1kb",
+            "value": 63502.43811320765,
+            "unit": "iter/sec",
+            "range": "stddev: 0.000004232750189768899",
+            "extra": "mean: 15.74742686599325 usec\nrounds: 670"
+          },
+          {
+            "name": "tests/test_benchmarks.py::test_benchmark_crypto_decrypt_1kb",
+            "value": 58969.84081729016,
+            "unit": "iter/sec",
+            "range": "stddev: 0.000004094409885548951",
+            "extra": "mean: 16.957820915582268 usec\nrounds: 15596"
+          },
+          {
+            "name": "tests/test_benchmarks.py::test_benchmark_random_string",
+            "value": 73819.55468730441,
+            "unit": "iter/sec",
+            "range": "stddev: 0.0000023530766168175154",
+            "extra": "mean: 13.54654609115356 usec\nrounds: 23703"
+          },
+          {
+            "name": "tests/test_benchmarks.py::test_benchmark_random_password",
+            "value": 47914.72808981526,
+            "unit": "iter/sec",
+            "range": "stddev: 0.000004623022639191489",
+            "extra": "mean: 20.870409576894996 usec\nrounds: 35356"
+          },
+          {
+            "name": "tests/test_benchmarks.py::test_benchmark_health_endpoint",
+            "value": 271.6920413057553,
+            "unit": "iter/sec",
+            "range": "stddev: 0.00039967422786941413",
+            "extra": "mean: 3.6806378103458153 msec\nrounds: 58"
+          },
+          {
+            "name": "tests/test_benchmarks.py::test_benchmark_domain_cache_settings",
+            "value": 184.95470373432443,
+            "unit": "iter/sec",
+            "range": "stddev: 0.00016337856882500226",
+            "extra": "mean: 5.406729214286088 msec\nrounds: 14"
+          },
+          {
+            "name": "tests/test_benchmarks.py::test_benchmark_client_init",
+            "value": 188.66850605517917,
+            "unit": "iter/sec",
+            "range": "stddev: 0.000466009178524528",
+            "extra": "mean: 5.30030168208113 msec\nrounds: 173"
           }
         ]
       }

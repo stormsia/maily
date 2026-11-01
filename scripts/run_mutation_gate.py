@@ -112,6 +112,10 @@ def patch_pyproject_toml(mutate_paths: list[str], test_paths: list[str]) -> Path
 
     new_section = f"""[tool.mutmut]
 source_paths = ["src"]
+also_copy = [
+    "alembic",
+    "alembic.ini",
+]
 only_mutate = [
 {mutate_lines}
 ]
@@ -171,6 +175,10 @@ def evaluate_mutation_results(stats_file: Path, profile_name: str) -> int:
             sf.write(f"| Survived | {survived} |\n")
             sf.write(f"| No Tests | {no_tests} |\n")
             sf.write(f"| Timeout | {timeout} |\n\n")
+
+    if total > 0 and (killed + timeout) == 0:
+        print(f"::error::Mutation testing failed: zero mutants killed or run aborted out of {total} mutants!")
+        return 1
 
     if survived > 0 or no_tests > 0:
         print(f"::error::Mutation testing failed quality gate: {survived} survived, {no_tests} untested mutants!")

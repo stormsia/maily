@@ -106,6 +106,10 @@ DEP001 = ["starlette", "pydantic"]
 
 [tool.mutmut]
 source_paths = ["src"]
+also_copy = [
+    "alembic",
+    "alembic.ini",
+]
 only_mutate = [
     "src/mailtmapi/utils/misc.py",
     "src/mailtmapi/crypto.py",

@@ -85,7 +85,17 @@ def _run_migrations(url: str) -> None:
 
     cfg = Config()
     root = Path(__file__).resolve().parents[3]
-    cfg.set_main_option("script_location", str(root / "alembic"))
+    alembic_dir = root / "alembic"
+    if not alembic_dir.is_dir():
+        cwd_alembic = Path.cwd() / "alembic"
+        if cwd_alembic.is_dir():
+            alembic_dir = cwd_alembic
+        else:
+            for parent in Path(__file__).resolve().parents:
+                if (parent / "alembic").is_dir():
+                    alembic_dir = parent / "alembic"
+                    break
+    cfg.set_main_option("script_location", str(alembic_dir))
     cfg.set_main_option("sqlalchemy.url", url.replace("sqlite+aiosqlite", "sqlite"))
     command.upgrade(cfg, "head")
 

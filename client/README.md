@@ -59,7 +59,7 @@ pip install httpx loguru pydantic
 > **CRITICAL RULE:**
 > In `mailtmapi-client`, **native dot/attribute access is supported ONLY on Pydantic models and specifically `ExtractedConfirmation`** (which implements `Mapping` and allows dual access: both `res.confirmation_code` and `res["confirmation_code"]`).
 >
-> **All other client methods returning standard Python dictionaries** (such as `await api.config.get()`, `await sync_api.config.get()`, or raw response dicts) **DO NOT support attribute/dot access**. You MUST access dictionary values using standard bracket key indexing (`d["key"]`), NEVER dot syntax (`d.key`).
+> **All other client methods returning standard Python dictionaries** (such as `await api.config.get()`, `sync_api.config.get()`, or raw response dicts) **DO NOT support attribute/dot access**. You MUST access dictionary values using standard bracket key indexing (`d["key"]`), NEVER dot syntax (`d.key`).
 
 ```python
 # 1. ExtractedConfirmation (Pydantic model implementing Mapping) supports BOTH:

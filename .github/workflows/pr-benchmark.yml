@@ -16,6 +16,7 @@ concurrency:
 permissions:
   contents: read
   pull-requests: write
+  issues: write
 
 jobs:
   benchmark-regression:
@@ -71,17 +72,18 @@ jobs:
         env:
           PR_NUMBER: ${{ github.event.pull_request.number }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
         run: |
           COMMENT_HEADER="<!-- mailtmapi-pr-benchmark-summary -->"
           COMMENT_BODY=$(printf "%s\n\n%s" "$COMMENT_HEADER" "$(cat bench_summary.md)")
 
           # Find existing comment from this action
-          EXISTING_ID=$(gh api "repos/${{ github.repository }}/issues/${PR_NUMBER}/comments" \
+          EXISTING_ID=$(gh api "repos/${REPO}/issues/${PR_NUMBER}/comments" \
             --jq ".[] | select(.body | startswith(\"$COMMENT_HEADER\")) | .id" | head -n 1)
 
           if [ -n "$EXISTING_ID" ]; then
             echo "Updating existing PR benchmark comment (ID: $EXISTING_ID)..."
-            gh api -X PATCH "repos/${{ github.repository }}/issues/comments/${EXISTING_ID}" -f body="$COMMENT_BODY" > /dev/null
+            gh api -X PATCH "repos/${REPO}/issues/comments/${EXISTING_ID}" -f body="$COMMENT_BODY" > /dev/null
           else
             echo "Posting new PR benchmark comment..."
             gh pr comment "$PR_NUMBER" --body "$COMMENT_BODY" || true

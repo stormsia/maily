@@ -20,3 +20,12 @@ repos:
     rev: v1.51.1
     hooks:
       - id: typos
+
+  - repo: local
+    hooks:
+      - id: uv-lock-check
+        name: check uv.lock consistency
+        entry: uv lock --check
+        language: system
+        files: ^(pyproject\.toml|uv\.lock)$
+        pass_filenames: false

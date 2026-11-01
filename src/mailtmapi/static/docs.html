@@ -491,7 +491,7 @@ asyncio.run(main())</pre>
         </div>
         <pre class="code-content">async with MailTMAPI("http://127.0.0.1:8477", api_key="sk-...") as api:
     box = await api.create_temp_mailbox(provider="tempmail.plus")
-    
+
     # Wait for email and extract confirmation URL containing 'verify' or 'activate'
     link = await api.wait_for_link(
         box,

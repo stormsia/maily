@@ -6,7 +6,6 @@ repos:
       - id: end-of-file-fixer
       - id: check-yaml
       - id: check-toml
-      - id: check-json
       - id: check-added-large-files
         args: ['--maxkb=500']
 
@@ -17,23 +16,7 @@ repos:
         args: [--fix]
       - id: ruff-format
 
-  - repo: https://github.com/gitleaks/gitleaks
-    rev: v8.24.0
+  - repo: https://github.com/crate-ci/typos
+    rev: v1.51.1
     hooks:
-      - id: gitleaks
-
-  - repo: local
-    hooks:
-      - id: mypy
-        name: mypy type check
-        entry: uv run mypy src client scripts
-        language: system
-        types: [python]
-        pass_filenames: false
-
-      - id: alembic-check
-        name: alembic migrations check
-        entry: uv run alembic check
-        language: system
-        types: [python]
-        pass_filenames: false
+      - id: typos

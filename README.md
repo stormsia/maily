@@ -107,6 +107,7 @@ pip install "mailtmapi-client @ git+https://github.com/stormsia/mailtmapi.git#su
 import asyncio
 from mailtmapi.client import MailTMAPI, WaitTimeoutError
 
+
 async def main():
     async with MailTMAPI("http://127.0.0.1:8477", api_key="sk-...") as api:
         # Create a disposable mailbox with automatic domain selection
@@ -119,6 +120,7 @@ async def main():
             print(f"Received verification code: {code}")
         except WaitTimeoutError:
             print("Timed out waiting for email.")
+
 
 asyncio.run(main())
 ```
@@ -154,13 +156,13 @@ All API errors inherit from `ApiError`, which inherits from `ClientError`:
 
 ```python
 from mailtmapi.client import (
-    AuthenticationError,    # 401: Invalid API key
-    ForbiddenError,         # 403: Scope denied
-    NotFoundError,          # 404: Mailbox or message missing
-    ValidationError,        # 422 / 400: Bad params
-    RateLimitError,         # 429: Rate limited
+    AuthenticationError,  # 401: Invalid API key
+    ForbiddenError,  # 403: Scope denied
+    NotFoundError,  # 404: Mailbox or message missing
+    ValidationError,  # 422 / 400: Bad params
+    RateLimitError,  # 429: Rate limited
     UpstreamProviderError,  # 502/504: Provider downtime
-    WaitTimeoutError,       # Timeout waiting for email/code
+    WaitTimeoutError,  # Timeout waiting for email/code
 )
 
 try:

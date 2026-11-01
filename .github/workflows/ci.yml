@@ -45,6 +45,9 @@ jobs:
       - name: Check uv.lock consistency
         run: uv lock --check
 
+      - name: Check for spelling typos
+        uses: crate-ci/typos@v1.51.1
+
       - name: Ruff Lint (with GitHub annotations)
         run: |
           uv run ruff check --output-format=github src tests client scripts

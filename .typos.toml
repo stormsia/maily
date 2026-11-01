@@ -1,0 +1,19 @@
+[default]
+extend-ignore-re = [
+    '(?i)HcTsW_BHeZm9dWhe',
+    '(?i)CDNKAWl4687wKMey',
+]
+
+[default.extend-words]
+INSER = "INSER"
+nd = "nd"
+Whe = "Whe"
+Mey = "Mey"
+mailtm = "mailtm"
+alembic = "alembic"
+aiosqlite = "aiosqlite"
+mutmut = "mutmut"
+deptry = "deptry"
+pydantic = "pydantic"
+uvicorn = "uvicorn"
+fastapi = "fastapi"

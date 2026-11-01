@@ -39,14 +39,14 @@ Each provider declares its capabilities via `ProviderCapabilities`:
 from mailtmapi.providers.base import ProviderCapabilities
 
 capabilities = ProviderCapabilities(
-    can_choose_username=True,       # User can pick 'custom_name@...'
-    can_choose_domain=True,         # User can choose from list_targets()
-    can_set_password=False,         # Remote supports mailbox passwords / PINs
-    supports_delete_mailbox=True,   # Remote has API to destroy the mailbox
-    supports_delete_message=True,   # Remote has API to delete individual messages
-    supports_mark_read=False,       # Remote has API/flag to mark message as read
-    supports_source=True,           # Remote returns raw RFC822 MIME source
-    supports_attachments=True,      # Remote supports file attachments
+    can_choose_username=True,  # User can pick 'custom_name@...'
+    can_choose_domain=True,  # User can choose from list_targets()
+    can_set_password=False,  # Remote supports mailbox passwords / PINs
+    supports_delete_mailbox=True,  # Remote has API to destroy the mailbox
+    supports_delete_message=True,  # Remote has API to delete individual messages
+    supports_mark_read=False,  # Remote has API/flag to mark message as read
+    supports_source=True,  # Remote returns raw RFC822 MIME source
+    supports_attachments=True,  # Remote supports file attachments
 )
 ```
 
@@ -122,7 +122,7 @@ _HEADERS = {
 def _summary(raw: dict[str, Any], fallback_address: str = "") -> MessageSummary:
     from_raw = str(raw.get("from") or "")
     party = parse_from_value(from_raw)
-    
+
     return MessageSummary(
         id=str(raw.get("id") or ""),
         subject=str(raw.get("subject") or ""),
@@ -203,7 +203,7 @@ class MyProvider(HttpProvider):
         data = await self._get_json(f"{self.BASE_URL}/api/domains")
         if not isinstance(data, list):
             raise MailAPIError(f"{self.slug}: unexpected domains response")
-        
+
         targets: list[Target] = []
         for item in data:
             domain = str(item.get("domain") or item.get("name") or "")
@@ -229,7 +229,7 @@ class MyProvider(HttpProvider):
                 domain = targets[0].label
 
         full_address = f"{username}@{domain}"
-        
+
         # Upstream request (e.g. POST /api/accounts)
         payload = {"address": full_address}
         resp = await self._post_json(f"{self.BASE_URL}/api/accounts", payload)
@@ -375,7 +375,9 @@ def _provider_with_routes(routes: dict[tuple[str, str], httpx.Response]) -> MyPr
 @pytest.mark.asyncio
 async def test_list_targets():
     routes = {
-        ("GET", "/api/domains"): httpx.Response(200, json=[{"domain": "foo.com"}, {"domain": "bar.com"}]),
+        ("GET", "/api/domains"): httpx.Response(
+            200, json=[{"domain": "foo.com"}, {"domain": "bar.com"}]
+        ),
     }
     p = _provider_with_routes(routes)
     targets = await p.list_targets()
@@ -409,7 +411,14 @@ async def test_list_and_get_messages():
     routes = {
         ("GET", "/api/messages"): httpx.Response(
             200,
-            json=[{"id": "m1", "subject": "Hello", "from": "Sender <s@test.com>", "created_at": "2026-01-01T00:00:00Z"}],
+            json=[
+                {
+                    "id": "m1",
+                    "subject": "Hello",
+                    "from": "Sender <s@test.com>",
+                    "created_at": "2026-01-01T00:00:00Z",
+                }
+            ],
         ),
         ("GET", "/api/messages/m1"): httpx.Response(
             200,
@@ -418,7 +427,7 @@ async def test_list_and_get_messages():
     }
     p = _provider_with_routes(routes)
     box = MailboxInfo(provider="myprovider.com", address="u@foo.com", token="tok_xyz")
-    
+
     msgs = await p.list_messages(box)
     assert len(msgs) == 1
     assert msgs[0].id == "m1"

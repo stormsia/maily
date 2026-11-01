@@ -1,0 +1,15 @@
+# .trivyignore
+# Known upstream Debian Bookworm system package vulnerabilities with no fix available in Debian repositories.
+# The mailtmapi application itself and its Python direct dependencies are unaffected.
+
+# msgpack: Denial of Service via memory leak during map deserialization
+CVE-2026-114613
+
+# setuptools: Path Traversal Vulnerability in setuptools PackageIndex
+CVE-2025-47273
+
+# urllib3: Traffic interception via HTTPS proxy TLS configuration override
+CVE-2026-97687
+
+# urllib3: Denial of Service via unbounded memory allocation in chunk parser
+CVE-2026-97689

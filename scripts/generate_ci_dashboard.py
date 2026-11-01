@@ -168,7 +168,10 @@ def main() -> None:
     docker_status = os.environ.get("CI_DOCKER_STATUS", "success")
 
     all_statuses = [lint_status, mypy_status, test_status, pkg_status, docker_status]
-    pipeline_ok = all(s.lower() == "success" for s in all_statuses)
+    pipeline_ok = (
+        not any(s.lower() in ("failure", "failed") for s in all_statuses)
+        and lint_status.lower() == "success"
+    )
 
     # Header info
     commit_sha = os.environ.get("GITHUB_SHA", "HEAD")[:7]
@@ -330,6 +333,15 @@ def main() -> None:
     lines.append("| :--- | :--- | :--- | :---: |")
     lines.append(
         "| **Semantic PR Titles** | Conventional Commits | Validates `feat:`, `fix:`, `chore:`, etc. | 🛡️ Active |"
+    )
+    lines.append(
+        "| **PR Diff Test Coverage** | diff-cover (>= 85%) | Evaluates new/modified lines in PR | 🛡️ Active |"
+    )
+    lines.append(
+        "| **PR Size & Complexity** | Diff Line Counter | Labels `size/XS` to `size/XL` | 🛡️ Active |"
+    )
+    lines.append(
+        "| **Documentation Links** | Lychee Link Checker | Validates URLs in markdown & docstrings | 🛡️ Active |"
     )
     lines.append(
         "| **Clean PR Commits History** | Conventional Commits + Linear | Enforces clean commit messages | 🛡️ Active |"

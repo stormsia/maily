@@ -20,6 +20,8 @@ rules:
       - zizmor.yml
       - commit-lint.yml
       - pr-benchmark.yml
+      - links.yml
+      - pr-size.yml
   dangerous-triggers:
     ignore:
       - semantic-pr.yml
@@ -47,3 +49,4 @@ rules:
       - trivy.yml
       - commit-lint.yml
       - pr-benchmark.yml
+      - pr-size.yml

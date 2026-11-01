@@ -14,9 +14,36 @@ permissions:
   contents: read
 
 jobs:
+  changes:
+    name: Detect Changes
+    runs-on: ubuntu-latest
+    outputs:
+      code: ${{ steps.filter.outputs.code }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Filter changed paths
+        id: filter
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            code:
+              - 'src/**'
+              - 'client/**'
+              - 'tests/**'
+              - 'scripts/**'
+              - 'pyproject.toml'
+              - 'uv.lock'
+              - 'Dockerfile'
+              - 'alembic.ini'
+              - 'alembic/**'
+              - '.github/workflows/ci.yml'
+
   lint:
     name: Lint & Quality
     runs-on: ubuntu-latest
+    needs: [changes]
     timeout-minutes: 10
     steps:
       - name: Checkout repository
@@ -76,19 +103,18 @@ jobs:
 
       - name: JavaScript syntax check (ESM) & Biome Lint
         run: |
-          shopt -s nullglob
-          for f in src/mailtmapi/static/js/*.js src/mailtmapi/static/js/pages/*.js; do
-            echo "Checking $f..."
-            node --input-type=module --check < "$f"
-          done
-          npx --yes @biomejs/biome lint src/mailtmapi/static/js
+          node -e "import('./src/mailtmapi/static/dashboard.js')"
+          npx @biomejs/biome check src/mailtmapi/static/
 
       - name: Static HTML Assets Lint (HTMLHint)
-        run: npx --yes htmlhint src/mailtmapi/static/*.html
+        run: |
+          npx htmlhint src/mailtmapi/static/*.html
 
   type-check:
     name: Type Check (mypy)
     runs-on: ubuntu-latest
+    needs: [changes]
+    if: needs.changes.outputs.code == 'true'
     timeout-minutes: 10
     steps:
       - name: Checkout repository
@@ -115,7 +141,13 @@ jobs:
   test:
     name: Test (Python ${{ matrix.python-version }})
     runs-on: ubuntu-latest
+    needs: [changes]
+    if: needs.changes.outputs.code == 'true'
     timeout-minutes: 15
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: write
     strategy:
       fail-fast: false
       matrix:
@@ -123,6 +155,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
 
       - name: Install uv
         uses: astral-sh/setup-uv@v7
@@ -149,6 +183,17 @@ jobs:
           uv run python -m pytest -q -n 0 --cov=mailtmapi --cov-report=xml:coverage.xml --cov-report=term-missing --junitxml=junit-3.15.xml
           uv run coverage json -o coverage.json
 
+      - name: Check PR Diff Coverage
+        if: matrix.python-version == '3.15' && github.event_name == 'pull_request'
+        env:
+          BASE_REF: ${{ github.base_ref }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+        run: |
+          git fetch origin "$BASE_REF" --depth=100
+          uv run python scripts/check_diff_coverage.py coverage.xml --compare-branch="origin/$BASE_REF" --threshold=85.0 --sticky-pr
+
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v7
         if: matrix.python-version == '3.15'
@@ -165,12 +210,15 @@ jobs:
           path: |
             junit-*.xml
             coverage.json
+            coverage.xml
           if-no-files-found: ignore
           retention-days: 1
 
   package:
     name: Package Distribution Check
     runs-on: ubuntu-latest
+    needs: [changes]
+    if: needs.changes.outputs.code == 'true'
     timeout-minutes: 10
     steps:
       - name: Checkout repository
@@ -203,6 +251,8 @@ jobs:
   docker:
     name: Docker Build & Runtime Smoke Test
     runs-on: ubuntu-latest
+    needs: [changes]
+    if: needs.changes.outputs.code == 'true'
     timeout-minutes: 15
     steps:
       - name: Checkout repository
@@ -248,13 +298,12 @@ jobs:
           AUTH_HEADER="X-API-Key: ${SMOKE_KEY}"
           PROVIDERS_STATUS=$(curl -s -o /dev/null -w "%{http_code}" -H "$AUTH_HEADER" http://127.0.0.1:8477/v1/providers || true)
           if [ "$PROVIDERS_STATUS" != "200" ]; then
-            echo "::error::Authenticated API check failed with status $PROVIDERS_STATUS. Dumping logs:"
+            echo "::error::Authenticated /v1/providers check failed with status ${PROVIDERS_STATUS}."
             docker logs ci-smoke-app
             exit 1
           fi
-          echo "Docker smoke test passed: /health and authenticated /v1/providers verified."
-          docker stop ci-smoke-app
-          docker rm ci-smoke-app
+          echo "Docker smoke test verified /health and /v1/providers successfully."
+          docker stop ci-smoke-app && docker rm ci-smoke-app
 
       - name: Upload Docker smoke metrics artifact
         uses: actions/upload-artifact@v7
@@ -268,7 +317,7 @@ jobs:
   ci-status:
     name: All Checks Passed
     runs-on: ubuntu-latest
-    needs: [lint, type-check, test, package, docker]
+    needs: [changes, lint, type-check, test, package, docker]
     if: always()
     steps:
       - name: Checkout repository
@@ -298,13 +347,21 @@ jobs:
           GITHUB_STEP_SUMMARY: ${{ env.GITHUB_STEP_SUMMARY }}
 
       - name: Verify all required jobs succeeded
+        env:
+          CI_LINT_STATUS: ${{ needs.lint.result }}
+          CI_MYPY_STATUS: ${{ needs.type-check.result }}
+          CI_TEST_STATUS: ${{ needs.test.result }}
+          CI_PKG_STATUS: ${{ needs.package.result }}
+          CI_DOCKER_STATUS: ${{ needs.docker.result }}
         run: |
-          if [ "${{ needs.lint.result }}" != "success" ] || \
-             [ "${{ needs.type-check.result }}" != "success" ] || \
-             [ "${{ needs.test.result }}" != "success" ] || \
-             [ "${{ needs.package.result }}" != "success" ] || \
-             [ "${{ needs.docker.result }}" != "success" ]; then
-            echo "::error::One or more upstream CI jobs failed."
+          for status in "${CI_LINT_STATUS}" "${CI_MYPY_STATUS}" "${CI_TEST_STATUS}" "${CI_PKG_STATUS}" "${CI_DOCKER_STATUS}"; do
+            if [ "$status" = "failure" ]; then
+              echo "::error::One or more upstream CI jobs failed."
+              exit 1
+            fi
+          done
+          if [ "${CI_LINT_STATUS}" != "success" ]; then
+            echo "::error::Lint job must pass successfully."
             exit 1
           fi
           echo "All CI jobs passed successfully!"

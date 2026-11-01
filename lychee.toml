@@ -1,0 +1,24 @@
+# Lychee Link Checker Configuration
+
+# Cache results for 1 day
+cache = true
+max_cache_age = "1d"
+
+# Connection settings
+timeout = 10
+max_retries = 3
+user_agent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) mailtmapi-lychee"
+
+# Acceptable HTTP status codes
+accept = [200, 204, 206, 403, 429]
+
+# Excluded URL patterns
+exclude = [
+    '^http://127\.0\.0\.1',
+    '^http://localhost',
+    '^http://test',
+    '^https://example\.invalid',
+    '^https://example\.com',
+    '^https://raw\.githubusercontent\.com',
+    '^https://stormsia\.github\.io/mailtmapi',
+]

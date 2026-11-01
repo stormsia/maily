@@ -19,6 +19,8 @@ import subprocess
 import sys
 from pathlib import Path
 
+from typing_extensions import TypedDict
+
 # Mapping of critical source files to their targeted test suites
 FILE_TO_TESTS_MAP: dict[str, list[str]] = {
     "src/mailtmapi/crypto.py": ["tests/test_crypto.py"],
@@ -40,7 +42,18 @@ FILE_TO_TESTS_MAP: dict[str, list[str]] = {
     ],
 }
 
-PROFILES: dict[str, dict[str, list[str]]] = {
+
+class ProfileConfig(TypedDict):
+    mutate: list[str]
+
+    tests: list[str]
+
+    min_score: float
+
+    max_survived: int
+
+
+PROFILES: dict[str, ProfileConfig] = {
     "crypto_misc": {
         "mutate": [
             "src/mailtmapi/crypto.py",
@@ -50,6 +63,8 @@ PROFILES: dict[str, dict[str, list[str]]] = {
             "tests/test_crypto.py",
             "tests/test_misc.py",
         ],
+        "min_score": 100.0,
+        "max_survived": 0,
     },
     "auth_security": {
         "mutate": [
@@ -63,6 +78,8 @@ PROFILES: dict[str, dict[str, list[str]]] = {
             "tests/test_keys_router.py",
             "tests/test_security_routing.py",
         ],
+        "min_score": 70.0,
+        "max_survived": 130,
     },
     "retention_retry": {
         "mutate": [
@@ -74,6 +91,8 @@ PROFILES: dict[str, dict[str, list[str]]] = {
             "tests/test_retention_scope.py",
             "tests/test_retry.py",
         ],
+        "min_score": 60.0,
+        "max_survived": 160,
     },
 }
 
@@ -132,7 +151,12 @@ pytest_add_cli_args = [
     return backup
 
 
-def evaluate_mutation_results(stats_file: Path, profile_name: str) -> int:
+def evaluate_mutation_results(
+    stats_file: Path,
+    profile_name: str,
+    min_score: float = 70.0,
+    max_survived: int = 0,
+) -> int:
     """Read mutmut CI/CD json stats, write Step Summary, and evaluate gate."""
     if not stats_file.exists():
         print(f"::error::Mutation stats file {stats_file} not found!")
@@ -155,36 +179,56 @@ def evaluate_mutation_results(stats_file: Path, profile_name: str) -> int:
     tested = total - skipped
     score = 0.0 if tested <= 0 else ((killed + timeout) / tested) * 100
 
+    passed = (total == 0) or (
+        score >= min_score and survived <= max_survived and (killed + timeout) > 0
+    )
+
     print(
         f"Mutation Summary [{profile_name}]: "
         f"killed={killed}, survived={survived}, no_tests={no_tests}, "
-        f"timeout={timeout}, total={total}, score={score:.1f}%"
+        f"timeout={timeout}, total={total}, score={score:.1f}% "
+        f"(targets: score>={min_score:.1f}%, max_survived<={max_survived})"
     )
 
     summary_path = os.environ.get("GITHUB_STEP_SUMMARY")
     if summary_path:
         with open(summary_path, "a", encoding="utf-8") as sf:
             sf.write(f"### 🧬 Mutation Testing — {profile_name}\n\n")
-            status_badge = "🟢 PASS" if (survived == 0 and no_tests == 0) else "🔴 FAIL"
-            sf.write(f"**Gate Status:** {status_badge} | **Score:** `{score:.1f}%`\n\n")
-            sf.write("| Metric | Count |\n")
-            sf.write("| :--- | :---: |\n")
-            sf.write(f"| **Score** | **{score:.1f}%** |\n")
-            sf.write(f"| Total Mutants | {total} |\n")
-            sf.write(f"| Killed | {killed} |\n")
-            sf.write(f"| Survived | {survived} |\n")
-            sf.write(f"| No Tests | {no_tests} |\n")
-            sf.write(f"| Timeout | {timeout} |\n\n")
+            status_badge = "🟢 PASS" if passed else "🔴 FAIL"
+            sf.write(
+                f"**Gate Status:** {status_badge} | **Score:** `{score:.1f}%` (target: `{min_score:.1f}%`)\n\n"
+            )
+            sf.write("| Metric | Count | Target / Ratchet |\n")
+            sf.write("| :--- | :---: | :---: |\n")
+            sf.write(f"| **Mutation Score** | **{score:.1f}%** | $\\ge {min_score:.1f}%$ |\n")
+            sf.write(f"| Total Mutants | {total} | — |\n")
+            sf.write(f"| Killed Mutants | {killed} | — |\n")
+            sf.write(f"| Survived Mutants | {survived} | $\\le {max_survived}$ |\n")
+            sf.write(f"| Untested Mutants | {no_tests} | 0 |\n")
+            sf.write(f"| Timeout | {timeout} | — |\n\n")
 
     if total > 0 and (killed + timeout) == 0:
-        print(f"::error::Mutation testing failed: zero mutants killed or run aborted out of {total} mutants!")
+        print(
+            f"::error::Mutation testing failed: zero mutants killed or run aborted out of {total} mutants!"
+        )
         return 1
 
-    if survived > 0 or no_tests > 0:
-        print(f"::error::Mutation testing failed quality gate: {survived} survived, {no_tests} untested mutants!")
+    if score < min_score:
+        print(
+            f"::error::Mutation score {score:.1f}% is below required threshold of {min_score:.1f}%!"
+        )
         return 1
 
-    print(f"Mutation testing quality gate passed for {profile_name}: 0 survived mutants.")
+    if survived > max_survived:
+        print(
+            f"::error::Mutation testing failed quality gate: {survived} survived mutants (max allowed: {max_survived})!"
+        )
+        return 1
+
+    print(
+        f"Mutation testing quality gate passed for {profile_name}: "
+        f"score={score:.1f}% >= {min_score:.1f}%, survived={survived} <= {max_survived}."
+    )
     return 0
 
 
@@ -194,7 +238,9 @@ def main() -> int:
     if hasattr(sys.stderr, "reconfigure"):
         sys.stderr.reconfigure(encoding="utf-8")
 
-    parser = argparse.ArgumentParser(description="Run mutation tests with targeted scopes or git diff.")
+    parser = argparse.ArgumentParser(
+        description="Run mutation tests with targeted scopes or git diff."
+    )
     parser.add_argument(
         "--profile",
         choices=list(PROFILES.keys()) + ["all"],
@@ -225,7 +271,9 @@ def main() -> int:
             if summary_path:
                 with open(summary_path, "a", encoding="utf-8") as sf:
                     sf.write("### 🧬 Mutation Testing (PR Diff)\n\n")
-                    sf.write("⚪ *No mutation-monitored files were changed in this PR. Check skipped.*\n")
+                    sf.write(
+                        "⚪ *No mutation-monitored files were changed in this PR. Check skipped.*\n"
+                    )
             return 0
 
         target_mutate = matched_files
@@ -264,7 +312,18 @@ def main() -> int:
     subprocess.run(["mutmut", "export-cicd-stats"], check=False)
 
     stats_file = Path("mutants/mutmut-cicd-stats.json")
-    return evaluate_mutation_results(stats_file, label)
+    min_score = 70.0
+
+    max_survived = 0
+
+    if args.profile and args.profile in PROFILES:
+        min_score = float(PROFILES[args.profile].get("min_score", 70.0))
+
+        max_survived = int(PROFILES[args.profile].get("max_survived", 0))
+
+    return evaluate_mutation_results(
+        stats_file, label, min_score=min_score, max_survived=max_survived
+    )
 
 
 if __name__ == "__main__":

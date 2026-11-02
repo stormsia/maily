@@ -34,7 +34,7 @@ A comprehensive guide and cookbook for [`maily-client`](https://pypi.org/project
 - **Zero Heavy Dependencies**: Powered exclusively by `httpx`, `pydantic`, and `loguru`.
 - **PEP 561 Compliant**: Includes `py.typed` marker for static type checking with Mypy and Pyright.
 - **Dual Execution Engines**: Async-first with high concurrency (`Maily`), plus a synchronous facade (`SyncMaily`).
-- **Single-File Option**: The entire client is packaged into a single file `client.py` that can be vendored or downloaded directly.
+- **Single-File Option**: The entire client is packaged into a single file `maily_client.py` that can be vendored or downloaded directly.
 
 ---
 
@@ -63,10 +63,10 @@ You can copy `client.py` directly into your repository:
 
 ```bash
 # Linux / macOS
-curl -sSL https://raw.githubusercontent.com/stormsia/maily/main/client/client.py -o client.py
+curl -sSL https://raw.githubusercontent.com/stormsia/maily/main/client/maily_client.py -o maily_client.py
 
 # Windows PowerShell
-Invoke-WebRequest -Uri "https://raw.githubusercontent.com/stormsia/maily/main/client/client.py" -OutFile "client.py"
+Invoke-WebRequest -Uri "https://raw.githubusercontent.com/stormsia/maily/main/client/maily_client.py" -OutFile "maily_client.py"
 ```
 
 Requires runtime dependencies: `pip install httpx pydantic loguru`.
@@ -81,7 +81,7 @@ Use `Maily` with `async with` context manager in FastAPI, Asyncio scripts, or `p
 
 ```python
 import asyncio
-from maily.client import Maily
+from maily_client import Maily
 
 
 async def run() -> None:
@@ -98,7 +98,7 @@ asyncio.run(run())
 For synchronous test suites (standard Pytest, unittest, Selenium, or quick procedural scripts), use `SyncMaily`. It wraps async coroutines seamlessly without requiring manual `asyncio.run()` boilerplate:
 
 ```python
-from maily.client import SyncMaily
+from maily_client import SyncMaily
 
 with SyncMaily("http://127.0.0.1:8477", api_key="your_secret_api_key") as client:
     box = client.create_temp_mailbox()
@@ -137,6 +137,168 @@ print(cfg["client_version"])  # ✅ CORRECT: standard dictionary indexing
 
 ---
 
+<!-- doc-sync:client-quickstart:start -->
+The repository includes a dedicated, self-contained standalone Python client package (`maily-client`) requiring only `httpx`, `pydantic`, and `loguru`. It supports both high-concurrency `async/await` (`Maily`) and a synchronous facade (`SyncMaily`).
+
+> 📖 **Full Documentation:** See [CLIENT_GUIDE.md](https://github.com/stormsia/maily/blob/main/docs/CLIENT_GUIDE.md) and [maily-client README](https://github.com/stormsia/maily/blob/main/client/README.md) for comprehensive recipes (Pytest fixtures, Playwright/Selenium automation, streaming, and retry policies).
+
+### Installation
+
+#### Preferred — PyPI package:
+
+```bash
+pip install maily-client
+```
+
+#### Alternative options:
+
+```bash
+# Directly from GitHub repository:
+pip install "maily-client @ git+https://github.com/stormsia/maily.git#subdirectory=client"
+
+# Or download the zero-dependency single-file client directly:
+curl -O https://raw.githubusercontent.com/stormsia/maily/main/client/maily_client.py
+```
+
+> ⚠️ **Important: Attribute Access vs Dictionary Key Access**
+>
+> In `maily-client`, native dot/attribute access is supported **ONLY on Pydantic models and specifically `ExtractedConfirmation`** (which implements `Mapping` and supports dual access: e.g. `res.subject`, `res.confirmation_code` as well as `res["confirmation_link"]`).
+>
+> All other client methods returning standard Python dictionaries (such as `await api.config.get()`) **DO NOT support attribute/dot access**. You MUST use standard dictionary key indexing (`dict["key"]`), never dot access (`dict.key`).
+
+### 1-Line Mailbox & Verification Code Extraction
+
+```python
+import asyncio
+
+# Preferred when using maily-client SDK:
+from maily_client import Maily, WaitTimeoutError
+# (Or if using the maily-server package directly: from maily import Maily, WaitTimeoutError)
+
+
+async def main():
+    async with Maily("http://127.0.0.1:8477", api_key="your_secret_api_key") as api:
+        # Create a disposable mailbox with automatic domain selection
+        box = await api.create_temp_mailbox()
+        print(f"Disposable email: {box.address}")
+
+        # Send an email to box.address, then wait for the code:
+        try:
+            code = await api.wait_for_code(box, timeout=60.0)
+            print(f"Received verification code: {code}")
+        except WaitTimeoutError:
+            print("Timed out waiting for email.")
+
+
+asyncio.run(main())
+```
+
+### Confirmation Extraction (`ExtractedConfirmation` Dual Access)
+
+```python
+async with Maily("http://127.0.0.1:8477") as api:
+    box = await api.create_temp_mailbox()
+
+    # Wait for email and extract both verification code and activation link
+    res = await api.wait_for_confirmation_email(box, digit_code_mask=r"\b(\d{6})\b")
+    if res is not None:
+        # 1. Attribute / dot access:
+        print(f"Subject: {res.subject}")
+        print(f"Code: {res.confirmation_code}")
+
+        # 2. Key mapping access:
+        print(f"Link: {res['confirmation_link']}")
+        print(f"Code: {res['confirmation_code']}")
+```
+
+### Synchronous Client (`SyncMaily`)
+
+```python
+# Standalone client:
+from maily_client import SyncMaily
+# Or via server package: from maily import SyncMaily
+
+with SyncMaily("http://127.0.0.1:8477", api_key="your_secret_api_key") as api:
+    box = api.create_temp_mailbox()
+    code = api.wait_for_code(box, timeout=45.0)
+    print(f"Received code synchronously: {code}")
+```
+
+### Confirmation Link Extraction
+
+```python
+async with Maily("http://127.0.0.1:8477") as api:
+    box = await api.create_temp_mailbox(provider="tempmail.plus")
+    print(f"Address: {box.address}")
+
+    # Automatically extracts URLs containing 'confirm', 'verify', or 'activate'
+    link = await api.wait_for_link(box, timeout=90.0)
+    print(f"Confirmation URL: {link}")
+```
+
+### Real-Time Email Streaming (Async Iterator)
+
+```python
+async with Maily("http://127.0.0.1:8477") as api:
+    box = await api.mailboxes.create(domain="mail.tm")
+
+    # Continuously yields new messages as they arrive
+    async for msg in api.messages.iter_messages(box, poll_interval=2.0, timeout=120.0):
+        print(f"Incoming: {msg.subject} from {msg.from_address}")
+        detail = await api.messages.get(box, msg.message_api_id)
+        print("Body text:\n", detail.text)
+```
+
+### Granular Exception Handling
+
+All API errors inherit from `ApiError`, which inherits from `ClientError`:
+
+```python
+from maily_client import (
+    AuthenticationError,  # 401: Invalid API key
+    ForbiddenError,  # 403: Scope denied
+    NotFoundError,  # 404: Mailbox or message missing
+    ValidationError,  # 422 / 400: Bad params
+    RateLimitError,  # 429: Rate limited
+    UpstreamProviderError,  # 502/504: Provider downtime
+    WaitTimeoutError,  # Timeout waiting for email/code
+)
+
+try:
+    detail = await api.messages.get(box, "unknown_id")
+except NotFoundError:
+    print("Message not found!")
+except AuthenticationError:
+    print("Check your API key!")
+```
+
+### Scoped API Key Management
+
+```python
+async with Maily("http://127.0.0.1:8477", api_key="root_secret") as api:
+    # Create key restricted to mail.tm only
+    new_key = await api.keys.create(
+        name="bot-worker",
+        scope={"providers": ["mail.tm"], "parent_ids": [], "actions": ["read", "write"]},
+    )
+    print(f"Key Prefix: {new_key.prefix} | Secret: {new_key.secret}")
+```
+
+### Retention & Database Maintenance
+
+```python
+async with Maily("http://127.0.0.1:8477", api_key="root_secret") as api:
+    # Run regular retention sweep (triggers DB maintenance if interval has elapsed)
+    res = await api.admin.retention_run()
+    print(f"Deleted: {res.mailboxes_deleted} boxes, {res.messages_deleted} messages")
+
+    # Or force immediate full database maintenance (VACUUM, REINDEX, ANALYZE):
+    res = await api.admin.retention_run(force_maintenance=True)
+```
+<!-- doc-sync:client-quickstart:end -->
+
+---
+
 ## Cookbook & Integration Recipes
 
 ### Recipe 1: Pytest Test Fixture (Automated E2E Signup)
@@ -146,7 +308,7 @@ Set up a reusable pytest fixture that generates a fresh disposable mailbox per t
 ```python
 # conftest.py
 import pytest
-from maily.client import Maily, MailboxDetail
+from maily_client import Maily, MailboxDetail
 
 
 @pytest.fixture
@@ -190,7 +352,7 @@ Automate a complete browser signup flow in Playwright:
 
 ```python
 import asyncio
-from maily.client import Maily
+from maily_client import Maily
 from playwright.async_api import async_playwright
 
 
@@ -236,7 +398,7 @@ asyncio.run(test_web_signup())
 Automate clicking an email verification link using Selenium WebDriver and the synchronous client `SyncMaily`:
 
 ```python
-from maily.client import SyncMaily
+from maily_client import SyncMaily
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 
@@ -297,7 +459,7 @@ async with Maily("http://127.0.0.1:8477") as api:
 Configure client-side retries with exponential backoff for unstable network conditions or rate-limited endpoints:
 
 ```python
-from maily.client import Maily
+from maily_client import Maily
 
 # Automatically retry up to 3 times on HTTP 502/504 or connection timeouts
 # Automatically respects HTTP 429 'Retry-After' header
@@ -464,7 +626,7 @@ ClientError
 FastAPI field errors are automatically formatted into readable messages:
 
 ```python
-from maily.client import Maily, ValidationError
+from maily_client import Maily, ValidationError
 
 async with Maily("http://127.0.0.1:8477") as api:
     try:

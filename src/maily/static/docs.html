@@ -427,6 +427,7 @@
 
     <div class="nav-tabs" role="tablist">
       <button class="nav-tab active" data-tab="swagger"><span>⚡</span> API Explorer</button>
+      <button class="nav-tab" data-tab="docker"><span>🐳</span> Docker & Setup</button>
       <button class="nav-tab" data-tab="python"><span>🐍</span> Python Async Client</button>
       <button class="nav-tab" data-tab="providers"><span>🌐</span> Providers</button>
       <button class="nav-tab" data-tab="curl"><span>💻</span> cURL & Auth</button>
@@ -442,8 +443,97 @@
       <div id="swagger-ui"></div>
     </div>
 
+    <!-- TAB: DOCKER & SETUP -->
+    <div class="tab-content" id="tab-docker">
+      <!-- doc-sync:tab-docker:start -->
+      <h2 class="section-title">Docker & Installation Guide</h2>
+      <p class="section-desc">
+        Run Maily via official pre-built Docker containers, Docker Compose, or develop locally from source.
+      </p>
+
+      <div class="code-box">
+        <div class="code-box-header">
+          <span>Option A — Docker (Pre-built Image, No Git Clone Required)</span>
+          <button class="copy-btn" onclick="copySnippet(this)">Copy</button>
+        </div>
+        <pre class="code-content">docker run -d \
+        --name maily \
+        -p 8477:8477 \
+        -e MAILY_API_KEY=your_secret_api_key \
+        -v maily_data:/data \
+        --restart unless-stopped \
+        ghcr.io/stormsia/maily:latest</pre>
+      </div>
+
+      <div class="code-box">
+        <div class="code-box-header">
+          <span>2. Using Docker Compose</span>
+          <button class="copy-btn" onclick="copySnippet(this)">Copy</button>
+        </div>
+        <pre class="code-content"># Linux / macOS (curl)
+      curl -O https://raw.githubusercontent.com/stormsia/maily/main/docker-compose.prod.yml
+      docker compose -f docker-compose.prod.yml up -d
+
+      # Windows (PowerShell)
+      Invoke-WebRequest -Uri https://raw.githubusercontent.com/stormsia/maily/main/docker-compose.prod.yml -OutFile docker-compose.prod.yml
+      docker compose -f docker-compose.prod.yml up -d</pre>
+      </div>
+
+      <div class="code-box">
+        <div class="code-box-header">
+          <span>Updating the Pre-built Image</span>
+          <button class="copy-btn" onclick="copySnippet(this)">Copy</button>
+        </div>
+        <pre class="code-content"># If using Docker Compose:
+      docker compose -f docker-compose.prod.yml pull
+      docker compose -f docker-compose.prod.yml up -d
+
+      # If using docker run:
+      docker pull ghcr.io/stormsia/maily:latest
+      docker stop maily &amp;&amp; docker rm maily
+      docker run -d --name maily -p 8477:8477 -e MAILY_API_KEY=your_secret_api_key -v maily_data:/data --restart unless-stopped ghcr.io/stormsia/maily:latest</pre>
+      </div>
+
+      <div class="code-box">
+        <div class="code-box-header">
+          <span>Option B — Build from Source / Development</span>
+          <button class="copy-btn" onclick="copySnippet(this)">Copy</button>
+        </div>
+        <pre class="code-content">git clone https://github.com/stormsia/maily.git &amp;&amp; cd maily
+      cp .env.example .env        # adjust if needed
+      docker compose up -d --build</pre>
+      </div>
+
+      <div class="code-box">
+        <div class="code-box-header">
+          <span>2. Local Python (Python 3.13+)</span>
+          <button class="copy-btn" onclick="copySnippet(this)">Copy</button>
+        </div>
+        <pre class="code-content">pip install maily-server
+      maily</pre>
+      </div>
+
+      <div class="code-box">
+        <div class="code-box-header">
+          <span>From Git Source (Development)</span>
+          <button class="copy-btn" onclick="copySnippet(this)">Copy</button>
+        </div>
+        <pre class="code-content">git clone https://github.com/stormsia/maily.git &amp;&amp; cd maily
+      python -m venv .venv
+      # Windows:
+      .venv\Scripts\activate
+      # Linux / macOS:
+      source .venv/bin/activate
+
+      pip install -e &quot;.[dev]&quot;
+      maily</pre>
+      </div>
+            <!-- doc-sync:tab-docker:end -->
+    </div>
+
     <!-- TAB 2: PYTHON ASYNC CLIENT -->
     <div class="tab-content" id="tab-python">
+      <!-- doc-sync:tab-python:start -->
       <h2 class="section-title">Standalone Python Async Client</h2>
       <p class="section-desc">
         <code>maily-client</code> is a zero-dependency (only httpx, loguru, pydantic) single-file client.
@@ -455,103 +545,170 @@
           <span>Installation</span>
           <button class="copy-btn" onclick="copySnippet(this)">Copy</button>
         </div>
-        <pre class="code-content"># Preferred — PyPI package:
-pip install maily-client
-
-# Alternative — directly from GitHub:
-pip install "maily-client @ git+https://github.com/stormsia/maily.git#subdirectory=client"
-# Alternative — single-file download (zero install):
-curl -O https://raw.githubusercontent.com/stormsia/maily/main/client/maily_client.py</pre>
+        <pre class="code-content">pip install maily-client</pre>
       </div>
 
       <div class="code-box">
         <div class="code-box-header">
-          <span>Quickstart · Receive verification code in 1 line</span>
+          <span>Alternative options:</span>
+          <button class="copy-btn" onclick="copySnippet(this)">Copy</button>
+        </div>
+        <pre class="code-content"># Directly from GitHub repository:
+      pip install &quot;maily-client @ git+https://github.com/stormsia/maily.git#subdirectory=client&quot;
+
+      # Or download the zero-dependency single-file client directly:
+      curl -O https://raw.githubusercontent.com/stormsia/maily/main/client/maily_client.py</pre>
+      </div>
+
+      <div class="code-box">
+        <div class="code-box-header">
+          <span>1-Line Mailbox &amp; Verification Code Extraction</span>
           <button class="copy-btn" onclick="copySnippet(this)">Copy</button>
         </div>
         <pre class="code-content">import asyncio
-from maily.client import Maily, WaitTimeoutError, AuthenticationError
 
-async def main():
-    async with Maily("http://127.0.0.1:8477", api_key="sk-...") as api:
-        # 1. Create temporary mailbox automatically picking the best domain
-        box = await api.create_temp_mailbox()
-        print(f"Created mailbox: {box.address}")
+      # Preferred when using maily-client SDK:
+      from maily_client import Maily, WaitTimeoutError
+      # (Or if using the maily-server package directly: from maily import Maily, WaitTimeoutError)
 
-        # 2. Wait for incoming verification email and extract 6-digit code
-        try:
-            code = await api.wait_for_code(box, timeout=60.0)
-            print(f"Verification code: {code}")
-        except WaitTimeoutError:
-            print("Timed out waiting for code.")
 
-asyncio.run(main())</pre>
+      async def main():
+          async with Maily(&quot;http://127.0.0.1:8477&quot;, api_key=&quot;your_secret_api_key&quot;) as api:
+              # Create a disposable mailbox with automatic domain selection
+              box = await api.create_temp_mailbox()
+              print(f&quot;Disposable email: {box.address}&quot;)
+
+              # Send an email to box.address, then wait for the code:
+              try:
+                  code = await api.wait_for_code(box, timeout=60.0)
+                  print(f&quot;Received verification code: {code}&quot;)
+              except WaitTimeoutError:
+                  print(&quot;Timed out waiting for email.&quot;)
+
+
+      asyncio.run(main())</pre>
       </div>
 
       <div class="code-box">
         <div class="code-box-header">
-          <span>Extract confirmation link</span>
+          <span>Confirmation Extraction (<code>ExtractedConfirmation</code> Dual Access)</span>
           <button class="copy-btn" onclick="copySnippet(this)">Copy</button>
         </div>
-        <pre class="code-content">async with Maily("http://127.0.0.1:8477", api_key="sk-...") as api:
-    box = await api.create_temp_mailbox(provider="tempmail.plus")
+        <pre class="code-content">async with Maily(&quot;http://127.0.0.1:8477&quot;) as api:
+          box = await api.create_temp_mailbox()
 
-    # Wait for email and extract confirmation URL containing 'verify' or 'activate'
-    link = await api.wait_for_link(
-        box,
-        url_contain=["verify", "confirm", "activate", "token"],
-        timeout=60.0,
-    )
-    print(f"Activation link: {link}")</pre>
+          # Wait for email and extract both verification code and activation link
+          res = await api.wait_for_confirmation_email(box, digit_code_mask=r&quot;\b(\d{6})\b&quot;)
+          if res is not None:
+              # 1. Attribute / dot access:
+              print(f&quot;Subject: {res.subject}&quot;)
+              print(f&quot;Code: {res.confirmation_code}&quot;)
+
+              # 2. Key mapping access:
+              print(f&quot;Link: {res[&#x27;confirmation_link&#x27;]}&quot;)
+              print(f&quot;Code: {res[&#x27;confirmation_code&#x27;]}&quot;)</pre>
       </div>
 
       <div class="code-box">
         <div class="code-box-header">
-          <span>Real-time email stream (Async Generator)</span>
+          <span>Synchronous Client (<code>SyncMaily</code>)</span>
           <button class="copy-btn" onclick="copySnippet(this)">Copy</button>
         </div>
-        <pre class="code-content">async with Maily("http://127.0.0.1:8477") as api:
-    box = await api.mailboxes.create(domain="mail.tm")
-    print(f"Listening for incoming messages on {box.address}...")
+        <pre class="code-content"># Standalone client:
+      from maily_client import SyncMaily
+      # Or via server package: from maily import SyncMaily
 
-    # Continuously yields incoming messages as they arrive
-    async for msg in api.messages.iter_messages(box, poll_interval=2.0, timeout=120.0):
-        print(f"New mail from {msg.from_address}: {msg.subject}")
-        detail = await api.messages.get(box, msg.message_api_id)
-        print("Body:", detail.text)</pre>
+      with SyncMaily(&quot;http://127.0.0.1:8477&quot;, api_key=&quot;your_secret_api_key&quot;) as api:
+          box = api.create_temp_mailbox()
+          code = api.wait_for_code(box, timeout=45.0)
+          print(f&quot;Received code synchronously: {code}&quot;)</pre>
       </div>
 
       <div class="code-box">
         <div class="code-box-header">
-          <span>Manage scoped API Keys</span>
+          <span>Confirmation Link Extraction</span>
           <button class="copy-btn" onclick="copySnippet(this)">Copy</button>
         </div>
-        <pre class="code-content">async with Maily("http://127.0.0.1:8477", api_key="root_secret") as api:
-    # Create key restricted to mail.tm only
-    key = await api.keys.create(
-        name="bot-worker",
-        scope={"providers": ["mail.tm"], "parent_ids": [], "actions": ["read", "write"]},
-    )
-    print(f"Issued Key: {key.prefix}... Secret: {key.secret}")</pre>
+        <pre class="code-content">async with Maily(&quot;http://127.0.0.1:8477&quot;) as api:
+          box = await api.create_temp_mailbox(provider=&quot;tempmail.plus&quot;)
+          print(f&quot;Address: {box.address}&quot;)
+
+          # Automatically extracts URLs containing &#x27;confirm&#x27;, &#x27;verify&#x27;, or &#x27;activate&#x27;
+          link = await api.wait_for_link(box, timeout=90.0)
+          print(f&quot;Confirmation URL: {link}&quot;)</pre>
       </div>
 
       <div class="code-box">
         <div class="code-box-header">
-          <span>Retention sweep & database maintenance</span>
+          <span>Real-Time Email Streaming (Async Iterator)</span>
           <button class="copy-btn" onclick="copySnippet(this)">Copy</button>
         </div>
-        <pre class="code-content">async with Maily("http://127.0.0.1:8477", api_key="root_secret") as api:
-    # Run regular retention sweep (performs VACUUM / maintenance if interval is due)
-    res = await api.admin.retention_run()
-    print(f"Deleted: {res.mailboxes_deleted} mailboxes, {res.messages_deleted} messages")
+        <pre class="code-content">async with Maily(&quot;http://127.0.0.1:8477&quot;) as api:
+          box = await api.mailboxes.create(domain=&quot;mail.tm&quot;)
 
-    # Or force thorough database maintenance (VACUUM, REINDEX, ANALYZE) immediately:
-    res = await api.admin.retention_run(force_maintenance=True)</pre>
+          # Continuously yields new messages as they arrive
+          async for msg in api.messages.iter_messages(box, poll_interval=2.0, timeout=120.0):
+              print(f&quot;Incoming: {msg.subject} from {msg.from_address}&quot;)
+              detail = await api.messages.get(box, msg.message_api_id)
+              print(&quot;Body text:\n&quot;, detail.text)</pre>
       </div>
+
+      <div class="code-box">
+        <div class="code-box-header">
+          <span>Granular Exception Handling</span>
+          <button class="copy-btn" onclick="copySnippet(this)">Copy</button>
+        </div>
+        <pre class="code-content">from maily_client import (
+          AuthenticationError,  # 401: Invalid API key
+          ForbiddenError,  # 403: Scope denied
+          NotFoundError,  # 404: Mailbox or message missing
+          ValidationError,  # 422 / 400: Bad params
+          RateLimitError,  # 429: Rate limited
+          UpstreamProviderError,  # 502/504: Provider downtime
+          WaitTimeoutError,  # Timeout waiting for email/code
+      )
+
+      try:
+          detail = await api.messages.get(box, &quot;unknown_id&quot;)
+      except NotFoundError:
+          print(&quot;Message not found!&quot;)
+      except AuthenticationError:
+          print(&quot;Check your API key!&quot;)</pre>
+      </div>
+
+      <div class="code-box">
+        <div class="code-box-header">
+          <span>Scoped API Key Management</span>
+          <button class="copy-btn" onclick="copySnippet(this)">Copy</button>
+        </div>
+        <pre class="code-content">async with Maily(&quot;http://127.0.0.1:8477&quot;, api_key=&quot;root_secret&quot;) as api:
+          # Create key restricted to mail.tm only
+          new_key = await api.keys.create(
+              name=&quot;bot-worker&quot;,
+              scope={&quot;providers&quot;: [&quot;mail.tm&quot;], &quot;parent_ids&quot;: [], &quot;actions&quot;: [&quot;read&quot;, &quot;write&quot;]},
+          )
+          print(f&quot;Key Prefix: {new_key.prefix} | Secret: {new_key.secret}&quot;)</pre>
+      </div>
+
+      <div class="code-box">
+        <div class="code-box-header">
+          <span>Retention &amp; Database Maintenance</span>
+          <button class="copy-btn" onclick="copySnippet(this)">Copy</button>
+        </div>
+        <pre class="code-content">async with Maily(&quot;http://127.0.0.1:8477&quot;, api_key=&quot;root_secret&quot;) as api:
+          # Run regular retention sweep (triggers DB maintenance if interval has elapsed)
+          res = await api.admin.retention_run()
+          print(f&quot;Deleted: {res.mailboxes_deleted} boxes, {res.messages_deleted} messages&quot;)
+
+          # Or force immediate full database maintenance (VACUUM, REINDEX, ANALYZE):
+          res = await api.admin.retention_run(force_maintenance=True)</pre>
+      </div>
+            <!-- doc-sync:tab-python:end -->
     </div>
 
     <!-- TAB 3: PROVIDERS -->
     <div class="tab-content" id="tab-providers">
+      <!-- doc-sync:tab-providers:start -->
       <h2 class="section-title">Active Provider Adapters</h2>
       <p class="section-desc">
         Maily seamlessly aggregates public temporary-mail networks and private Gmail parent accounts into one unified REST API.
@@ -561,88 +718,88 @@ asyncio.run(main())</pre>
         <table class="data-table">
           <thead>
             <tr>
-              <th>Provider Slug</th>
-              <th>Kind</th>
-              <th>Custom Username</th>
-              <th>Custom Domain</th>
-              <th>Password / PIN</th>
-              <th>Raw RFC822</th>
-              <th>Read Tracking</th>
+                <th>Provider</th>
+                <th>Target Kind</th>
+                <th>Custom Username</th>
+                <th>Custom Domain</th>
+                <th>Passwords / PIN</th>
+                <th>Raw Source</th>
+                <th>Read Tracking</th>
             </tr>
           </thead>
           <tbody>
-            <tr>
-              <td><strong>mail.tm</strong></td>
-              <td><span class="badge badge--domain">domain</span></td>
-              <td><span class="badge badge--yes">Supported</span></td>
-              <td><span class="badge badge--yes">Supported</span></td>
-              <td><span class="badge badge--yes">Supported</span></td>
-              <td><span class="badge badge--yes">Supported</span></td>
-              <td><span class="badge badge--yes">Supported</span></td>
-            </tr>
-            <tr>
-              <td><strong>tempmail.plus</strong></td>
-              <td><span class="badge badge--domain">domain</span></td>
-              <td><span class="badge badge--yes">Supported</span></td>
-              <td><span class="badge badge--yes">Supported</span></td>
-              <td><span class="badge badge--yes">PIN code</span></td>
-              <td><span class="badge badge--yes">Supported</span></td>
-              <td><span class="badge badge--yes">Supported</span></td>
-            </tr>
-            <tr>
-              <td><strong>temp-mail.io</strong></td>
-              <td><span class="badge badge--domain">domain</span></td>
-              <td><span class="badge badge--yes">Supported</span></td>
-              <td><span class="badge badge--yes">Supported</span></td>
-              <td><span class="badge badge--no">No</span></td>
-              <td><span class="badge badge--yes">Supported</span></td>
-              <td><span class="badge badge--no">No-op</span></td>
-            </tr>
-            <tr>
-              <td><strong>noopmail.org</strong></td>
-              <td><span class="badge badge--domain">domain</span></td>
-              <td><span class="badge badge--yes">Supported</span></td>
-              <td><span class="badge badge--yes">Supported</span></td>
-              <td><span class="badge badge--no">No</span></td>
-              <td><span class="badge badge--yes">Supported</span></td>
-              <td><span class="badge badge--no">No-op</span></td>
-            </tr>
-            <tr>
-              <td><strong>anonymmail.net</strong></td>
-              <td><span class="badge badge--domain">domain</span></td>
-              <td><span class="badge badge--yes">Supported</span></td>
-              <td><span class="badge badge--yes">Supported</span></td>
-              <td><span class="badge badge--no">No</span></td>
-              <td><span class="badge badge--yes">Supported</span></td>
-              <td><span class="badge badge--no">No-op</span></td>
-            </tr>
-            <tr>
-              <td><strong>dispoemail.org</strong></td>
-              <td><span class="badge badge--domain">domain</span></td>
-              <td><span class="badge badge--yes">Supported</span></td>
-              <td><span class="badge badge--yes">Supported</span></td>
-              <td><span class="badge badge--no">No</span></td>
-              <td><span class="badge badge--yes">Supported</span></td>
-              <td><span class="badge badge--no">No-op</span></td>
-            </tr>
-            <tr>
-              <td><strong>temp.tf</strong></td>
-              <td><span class="badge badge--domain">domain</span></td>
-              <td><span class="badge badge--yes">Supported</span></td>
-              <td><span class="badge badge--yes">Supported</span></td>
-              <td><span class="badge badge--no">No</span></td>
-              <td><span class="badge badge--yes">Supported</span></td>
-              <td><span class="badge badge--no">No-op</span></td>
-            </tr>
-            <tr>
-              <td><strong>gmail</strong></td>
-              <td><span class="badge badge--parent">parent</span></td>
-              <td><span class="badge badge--yes">+alias</span></td>
-              <td><span class="badge badge--no">Parent account</span></td>
-              <td><span class="badge badge--no">OAuth2</span></td>
-              <td><span class="badge badge--yes">Supported</span></td>
-              <td><span class="badge badge--yes">Supported</span></td>
-            </tr>
+              <tr>
+                <td><strong>mail.tm</strong></td>
+                <td><span class="badge badge--domain">domain</span></td>
+                <td><span class="badge badge--yes">Supported</span></td>
+                <td><span class="badge badge--yes">Supported</span></td>
+                <td><span class="badge badge--yes">Supported</span></td>
+                <td><span class="badge badge--yes">Supported</span></td>
+                <td><span class="badge badge--yes">Supported</span></td>
+              </tr>
+              <tr>
+                <td><strong>tempmail.plus</strong></td>
+                <td><span class="badge badge--domain">domain</span></td>
+                <td><span class="badge badge--yes">Supported</span></td>
+                <td><span class="badge badge--yes">Supported</span></td>
+                <td><span class="badge badge--yes">PIN Code</span></td>
+                <td><span class="badge badge--yes">Supported</span></td>
+                <td><span class="badge badge--yes">Supported</span></td>
+              </tr>
+              <tr>
+                <td><strong>temp-mail.io</strong></td>
+                <td><span class="badge badge--domain">domain</span></td>
+                <td><span class="badge badge--yes">Supported</span></td>
+                <td><span class="badge badge--yes">Supported</span></td>
+                <td><span class="badge badge--no">No</span></td>
+                <td><span class="badge badge--yes">Supported</span></td>
+                <td><span class="badge badge--no">No-op</span></td>
+              </tr>
+              <tr>
+                <td><strong>noopmail.org</strong></td>
+                <td><span class="badge badge--domain">domain</span></td>
+                <td><span class="badge badge--yes">Supported</span></td>
+                <td><span class="badge badge--yes">Supported</span></td>
+                <td><span class="badge badge--no">No</span></td>
+                <td><span class="badge badge--yes">Supported</span></td>
+                <td><span class="badge badge--no">No-op</span></td>
+              </tr>
+              <tr>
+                <td><strong>anonymmail.net</strong></td>
+                <td><span class="badge badge--domain">domain</span></td>
+                <td><span class="badge badge--yes">Supported</span></td>
+                <td><span class="badge badge--yes">Supported</span></td>
+                <td><span class="badge badge--no">No</span></td>
+                <td><span class="badge badge--yes">Supported</span></td>
+                <td><span class="badge badge--no">No-op</span></td>
+              </tr>
+              <tr>
+                <td><strong>dispoemail.org</strong></td>
+                <td><span class="badge badge--domain">domain</span></td>
+                <td><span class="badge badge--yes">Supported</span></td>
+                <td><span class="badge badge--yes">Supported</span></td>
+                <td><span class="badge badge--no">No</span></td>
+                <td><span class="badge badge--yes">Supported</span></td>
+                <td><span class="badge badge--no">No-op</span></td>
+              </tr>
+              <tr>
+                <td><strong>temp.tf</strong></td>
+                <td><span class="badge badge--domain">domain</span></td>
+                <td><span class="badge badge--yes">Supported</span></td>
+                <td><span class="badge badge--yes">Supported</span></td>
+                <td><span class="badge badge--no">No</span></td>
+                <td><span class="badge badge--yes">Supported</span></td>
+                <td><span class="badge badge--no">No-op</span></td>
+              </tr>
+              <tr>
+                <td><strong>gmail</strong></td>
+                <td><span class="badge badge--parent">parent</span></td>
+                <td><span class="badge badge--yes">+alias</span></td>
+                <td><span class="badge badge--no">Own Account</span></td>
+                <td><span class="badge badge--no">OAuth2</span></td>
+                <td><span class="badge badge--yes">Supported</span></td>
+                <td><span class="badge badge--yes">Supported</span></td>
+              </tr>
           </tbody>
         </table>
       </div>
@@ -654,10 +811,12 @@ asyncio.run(main())</pre>
           walkthrough and copy-pasteable boilerplate for adding any new email service with hermetic unit tests.
         </p>
       </div>
+            <!-- doc-sync:tab-providers:end -->
     </div>
 
     <!-- TAB 4: CURL & AUTH -->
     <div class="tab-content" id="tab-curl">
+      <!-- doc-sync:tab-curl:start -->
       <h2 class="section-title">cURL & Authentication Cheat Sheet</h2>
       <p class="section-desc">
         Authenticate all requests with the <code>X-API-Key</code> HTTP header.
@@ -668,9 +827,9 @@ asyncio.run(main())</pre>
           <span>List available targets (domains)</span>
           <button class="copy-btn" onclick="copySnippet(this)">Copy</button>
         </div>
-        <pre class="code-content"><span class="curl-cmd">curl -X GET "${window.location.origin}/v1/targets" \
-  -H "X-API-Key: ${getSavedKey() || 'YOUR_API_KEY'}" \
-  -H "Accept: application/json"</span></pre>
+        <pre class="code-content"><span class="curl-cmd">curl -X GET &quot;${window.location.origin}/v1/targets&quot; \
+        -H &quot;X-API-Key: ${getSavedKey() || &#x27;YOUR_API_KEY&#x27;}&quot; \
+        -H &quot;Accept: application/json&quot;</span></pre>
       </div>
 
       <div class="code-box">
@@ -678,10 +837,10 @@ asyncio.run(main())</pre>
           <span>Create disposable mailbox</span>
           <button class="copy-btn" onclick="copySnippet(this)">Copy</button>
         </div>
-        <pre class="code-content"><span class="curl-cmd">curl -X POST "${window.location.origin}/v1/mailboxes" \
-  -H "X-API-Key: ${getSavedKey() || 'YOUR_API_KEY'}" \
-  -H "Content-Type: application/json" \
-  -d '{"provider": "mail.tm", "domain": "mail.tm"}'</span></pre>
+        <pre class="code-content"><span class="curl-cmd">curl -X POST &quot;${window.location.origin}/v1/mailboxes&quot; \
+        -H &quot;X-API-Key: ${getSavedKey() || &#x27;YOUR_API_KEY&#x27;}&quot; \
+        -H &quot;Content-Type: application/json&quot; \
+        -d &#x27;{&quot;provider&quot;: &quot;mail.tm&quot;, &quot;domain&quot;: &quot;mail.tm&quot;}&#x27;</span></pre>
       </div>
 
       <div class="code-box">
@@ -689,31 +848,41 @@ asyncio.run(main())</pre>
           <span>Fetch messages for mailbox</span>
           <button class="copy-btn" onclick="copySnippet(this)">Copy</button>
         </div>
-        <pre class="code-content"><span class="curl-cmd">curl -X GET "${window.location.origin}/v1/mailboxes/1/messages" \
-  -H "X-API-Key: ${getSavedKey() || 'YOUR_API_KEY'}"</span></pre>
+        <pre class="code-content"><span class="curl-cmd">curl -X GET &quot;${window.location.origin}/v1/mailboxes/1/messages&quot; \
+        -H &quot;X-API-Key: ${getSavedKey() || &#x27;YOUR_API_KEY&#x27;}&quot;</span></pre>
       </div>
 
       <div class="code-box">
         <div class="code-box-header">
-          <span>Inspect single message (text & HTML)</span>
+          <span>Inspect single message (text &amp; HTML)</span>
           <button class="copy-btn" onclick="copySnippet(this)">Copy</button>
         </div>
-        <pre class="code-content"><span class="curl-cmd">curl -X GET "${window.location.origin}/v1/mailboxes/1/messages/MESSAGE_ID" \
-  -H "X-API-Key: ${getSavedKey() || 'YOUR_API_KEY'}"</span></pre>
+        <pre class="code-content"><span class="curl-cmd">curl -X GET &quot;${window.location.origin}/v1/mailboxes/1/messages/MESSAGE_ID&quot; \
+        -H &quot;X-API-Key: ${getSavedKey() || &#x27;YOUR_API_KEY&#x27;}&quot;</span></pre>
       </div>
 
       <div class="code-box">
         <div class="code-box-header">
-          <span>Run retention sweep & database maintenance</span>
+          <span>Create scoped API key</span>
           <button class="copy-btn" onclick="copySnippet(this)">Copy</button>
         </div>
-        <pre class="code-content"><span class="curl-cmd">curl -X POST "${window.location.origin}/v1/admin/retention/run?force_maintenance=true" \
-  -H "X-API-Key: ${getSavedKey() || 'YOUR_API_KEY'}"</span></pre>
+        <pre class="code-content"><span class="curl-cmd">curl -X POST &quot;${window.location.origin}/v1/keys&quot; \
+        -H &quot;X-API-Key: ${getSavedKey() || &#x27;YOUR_API_KEY&#x27;}&quot; \
+        -H &quot;Content-Type: application/json&quot; \
+        -d &#x27;{&quot;name&quot;: &quot;worker&quot;, &quot;scope&quot;: {&quot;providers&quot;: [&quot;mail.tm&quot;], &quot;actions&quot;: [&quot;read&quot;, &quot;write&quot;]}}&#x27;</span></pre>
       </div>
+
+      <div class="code-box">
+        <div class="code-box-header">
+          <span>Run retention sweep &amp; database maintenance</span>
+          <button class="copy-btn" onclick="copySnippet(this)">Copy</button>
+        </div>
+        <pre class="code-content"><span class="curl-cmd">curl -X POST &quot;${window.location.origin}/v1/admin/retention/run?force_maintenance=true&quot; \
+        -H &quot;X-API-Key: ${getSavedKey() || &#x27;YOUR_API_KEY&#x27;}&quot;</span></pre>
+      </div>
+            <!-- doc-sync:tab-curl:end -->
     </div>
-  </div>
-
-  <script src="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/swagger-ui-bundle.js"></script>
+  </div><script src="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/swagger-ui-bundle.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/swagger-ui-standalone-preset.js"></script>
   <script>
     function getSavedKey() {

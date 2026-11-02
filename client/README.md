@@ -110,159 +110,137 @@ print(cfg["client_version"])  # ✅ CORRECT: standard dictionary indexing
 
 ## 🚀 Quickstart
 
-### 1. Basic Mailbox Creation & Health Check
+<!-- doc-sync:client-recipes:start -->
+### 1-Line Mailbox & Verification Code Extraction
 
 ```python
 import asyncio
-from maily_client import Maily
 
-
-async def main() -> None:
-    # Connect to your self-hosted maily server
-    async with Maily("http://127.0.0.1:8477", api_key="your_secret_api_key") as api:
-        # Check server health
-        health = await api.health.ping()
-        print(f"Server health: {health.status}")
-
-        # Create a temporary disposable mailbox (auto-selects available domain)
-        box = await api.create_temp_mailbox()
-        print(f"Created mailbox: {box.address} (ID: {box.id})")
-
-
-asyncio.run(main())
-```
-
-### 2. Waiting for OTP / Verification Code (`wait_for_code`)
-
-Ideal for automated signup flows (e.g., Pytest, Playwright, Selenium):
-
-```python
-import asyncio
+# Preferred when using maily-client SDK:
 from maily_client import Maily, WaitTimeoutError
+# (Or if using the maily-server package directly: from maily import Maily, WaitTimeoutError)
 
 
-async def main() -> None:
-    async with Maily("http://127.0.0.1:8477") as api:
+async def main():
+    async with Maily("http://127.0.0.1:8477", api_key="your_secret_api_key") as api:
+        # Create a disposable mailbox with automatic domain selection
         box = await api.create_temp_mailbox()
-        print(f"Use {box.address} in your registration form...")
+        print(f"Disposable email: {box.address}")
 
-        # Wait up to 60 seconds for an incoming email with an OTP
-        # Default pattern matches 4 to 8 digits (\b\d{4,8}\b)
+        # Send an email to box.address, then wait for the code:
         try:
-            otp_code = await api.wait_for_code(
-                box,
-                pattern=r"\b(\d{6})\b",  # Optional custom regex
-                sender_domain="auth.example.com",  # Optional sender domain filter
-                timeout=60.0,
-                check_interval=2.0,
-            )
-            print(f"Extracted verification code: {otp_code}")
+            code = await api.wait_for_code(box, timeout=60.0)
+            print(f"Received verification code: {code}")
         except WaitTimeoutError:
-            print("Timed out waiting for verification code.")
+            print("Timed out waiting for email.")
 
 
 asyncio.run(main())
 ```
 
-### 3. Waiting for Activation Link (`wait_for_link`)
-
-Extract confirmation or magic links automatically from incoming HTML or plain-text emails:
+### Confirmation Extraction (`ExtractedConfirmation` Dual Access)
 
 ```python
-import asyncio
-from maily_client import Maily
+async with Maily("http://127.0.0.1:8477") as api:
+    box = await api.create_temp_mailbox()
 
+    # Wait for email and extract both verification code and activation link
+    res = await api.wait_for_confirmation_email(box, digit_code_mask=r"\b(\d{6})\b")
+    if res is not None:
+        # 1. Attribute / dot access:
+        print(f"Subject: {res.subject}")
+        print(f"Code: {res.confirmation_code}")
 
-async def main() -> None:
-    async with Maily("http://127.0.0.1:8477") as api:
-        box = await api.create_temp_mailbox()
-        print(f"Waiting for activation email to: {box.address}...")
-
-        # Find link containing specific keywords
-        activation_url = await api.wait_for_link(
-            box,
-            url_contain=["verify", "activate", "confirm"],
-            sender_domain="example.com",
-            timeout=60.0,
-        )
-        print(f"Activation link: {activation_url}")
-
-
-asyncio.run(main())
+        # 2. Key mapping access:
+        print(f"Link: {res['confirmation_link']}")
+        print(f"Code: {res['confirmation_code']}")
 ```
 
-### 4. Advanced Confirmation Extraction (`wait_for_confirmation_email`)
-
-Extract both link and code simultaneously in a single polling loop with dual-access support:
+### Synchronous Client (`SyncMaily`)
 
 ```python
-import asyncio
-from maily_client import ExtractedConfirmation, Maily
-
-
-async def main() -> None:
-    async with Maily("http://127.0.0.1:8477") as api:
-        box = await api.create_temp_mailbox()
-
-        res: ExtractedConfirmation | None = await api.wait_for_confirmation_email(
-            box,
-            sender_domain="service.com",
-            url_contain=["token", "confirm"],
-            digit_code_mask=r"\b(\d{6})\b",
-            timeout=60.0,
-            check_interval=3.0,
-        )
-        if res is not None:
-            # Dual-access: attribute access
-            print(f"Subject: {res.subject}")
-            print(f"From: {res.from_address}")
-            print(f"Message ID: {res.message_id}")
-            print(f"Code: {res.confirmation_code}")
-            print(f"Link: {res.confirmation_link}")
-
-            # Dual-access: dictionary mapping access
-            code = res["confirmation_code"]
-            link = res["confirmation_link"]
-            print(f"Code from dict access: {code}, Link: {link}")
-
-
-asyncio.run(main())
-```
-
-### 5. Synchronous Facade (`SyncMaily`)
-
-For synchronous test suites (standard Pytest, unittest, Selenium) or scripts where `async/await` is inconvenient:
-
-```python
+# Standalone client:
 from maily_client import SyncMaily
+# Or via server package: from maily import SyncMaily
 
-# Sync context manager automatically manages an isolated background thread and event loop
 with SyncMaily("http://127.0.0.1:8477", api_key="your_secret_api_key") as api:
-    # 1. Create a mailbox synchronously
     box = api.create_temp_mailbox()
-    print(f"Created mailbox: {box.address}")
-
-    # 2. Wait for code synchronously (blocks until email arrives or timeout raises WaitTimeoutError)
     code = api.wait_for_code(box, timeout=45.0)
-    print(f"Verification code: {code}")
-
-    # 3. Wait for confirmation email synchronously
-    res = api.wait_for_confirmation_email(
-        box,
-        url_contain=["verify"],
-        digit_code_mask=r"\b(\d{6})\b",
-        timeout=30.0,
-    )
-    if res:
-        print(f"Link: {res.confirmation_link}, Code: {res['confirmation_code']}")
-
-    # 4. Access sync sections directly
-    messages = api.messages.list(box)
-    print(f"Total messages: {len(messages)}")
-
-    # 5. Clean up mailbox
-    api.delete_mailbox(box)
+    print(f"Received code synchronously: {code}")
 ```
+
+### Confirmation Link Extraction
+
+```python
+async with Maily("http://127.0.0.1:8477") as api:
+    box = await api.create_temp_mailbox(provider="tempmail.plus")
+    print(f"Address: {box.address}")
+
+    # Automatically extracts URLs containing 'confirm', 'verify', or 'activate'
+    link = await api.wait_for_link(box, timeout=90.0)
+    print(f"Confirmation URL: {link}")
+```
+
+### Real-Time Email Streaming (Async Iterator)
+
+```python
+async with Maily("http://127.0.0.1:8477") as api:
+    box = await api.mailboxes.create(domain="mail.tm")
+
+    # Continuously yields new messages as they arrive
+    async for msg in api.messages.iter_messages(box, poll_interval=2.0, timeout=120.0):
+        print(f"Incoming: {msg.subject} from {msg.from_address}")
+        detail = await api.messages.get(box, msg.message_api_id)
+        print("Body text:\n", detail.text)
+```
+
+### Granular Exception Handling
+
+All API errors inherit from `ApiError`, which inherits from `ClientError`:
+
+```python
+from maily_client import (
+    AuthenticationError,  # 401: Invalid API key
+    ForbiddenError,  # 403: Scope denied
+    NotFoundError,  # 404: Mailbox or message missing
+    ValidationError,  # 422 / 400: Bad params
+    RateLimitError,  # 429: Rate limited
+    UpstreamProviderError,  # 502/504: Provider downtime
+    WaitTimeoutError,  # Timeout waiting for email/code
+)
+
+try:
+    detail = await api.messages.get(box, "unknown_id")
+except NotFoundError:
+    print("Message not found!")
+except AuthenticationError:
+    print("Check your API key!")
+```
+
+### Scoped API Key Management
+
+```python
+async with Maily("http://127.0.0.1:8477", api_key="root_secret") as api:
+    # Create key restricted to mail.tm only
+    new_key = await api.keys.create(
+        name="bot-worker",
+        scope={"providers": ["mail.tm"], "parent_ids": [], "actions": ["read", "write"]},
+    )
+    print(f"Key Prefix: {new_key.prefix} | Secret: {new_key.secret}")
+```
+
+### Retention & Database Maintenance
+
+```python
+async with Maily("http://127.0.0.1:8477", api_key="root_secret") as api:
+    # Run regular retention sweep (triggers DB maintenance if interval has elapsed)
+    res = await api.admin.retention_run()
+    print(f"Deleted: {res.mailboxes_deleted} boxes, {res.messages_deleted} messages")
+
+    # Or force immediate full database maintenance (VACUUM, REINDEX, ANALYZE):
+    res = await api.admin.retention_run(force_maintenance=True)
+```
+<!-- doc-sync:client-recipes:end -->
 
 ---
 

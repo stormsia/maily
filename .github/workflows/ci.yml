@@ -104,6 +104,9 @@ jobs:
       - name: Verify generated standalone client mirror
         run: uv run python scripts/build_client.py --check
 
+      - name: Verify documentation sync from docs/
+        run: uv run python scripts/build_docs.py --check
+
       - name: Validate OpenAPI Schema Generation
         run: uv run python -c "from maily.app.main import create_app; schema = create_app().openapi(); assert len(schema.get('paths', {})) > 0, 'OpenAPI paths empty'"
 

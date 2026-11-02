@@ -54,9 +54,10 @@ Create disposable mailboxes on demand, receive emails in real time, extract veri
 
 ## 🌐 Supported Providers & Capabilities
 
+<!-- doc-sync:providers:start -->
 | Provider | Target Kind | Custom Username | Custom Domain | Passwords / PIN | Raw Source | Read Tracking |
 |---|---|---|---|---|---|---|
-| **mail.tm** | `domain` | ✅ Supported | ✅ Supported | ✅ Password | ✅ Supported | ✅ Supported |
+| **mail.tm** | `domain` | ✅ Supported | ✅ Supported | ✅ Supported | ✅ Supported | ✅ Supported |
 | **tempmail.plus** | `domain` | ✅ Supported | ✅ Supported | ✅ PIN Code | ✅ Supported | ✅ Supported |
 | **temp-mail.io** | `domain` | ✅ Supported | ✅ Supported | ❌ No | ✅ Supported | ⚪ No-op |
 | **noopmail.org** | `domain` | ✅ Supported | ✅ Supported | ❌ No | ✅ Supported | ⚪ No-op |
@@ -66,6 +67,7 @@ Create disposable mailboxes on demand, receive emails in real time, extract veri
 | **gmail** | `parent` | ✅ `+alias` | ❌ Own Account | ❌ OAuth2 | ✅ Supported | ✅ Supported |
 
 > 💡 **Extending Providers:** Want to add your own provider? Check out the comprehensive guide for developers and AI agents in [docs/ADDING_PROVIDERS.md](https://github.com/stormsia/maily/blob/main/docs/ADDING_PROVIDERS.md).
+<!-- doc-sync:providers:end -->
 
 <!-- provider-status:start -->
 ### 🌐 Live Provider Operational Status
@@ -88,6 +90,9 @@ Create disposable mailboxes on demand, receive emails in real time, extract veri
 ---
 
 ## 🚀 Quick Start
+
+<!-- doc-sync:docker:start -->
+Run Maily via official pre-built Docker containers, Docker Compose, or develop locally from source.
 
 ### Option A — Docker (Pre-built Image, No Git Clone Required)
 
@@ -180,11 +185,13 @@ Development server with auto-reload:
 ```bash
 uvicorn maily.app.main:create_app --factory --reload --port 8477
 ```
+<!-- doc-sync:docker:end -->
 
 ---
 
 ## 🐍 Standalone Python Client SDK (`maily-client`)
 
+<!-- doc-sync:client:start -->
 The repository includes a dedicated, self-contained standalone Python client package (`maily-client`) requiring only `httpx`, `pydantic`, and `loguru`. It supports both high-concurrency `async/await` (`Maily`) and a synchronous facade (`SyncMaily`).
 
 > 📖 **Full Documentation:** See [CLIENT_GUIDE.md](https://github.com/stormsia/maily/blob/main/docs/CLIENT_GUIDE.md) and [maily-client README](https://github.com/stormsia/maily/blob/main/client/README.md) for comprehensive recipes (Pytest fixtures, Playwright/Selenium automation, streaming, and retry policies).
@@ -301,7 +308,7 @@ async with Maily("http://127.0.0.1:8477") as api:
 All API errors inherit from `ApiError`, which inherits from `ClientError`:
 
 ```python
-from maily.client import (
+from maily_client import (
     AuthenticationError,  # 401: Invalid API key
     ForbiddenError,  # 403: Scope denied
     NotFoundError,  # 404: Mailbox or message missing
@@ -342,6 +349,7 @@ async with Maily("http://127.0.0.1:8477", api_key="root_secret") as api:
     # Or force immediate full database maintenance (VACUUM, REINDEX, ANALYZE):
     res = await api.admin.retention_run(force_maintenance=True)
 ```
+<!-- doc-sync:client:end -->
 
 ---
 

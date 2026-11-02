@@ -1179,7 +1179,7 @@ wheels = [
 ]
 
 [[package]]
-name = "maily"
+name = "maily-server"
 version = "0.3.0"
 source = { editable = "." }
 dependencies = [

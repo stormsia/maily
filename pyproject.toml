@@ -3,7 +3,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "maily"
+name = "maily-server"
 version = "0.3.0"
 description = "Local multi-provider mail API"
 readme = "README.md"

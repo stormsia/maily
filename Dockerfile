@@ -44,31 +44,31 @@ ENV PYTHONUNBUFFERED=1 \
     PYTHONPATH=/app/src \
     MAILY_HOST=0.0.0.0 \
     MAILY_PORT=8477 \
-    MAILY_DATABASE_URL="sqlite+aiosqlite:////data/mailtm.db" \
-    MAILY_SECRET_KEY_PATH="/data/mailtm.key"
+    MAILY_DATABASE_URL="sqlite+aiosqlite:////data/maily.db" \
+    MAILY_SECRET_KEY_PATH="/data/maily.key"
 
-# 1. Create unprivileged mailtm user and /data working directory
-RUN groupadd -g 1000 mailtm && \
-    useradd -u 1000 -g mailtm -d /app -s /sbin/nologin mailtm && \
+# 1. Create unprivileged maily user and /data working directory
+RUN groupadd -g 1000 maily && \
+    useradd -u 1000 -g maily -d /app -s /sbin/nologin maily && \
     mkdir -p /data /app && \
-    chown -R mailtm:mailtm /data /app
+    chown -R maily:maily /data /app
 
 # 2. Copy compiled venv, code, and Alembic configuration
-COPY --from=builder --chown=mailtm:mailtm /venv /venv
-COPY --from=builder --chown=mailtm:mailtm /app/src /app/src
-COPY --from=builder --chown=mailtm:mailtm /app/alembic /app/alembic
-COPY --from=builder --chown=mailtm:mailtm /app/alembic.ini /app/alembic.ini
+COPY --from=builder --chown=maily:maily /venv /venv
+COPY --from=builder --chown=maily:maily /app/src /app/src
+COPY --from=builder --chown=maily:maily /app/alembic /app/alembic
+COPY --from=builder --chown=maily:maily /app/alembic.ini /app/alembic.ini
 
-# 3. Entrypoint to auto-fix permissions on mounted /data volume (SQLite WAL) and drop privileges to mailtm
+# 3. Entrypoint to auto-fix permissions on mounted /data volume (SQLite WAL) and drop privileges to maily
 RUN printf '#!/bin/sh\n\
 set -e\n\
 if [ "$(id -u)" = "0" ]; then\n\
     if [ -d "/data" ]; then\n\
-        chown -R mailtm:mailtm /data 2>/dev/null || true\n\
+        chown -R maily:maily /data 2>/dev/null || true\n\
         chmod -R 775 /data 2>/dev/null || true\n\
         chmod -R 666 /data/*.db* /data/*.key* 2>/dev/null || true\n\
     fi\n\
-    exec runuser -u mailtm -g mailtm -- "$@"\n\
+    exec runuser -u maily -g maily -- "$@"\n\
 else\n\
     exec "$@"\n\
 fi\n' > /entrypoint.sh && chmod +x /entrypoint.sh

@@ -30,7 +30,7 @@ services:
       - "${MAILY_PORT:-8477}:8477"
 
     volumes:
-      # Persistent storage for SQLite DB (mailtm.db) and encryption key (mailtm.key)
+      # Persistent storage for SQLite DB (maily.db) and encryption key (maily.key)
       - maily_data:/data
       # For local development with live code reloading:
       # - ./src:/app/src:ro
@@ -51,12 +51,12 @@ services:
       # --- Security and authentication ---
       # When MAILY_HOST=0.0.0.0, the service strictly requires a non-empty API key.
       # A safe default key is provided for quick start; override it in .env!
-      - MAILY_API_KEY=${MAILY_API_KEY:-mailtm_secret_api_key_2026}
+      - MAILY_API_KEY=${MAILY_API_KEY:-maily_secret_api_key_2026}
       - MAILY_SECRET_KEY=${MAILY_SECRET_KEY:-}
-      - MAILY_SECRET_KEY_PATH=${MAILY_SECRET_KEY_PATH:-/data/mailtm.key}
+      - MAILY_SECRET_KEY_PATH=${MAILY_SECRET_KEY_PATH:-/data/maily.key}
 
       # --- Database ---
-      - MAILY_DATABASE_URL=${MAILY_DATABASE_URL:-sqlite+aiosqlite:////data/mailtm.db}
+      - MAILY_DATABASE_URL=${MAILY_DATABASE_URL:-sqlite+aiosqlite:////data/maily.db}
 
       # --- Proxying and retention ---
       - MAILY_PROXY=${MAILY_PROXY:-}
@@ -98,11 +98,11 @@ services:
       retries: 3
 
     networks:
-      - mailtm_network
+      - maily_network
 
 networks:
-  mailtm_network:
-    name: mailtm_network
+  maily_network:
+    name: maily_network
     driver: bridge
 
 volumes:

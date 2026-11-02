@@ -1,4 +1,22 @@
-# maily-client
+<p align="center">
+  <img src="https://raw.githubusercontent.com/stormsia/maily/main/docs/assets/hero_banner.webp" alt="maily-client - The Python SDK for Disposable Email" width="100%" />
+</p>
+
+<div align="center">
+
+# ✉️ maily-client
+
+### The Unified Disposable Email SDK for Python (Async & Sync)
+
+**Control the zoo of temporary email providers (Mail.tm, TempMail, 1secmail alternatives) with 1-line automatic OTP code extraction for Playwright & Pytest.**
+
+<br>
+
+> ⚡ **Unite the disposable email zoo in Python:** Stop juggling multiple brittle temp-mail client libraries. `maily-client` gives you 1-line temporary mailbox creation, 40+ rotating domains across 8 provider fleets, and automatic OTP code extraction (`await api.wait_for_code(box)`).
+>
+> 🇷🇺 **Асинхронный Python SDK для временной почты:** единый клиент для десятка temp-mail сервисов с автоматическим извлечением 6-значных OTP кодов и ссылок активации в тестах Playwright и Pytest.
+
+<br>
 
 [![PyPI version](https://img.shields.io/pypi/v/maily-client.svg)](https://pypi.org/project/maily-client/)
 [![PyPI Downloads](https://img.shields.io/pypi/dm/maily-client.svg)](https://pypi.org/project/maily-client/)
@@ -9,20 +27,19 @@
 [![maily-server](https://img.shields.io/pypi/v/maily-server.svg?label=maily-server)](https://pypi.org/project/maily-server/)
 [![API Docs](https://img.shields.io/badge/Docs-GitHub%20Pages-success?logo=github)](https://stormsia.github.io/maily/)
 
-**Fast, fully-typed async & sync Python SDK for the [maily](https://github.com/stormsia/maily) multi-provider temporary email platform.**
+[📖 Documentation & Guides](https://stormsia.github.io/maily/) •
+[🚀 Server Package (PyPI)](https://pypi.org/project/maily-server/) •
+[📦 Client Package (PyPI)](https://pypi.org/project/maily-client/) •
+[🐙 GitHub Repository](https://github.com/stormsia/maily) •
+[⚡ Quickstart](#-quickstart)
 
-Built for integration tests (Pytest, Playwright, Selenium, Cypress), automation bots, and QA verification pipelines. Features 1-line disposable mailbox creation, automatic OTP verification code extraction via regex, magic activation link parsing, real-time message streaming, and resilient networking.
+</div>
 
 ---
 
-### 🔗 Quick Links
+**Fast, fully-typed async & sync Python SDK for the [maily](https://github.com/stormsia/maily) multi-provider temporary email platform.**
 
-- 📖 **Documentation & Guides:** [https://stormsia.github.io/maily/](https://stormsia.github.io/maily/)
-- 🚀 **Server Package (PyPI):** [https://pypi.org/project/maily-server/](https://pypi.org/project/maily-server/)
-- 📦 **Client Package (PyPI):** [https://pypi.org/project/maily-client/](https://pypi.org/project/maily-client/)
-- 🐙 **GitHub Repository:** [https://github.com/stormsia/maily](https://github.com/stormsia/maily)
-- 🐛 **Issue Tracker:** [https://github.com/stormsia/maily/issues](https://github.com/stormsia/maily/issues)
-- 📝 **Changelog:** [https://github.com/stormsia/maily/blob/main/CHANGELOG.md](https://github.com/stormsia/maily/blob/main/CHANGELOG.md)
+Built for integration tests (Pytest, Playwright, Selenium, Cypress), automation bots, and QA verification pipelines. Features 1-line disposable mailbox creation, automatic OTP verification code extraction via regex, magic activation link parsing, real-time message streaming, and resilient networking.
 
 ---
 
@@ -242,6 +259,16 @@ async with Maily("http://127.0.0.1:8477", api_key="root_secret") as api:
 ```
 <!-- doc-sync:client-recipes:end -->
 
+<br>
+
+<p align="center">
+  <a href="https://raw.githubusercontent.com/stormsia/maily/main/docs/screenshots/03_mailbox_detail_email.webp">
+    <img src="https://raw.githubusercontent.com/stormsia/maily/main/docs/screenshots/03_mailbox_detail_email.webp" alt="Maily Verification Inspector - Visualizing OTP & Link Extraction" width="100%" />
+  </a>
+  <br>
+  <sub><b>Visualizing OTP Extraction:</b> How <code>await api.wait_for_code(box)</code> and <code>await api.wait_for_link(box)</code> isolate verification codes in the background, as viewed inside the Maily web dashboard. (See the <a href="https://github.com/stormsia/maily#%EF%B8%8F-sleek-web-dashboard-tour">Full Dashboard Carousel & Console Tour</a>).</sub>
+</p>
+
 ---
 
 ## 🛠️ API Overview & Structure
@@ -384,6 +411,20 @@ except RateLimitError as exc:
     # If retries are exhausted or max_retries is 0
     print(f"Rate limited (HTTP 429). Server message: {exc.detail}")
 ```
+
+---
+
+## 🔍 Search Discovery & Keywords Reference
+
+`maily-client` is engineered for automated testing, CI/CD pipelines, and web scrapers requiring disposable email inboxes:
+
+| Search Category | Solution in `maily-client` | Top Ranked Query Terms |
+|---|---|---|
+| **Python Temp Mail Client** | Async/sync SDK with typed Pydantic models & zero heavy dependencies | `temp mail python`, `temporary email python client`, `disposable email sdk`, `mailtm python`, `maily-client`, `python temp mail library` |
+| **Instant OTP Extraction** | Automatic 4–8 digit verification code detection & regex isolation | `extract otp code from email python`, `auto receive verification code`, `wait_for_code`, `email verification code python` |
+| **Playwright / Pytest Verification** | Non-blocking async polling & clean context managers for browser tests | `playwright temp mail`, `pytest disposable email fixture`, `selenium email verification`, `e2e email testing python` |
+| **Multi-Provider Unification** | Unified models across Mail.tm, TempMail, DispoEmail, NoopMail | `1secmail python alternative`, `tempmail plus python`, `disposable email api python`, `fake email python sdk` |
+| **Поиск на русском языке (CIS SEO)** | Асинхронный клиент временной почты для тестов и ботов | `временная почта python`, `одноразовая почта python`, `прием кодов подтверждения python`, `получить код из письма playwright` |
 
 ---
 

@@ -60,6 +60,8 @@ maily.key
 # Temporary / scratch / IDE / agent caches
 *.tmp
 *.png
+!docs/screenshots/*
+!docs/assets/*
 output.json
 WORKFLOWS_AUDIT.md
 benchmarks/*.html

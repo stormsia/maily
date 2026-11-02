@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "maily-server"
 version = "0.6.0"
-description = "Self-hosted multi-provider temporary email API server with web dashboard, SQLite storage & async client"
+description = "The Universal Temporary Email Gateway: aggregate 8+ disposable mail providers under one REST API & dark-mode dashboard with instant OTP verification code extraction"
 readme = "README.md"
 license = "MIT"
 license-files = ["LICENSE"]
@@ -21,18 +21,32 @@ keywords = [
     "temporary-email",
     "disposable-email",
     "temp-mail",
+    "temp-mail-api",
+    "disposable-email-api",
+    "temporary-mailbox",
     "mailtm",
+    "tempmail",
+    "1secmail",
+    "fake-email",
+    "burner-email",
     "mail-server",
     "fastapi",
     "automation",
     "testing",
     "qa",
     "e2e-testing",
+    "email-testing",
+    "email-verification",
+    "playwright",
+    "playwright-email",
+    "pytest",
+    "pytest-email",
     "otp",
     "verification-code",
     "disposable-mailbox",
     "rest-api",
     "sqlite",
+    "multi-provider",
 ]
 classifiers = [
     "Development Status :: 4 - Beta",

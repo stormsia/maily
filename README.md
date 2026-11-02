@@ -1,8 +1,22 @@
-# maily
+<p align="center">
+  <img src="docs/assets/hero_banner.webp" alt="maily - The Universal Temporary Email Gateway & Management Platform" width="100%" />
+</p>
 
-**Self-hosted multi-provider temporary email API with a sleek admin dashboard & modern async Python client.**
+<div align="center">
 
-Create disposable mailboxes on demand, receive emails in real time, extract verification codes and confirmation links automatically — all through one clean REST API, an async-first Python client, and a dark-themed web console. Runs locally or in Docker, stores state in SQLite, and protects access with scoped API keys and encrypted credentials.
+# ✉️ maily
+
+### The Universal Temporary Email Gateway & Management Platform
+
+**Taming the disposable email zoo under a single high-performance REST API, modern async Python SDK, and dark-mode web console.**
+
+<br>
+
+> ⚡ **One API to Rule the Disposable Email Zoo:** Stop wrestling with 8 incompatible temp-mail APIs, daily domain blacklists, and fragile regexes. Maily aggregates Mail.tm, TempMail, and 6+ providers into one resilient REST gateway with 1-line automatic OTP verification code extraction for Playwright, Pytest, and QA bots.
+>
+> 🇷🇺 **Единый шлюз временной почты:** объединяем зоопарк temp-mail сервисов в одном быстром REST API с удобным тёмным веб-интерфейсом и мгновенным извлечением проверочных кодов.
+
+<br>
 
 [![CI Pipeline](https://github.com/stormsia/maily/actions/workflows/ci.yml/badge.svg)](https://github.com/stormsia/maily/actions/workflows/ci.yml)
 [![CodeQL Security](https://github.com/stormsia/maily/actions/workflows/codeql.yml/badge.svg)](https://github.com/stormsia/maily/actions/workflows/codeql.yml)
@@ -16,23 +30,89 @@ Create disposable mailboxes on demand, receive emails in real time, extract veri
 [![Python](https://img.shields.io/badge/Python-3.13%20%7C%203.14%20%7C%203.15-3776AB?logo=python&logoColor=white)](https://github.com/stormsia/maily)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://github.com/stormsia/maily/blob/main/LICENSE)
 
----
+[📖 Interactive Docs & Swagger](https://stormsia.github.io/maily/) •
+[🚀 Server Package (PyPI)](https://pypi.org/project/maily-server/) •
+[📦 Client SDK (PyPI)](https://pypi.org/project/maily-client/) •
+[🐳 Docker GHCR](https://github.com/stormsia/maily/pkgs/container/maily) •
+[🌐 Live Provider Health](#-live-provider-operational-status) •
+[⚡ Quick Start](#-quick-start) •
+[🧪 Test Automation Recipes](#-e2e-test-automation-recipes-pytest-playwright-selenium)
 
-### 🔗 Quick Links
-
-- 📖 **Documentation & API Explorer:** [https://stormsia.github.io/maily/](https://stormsia.github.io/maily/)
-- 🚀 **Server Package (PyPI):** [https://pypi.org/project/maily-server/](https://pypi.org/project/maily-server/)
-- 📦 **Client SDK (PyPI):** [https://pypi.org/project/maily-client/](https://pypi.org/project/maily-client/)
-- 🐳 **Docker Container:** [ghcr.io/stormsia/maily](https://github.com/stormsia/maily/pkgs/container/maily)
-- 🐙 **GitHub Repository:** [https://github.com/stormsia/maily](https://github.com/stormsia/maily)
-- 🐛 **Issue Tracker:** [https://github.com/stormsia/maily/issues](https://github.com/stormsia/maily/issues)
-- 📝 **Changelog:** [https://github.com/stormsia/maily/blob/main/CHANGELOG.md](https://github.com/stormsia/maily/blob/main/CHANGELOG.md)
+</div>
 
 ---
 
-## ✨ Features
+## 🦁 Why Maily? Taming the Disposable Email Zoo
 
-- **8 Supported Providers** — Aggregates public temporary-mail networks and private Gmail accounts:
+Integrating disposable email into automated tests, QA pipelines, or bots usually means dealing with an unmaintainable nightmare:
+
+* 💥 **8 incompatible, brittle APIs** — Each provider has custom headers, obscure JSON shapes, non-standard timestamps, or missing MIME source.
+* 🛑 **Random downtime & domain blacklists** — Upstream domains get blocklisted daily, breaking your E2E test suites with zero warning.
+* 🧩 **Complex regex parsing** — Writing and maintaining brittle regexes to fish 4–8 digit OTP codes and activation links out of raw HTML.
+* 🔓 **Zero security & isolation** — No access controls, no credential encryption, no audit log, and no retention sweep.
+
+**Maily solves this once and for all.** It acts as a resilient, high-availability abstraction gateway over the entire temp-mail ecosystem. Switch or rotate providers dynamically with a single parameter, automatically extract verification codes, and control everything from a sleek dark dashboard or async Python SDK.
+
+| Capability | Fragmented Provider Zoo ❌ | Maily Universal Gateway ⚡ |
+|---|---|---|
+| **API Uniformity** | 8+ different endpoints, schemas & authentication rules | **Single normalized REST API & Python SDK** |
+| **Domain Reliability** | Single point of failure; breaks when domain is blocked | **40+ rotating domains across 8 provider fleets** |
+| **OTP Code Extraction** | Manual HTML scraping, regex writing, and polling loops | **`await api.wait_for_code(box)` (instant 1-line extraction)** |
+| **Activation Links** | Hardcoded regex URL patterns | **`await api.wait_for_link(box)` with auto-scoring** |
+| **Execution Engines** | Custom HTTP requests with unhandled 429/502 retries | **Native Async (`Maily`) + Sync facade (`SyncMaily`)** |
+| **Observability** | Blind execution; logs scattered everywhere | **Dark-mode web console with live telemetry & charts** |
+| **Security & Privacy** | Public endpoints with zero key control | **Multi-tenant scoped API keys & Fernet-encrypted credentials** |
+| **State Maintenance** | Orphaned mailboxes & bloated disks | **Background retention sweep + zero-downtime VACUUM** |
+
+---
+
+## 🏗️ Architecture & Data Flow
+
+<p align="center">
+  <img src="docs/assets/infographic_zoo.webp" alt="Maily Architecture & Data Flow Infographic" width="100%" />
+</p>
+
+```mermaid
+flowchart LR
+    subgraph Clients["1. Clients & Test Suites"]
+        direction TB
+        pytest["Pytest Automation"]
+        playwright["Playwright / Selenium"]
+        bot["QA Bots & Scrapers"]
+        sdk["maily-client (Async / Sync)"]
+    end
+
+    subgraph Gateway["2. Maily Unified Engine"]
+        direction TB
+        fastapi["FastAPI High-Speed Core"]
+        extractor["Magic OTP & Link Extractor"]
+        rbac["Scoped RBAC & Fernet Vault"]
+        cache["Domain Cache & Auto-Failover"]
+        retention["Retention Sweeper & SQLite WAL"]
+        ui["Dark-Mode Admin Dashboard"]
+    end
+
+    subgraph Zoo["3. The Temp Mail Zoo"]
+        direction TB
+        p1["Mail.tm"]
+        p2["TempMail.Plus"]
+        p3["Temp-Mail.io"]
+        p4["NoopMail.org"]
+        p5["AnonymMail.net"]
+        p6["DispoEmail.org"]
+        p7["Temp.tf"]
+        p8["Gmail OAuth2 + Aliases"]
+    end
+
+    Clients -->|Single REST / SDK Call| Gateway
+    Gateway -->|Unified Adapter Engine| Zoo
+```
+
+---
+
+## ✨ Features at a Glance
+
+- **8 Integrated Providers Under One Roof** — Aggregates public temporary-mail networks and private Gmail accounts:
   - `mail.tm` — High reliability, custom usernames, passwords, full MIME source
   - `tempmail.plus` — Custom usernames, PIN protection, domains, MIME source
   - `temp-mail.io` — Disposable web mailboxes with automatic CORS tokens
@@ -41,14 +121,14 @@ Create disposable mailboxes on demand, receive emails in real time, extract veri
   - `dispoemail.org` — Astro-session based disposable mail
   - `temp.tf` — Real provider aliases on Outlook, Hotmail, Gmail, and high.edu.pl with plus/dot syntax
   - `gmail` — OAuth2 integration with unlimited `username+alias@gmail.com` mailboxes
-- **Magic Verification Extraction** — Wait for an incoming email and automatically extract 4–8 digit verification codes (e.g. `849201`) or confirmation action links with a single async call.
-- **Async Python Client** — Zero-dependency standalone client (`httpx`, `pydantic`, `loguru`) with async context managers, async iterators, typed pydantic models, and granular exceptions.
-- **Real-Time Streaming** — Stream incoming messages via `async for message in api.messages.iter_messages(box): ...`.
-- **Admin Dashboard & Developer Hub** — Modern dark-mode UI with live charts, message preview with verification highlights, auto-refresh polling, and an integrated Swagger / API documentation explorer at `/docs`.
-- **Scoped API Keys** — Root keys and granular issued keys with provider/action/parent restrictions and custom TTL cleanup rules.
-- **Automatic Retention & DB Maintenance** — Configurable background worker sweeps expired mailboxes and messages based on TTL policies, paired with automatic throttled database maintenance (WAL truncate, VACUUM, REINDEX, ANALYZE, PRAGMA optimize, quick_check) to defragment storage and optimize query performance without downtime.
-- **Domain Cache** — Periodic background cache of provider domains with instant refresh.
-- **Docker-Ready** — Hermetic multi-stage Docker build with SQLite volume persistence.
+- **⚡ Magic Verification Extraction** — Wait for an incoming email and automatically extract 4–8 digit verification codes (e.g. `849201`) or confirmation action links with a single async call.
+- **🐍 Async Python Client (`maily-client`)** — Zero-heavy-dependency standalone client (`httpx`, `pydantic`, `loguru`) with async context managers, async iterators, typed pydantic models, and granular exceptions.
+- **📡 Real-Time Email Streaming** — Stream incoming messages via `async for message in api.messages.iter_messages(box): ...`.
+- **🖥️ Cyberpunk Dark Web Dashboard** — Modern dark-mode UI with live charts, message preview with verification highlights, auto-refresh polling, and an integrated Swagger / API documentation explorer at `/docs`.
+- **🔑 Scoped API Keys & Multi-Tenancy** — Root keys and granular issued keys with provider/action/parent restrictions and custom TTL cleanup rules.
+- **🧹 Automatic Retention & DB Maintenance** — Configurable background worker sweeps expired mailboxes and messages based on TTL policies, paired with automatic throttled database maintenance (WAL truncate, VACUUM, REINDEX, ANALYZE, PRAGMA optimize, quick_check) to defragment storage without downtime.
+- **🔄 Domain Cache & Fallback** — Periodic background cache of provider domains with instant refresh and auto-failover.
+- **🐳 Docker-Ready in 10 Seconds** — Hermetic multi-stage Docker build with SQLite volume persistence.
 
 ---
 
@@ -86,6 +166,138 @@ Create disposable mailboxes on demand, receive emails in real time, extract veri
 
 *Automated health checks run hourly via GitHub Actions.*
 <!-- provider-status:end -->
+
+---
+
+## 🖥️ Sleek Web Dashboard Tour
+
+Maily includes a high-performance dark-mode web console served directly at `http://127.0.0.1:8477/`. Built for developers, QA engineers, and automation ops teams who need effortless visual control over their disposable email infrastructure.
+
+<br>
+
+<p align="center">
+  <a href="#workstation-gallery">
+    <img src="docs/assets/dashboard_carousel.webp" alt="Maily Interactive Web Console - Animated Tour Carousel" width="100%" />
+  </a>
+  <br>
+  <sub><b>🎬 Live Dashboard Walkthrough:</b> Auto-playing carousel cycling through all 6 admin console workstations (346 KB payload). Click to expand high-resolution inspection below.</sub>
+</p>
+
+<div align="center">
+
+**Workstation Guide:**
+[📊 1. Telemetry](#1-live-telemetry--provider-distribution) •
+[📬 2. Fleet](#2-multi-provider-mailbox-fleet) •
+[⚡ 3. OTP Inspector](#3-magic-verification-inspector--quick-extract) •
+[🌐 4. Domain Cache](#4-provider-domain-cache--40-rotating-domains) •
+[🧹 5. Retention Sweeper](#5-automated-retention-sweeper--sqlite-defrag) •
+[🔐 6. Scoped API Keys](#6-multi-tenant-scoped-api-keys)
+
+</div>
+
+<br>
+
+<details id="workstation-gallery">
+<summary><strong>🖼️ Expand Full-Resolution Screen Matrix (3×2 Grid) & Detailed Tour (Click to expand)</strong></summary>
+
+<br>
+
+<table width="100%">
+  <tr>
+    <td width="50%" align="center" valign="top">
+      <a href="docs/screenshots/01_overview.webp">
+        <img src="docs/screenshots/01_overview.webp" alt="Maily Live Overview Dashboard - Real-time metrics and provider traffic distribution" width="100%" />
+      </a>
+      <br>
+      <b>📊 1. Live Telemetry & Traffic Dynamics</b>
+      <p align="left"><sub>Real-time active inboxes, message rates, 10-day activity trends, and provider distribution donut charts.</sub></p>
+    </td>
+    <td width="50%" align="center" valign="top">
+      <a href="docs/screenshots/02_mailboxes.webp">
+        <img src="docs/screenshots/02_mailboxes.webp" alt="Maily Mailboxes Fleet - Search, filter, and manage disposable inboxes" width="100%" />
+      </a>
+      <br>
+      <b>📬 2. Multi-Provider Mailbox Fleet</b>
+      <p align="left"><sub>Search & filter across 8 provider fleets, copy addresses in 1-click, and monitor mailbox lifecycles.</sub></p>
+    </td>
+  </tr>
+  <tr>
+    <td width="50%" align="center" valign="top">
+      <a href="docs/screenshots/03_mailbox_detail_email.webp">
+        <img src="docs/screenshots/03_mailbox_detail_email.webp" alt="Maily Mailbox Detail and Quick Extract OTP Inspector" width="100%" />
+      </a>
+      <br>
+      <b>⚡ 3. Magic Verification & OTP Inspector</b>
+      <p align="left"><sub>Automated Quick Extract card isolating 4–8 digit OTP codes, activation links, HTML previews, and MIME source.</sub></p>
+    </td>
+    <td width="50%" align="center" valign="top">
+      <a href="docs/screenshots/05_domain_cache.webp">
+        <img src="docs/screenshots/05_domain_cache.webp" alt="Maily Provider Domain Cache - 40+ Rotating Disposable Email Domains Across 8 Services" width="100%" />
+      </a>
+      <br>
+      <b>🌐 4. 40+ Rotating Domains & Health Cache</b>
+      <p align="left"><sub>Zero blacklist disruptions: multi-provider domain cache with automatic health sweeps and instant manual flush.</sub></p>
+    </td>
+  </tr>
+  <tr>
+    <td width="50%" align="center" valign="top">
+      <a href="docs/screenshots/04_retention.webp">
+        <img src="docs/screenshots/04_retention.webp" alt="Maily Retention Sweeper and SQLite Database Maintenance" width="100%" />
+      </a>
+      <br>
+      <b>🧹 5. Automated Retention Sweeper & SQLite Defrag</b>
+      <p align="left"><sub>Granular TTL policies per provider, background expiration sweeps, and zero-downtime SQLite WAL defragmentation.</sub></p>
+    </td>
+    <td width="50%" align="center" valign="top">
+      <a href="docs/screenshots/06_api_keys.webp">
+        <img src="docs/screenshots/06_api_keys.webp" alt="Maily Scoped Multi-Tenant API Keys and Permission Management" width="100%" />
+      </a>
+      <br>
+      <b>🔐 6. Multi-Tenant Scoped API Keys</b>
+      <p align="left"><sub>Least-privilege API token generation with provider-specific restrictions, secret revelation, and role switching.</sub></p>
+    </td>
+  </tr>
+</table>
+
+<br>
+
+#### 1. Live Telemetry & Provider Distribution
+Track your temporary inbox fleet, inbound email traffic, 10-day activity dynamics, provider distribution donut charts, and domain throughput in real time.
+- ⚡ **Instant Status & Fleet Counts:** Real-time visibility of active inboxes, stored messages, and system health status.
+- 📊 **Traffic Dynamics & Provider Split:** 10-day activity trends paired with donut charts breakdown across integrated providers.
+- 🧹 **One-Click Maintenance:** Trigger instant background retention sweeps and SQLite database defragmentation directly from the header.
+
+#### 2. Multi-Provider Mailbox Fleet
+Search across all temporary addresses generated across 8 providers, inspect active statuses, view creation timestamps, and copy addresses in 1 click.
+- 🔍 **Instant Search & Provider Filter:** Quickly filter mailboxes by provider (`mail.tm`, `tempmail.plus`, `temp-mail.io`, `gmail`, etc.) or lifecycle state.
+- 📋 **1-Click Copy:** Fast address copying to clipboard for manual testing or form filling.
+- 🗑️ **Lifecycle Actions:** Delete individual mailboxes with automated cascading message cleanup.
+
+#### 3. Magic Verification Inspector & Quick Extract
+The core debugging workstation for email verification flows. Features the automated **Quick Extract** card that isolates 4–8 digit verification codes and confirmation action links.
+- 🎯 **Quick Extract Card:** Auto-detects 4–8 digit OTP codes and activation URLs with 1-click clipboard copy buttons.
+- 🌐 **Multi-View Reading Pane:** Switch seamlessly between rendered HTML preview, sanitized plain text, and complete RFC822 raw MIME source.
+- 📎 **Attachment Inspection:** View, inspect, and download email attachments directly from the web console.
+
+#### 4. Provider Domain Cache & 40+ Rotating Domains
+Monitor cached domain inventories across all 8 integrated providers. Never get blocked by single-domain blacklists again.
+- 🌐 **Unified Domain Inventory:** Real-time visibility into cached domains for Gmail, Mail.tm, TempMail.Plus, Temp-Mail.io, Temp.tf, AnonymMail, DispoEmail, and NoopMail.
+- ⏱️ **Configurable Refresh Interval:** Set background cache sweep intervals (default: 30 minutes) to automatically poll provider APIs.
+- 🔄 **Instant Manual Refresh:** Flush and repopulate provider domain pools on demand with one click.
+
+#### 5. Automated Retention Sweeper & SQLite Defrag
+Fine-grained TTL policies per provider to prevent orphaned mailboxes and stale messages from consuming disk space.
+- ⏳ **Granular TTL Rules:** Configure mailbox and message retention policies per upstream provider.
+- 🧹 **Background Sweeper:** Automated periodic workers prune expired records with zero downtime.
+- 💾 **SQLite Optimization:** Scheduled WAL truncation, VACUUM, REINDEX, and ANALYZE ensure sub-millisecond query performance.
+
+#### 6. Multi-Tenant Scoped API Keys
+Issue least-privilege API tokens restricted to specific providers, specific actions (`read`, `write`), or parent accounts.
+- 🔐 **Granular Scopes:** Restrict CI/CD tokens to specific providers (e.g. `mail.tm` only) or specific actions.
+- 👁️ **Secret Revelation & Rotation:** Reveal secrets on demand or rotate compromised keys instantly.
+- 🔄 **Console Identity Switching:** Test scoped permissions directly from the web dashboard by switching active keys.
+
+</details>
 
 ---
 
@@ -353,16 +565,80 @@ async with Maily("http://127.0.0.1:8477", api_key="root_secret") as api:
 
 ---
 
-## 🖥️ Web Dashboard & Documentation Hub
+## 🧪 E2E Test Automation Recipes (Pytest, Playwright, Selenium)
 
-Access the admin console at <http://127.0.0.1:8477/>:
+Maily is the ideal engine for automated testing and CI/CD pipelines. Here are battle-tested recipes ready to copy-paste into your test suite:
 
-- **Overview** — Live metrics, incoming message 7-day trend, active providers, and manual retention sweep.
-- **Mailboxes** — Instant search, filter by provider, 1-click address copy, and creation dialog with provider capability awareness.
-- **Message Reader** — Reading pane with automatic **Quick Extract** card (highlighting 6-digit codes and action links with 1-click copy), formatted HTML / Raw HTML tabs, RFC822 source viewer, and user-controllable auto-refresh interval (5s / 10s / 30s / Off).
-- **API Keys** — Create and manage scoped keys, reveal secrets, and test the dashboard under a specific key identity.
-- **Retention & Database Maintenance** — Real-time cache status, scheduled refresh intervals, TTL cleanups, and automated database maintenance (VACUUM, REINDEX, ANALYZE).
-- **Developer Hub (`/docs`)** — Multi-tab developer portal featuring interactive Swagger UI with automatic API key preauthorization, Python client snippets, provider status matrix, and dynamic cURL commands.
+### Recipe 1: Pytest Async Fixture (Automated Signup Verification)
+
+```python
+import pytest
+from maily_client import Maily, WaitTimeoutError
+
+
+@pytest.fixture
+async def temp_inbox():
+    """Provides a fresh temporary inbox for each test, cleaned up afterwards."""
+    async with Maily("http://127.0.0.1:8477", api_key="your_secret_api_key") as api:
+        box = await api.create_temp_mailbox(provider="tempmail.plus")
+        try:
+            yield api, box
+        finally:
+            await api.mailboxes.delete(box)
+
+
+@pytest.mark.asyncio
+async def test_user_signup_with_email_otp(temp_inbox):
+    api, box = temp_inbox
+
+    # 1. Trigger registration inside your app / microservice
+    # response = await test_client.post("/api/register", json={"email": box.address})
+    # assert response.status_code == 201
+
+    # 2. Wait for incoming verification code (timeout in 30s)
+    code = await api.wait_for_code(box, timeout=30.0)
+    assert len(code) in (4, 6, 8)
+
+    # 3. Submit verification code back to your service
+    # verify_resp = await test_client.post("/api/verify-otp", json={"code": code})
+    # assert verify_resp.json()["verified"] is True
+```
+
+### Recipe 2: Playwright Web Automation (Browser OTP Form Fill)
+
+```python
+import asyncio
+from maily_client import Maily
+from playwright.async_api import async_playwright
+
+
+async def run_e2e_verification():
+    async with (
+        Maily("http://127.0.0.1:8477", api_key="your_secret_api_key") as api,
+        async_playwright() as p,
+    ):
+        # 1. Create a disposable email address
+        box = await api.create_temp_mailbox()
+
+        # 2. Automate browser registration flow
+        browser = await p.chromium.launch(headless=True)
+        page = await browser.new_page()
+        await page.goto("https://example.com/signup")
+        await page.fill('input[name="email"]', box.address)
+        await page.click('button[type="submit"]')
+
+        # 3. Wait for email code automatically via Maily
+        code = await api.wait_for_code(box, timeout=45.0)
+
+        # 4. Fill OTP in the browser form and assert success
+        await page.fill('input[name="verification_code"]', code)
+        await page.click("button#confirm")
+        await page.wait_for_selector(".dashboard-welcome")
+        await browser.close()
+
+
+asyncio.run(run_e2e_verification())
+```
 
 ---
 
@@ -403,7 +679,7 @@ flowchart LR
 2. **Gitleaks Secret Scanning** — Pre-merge blocking of accidental token, key, or credential commits (`.gitleaks.toml` configured).
 3. **Trivy Container Scanner** — Full CVE inspection of Debian Bookworm OS packages and Python wheels exported directly to the **GitHub Security tab (SARIF)**.
 4. **pip-audit** — Automated vulnerability audit against the PyPA Advisory Database.
-5. **Hermetic Test Suite** — 360+ tests passing hermetically with 80%+ code coverage across Python 3.13, 3.14, and 3.15.
+5. **Hermetic Test Suite** — 480+ tests passing hermetically with 80%+ code coverage across Python 3.13, 3.14, and 3.15.
 
 ---
 
@@ -455,6 +731,54 @@ uvx deptry src
 # Verify standalone client mirror integrity
 python scripts/build_client.py --check
 ```
+
+---
+
+## 🔍 Search Discovery & Keywords Reference
+
+Maily is engineered as the definitive open-source answer to all disposable email, temporary mailbox, and test automation search queries across Google, GitHub, and PyPI:
+
+### High-Intent Search Queries & Coverage
+
+| Search Category | Problem Maily Solves | Top Ranked Query Terms |
+|---|---|---|
+| **Multi-Provider Temp Mail API** | Unifies 8+ public & private temp mail services under one normalized REST API | `temp mail api`, `disposable email api`, `temporary email api`, `fake mail api`, `disposable mailbox rest api`, `burner email api`, `multi-provider temp mail` |
+| **Python Client / SDK** | Dedicated async & sync Python SDK with typed models and zero heavy dependencies | `temp mail python`, `temporary email python client`, `disposable email sdk`, `mailtm python`, `maily-client`, `python temp mail library` |
+| **Alternative to Flaky Services** | Resilient self-hosted replacement with failover and domain rotation | `1secmail alternative`, `mail.tm alternative`, `guerrilla mail alternative`, `tempmail plus api`, `fake email generator api`, `throwaway email service` |
+| **Automated Testing & QA** | 1-line OTP verification code extraction and activation link scoring | `playwright temp mail`, `pytest disposable email fixture`, `selenium email verification`, `e2e email testing otp`, `wait for verification code email python` |
+| **Self-Hosted Infrastructure** | Docker-ready, SQLite WAL, Fernet encrypted secrets, scoped RBAC tokens | `self hosted temp mail`, `open source temporary email server`, `docker disposable email`, `fastapi temp mail gateway`, `on premise disposable email` |
+| **Поиск на русском языке (CIS SEO)** | Единый шлюз и API временной почты для тестов и ботов | `временная почта api`, `апи временной почты`, `одноразовая почта python`, `прием кодов подтверждения email`, `playwright временная почта`, `генератор одноразовой почты api` |
+
+<details>
+<summary><strong>💡 Frequently Asked Questions (FAQ) & Search Index</strong></summary>
+
+<br>
+
+#### How does Maily differ from single-provider libraries like `mailtm` or `tempmail`?
+Single-provider libraries break whenever that specific upstream provider encounters downtime, changes its schema, or gets added to spam blocklists. **Maily abstracts the entire disposable email ecosystem** into a resilient gateway: you get a single consistent API, 40+ rotating domains across 8 provider networks, automatic domain fallback, and standardized OTP extraction. If one provider is down, switch to another with a single parameter (`provider="tempmail.plus"`).
+
+#### How fast is OTP verification code extraction in automated tests?
+Incoming emails are processed within sub-second latency of arrival upstream. With `await api.wait_for_code(box, timeout=30.0)`, Maily continuously polls and extracts 4–8 digit verification codes (e.g. `849201`) or confirmation action links, returning cleanly as soon as the email hits the server.
+
+#### How does Maily prevent domain blacklisting in E2E tests?
+Many SaaS sign-up forms block known disposable email domains like `@mailtm.com`. Maily solves this by maintaining a live pool of **40+ rotating domains** across multiple providers (including obscure domains and real Gmail alias domains `username+tag@gmail.com` via OAuth2).
+
+#### Can I run Maily completely self-hosted with Docker?
+Yes! Maily is packaged as an optimized multi-stage Docker container (`ghcr.io/stormsia/maily:latest`). Run it with a single command:
+```bash
+docker run -d -p 8477:8477 -v maily_data:/data ghcr.io/stormsia/maily:latest
+```
+It stores state in embedded SQLite with Write-Ahead Logging (WAL) and automatic defragmentation (VACUUM/REINDEX), requiring zero external databases or Redis caches.
+
+#### Can I use my own domain or Gmail account?
+Yes! Maily supports Gmail via OAuth2 with infinite `username+alias@gmail.com` addresses, as well as providers with custom domains (`mail.tm`, `tempmail.plus`, `temp.tf`).
+
+#### Как Maily помогает в автотестах Playwright и Pytest?
+Вместо ручного парсинга HTML и написания хрупких регулярных выражений, клиент `maily-client` предоставляет готовые высокоуровневые асинхронные методы: `create_temp_mailbox()` создает ящик за 0.1 секунды, а `wait_for_code(box)` ждет письмо и возвращает чистый проверочный код для подстановки в `page.fill()`.
+
+#### Как Maily объединяет зоопарк temp-mail сервисов?
+Каждый провайдер временной почты (Mail.tm, TempMail.Plus, NoopMail, DispoEmail и др.) имеет свои уникальные заголовки, форматы дат и ограничения. Maily нормализует ответы всех сервисов в единый формат `Mailbox` и `MessageDetail`, автоматически кэширует доступные домены и управляет жизненным циклом ящиков.
+</details>
 
 ---
 

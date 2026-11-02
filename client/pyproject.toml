@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "maily-client"
 version = "0.6.0"  # x-release-please-version
-description = "Fast, typed async & sync Python client for maily temporary email server with OTP and link extraction"
+description = "Fast async & sync Python SDK uniting the zoo of disposable email providers (Mail.tm, TempMail, 1secmail alternatives) with 1-line OTP code extraction for Playwright & Pytest"
 readme = "README.md"
 license = "MIT"
 requires-python = ">=3.10"
@@ -19,11 +19,24 @@ keywords = [
     "temporary-email",
     "disposable-email",
     "temp-mail",
+    "temp-mail-api",
+    "disposable-email-api",
+    "temporary-mailbox",
     "mailtm",
+    "tempmail",
+    "1secmail",
+    "fake-email",
+    "burner-email",
     "mail-client",
     "testing",
     "automation",
     "e2e-testing",
+    "email-testing",
+    "email-verification",
+    "playwright",
+    "playwright-email",
+    "pytest",
+    "pytest-email",
     "otp",
     "verification-code",
     "asyncio",

@@ -16,9 +16,9 @@
       "last_status": "operational"
     },
     "noopmail.org": {
-      "consecutive_failures": 0,
+      "consecutive_failures": 1,
       "issue_number": null,
-      "last_status": "operational"
+      "last_status": "degraded"
     },
     "temp-mail.io": {
       "consecutive_failures": 0,

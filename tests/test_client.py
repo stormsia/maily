@@ -23,7 +23,12 @@ from maily.client import (
     WaitTimeoutError,
     __version__,
 )
-from maily.standalone_client import _extract_detail, _parse_retry_after, _Transport
+from maily.standalone_client import (
+    _atomic_replace,
+    _extract_detail,
+    _parse_retry_after,
+    _Transport,
+)
 
 BASE = "http://test"
 
@@ -1938,7 +1943,7 @@ async def test_wait_for_link_timeout_and_iter_messages_timeout():
 
     # iter_messages with timeout breaks loop
     collected = []
-    async for msg in api.messages.iter_messages(1, timeout=0.01, poll_interval=0.002):
+    async for msg in api.messages.iter_messages(1, timeout=0.003, poll_interval=0.0005):
         collected.append(msg)
     assert collected == []
 
@@ -2218,3 +2223,200 @@ async def test_additional_edge_cases(monkeypatch: pytest.MonkeyPatch):
     monkeypatch.setattr("maily.standalone_client.Maily.__init__", broken_init)
     with pytest.raises(ValueError, match="synthetic init crash"):
         SyncMaily()
+
+
+@pytest.mark.asyncio
+async def test_gmail_oauth_callback_complete():
+    async def handler(request: httpx.Request) -> httpx.Response:
+        assert request.method == "POST"
+        assert request.url.path == "/v1/gmail/oauth/callback"
+        body = json.loads(request.content)
+        assert "url_or_code" in body
+        return httpx.Response(
+            200,
+            json={
+                "id": 1,
+                "email": "test@gmail.com",
+                "status": "active",
+                "send_as": [],
+            },
+        )
+
+    client = httpx.AsyncClient(base_url=BASE, transport=httpx.MockTransport(handler))
+    api = Maily(client=client)
+    try:
+        # 1. Async resource call with state and redirect_uri
+        acc1 = await api.gmail.oauth_callback(
+            "https://app.local/cb?code=secret123&state=xyz",
+            state="xyz",
+            redirect_uri="https://app.local/cb",
+        )
+        assert acc1.email == "test@gmail.com"
+
+        # 2. Async flat facade shortcut
+        acc2 = await api.gmail_oauth_callback("authcode_abc")
+        assert acc2.email == "test@gmail.com"
+    finally:
+        await api.close()
+
+    # 3. Sync resource call and flat facade shortcut
+    with SyncMaily(client=client) as sync_api:
+        acc3 = sync_api.gmail.oauth_callback(
+            "https://app.local/cb?code=secret123&state=xyz",
+            state="xyz",
+            redirect_uri="https://app.local/cb",
+        )
+        assert acc3.email == "test@gmail.com"
+
+        acc4 = sync_api.gmail_oauth_callback("authcode_sync")
+        assert acc4.email == "test@gmail.com"
+
+
+@pytest.mark.asyncio
+async def test_messages_wait_for_timeout():
+    async def handler(request: httpx.Request) -> httpx.Response:
+        assert request.method == "GET" and request.url.path == "/v1/mailboxes/1/messages"
+        return httpx.Response(
+            200,
+            json=[
+                {
+                    "id": 10,
+                    "message_api_id": "m1",
+                    "subject": "hello",
+                    "from_address": "a@b.c",
+                    "from_name": "",
+                    "seen": False,
+                }
+            ],
+        )
+
+    client = httpx.AsyncClient(base_url=BASE, transport=httpx.MockTransport(handler))
+    api = Maily(client=client)
+    try:
+        with pytest.raises(WaitTimeoutError, match="no message arrived within"):
+            await api.messages.wait_for(1, predicate=lambda m: False, timeout=0.01, interval=0.005)
+    finally:
+        await api.close()
+
+    with SyncMaily(client=client) as sync_api:
+        with pytest.raises(WaitTimeoutError, match="no message arrived within"):
+            sync_api.messages.wait_for(1, predicate=lambda m: False, timeout=0.01, interval=0.005)
+
+        # Triggers iter_messages timeout break before poll_interval sleep (line 1823)
+        assert list(sync_api.messages.iter_messages(1, timeout=0.02, poll_interval=0.1)) == []
+
+    # Slow request causing remaining <= 0 break in wait_for_confirmation_email (line 944)
+    async def slow_handler(request: httpx.Request) -> httpx.Response:
+        import asyncio
+
+        await asyncio.sleep(0.02)
+        return httpx.Response(200, json=[])
+
+    slow_client = httpx.AsyncClient(base_url=BASE, transport=httpx.MockTransport(slow_handler))
+    api_slow = Maily(client=slow_client)
+    try:
+        assert (
+            await api_slow.messages.wait_for_confirmation_email(
+                1, timeout=0.01, check_interval=0.001
+            )
+            is None
+        )
+    finally:
+        await api_slow.close()
+
+
+@pytest.mark.asyncio
+async def test_create_temp_mailbox_explicit_domain():
+    async def handler(request: httpx.Request) -> httpx.Response:
+        assert request.method == "POST" and request.url.path == "/v1/mailboxes"
+        body = json.loads(request.content)
+        assert body.get("domain") == "custom.org"
+        return httpx.Response(
+            201,
+            json={
+                "id": 42,
+                "provider": "domain_p",
+                "address": "test@custom.org",
+                "is_active": True,
+            },
+        )
+
+    client = httpx.AsyncClient(base_url=BASE, transport=httpx.MockTransport(handler))
+    api = Maily(client=client)
+    try:
+        box = await api.create_temp_mailbox(domain="custom.org")
+        assert box.address == "test@custom.org"
+    finally:
+        await api.close()
+
+    with SyncMaily(client=client) as sync_api:
+        box_sync = sync_api.create_temp_mailbox(domain="custom.org")
+        assert box_sync.address == "test@custom.org"
+
+
+@pytest.mark.asyncio
+async def test_transport_retries_exhausted_fallback():
+    t = _Transport(base_url="http://test")
+    t.max_retries = -1
+    with pytest.raises(ApiError, match="retries exhausted"):
+        await t.request("GET", "/test")
+
+
+def test_sync_maily_properties_and_closed_loop():
+    import asyncio
+
+    client = httpx.AsyncClient(base_url=BASE)
+    s = SyncMaily(client=client)
+    try:
+        assert s.max_retries == 0
+        s.max_retries = 3
+        assert s.max_retries == 3
+
+        assert s.retry_backoff == 0.5
+        s.retry_backoff = 1.5
+        assert s.retry_backoff == 1.5
+
+        # In-flight task cancellation test during close
+        s._loop.call_soon_threadsafe(lambda: s._loop.create_task(asyncio.sleep(10)))
+    finally:
+        s.close()
+
+    # Idempotent second close
+    s.close()
+
+    # Running a coroutine on closed instance raises ClientError and closes coroutine
+    async def dummy() -> int:
+        return 1
+
+    coro = dummy()
+    with pytest.raises(ClientError, match="SyncMaily is closed"):
+        s._run(coro)
+
+    # Running a non-coroutine on closed instance raises ClientError without closing
+    with pytest.raises(ClientError, match="SyncMaily is closed"):
+        s._run(None)
+
+
+def test_atomic_replace_posix_branch(tmp_path: Any, monkeypatch: pytest.MonkeyPatch):
+    import os
+
+    target_file = tmp_path / "test_posix.txt"
+    target_file.write_text("initial", encoding="utf-8")
+
+    monkeypatch.setattr(os, "name", "posix")
+    _atomic_replace(str(target_file), "updated posix content")
+    assert target_file.read_text(encoding="utf-8") == "updated posix content"
+
+
+def test_standalone_client_main_entrypoint(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+):
+    import runpy
+    import sys
+
+    monkeypatch.setattr(sys, "argv", ["maily.standalone_client", "version"])
+    with pytest.raises(SystemExit) as exc_info:
+        runpy.run_module("maily.standalone_client", run_name="__main__")
+    assert exc_info.value.code == 0
+    captured = capsys.readouterr()
+    assert __version__ in captured.out

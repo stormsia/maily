@@ -24,7 +24,8 @@
         "src/maily/__init__.py",
         "src/maily/standalone_client.py",
         "client/client.py",
-        "client/pyproject.toml"
+        "client/pyproject.toml",
+        "uv.lock"
       ]
     }
   }

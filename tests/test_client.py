@@ -21,6 +21,7 @@ from maily.client import (
     UpstreamProviderError,
     ValidationError,
     WaitTimeoutError,
+    __version__,
 )
 from maily.standalone_client import _extract_detail, _parse_retry_after, _Transport
 
@@ -1043,7 +1044,7 @@ def test_sync_client_lifecycle_and_post_close():
 def test_sync_sections_and_facades():
     routes = {
         ("GET", "/health"): httpx.Response(200, json={"status": "ok"}),
-        ("GET", "/v1/config"): httpx.Response(200, json={"client_version": "0.3.0"}),
+        ("GET", "/v1/config"): httpx.Response(200, json={"client_version": __version__}),
         ("GET", "/v1/providers"): httpx.Response(200, json=[{"slug": "mail.tm", "kind": "domain"}]),
         ("GET", "/v1/targets"): httpx.Response(
             200,
@@ -1221,8 +1222,8 @@ def test_sync_sections_and_facades():
     with SyncMaily(client=client) as api:
         # 1. Health & Config sections
         assert api.health.ping().status == "ok"
-        assert api.config.get()["client_version"] == "0.3.0"
-        assert api.check_client_version() == "0.3.0"
+        assert api.config.get()["client_version"] == __version__
+        assert api.check_client_version() == __version__
 
         # 2. Providers section
         assert len(api.providers.list()) == 1
@@ -1982,13 +1983,13 @@ async def test_check_client_version_scenarios(caplog: pytest.LogCaptureFixture):
     c1 = httpx.AsyncClient(
         base_url="http://test",
         transport=httpx.MockTransport(
-            lambda r: httpx.Response(200, json={"client_version": "0.3.0"})
+            lambda r: httpx.Response(200, json={"client_version": __version__})
         ),
     )
     api1 = Maily(client=c1)
     with caplog.at_level(logging.WARNING):
         v = await api1.check_client_version()
-        assert v == "0.3.0"
+        assert v == __version__
         assert "update client" not in caplog.text
 
     # 2. Mismatched version -> logs warning

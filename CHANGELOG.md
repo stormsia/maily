@@ -1,5 +1,23 @@
 # Changelog
 
+## [0.6.0](https://github.com/stormsia/maily/compare/v0.5.0...v0.6.0) (2026-11-02)
+
+
+### Features
+
+* **client:** remove legacy client module alias and standardize on maily_client ([ebd954e](https://github.com/stormsia/maily/commit/ebd954e60785b79a4f1232a4c33d90b3967e8463))
+
+
+### Bug Fixes
+
+* **dashboard:** stop infinite spin on version refresh and sync icons ([4a27b6d](https://github.com/stormsia/maily/commit/4a27b6ddc1b32a8b0ea2fe1d7b79195302e340a7))
+* **docker:** specify name for maily_data volume in docker-compose files ([9f0e869](https://github.com/stormsia/maily/commit/9f0e869b49daa3ec697268f2e536258e1416b132))
+
+
+### Documentation
+
+* standardize api key examples and formatting across documentation and client ([a9b1513](https://github.com/stormsia/maily/commit/a9b15137277eb99014d020f6860c9aca17e6bb47))
+
 ## [0.5.0](https://github.com/stormsia/maily/compare/v0.4.1...v0.5.0) (2026-11-02)
 
 

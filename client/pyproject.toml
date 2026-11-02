@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "maily-client"
-version = "0.5.0"  # x-release-please-version
+version = "0.6.0"  # x-release-please-version
 description = "Fast, typed async & sync Python client for maily temporary email server with OTP and link extraction"
 readme = "README.md"
 license = "MIT"

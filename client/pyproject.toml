@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "maily-client"
-version = "0.4.0"  # x-release-please-version
+version = "0.4.1"  # x-release-please-version
 description = "Standalone single-file async client for a self-hosted maily server"
 readme = "README.md"
 license = "MIT"

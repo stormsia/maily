@@ -90,9 +90,7 @@ def _http(handler) -> HttpClient:
     return http
 
 
-def _provider_with_routes(
-    routes: dict[tuple[str, str], httpx.Response], **kwargs
-) -> TempTF:
+def _provider_with_routes(routes: dict[tuple[str, str], httpx.Response], **kwargs) -> TempTF:
     def handler(request: httpx.Request) -> httpx.Response:
         key = (request.method, request.url.path)
         if key in routes:
@@ -131,9 +129,7 @@ def test_extract_domains_from_empty_html_fallback():
 @pytest.mark.asyncio
 async def test_temp_tf_fetch_targets_from_html():
     routes = {
-        ("GET", "/"): httpx.Response(
-            200, text=SAMPLE_HTML, headers={"content-type": "text/html"}
-        ),
+        ("GET", "/"): httpx.Response(200, text=SAMPLE_HTML, headers={"content-type": "text/html"}),
     }
     provider = _provider_with_routes(routes)
     targets = await provider.list_targets()
@@ -187,15 +183,11 @@ def test_validate_address_hotmail_requires_plus():
 
 def test_validate_address_high_edu_pl_no_aliases():
     # high.edu.pl rejects plus alias
-    with pytest.raises(
-        MailValidationError, match="does not support dot or plus aliases"
-    ):
+    with pytest.raises(MailValidationError, match="does not support dot or plus aliases"):
         _validate_temp_tf_address("user+tag@high.edu.pl")
 
     # high.edu.pl rejects dot alias
-    with pytest.raises(
-        MailValidationError, match="does not support dot or plus aliases"
-    ):
+    with pytest.raises(MailValidationError, match="does not support dot or plus aliases"):
         _validate_temp_tf_address("first.last@high.edu.pl")
 
     # high.edu.pl rejects reserved usernames
@@ -203,9 +195,7 @@ def test_validate_address_high_edu_pl_no_aliases():
         _validate_temp_tf_address("admin@high.edu.pl")
 
     # high.edu.pl rejects username > 10 chars
-    with pytest.raises(
-        MailValidationError, match="must be 1-10 alphanumeric characters"
-    ):
+    with pytest.raises(MailValidationError, match="must be 1-10 alphanumeric characters"):
         _validate_temp_tf_address("toolongusername123@high.edu.pl")
 
     # Valid 10-char alphanumeric high.edu.pl address
@@ -271,9 +261,7 @@ def test_resolve_provider_and_syntax():
     assert (prov, dot, plus) == ("high.edu.pl", "0", "0")
 
     # gmail default (dot=1, plus=1)
-    prov, dot, plus = _resolve_provider_and_syntax(
-        "gmail.com", gmail_dot=True, gmail_plus=True
-    )
+    prov, dot, plus = _resolve_provider_and_syntax("gmail.com", gmail_dot=True, gmail_plus=True)
     assert (prov, dot, plus) == ("gmail", "1", "1")
 
     # gmail dot-only via syntax modifier
@@ -285,9 +273,7 @@ def test_resolve_provider_and_syntax():
     assert (prov, dot, plus) == ("gmail", "0", "1")
 
     # no domain specified -> all providers with dot=1, plus=1
-    prov, dot, plus = _resolve_provider_and_syntax(
-        None, gmail_dot=True, gmail_plus=True
-    )
+    prov, dot, plus = _resolve_provider_and_syntax(None, gmail_dot=True, gmail_plus=True)
     assert "outlook" in prov
     assert "gmail" in prov
     assert (dot, plus) == ("1", "1")
@@ -446,9 +432,7 @@ async def test_mailbox_message_isolation():
     assert detail_a.id == "895065865791524"
 
     # Box B queries Box A's message -> MUST raise MailNotFoundError!
-    with pytest.raises(
-        MailNotFoundError, match="not found for user_b\\+tag2@outlook.com"
-    ):
+    with pytest.raises(MailNotFoundError, match="not found for user_b\\+tag2@outlook.com"):
         await provider.get_message(box_b, "895065865791524")
 
     # Box B cannot delete Box A's message
@@ -575,9 +559,7 @@ def test_temp_tf_app_e2e(tmp_path):
         if request.url.path == "/api/check":
             return httpx.Response(200, json=PROMPT_CHECK_DATA)
         if request.url.path == "/":
-            return httpx.Response(
-                200, text=SAMPLE_HTML, headers={"content-type": "text/html"}
-            )
+            return httpx.Response(200, text=SAMPLE_HTML, headers={"content-type": "text/html"})
         return httpx.Response(404)
 
     http = _http(handler)
@@ -598,9 +580,7 @@ def test_temp_tf_app_e2e(tmp_path):
         assert "requires a plus alias" in resp_invalid.text
 
         # 2. Valid creation by domain
-        resp = client.post(
-            "/v1/mailboxes", json={"provider": "temp.tf", "domain": "outlook.com"}
-        )
+        resp = client.post("/v1/mailboxes", json={"provider": "temp.tf", "domain": "outlook.com"})
         assert resp.status_code == 200, resp.text
         data = resp.json()
         assert data["provider"] == "temp.tf"

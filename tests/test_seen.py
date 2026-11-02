@@ -82,7 +82,5 @@ async def test_upsert_inserts_new_message_as_unseen(session):
         received_at=None,
     )
     await upsert_messages(session, mbox, [_summary(seen=False), fresh])
-    rows = {
-        m.message_api_id: m.seen for m in (await session.scalars(select(Message))).all()
-    }
+    rows = {m.message_api_id: m.seen for m in (await session.scalars(select(Message))).all()}
     assert rows == {"m1": True, "m2": False}

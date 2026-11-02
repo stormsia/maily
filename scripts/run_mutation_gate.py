@@ -116,11 +116,7 @@ def get_diff_files(base_ref: str) -> list[str]:
     try:
         cmd = ["git", "diff", "--name-only", f"{base_ref}...HEAD"]
         output = subprocess.check_output(cmd, text=True, stderr=subprocess.DEVNULL)
-        return [
-            line.strip().replace("\\", "/")
-            for line in output.splitlines()
-            if line.strip()
-        ]
+        return [line.strip().replace("\\", "/") for line in output.splitlines() if line.strip()]
     except Exception as exc:
         print(f"Warning: Failed to compute git diff against {base_ref}: {exc}")
         return []
@@ -218,9 +214,7 @@ def evaluate_mutation_results(
             )
             sf.write("| Metric | Count | Target / Ratchet |\n")
             sf.write("| :--- | :---: | :---: |\n")
-            sf.write(
-                f"| **Mutation Score** | **{score:.1f}%** | $\\ge {min_score:.1f}%$ |\n"
-            )
+            sf.write(f"| **Mutation Score** | **{score:.1f}%** | $\\ge {min_score:.1f}%$ |\n")
             sf.write(f"| Total Mutants | {total} | — |\n")
             sf.write(f"| Killed Mutants | {killed} | — |\n")
             sf.write(f"| Survived Mutants | {survived} | $\\le {max_survived}$ |\n")
@@ -278,9 +272,7 @@ def main() -> int:
 
     if args.diff_base:
         diff_files = get_diff_files(args.diff_base)
-        print(
-            f"Detected {len(diff_files)} modified file(s) in PR diff against {args.diff_base}"
-        )
+        print(f"Detected {len(diff_files)} modified file(s) in PR diff against {args.diff_base}")
         matched_files: list[str] = []
         for df in diff_files:
             if df in FILE_TO_TESTS_MAP:
@@ -288,9 +280,7 @@ def main() -> int:
                 target_tests.update(FILE_TO_TESTS_MAP[df])
 
         if not matched_files:
-            print(
-                "🟢 No mutation-monitored files touched in this PR diff. Skipping mutation run."
-            )
+            print("🟢 No mutation-monitored files touched in this PR diff. Skipping mutation run.")
             summary_path = os.environ.get("GITHUB_STEP_SUMMARY")
             if summary_path:
                 with open(summary_path, "a", encoding="utf-8") as sf:

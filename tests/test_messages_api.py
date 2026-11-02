@@ -109,9 +109,7 @@ def test_deleted_message_stays_deleted_when_provider_lists_it(tmp_path: Path):
         import sqlite3
 
         conn = sqlite3.connect(str(tmp_path / "test.db"))
-        row = conn.execute(
-            "SELECT is_deleted FROM messages WHERE message_api_id = 'm1'"
-        ).fetchone()
+        row = conn.execute("SELECT is_deleted FROM messages WHERE message_api_id = 'm1'").fetchone()
         conn.close()
         assert row == (1,)
 

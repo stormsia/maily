@@ -53,9 +53,7 @@ def test_retention_crud(tmp_path):
 
         r = client.get("/v1/admin/retention")
         assert r.status_code == 200
-        assert r.json() == [
-            {"provider": "stub", "mailbox_ttl_hours": 24, "message_ttl_hours": 12}
-        ]
+        assert r.json() == [{"provider": "stub", "mailbox_ttl_hours": 24, "message_ttl_hours": 12}]
 
         r = client.delete("/v1/admin/retention/stub")
         assert r.status_code == 204
@@ -148,9 +146,7 @@ def test_retention_marks_mailbox_deleted_when_provider_delete_fails(tmp_path: Pa
             " VALUES (?, 'stub', 'child', ?, ?)",
             (box_id, old.isoformat(), now.isoformat()),
         )
-        conn.execute(
-            "INSERT INTO retention (provider, mailbox_ttl_hours) VALUES ('stub', 24)"
-        )
+        conn.execute("INSERT INTO retention (provider, mailbox_ttl_hours) VALUES ('stub', 24)")
         conn.commit()
         conn.close()
 
@@ -195,9 +191,7 @@ def test_retention_keeps_message_when_provider_delete_fails(tmp_path: Path):
             " VALUES (?, 'stub', 'stuck-msg', ?, ?)",
             (box_id, old.isoformat(), now.isoformat()),
         )
-        conn.execute(
-            "INSERT INTO retention (provider, message_ttl_hours) VALUES ('stub', 24)"
-        )
+        conn.execute("INSERT INTO retention (provider, message_ttl_hours) VALUES ('stub', 24)")
         conn.commit()
         conn.close()
 
@@ -232,9 +226,7 @@ def test_retention_deletes_mailbox_that_has_messages(tmp_path: Path):
             " VALUES (?, 'stub', 'kid', ?, ?)",
             (box_id, old.isoformat(), now.isoformat()),
         )
-        conn.execute(
-            "INSERT INTO retention (provider, mailbox_ttl_hours) VALUES ('stub', 24)"
-        )
+        conn.execute("INSERT INTO retention (provider, mailbox_ttl_hours) VALUES ('stub', 24)")
         conn.commit()
         conn.close()
 

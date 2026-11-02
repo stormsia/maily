@@ -47,9 +47,7 @@ def _router(routes: dict[tuple[str, str], httpx.Response]) -> Any:
 
 @pytest.mark.asyncio
 async def test_health():
-    api = _api(
-        _router({("GET", "/health"): httpx.Response(200, json={"status": "ok"})})
-    )
+    api = _api(_router({("GET", "/health"): httpx.Response(200, json={"status": "ok"})}))
     try:
         h = await api.health.ping()
         assert h.status == "ok"
@@ -337,18 +335,14 @@ async def test_admin_flow():
         if request.method == "DELETE" and path == "/v1/admin/retention/mail.tm":
             return httpx.Response(204)
         if request.method == "POST" and path == "/v1/admin/retention/run":
-            return httpx.Response(
-                200, json={"mailboxes_deleted": 2, "messages_deleted": 5}
-            )
+            return httpx.Response(200, json={"mailboxes_deleted": 2, "messages_deleted": 5})
         if request.method == "GET" and path == "/v1/admin/domain-cache":
             return httpx.Response(
                 200,
                 json={
                     "enabled": True,
                     "interval_seconds": 1800,
-                    "providers": [
-                        {"provider": "mail.tm", "kind": "domain", "domains_count": 3}
-                    ],
+                    "providers": [{"provider": "mail.tm", "kind": "domain", "domains_count": 3}],
                 },
             )
         if request.method == "PUT" and path == "/v1/admin/domain-cache":
@@ -406,9 +400,7 @@ async def test_admin_flow():
 @pytest.mark.asyncio
 async def test_error_mapping_with_detail():
     api = _api(
-        _router(
-            {("GET", "/v1/mailboxes/1"): httpx.Response(404, json={"detail": "no box"})}
-        )
+        _router({("GET", "/v1/mailboxes/1"): httpx.Response(404, json={"detail": "no box"})})
     )
     try:
         with pytest.raises(ApiError) as exc:
@@ -700,17 +692,13 @@ async def test_iter_messages():
         counter += 1
         msgs = [{"id": 1, "message_api_id": "msg-init", "subject": "Init"}]
         if counter > 1:
-            msgs.append(
-                {"id": 2, "message_api_id": f"msg-new-{counter}", "subject": "New!"}
-            )
+            msgs.append({"id": 2, "message_api_id": f"msg-new-{counter}", "subject": "New!"})
         return httpx.Response(200, json=msgs)
 
     api = _api(handler)
     try:
         collected = []
-        async for msg in api.messages.iter_messages(
-            box, poll_interval=0.001, timeout=10.0
-        ):
+        async for msg in api.messages.iter_messages(box, poll_interval=0.001, timeout=10.0):
             collected.append(msg.message_api_id)
             if len(collected) >= 2:
                 break
@@ -839,10 +827,7 @@ async def test_all_16_facade_shortcut_methods():
             return httpx.Response(204)
 
         # 7. get_source -> GET /v1/mailboxes/42/messages/msg_shortcut_1/source
-        if (
-            method == "GET"
-            and path == "/v1/mailboxes/42/messages/msg_shortcut_1/source"
-        ):
+        if method == "GET" and path == "/v1/mailboxes/42/messages/msg_shortcut_1/source":
             return httpx.Response(200, json=message_source_data)
 
         # 8. gmail_oauth_start -> POST /v1/gmail/oauth/start
@@ -893,9 +878,7 @@ async def test_all_16_facade_shortcut_methods():
 
         return httpx.Response(404, json={"detail": f"Route not found: {method} {path}"})
 
-    client = httpx.AsyncClient(
-        base_url="http://test", transport=httpx.MockTransport(handler)
-    )
+    client = httpx.AsyncClient(base_url="http://test", transport=httpx.MockTransport(handler))
     api = Maily(base_url="http://test", api_key="secret", client=client)
 
     try:
@@ -967,9 +950,7 @@ async def test_all_16_facade_shortcut_methods():
         assert dc.interval_seconds == 900
 
         # Method 14: save_domain_cache_settings
-        saved_dc = await api.save_domain_cache_settings(
-            enabled=False, interval_seconds=1200
-        )
+        saved_dc = await api.save_domain_cache_settings(enabled=False, interval_seconds=1200)
         assert saved_dc.enabled is False
         assert saved_dc.interval_seconds == 1200
 
@@ -1033,9 +1014,7 @@ def test_sync_client_lifecycle_and_post_close():
             return httpx.Response(200, json={"status": "ok"})
         return httpx.Response(404)
 
-    client = httpx.AsyncClient(
-        base_url="http://test", transport=httpx.MockTransport(handler)
-    )
+    client = httpx.AsyncClient(base_url="http://test", transport=httpx.MockTransport(handler))
 
     with SyncMaily(client=client) as api:
         assert api.health.ping().status == "ok"
@@ -1065,9 +1044,7 @@ def test_sync_sections_and_facades():
     routes = {
         ("GET", "/health"): httpx.Response(200, json={"status": "ok"}),
         ("GET", "/v1/config"): httpx.Response(200, json={"client_version": "0.3.0"}),
-        ("GET", "/v1/providers"): httpx.Response(
-            200, json=[{"slug": "mail.tm", "kind": "domain"}]
-        ),
+        ("GET", "/v1/providers"): httpx.Response(200, json=[{"slug": "mail.tm", "kind": "domain"}]),
         ("GET", "/v1/targets"): httpx.Response(
             200,
             json=[
@@ -1209,12 +1186,8 @@ def test_sync_sections_and_facades():
                 "key_retention": [],
             },
         ),
-        ("GET", "/v1/admin/keys/me"): httpx.Response(
-            200, json={"is_root": True, "name": "root"}
-        ),
-        ("GET", "/v1/admin/keys/5/secret"): httpx.Response(
-            200, json={"secret": "full-sk"}
-        ),
+        ("GET", "/v1/admin/keys/me"): httpx.Response(200, json={"is_root": True, "name": "root"}),
+        ("GET", "/v1/admin/keys/5/secret"): httpx.Response(200, json={"secret": "full-sk"}),
         ("PATCH", "/v1/admin/keys/5"): httpx.Response(
             200,
             json={
@@ -1242,13 +1215,9 @@ def test_sync_sections_and_facades():
 
     def handler(request: httpx.Request) -> httpx.Response:
         key = (request.method, request.url.path)
-        return routes.get(
-            key, httpx.Response(404, json={"detail": f"Route not found: {key}"})
-        )
+        return routes.get(key, httpx.Response(404, json={"detail": f"Route not found: {key}"}))
 
-    client = httpx.AsyncClient(
-        base_url="http://test", transport=httpx.MockTransport(handler)
-    )
+    client = httpx.AsyncClient(base_url="http://test", transport=httpx.MockTransport(handler))
     with SyncMaily(client=client) as api:
         # 1. Health & Config sections
         assert api.health.ping().status == "ok"
@@ -1264,12 +1233,7 @@ def test_sync_sections_and_facades():
         mb = api.mailboxes.create(domain="mail.tm")
         assert mb.id == 1
         assert (
-            len(
-                api.mailboxes.list(
-                    provider="mail.tm", active=True, q="a", limit=10, offset=0
-                )
-            )
-            == 1
+            len(api.mailboxes.list(provider="mail.tm", active=True, q="a", limit=10, offset=0)) == 1
         )
         assert api.mailboxes.get(1).id == 1
         assert api.mailboxes.by_address("a@mail.tm").id == 1
@@ -1289,17 +1253,13 @@ def test_sync_sections_and_facades():
         assert api.messages.mark_read(1, "m1").seen is True
         assert api.messages.source(1, "m1").data == "raw"
         assert (
-            api.messages.wait_for(
-                1, timeout=10.0, interval=0.001, mark_seen=True
-            ).message_api_id
+            api.messages.wait_for(1, timeout=10.0, interval=0.001, mark_seen=True).message_api_id
             == "m1"
         )
-        assert (
-            api.messages.wait_for_code(1, timeout=10.0, check_interval=0.001) == "1234"
+        assert api.messages.wait_for_code(1, timeout=10.0, check_interval=0.001) == "1234"
+        assert api.messages.wait_for_link(1, timeout=10.0, check_interval=0.001).startswith(
+            "https://x.com/c"
         )
-        assert api.messages.wait_for_link(
-            1, timeout=10.0, check_interval=0.001
-        ).startswith("https://x.com/c")
         conf = api.messages.wait_for_confirmation_email(
             1, digit_code_mask=r"\b(\d{4})\b", timeout=10.0, check_interval=0.001
         )
@@ -1311,9 +1271,7 @@ def test_sync_sections_and_facades():
         assert api.get_message(1, "m1").message_api_id == "m1"
         assert api.mark_read(1, "m1").seen is True
         assert api.get_source(1, "m1").data == "raw"
-        assert (
-            api.wait_for_message(1, timeout=10.0, interval=0.001).message_api_id == "m1"
-        )
+        assert api.wait_for_message(1, timeout=10.0, interval=0.001).message_api_id == "m1"
         assert api.wait_for_code(1, timeout=10.0, check_interval=0.001) == "1234"
         assert api.wait_for_link(1, timeout=10.0, check_interval=0.001).startswith(
             "https://x.com/c"
@@ -1342,23 +1300,14 @@ def test_sync_sections_and_facades():
         # 6. Admin section & flat shortcuts
         assert api.admin.stats()["total"] == 1
         assert api.admin.retention_list() == []
-        assert (
-            api.admin.retention_set("mail.tm", mailbox_ttl_hours=24).mailbox_ttl_hours
-            == 24
-        )
+        assert api.admin.retention_set("mail.tm", mailbox_ttl_hours=24).mailbox_ttl_hours == 24
         api.admin.retention_disable("mail.tm")
         assert api.admin.retention_run().mailboxes_deleted == 0
         assert api.admin.domain_cache().enabled is True
-        assert (
-            api.admin.domain_cache_save(enabled=False, interval_seconds=120).enabled
-            is False
-        )
+        assert api.admin.domain_cache_save(enabled=False, interval_seconds=120).enabled is False
         assert api.admin.domain_cache_run().refreshed == []
         assert api.admin.gmail_creds().configured is True
-        assert (
-            api.admin.gmail_creds_save(client_id="c2", client_secret="sec2").client_id
-            == "c2"
-        )
+        assert api.admin.gmail_creds_save(client_id="c2", client_secret="sec2").client_id == "c2"
         api.admin.gmail_creds_clear()
 
         # Admin untyped keys
@@ -1390,10 +1339,7 @@ def test_sync_sections_and_facades():
 
         # Facades
         assert api.domain_cache_settings().enabled is True
-        assert (
-            api.save_domain_cache_settings(enabled=False, interval_seconds=120).enabled
-            is False
-        )
+        assert api.save_domain_cache_settings(enabled=False, interval_seconds=120).enabled is False
         assert api.refresh_domain_cache().refreshed == []
 
         # 7. Keys section (typed)
@@ -1426,9 +1372,7 @@ def test_sync_iter_messages():
             ],
         )
 
-    client = httpx.AsyncClient(
-        base_url="http://test", transport=httpx.MockTransport(handler)
-    )
+    client = httpx.AsyncClient(base_url="http://test", transport=httpx.MockTransport(handler))
     with SyncMaily(client=client) as api:
         yielded = []
         for msg in api.messages.iter_messages(1, poll_interval=0.001, timeout=10.0):
@@ -1444,9 +1388,7 @@ def test_sync_iter_messages():
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize(
-    "err_cls", [httpx.ConnectTimeout, httpx.ConnectError, httpx.NetworkError]
-)
+@pytest.mark.parametrize("err_cls", [httpx.ConnectTimeout, httpx.ConnectError, httpx.NetworkError])
 async def test_transport_transient_network_errors_recovery(err_cls):
     calls = 0
 
@@ -1457,9 +1399,7 @@ async def test_transport_transient_network_errors_recovery(err_cls):
             raise err_cls("transient connection glitch")
         return httpx.Response(200, json={"status": "recovered"})
 
-    client = httpx.AsyncClient(
-        base_url="http://test", transport=httpx.MockTransport(handler)
-    )
+    client = httpx.AsyncClient(base_url="http://test", transport=httpx.MockTransport(handler))
     api = Maily(client=client, max_retries=3, retry_backoff=0.0001)
     res = await api._transport.request("GET", "/status")
     assert res == {"status": "recovered"}
@@ -1475,9 +1415,7 @@ async def test_transport_transient_network_errors_exhaustion():
         calls += 1
         raise httpx.ConnectError("host unreachable")
 
-    client = httpx.AsyncClient(
-        base_url="http://test", transport=httpx.MockTransport(handler)
-    )
+    client = httpx.AsyncClient(base_url="http://test", transport=httpx.MockTransport(handler))
     api = Maily(client=client, max_retries=2, retry_backoff=0.0001)
     with pytest.raises(ApiError) as exc_info:
         await api._transport.request("GET", "/status")
@@ -1495,9 +1433,7 @@ async def test_transport_read_timeout_no_retry():
         calls += 1
         raise httpx.ReadTimeout("read timed out")
 
-    client = httpx.AsyncClient(
-        base_url="http://test", transport=httpx.MockTransport(handler)
-    )
+    client = httpx.AsyncClient(base_url="http://test", transport=httpx.MockTransport(handler))
     api = Maily(client=client, max_retries=5, retry_backoff=0.0001)
     with pytest.raises(ApiError) as exc_info:
         await api._transport.request("GET", "/status")
@@ -1561,9 +1497,7 @@ async def test_transport_429_retry_after_header_parsing():
             )
         return httpx.Response(200, json={"success": True})
 
-    c1 = httpx.AsyncClient(
-        base_url="http://test", transport=httpx.MockTransport(h_float)
-    )
+    c1 = httpx.AsyncClient(base_url="http://test", transport=httpx.MockTransport(h_float))
     api1 = Maily(client=c1, max_retries=2, retry_backoff=0.0001)
     assert await api1._transport.request("GET", "/rate") == {"success": True}
     assert calls == 2
@@ -1599,9 +1533,7 @@ async def test_transport_429_retry_after_header_parsing():
             )
         return httpx.Response(200, json={"success": True})
 
-    c3 = httpx.AsyncClient(
-        base_url="http://test", transport=httpx.MockTransport(h_invalid)
-    )
+    c3 = httpx.AsyncClient(base_url="http://test", transport=httpx.MockTransport(h_invalid))
     api3 = Maily(client=c3, max_retries=1, retry_backoff=0.0001)
     assert await api3._transport.request("GET", "/rate") == {"success": True}
     assert calls == 2
@@ -1616,9 +1548,7 @@ async def test_transport_429_retry_after_header_parsing():
             429, headers={"Retry-After": "0.001"}, json={"detail": "Limit exceeded"}
         )
 
-    c4 = httpx.AsyncClient(
-        base_url="http://test", transport=httpx.MockTransport(h_exhaust)
-    )
+    c4 = httpx.AsyncClient(base_url="http://test", transport=httpx.MockTransport(h_exhaust))
     api4 = Maily(client=c4, max_retries=2, retry_backoff=0.0001)
     with pytest.raises(RateLimitError) as exc_info:
         await api4._transport.request("GET", "/rate")
@@ -1645,9 +1575,7 @@ async def test_transport_non_transient_errors_fail_immediately(status, exc_type)
         calls += 1
         return httpx.Response(status, json={"detail": f"Error {status}"})
 
-    client = httpx.AsyncClient(
-        base_url="http://test", transport=httpx.MockTransport(handler)
-    )
+    client = httpx.AsyncClient(base_url="http://test", transport=httpx.MockTransport(handler))
     api = Maily(client=client, max_retries=3)
     with pytest.raises(exc_type):
         await api._transport.request("GET", "/error")
@@ -1663,9 +1591,7 @@ async def test_transport_default_max_retries_zero():
         calls += 1
         raise httpx.ConnectError("refused")
 
-    client = httpx.AsyncClient(
-        base_url="http://test", transport=httpx.MockTransport(handler)
-    )
+    client = httpx.AsyncClient(base_url="http://test", transport=httpx.MockTransport(handler))
     api = Maily(client=client)
     assert api.max_retries == 0
     assert api.retry_backoff == 0.5
@@ -1721,15 +1647,11 @@ def test_extract_detail_fastapi_422_variations():
 
     # 4. Root prefixes stripped (query, path, header, cookie, body)
     for prefix in ["body", "query", "path", "header", "cookie"]:
-        r = httpx.Response(
-            422, json={"detail": [{"loc": [prefix, "token"], "msg": "missing"}]}
-        )
+        r = httpx.Response(422, json={"detail": [{"loc": [prefix, "token"], "msg": "missing"}]})
         assert _extract_detail(r) == "token: missing"
 
     # 5. Non-stripped root prefix
-    r5 = httpx.Response(
-        422, json={"detail": [{"loc": ["custom", "field"], "msg": "invalid"}]}
-    )
+    r5 = httpx.Response(422, json={"detail": [{"loc": ["custom", "field"], "msg": "invalid"}]})
     assert _extract_detail(r5) == "custom.field: invalid"
 
 
@@ -1837,9 +1759,7 @@ def test_extracted_confirmation_dual_access_and_mapping_protocol():
     assert isinstance(d, dict)
     assert d["confirmation_code"] == "491023"
 
-    def receiver(
-        *, message_id: str, confirmation_code: str | None = None, **extra: Any
-    ) -> str:
+    def receiver(*, message_id: str, confirmation_code: str | None = None, **extra: Any) -> str:
         return f"{message_id}:{confirmation_code}"
 
     assert receiver(**conf) == "msg-101:491023"
@@ -1878,9 +1798,7 @@ async def test_wait_for_parameter_validations():
 
     # 3. Invalid regular expression
     with pytest.raises(ValueError, match="Invalid regular expression digit_code_mask"):
-        await api.messages.wait_for_confirmation_email(
-            1, digit_code_mask="[invalid-regex("
-        )
+        await api.messages.wait_for_confirmation_email(1, digit_code_mask="[invalid-regex(")
 
 
 @pytest.mark.asyncio
@@ -1967,9 +1885,7 @@ async def test_wait_for_confirmation_email_polling_scenarios(
 
         return httpx.Response(404)
 
-    client = httpx.AsyncClient(
-        base_url="http://test", transport=httpx.MockTransport(handler)
-    )
+    client = httpx.AsyncClient(base_url="http://test", transport=httpx.MockTransport(handler))
     api = Maily(client=client)
 
     conf = await api.messages.wait_for_confirmation_email(
@@ -2012,9 +1928,7 @@ async def test_wait_for_link_timeout_and_iter_messages_timeout():
     def handler(request: httpx.Request) -> httpx.Response:
         return httpx.Response(200, json=[])
 
-    client = httpx.AsyncClient(
-        base_url="http://test", transport=httpx.MockTransport(handler)
-    )
+    client = httpx.AsyncClient(base_url="http://test", transport=httpx.MockTransport(handler))
     api = Maily(client=client)
 
     # wait_for_link timeout raises WaitTimeoutError
@@ -2107,9 +2021,7 @@ async def test_admin_api_raw_dict_methods():
         if m == "GET" and p == "/v1/admin/keys":
             return httpx.Response(200, json=[{"id": 10, "name": "k10"}])
         if m == "POST" and p == "/v1/admin/keys":
-            return httpx.Response(
-                201, json={"id": 11, "name": "k11", "secret": "sk-11"}
-            )
+            return httpx.Response(201, json={"id": 11, "name": "k11", "secret": "sk-11"})
         if m == "GET" and p == "/v1/admin/keys/10":
             return httpx.Response(200, json={"id": 10, "name": "k10"})
         if m == "GET" and p == "/v1/admin/keys/me":
@@ -2126,9 +2038,7 @@ async def test_admin_api_raw_dict_methods():
             return httpx.Response(204)
         return httpx.Response(404)
 
-    client = httpx.AsyncClient(
-        base_url="http://test", transport=httpx.MockTransport(handler)
-    )
+    client = httpx.AsyncClient(base_url="http://test", transport=httpx.MockTransport(handler))
     api = Maily(client=client)
     try:
         assert (await api.admin.keys()) == [{"id": 10, "name": "k10"}]
@@ -2149,9 +2059,7 @@ async def test_admin_api_raw_dict_methods():
             scope={"providers": [], "parent_ids": [], "actions": []},
         )
         assert updated["name"] == "k10-updated"
-        ret = await api.admin.key_retention_set(
-            10, [{"provider": "mail.tm", "ttl": 10}]
-        )
+        ret = await api.admin.key_retention_set(10, [{"provider": "mail.tm", "ttl": 10}])
         assert len(ret) == 1
         rot = await api.admin.key_rotate(10)
         assert rot["secret"] == "sk-10-rotated"
@@ -2206,9 +2114,7 @@ async def test_mailboxes_list_params_and_wait_for_mark_seen():
             )
         return httpx.Response(404)
 
-    client = httpx.AsyncClient(
-        base_url="http://test", transport=httpx.MockTransport(handler)
-    )
+    client = httpx.AsyncClient(base_url="http://test", transport=httpx.MockTransport(handler))
     api = Maily(client=client)
     try:
         # Exercise all params: provider, active, q, limit, offset
@@ -2223,9 +2129,7 @@ async def test_mailboxes_list_params_and_wait_for_mark_seen():
         assert seen_params["offset"] == "10"
 
         # Exercise wait_for with mark_seen=True
-        msg = await api.messages.wait_for(
-            1, timeout=10.0, interval=0.001, mark_seen=True
-        )
+        msg = await api.messages.wait_for(1, timeout=10.0, interval=0.001, mark_seen=True)
         assert msg.message_api_id == "m-seen"
         assert marked_seen == ["m-seen"]
     finally:
@@ -2272,9 +2176,7 @@ async def test_additional_edge_cases(monkeypatch: pytest.MonkeyPatch):
             )
         return httpx.Response(404)
 
-    client = httpx.AsyncClient(
-        base_url="http://test", transport=httpx.MockTransport(handler)
-    )
+    client = httpx.AsyncClient(base_url="http://test", transport=httpx.MockTransport(handler))
     api = Maily(client=client)
     try:
         # url_contain with empty string
@@ -2285,10 +2187,7 @@ async def test_additional_edge_cases(monkeypatch: pytest.MonkeyPatch):
 
         # iter_messages with timeout expiring before poll
         iter_msgs = [
-            m
-            async for m in api.messages.iter_messages(
-                1, timeout=0.001, poll_interval=0.05
-            )
+            m async for m in api.messages.iter_messages(1, timeout=0.001, poll_interval=0.05)
         ]
         assert iter_msgs == []
 
@@ -2308,9 +2207,7 @@ async def test_additional_edge_cases(monkeypatch: pytest.MonkeyPatch):
 
     # 4. SyncMessagesAPI.iter_messages timeout break paths
     with SyncMaily(client=client) as sync_api:
-        sync_msgs = list(
-            sync_api.messages.iter_messages(1, timeout=0.001, poll_interval=0.05)
-        )
+        sync_msgs = list(sync_api.messages.iter_messages(1, timeout=0.001, poll_interval=0.05))
         assert sync_msgs == []
 
     # 5. SyncMaily init failure handling

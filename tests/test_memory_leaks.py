@@ -18,12 +18,8 @@ async def test_memory_httpx_client_lifecycle_no_leaks():
     snapshot_before = tracemalloc.take_snapshot()
 
     for _ in range(500):
-        transport = httpx.MockTransport(
-            lambda req: httpx.Response(200, json={"status": "ok"})
-        )
-        async with httpx.AsyncClient(
-            transport=transport, base_url="http://testserver"
-        ) as client:
+        transport = httpx.MockTransport(lambda req: httpx.Response(200, json={"status": "ok"}))
+        async with httpx.AsyncClient(transport=transport, base_url="http://testserver") as client:
             resp = await client.get("/health")
             assert resp.status_code == 200
 
@@ -40,9 +36,7 @@ async def test_memory_httpx_client_lifecycle_no_leaks():
     # Peak memory during 500 client requests should stay under 25 MB
     assert peak_mb < 25.0, f"Peak memory was too high: {peak_mb:.2f} MB"
     # Uncollected memory difference must be under 2 MB (no leak in transport/client)
-    assert (
-        total_leaked_mb < 2.0
-    ), f"Memory leak detected: {total_leaked_mb:.2f} MB uncollected"
+    assert total_leaked_mb < 2.0, f"Memory leak detected: {total_leaked_mb:.2f} MB uncollected"
 
 
 def test_memory_batch_message_processing_high_watermark():
@@ -82,9 +76,7 @@ def test_memory_batch_message_processing_high_watermark():
     # High watermark assertion: peak memory must remain strictly under 25 MB
     assert peak_mb < 25.0, f"Processing peak memory exceeded limit: {peak_mb:.2f} MB"
     # Retained memory after garbage collection must be under 1.5 MB
-    assert (
-        current_mb < 1.5
-    ), f"Retained memory too high after batch processing: {current_mb:.2f} MB"
+    assert current_mb < 1.5, f"Retained memory too high after batch processing: {current_mb:.2f} MB"
 
 
 def test_memory_crypto_rotation_memory_stability():

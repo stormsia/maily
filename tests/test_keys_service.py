@@ -69,9 +69,7 @@ async def test_create_stores_ciphertext_and_returns_plaintext_once_when_scope_is
     created = await key_svc.create_key(
         session,
         _settings(),
-        key_svc.KeyCreate(
-            name="ops", expires_at=None, scope=READ_SCOPE, root_key=ROOT_KEY
-        ),
+        key_svc.KeyCreate(name="ops", expires_at=None, scope=READ_SCOPE, root_key=ROOT_KEY),
     )
     assert created.secret.startswith("mk_")
     assert created.secret != ROOT_KEY
@@ -92,9 +90,7 @@ async def test_list_and_get_omit_secret_when_key_exists(session: AsyncSession) -
     created = await key_svc.create_key(
         session,
         _settings(),
-        key_svc.KeyCreate(
-            name="ops", expires_at=None, scope=READ_SCOPE, root_key=ROOT_KEY
-        ),
+        key_svc.KeyCreate(name="ops", expires_at=None, scope=READ_SCOPE, root_key=ROOT_KEY),
     )
     listed = await key_svc.list_keys(session)
     fetched = await key_svc.get_key(session, created.id)
@@ -115,9 +111,7 @@ async def test_reveal_returns_same_secret_when_called_twice(
     created = await key_svc.create_key(
         session,
         _settings(),
-        key_svc.KeyCreate(
-            name="ops", expires_at=None, scope=READ_SCOPE, root_key=ROOT_KEY
-        ),
+        key_svc.KeyCreate(name="ops", expires_at=None, scope=READ_SCOPE, root_key=ROOT_KEY),
     )
     first = await key_svc.reveal_key(session, _settings(), created.id)
     second = await key_svc.reveal_key(session, _settings(), created.id)
@@ -133,14 +127,10 @@ async def test_rotate_keeps_id_and_replaces_secret_when_root_key_is_provided(
     created = await key_svc.create_key(
         session,
         _settings(),
-        key_svc.KeyCreate(
-            name="ops", expires_at=None, scope=READ_SCOPE, root_key=ROOT_KEY
-        ),
+        key_svc.KeyCreate(name="ops", expires_at=None, scope=READ_SCOPE, root_key=ROOT_KEY),
     )
     old_sha = _sha256(created.secret)
-    rotated = await key_svc.rotate_key(
-        session, _settings(), created.id, root_key=ROOT_KEY
-    )
+    rotated = await key_svc.rotate_key(session, _settings(), created.id, root_key=ROOT_KEY)
     row = await session.get(ApiKey, created.id)
     assert row is not None
     assert rotated.id == created.id
@@ -160,9 +150,7 @@ async def test_delete_raises_409_when_live_mailbox_references_key(
     created = await key_svc.create_key(
         session,
         _settings(),
-        key_svc.KeyCreate(
-            name="ops", expires_at=None, scope=READ_SCOPE, root_key=ROOT_KEY
-        ),
+        key_svc.KeyCreate(name="ops", expires_at=None, scope=READ_SCOPE, root_key=ROOT_KEY),
     )
     session.add(
         Mailbox(
@@ -188,9 +176,7 @@ async def test_delete_succeeds_when_only_soft_deleted_mailbox_references_key(
     created = await key_svc.create_key(
         session,
         _settings(),
-        key_svc.KeyCreate(
-            name="ops", expires_at=None, scope=READ_SCOPE, root_key=ROOT_KEY
-        ),
+        key_svc.KeyCreate(name="ops", expires_at=None, scope=READ_SCOPE, root_key=ROOT_KEY),
     )
     mailbox = Mailbox(
         provider="mail.tm",
@@ -224,9 +210,7 @@ async def test_delete_raises_409_when_gmail_account_references_key(
     created = await key_svc.create_key(
         session,
         _settings(),
-        key_svc.KeyCreate(
-            name="ops", expires_at=None, scope=READ_SCOPE, root_key=ROOT_KEY
-        ),
+        key_svc.KeyCreate(name="ops", expires_at=None, scope=READ_SCOPE, root_key=ROOT_KEY),
     )
     session.add(
         GmailAccount(
@@ -250,21 +234,13 @@ async def test_delete_removes_key_retention_and_keeps_mail_when_unreferenced(
     created = await key_svc.create_key(
         session,
         _settings(),
-        key_svc.KeyCreate(
-            name="ops", expires_at=None, scope=READ_SCOPE, root_key=ROOT_KEY
-        ),
+        key_svc.KeyCreate(name="ops", expires_at=None, scope=READ_SCOPE, root_key=ROOT_KEY),
     )
-    session.add(
-        KeyRetention(key_id=created.id, provider="mail.tm", mailbox_ttl_hours=24)
-    )
+    session.add(KeyRetention(key_id=created.id, provider="mail.tm", mailbox_ttl_hours=24))
     await session.flush()
     await key_svc.delete_key(session, created.id)
     remaining = (
-        (
-            await session.execute(
-                select(KeyRetention).where(KeyRetention.key_id == created.id)
-            )
-        )
+        (await session.execute(select(KeyRetention).where(KeyRetention.key_id == created.id)))
         .scalars()
         .all()
     )
@@ -280,9 +256,7 @@ async def test_update_changes_name_expiry_and_scope_when_patch_is_valid(
     created = await key_svc.create_key(
         session,
         _settings(),
-        key_svc.KeyCreate(
-            name="ops", expires_at=None, scope=READ_SCOPE, root_key=ROOT_KEY
-        ),
+        key_svc.KeyCreate(name="ops", expires_at=None, scope=READ_SCOPE, root_key=ROOT_KEY),
     )
     expires = datetime(2030, 1, 2, 3, 4, 5)
     next_scope = {
@@ -325,9 +299,7 @@ async def test_scope_rejected_when_shape_or_action_is_illegal(
         await key_svc.create_key(
             session,
             _settings(),
-            key_svc.KeyCreate(
-                name="bad", expires_at=None, scope=scope, root_key=ROOT_KEY
-            ),
+            key_svc.KeyCreate(name="bad", expires_at=None, scope=scope, root_key=ROOT_KEY),
         )
     assert raised.value.status_code == 422
 

@@ -58,12 +58,8 @@ def test_client_file_is_self_contained():
 def test_versions_stay_in_sync():
     mod = _load_standalone()
     assert mod.__version__ == maily.__version__
-    pyproject = (Path(__file__).resolve().parents[1] / "pyproject.toml").read_text(
-        encoding="utf-8"
-    )
-    client_pyproject = (CLIENT_FILE.parent / "pyproject.toml").read_text(
-        encoding="utf-8"
-    )
+    pyproject = (Path(__file__).resolve().parents[1] / "pyproject.toml").read_text(encoding="utf-8")
+    client_pyproject = (CLIENT_FILE.parent / "pyproject.toml").read_text(encoding="utf-8")
     assert f'version = "{maily.__version__}"' in pyproject
     assert f'version = "{maily.__version__}"' in client_pyproject
 
@@ -82,9 +78,9 @@ def test_standalone_mirror_is_current():
     build.loader.exec_module(build_mod)
 
     expected = build_mod.render()
-    assert (
-        CLIENT_FILE.read_text(encoding="utf-8") == expected
-    ), f"{CLIENT_FILE.name} is stale — run `python scripts/build_client.py`"
+    assert CLIENT_FILE.read_text(encoding="utf-8") == expected, (
+        f"{CLIENT_FILE.name} is stale — run `python scripts/build_client.py`"
+    )
 
 
 def test_api_surface_matches_packaged_client():
@@ -125,20 +121,14 @@ def test_parse_version_and_check_update(monkeypatch: pytest.MonkeyPatch) -> None
     )
 
     # remote has no version -> raises ClientError
-    monkeypatch.setattr(
-        standalone_client.httpx, "get", lambda *a, **k: _Resp("no version here")
-    )
+    monkeypatch.setattr(standalone_client.httpx, "get", lambda *a, **k: _Resp("no version here"))
     with pytest.raises(ClientError, match="could not read __version__"):
         standalone_client.check_update("https://example.invalid/client.py")
 
 
-def test_self_update_replaces_target_file(
-    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
-) -> None:
+def test_self_update_replaces_target_file(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     target = tmp_path / "client.py"
-    target.write_text(
-        f'__version__ = "{standalone_client.__version__}"\n', encoding="utf-8"
-    )
+    target.write_text(f'__version__ = "{standalone_client.__version__}"\n', encoding="utf-8")
 
     monkeypatch.setattr(inspect, "getsourcefile", lambda *_a, **_k: str(target))
 
@@ -151,9 +141,7 @@ def test_self_update_replaces_target_file(
     assert standalone_client.self_update("https://example.invalid/client.py") is False
 
     # invalid remote version -> raises ClientError
-    monkeypatch.setattr(
-        standalone_client.httpx, "get", lambda *a, **k: _Resp("no version here")
-    )
+    monkeypatch.setattr(standalone_client.httpx, "get", lambda *a, **k: _Resp("no version here"))
     with pytest.raises(ClientError, match="could not read __version__"):
         standalone_client.self_update("https://example.invalid/client.py")
 
@@ -170,19 +158,14 @@ def test_self_update_replaces_target_file(
         lambda *a, **k: _Resp('__version__ = "9.9.9"\nprint("hi")'),
     )
     assert (
-        standalone_client.self_update(
-            "https://example.invalid/client.py", after=on_after
-        )
-        is True
+        standalone_client.self_update("https://example.invalid/client.py", after=on_after) is True
     )
     assert after_called is True
     assert '__version__ = "9.9.9"' in target.read_text(encoding="utf-8")
     assert not (tmp_path / "client.py.tmp").exists()
 
     # newer version without after callback
-    target.write_text(
-        f'__version__ = "{standalone_client.__version__}"\n', encoding="utf-8"
-    )
+    target.write_text(f'__version__ = "{standalone_client.__version__}"\n', encoding="utf-8")
     assert standalone_client.self_update("https://example.invalid/client.py") is True
 
 

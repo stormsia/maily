@@ -61,33 +61,25 @@ def generate_markdown_report(
 
     is_success = pct_covered >= threshold
     status_icon = "🟢 **PASS**" if is_success else "🔴 **FAIL**"
-    score_badge = (
-        f"🟢 `{pct_covered:.1f}%`" if is_success else f"🔴 `{pct_covered:.1f}%`"
-    )
+    score_badge = f"🟢 `{pct_covered:.1f}%`" if is_success else f"🔴 `{pct_covered:.1f}%`"
 
     lines.append(
         f"> **Verdict:** {status_icon} | **Diff Coverage:** {score_badge} | "
         f"**Threshold:** `{threshold:.1f}%` | **Lines:** `{covered_lines}/{total_lines}` covered\n"
     )
 
-    lines.append(
-        "| Source File | Lines in PR | Covered | Missing | Coverage % | Uncovered Lines |"
-    )
+    lines.append("| Source File | Lines in PR | Covered | Missing | Coverage % | Uncovered Lines |")
     lines.append("| :--- | :---: | :---: | :---: | :---: | :--- |")
 
     src_stats = data.get("src_stats", {})
     for src_path, stats in sorted(src_stats.items()):
-        total_f_lines = len(stats.get("covered_lines", [])) + len(
-            stats.get("violation_lines", [])
-        )
+        total_f_lines = len(stats.get("covered_lines", [])) + len(stats.get("violation_lines", []))
         if total_f_lines == 0:
             continue
         missing_lines = stats.get("violation_lines", [])
         covered_f_lines = total_f_lines - len(missing_lines)
         f_pct = float(stats.get("percent_covered", 100.0))
-        pct_display = (
-            f"🟢 **{f_pct:.1f}%**" if f_pct >= threshold else f"🔴 **{f_pct:.1f}%**"
-        )
+        pct_display = f"🟢 **{f_pct:.1f}%**" if f_pct >= threshold else f"🔴 **{f_pct:.1f}%**"
         missing_display = format_lines_range(missing_lines)
 
         lines.append(
@@ -113,9 +105,7 @@ def post_sticky_pr_comment(comment_body: str) -> None:
     gh_token = os.environ.get("GH_TOKEN") or os.environ.get("GITHUB_TOKEN")
 
     if not pr_number or not repo or not gh_token:
-        print(
-            "Note: Sticky PR comment skipped (missing PR_NUMBER or REPO or GH_TOKEN)."
-        )
+        print("Note: Sticky PR comment skipped (missing PR_NUMBER or REPO or GH_TOKEN).")
         return
 
     marker = "<!-- maily-pr-diff-coverage-summary -->"
@@ -160,9 +150,7 @@ def main() -> int:
         with contextlib.suppress(Exception):
             sys.stderr.reconfigure(encoding="utf-8")
 
-    parser = argparse.ArgumentParser(
-        description="Check test coverage of PR diff lines."
-    )
+    parser = argparse.ArgumentParser(description="Check test coverage of PR diff lines.")
     parser.add_argument(
         "coverage_file",
         nargs="?",
@@ -254,9 +242,7 @@ def main() -> int:
         post_sticky_pr_comment(markdown_text)
 
     if not is_success:
-        print(
-            f"::error::PR diff coverage is below required threshold {args.threshold:.1f}%!"
-        )
+        print(f"::error::PR diff coverage is below required threshold {args.threshold:.1f}%!")
         return 1
 
     print(f"PR diff coverage passed (>= {args.threshold:.1f}%).")

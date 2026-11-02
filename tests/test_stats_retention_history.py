@@ -111,9 +111,7 @@ def test_retention_deletes_transparently_recorded_in_10_day_history_by_domain(
         mb1 = _insert_mailbox(
             conn, address="alice@domain-one.com", created_at=old, owner_key_id=None
         )
-        mb2 = _insert_mailbox(
-            conn, address="bob@domain-two.com", created_at=old, owner_key_id=None
-        )
+        mb2 = _insert_mailbox(conn, address="bob@domain-two.com", created_at=old, owner_key_id=None)
 
         # Create 2 expired messages
         _insert_message(conn, mailbox_id=mb1, message_api_id="msg-1", received_at=old)
@@ -171,20 +169,12 @@ def test_retention_message_deletes_recorded_by_domain(tmp_path: Path) -> None:
         old = (now - timedelta(days=2)).strftime("%Y-%m-%d %H:%M:%S")
 
         conn = _db(tmp_path)
-        mb = _insert_mailbox(
-            conn, address="user@mycorp.org", created_at=fresh, owner_key_id=None
-        )
-        _insert_message(
-            conn, mailbox_id=mb, message_api_id="old-msg-1", received_at=old
-        )
-        _insert_message(
-            conn, mailbox_id=mb, message_api_id="old-msg-2", received_at=old
-        )
+        mb = _insert_mailbox(conn, address="user@mycorp.org", created_at=fresh, owner_key_id=None)
+        _insert_message(conn, mailbox_id=mb, message_api_id="old-msg-1", received_at=old)
+        _insert_message(conn, mailbox_id=mb, message_api_id="old-msg-2", received_at=old)
 
         # Message retention rule: 1 hour (mailbox rule: None)
-        conn.execute(
-            "INSERT INTO retention (provider, message_ttl_hours) VALUES ('stub', 1)"
-        )
+        conn.execute("INSERT INTO retention (provider, message_ttl_hours) VALUES ('stub', 1)")
         conn.commit()
         conn.close()
 
@@ -238,12 +228,8 @@ def test_scoped_key_retention_history_preserves_deleted_accounts_and_messages(
             conn, address="admin@rootcorp.com", created_at=old, owner_key_id=None
         )
 
-        _insert_message(
-            conn, mailbox_id=key_mb, message_api_id="key-msg", received_at=old
-        )
-        _insert_message(
-            conn, mailbox_id=root_mb, message_api_id="root-msg", received_at=old
-        )
+        _insert_message(conn, mailbox_id=key_mb, message_api_id="key-msg", received_at=old)
+        _insert_message(conn, mailbox_id=root_mb, message_api_id="root-msg", received_at=old)
 
         conn.execute(
             "INSERT INTO retention (provider, mailbox_ttl_hours, message_ttl_hours) VALUES ('stub', 1, 1)"
@@ -306,9 +292,7 @@ def test_api_mailbox_and_message_lifecycle_updates_counters_by_domain(
         assert s2["history"]["by_domain"]["custom-domain.xyz"]["message_received"] == 1
 
         # 3. Delete message
-        del_msg = client.delete(
-            f"/v1/mailboxes/{mb_id}/messages/m1", headers={"X-API-Key": ROOT}
-        )
+        del_msg = client.delete(f"/v1/mailboxes/{mb_id}/messages/m1", headers={"X-API-Key": ROOT})
         assert del_msg.status_code == 204
 
         s3 = client.get("/v1/admin/stats", headers={"X-API-Key": ROOT}).json()

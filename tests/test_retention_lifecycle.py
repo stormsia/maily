@@ -140,9 +140,7 @@ async def test_retention_crud_and_nonexistent_deletes(tmp_path: Path):
             deleted_again = await delete_retention(session, "nonexistent")
             assert deleted_again is False
 
-            deleted_kr_again = await delete_key_retention(
-                session, api_key.id, "nonexistent"
-            )
+            deleted_kr_again = await delete_key_retention(session, api_key.id, "nonexistent")
             assert deleted_kr_again is False
 
             await session.commit()
@@ -199,15 +197,9 @@ async def test_run_sweep_handling_upstream_states(tmp_path: Path):
     try:
         # Seed global retention rule
         async with factory() as session:
-            session.add(
-                Retention(provider="p_false", mailbox_ttl_hours=1, message_ttl_hours=1)
-            )
-            session.add(
-                Retention(provider="p_gone", mailbox_ttl_hours=1, message_ttl_hours=1)
-            )
-            session.add(
-                Retention(provider="p_err", mailbox_ttl_hours=1, message_ttl_hours=1)
-            )
+            session.add(Retention(provider="p_false", mailbox_ttl_hours=1, message_ttl_hours=1))
+            session.add(Retention(provider="p_gone", mailbox_ttl_hours=1, message_ttl_hours=1))
+            session.add(Retention(provider="p_err", mailbox_ttl_hours=1, message_ttl_hours=1))
 
             old_time = utcnow_naive() - timedelta(hours=5)
 
@@ -252,9 +244,7 @@ async def test_run_sweep_handling_upstream_states(tmp_path: Path):
         registry.register(FlakySweepProvider("p_err", raise_err=True))
 
         lock = asyncio.Lock()
-        res = await run_sweep(
-            factory, registry, settings, lock=lock, force_maintenance=True
-        )
+        res = await run_sweep(factory, registry, settings, lock=lock, force_maintenance=True)
         assert res["mailboxes_deleted"] == 2
 
         # Verify box1 was soft-deleted (is_deleted=True)

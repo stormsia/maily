@@ -75,9 +75,7 @@ async def test_create_mailbox_posts_name_and_domain():
     http = _http(handler)
     provider = TempMailIO(http)
     try:
-        box = await provider.create_mailbox(
-            MailboxSpec(address="al234tf05o@yzcalo.com")
-        )
+        box = await provider.create_mailbox(MailboxSpec(address="al234tf05o@yzcalo.com"))
         assert box.provider == "temp-mail.io"
         assert box.address == "al234tf05o@yzcalo.com"
         assert box.token == "r0M69rpdW2k1Th5RRxna"

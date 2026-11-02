@@ -48,12 +48,8 @@ def _insert_key(
 ) -> int:
     import sqlite3
 
-    scope = json.dumps(
-        {"providers": providers, "parent_ids": parent_ids, "actions": actions}
-    )
-    conn = sqlite3.connect(
-        str(client.app.state.settings.database_url.split("///", 1)[1])
-    )
+    scope = json.dumps({"providers": providers, "parent_ids": parent_ids, "actions": actions})
+    conn = sqlite3.connect(str(client.app.state.settings.database_url.split("///", 1)[1]))
     conn.execute(
         "INSERT INTO api_keys (name, prefix, secret_enc, secret_sha256, scope_json)"
         " VALUES ('key-a', 'mk_aaaa', 'enc', ?, ?)",
@@ -71,9 +67,7 @@ def _use_stubs(client: TestClient) -> GmailProvider:
         [
             gmail,
             StubProvider("mail.tm", targets=make_targets("mail.tm", "tm.test")),
-            StubProvider(
-                "tempmail.plus", targets=make_targets("tempmail.plus", "plus.test")
-            ),
+            StubProvider("tempmail.plus", targets=make_targets("tempmail.plus", "plus.test")),
         ]
     )
     return gmail
@@ -84,9 +78,7 @@ def test_providers_returns_only_allowed_slugs(tmp_path: Path) -> None:
     secret = "mk_key-a-secret"
     with _app(tmp_path) as client:
         _use_stubs(client)
-        _insert_key(
-            client, secret=secret, providers=["mail.tm"], parent_ids=[], actions=[]
-        )
+        _insert_key(client, secret=secret, providers=["mail.tm"], parent_ids=[], actions=[])
 
         response = client.get("/v1/providers", headers={"X-API-Key": secret})
 
@@ -105,9 +97,7 @@ def test_providers_empty_allow_list_returns_every_slug(tmp_path: Path) -> None:
         root = client.get("/v1/providers", headers={"X-API-Key": ROOT})
 
         assert issued.status_code == 200
-        assert {row["slug"] for row in issued.json()} == {
-            row["slug"] for row in root.json()
-        }
+        assert {row["slug"] for row in issued.json()} == {row["slug"] for row in root.json()}
         assert "gmail" in {row["slug"] for row in issued.json()}
 
 
@@ -134,9 +124,7 @@ def test_targets_keeps_owned_and_listed_gmail_parents(tmp_path: Path) -> None:
     secret = "mk_key-a-secret"
     with _app(tmp_path) as client:
         _use_stubs(client)
-        key_id = _insert_key(
-            client, secret=secret, providers=["gmail"], parent_ids=[1], actions=[]
-        )
+        key_id = _insert_key(client, secret=secret, providers=["gmail"], parent_ids=[1], actions=[])
         _seed_parents(client, key_id)
 
         response = client.get("/v1/targets", headers={"X-API-Key": secret})
@@ -151,9 +139,7 @@ def test_targets_empty_parent_ids_keeps_owned_gmail_parent(tmp_path: Path) -> No
     secret = "mk_key-a-secret"
     with _app(tmp_path) as client:
         _use_stubs(client)
-        key_id = _insert_key(
-            client, secret=secret, providers=["gmail"], parent_ids=[], actions=[]
-        )
+        key_id = _insert_key(client, secret=secret, providers=["gmail"], parent_ids=[], actions=[])
         _seed_parents(client, key_id)
 
         response = client.get("/v1/targets", headers={"X-API-Key": secret})
@@ -210,9 +196,7 @@ def test_stats_counts_only_the_callers_rows(tmp_path: Path) -> None:
         assert received[0]["message_received"] == 1
         assert body["history"]["totals"]["message_received"] == 1
         assert body["history"]["totals"]["mailbox_created"] == 1
-        assert body["messages_last_7_days"] == [
-            {"date": received[0]["date"], "count": 1}
-        ]
+        assert body["messages_last_7_days"] == [{"date": received[0]["date"], "count": 1}]
         assert own_id != other_id
 
 
@@ -231,9 +215,7 @@ def test_root_stats_still_uses_the_global_ledger(tmp_path: Path) -> None:
 def _seed_parents(client: TestClient, key_id: int) -> None:
     import sqlite3
 
-    conn = sqlite3.connect(
-        str(client.app.state.settings.database_url.split("///", 1)[1])
-    )
+    conn = sqlite3.connect(str(client.app.state.settings.database_url.split("///", 1)[1]))
     token = encrypt(SECRET, "refresh")
     conn.execute(
         "INSERT INTO gmail_accounts (email, refresh_token_enc, status, owner_key_id)"
@@ -259,9 +241,7 @@ def _seed_stats(client: TestClient, key_id: int) -> tuple[int, int]:
 
     now = utcnow_naive()
     stamp = now.isoformat()
-    conn = sqlite3.connect(
-        str(client.app.state.settings.database_url.split("///", 1)[1])
-    )
+    conn = sqlite3.connect(str(client.app.state.settings.database_url.split("///", 1)[1]))
     tok = encrypt(SECRET, "tok")
     conn.execute(
         "INSERT INTO mailboxes (provider, address, mailbox_token_enc, owner_key_id, created_at, updated_at)"
@@ -310,9 +290,7 @@ def _seed_ledger(client: TestClient) -> None:
     import sqlite3
 
     day = (utcnow_naive() - timedelta(days=1)).date().isoformat()
-    conn = sqlite3.connect(
-        str(client.app.state.settings.database_url.split("///", 1)[1])
-    )
+    conn = sqlite3.connect(str(client.app.state.settings.database_url.split("///", 1)[1]))
     conn.execute(
         "INSERT INTO stats_events (day, provider, event, count) VALUES (?, 'stub', 'message_received', 9)",
         (day,),

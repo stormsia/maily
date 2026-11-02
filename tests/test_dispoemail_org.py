@@ -98,15 +98,10 @@ async def test_dispoemail_create_and_delete_mailbox():
     http = _http(handler)
     provider = DispoEmailOrg(http)
     try:
-        box = await provider.create_mailbox(
-            MailboxSpec(address="m472e0b2w5@vibe-hub.ccwu.cc")
-        )
+        box = await provider.create_mailbox(MailboxSpec(address="m472e0b2w5@vibe-hub.ccwu.cc"))
         assert box.address == "m472e0b2w5@vibe-hub.ccwu.cc"
         assert box.provider == "dispoemail.org"
-        assert (
-            box.token
-            == "0dde64f0955412c055d5e2acc9a430eb42005856787e8ee894b8af8ae09c1573"
-        )
+        assert box.token == "0dde64f0955412c055d5e2acc9a430eb42005856787e8ee894b8af8ae09c1573"
 
         ok = await provider.delete_mailbox(box)
         assert ok is True
@@ -166,9 +161,7 @@ async def test_dispoemail_list_and_get_messages():
                             "name": "Ivan Taran",
                             "address": "mister.ivan.boss@gmail.com",
                         },
-                        "to": [
-                            {"name": "", "address": "m690v3w4h715c@vibe-hub.ccwu.cc"}
-                        ],
+                        "to": [{"name": "", "address": "m690v3w4h715c@vibe-hub.ccwu.cc"}],
                         "cc": [],
                         "receivedAt": "2026-10-28T20:49:10.745Z",
                         "expiresAt": "2026-10-29T20:49:10.745Z",
@@ -340,12 +333,8 @@ async def test_dispoemail_create_multiple_mailboxes_no_cookie_leak():
     http = _http(handler)
     provider = DispoEmailOrg(http)
     try:
-        box1 = await provider.create_mailbox(
-            MailboxSpec(address="user1@vibe-hub.ccwu.cc")
-        )
-        box2 = await provider.create_mailbox(
-            MailboxSpec(address="user2@vibe-hub.ccwu.cc")
-        )
+        box1 = await provider.create_mailbox(MailboxSpec(address="user1@vibe-hub.ccwu.cc"))
+        box2 = await provider.create_mailbox(MailboxSpec(address="user2@vibe-hub.ccwu.cc"))
 
         assert box1.token == "token_1:session_1"
         assert box2.token == "token_2:session_2"
@@ -429,9 +418,7 @@ async def test_dispoemail_astro_session_multi_cookie_parsing():
         http = _http(_make_handler(headers_list, idx))
         provider = DispoEmailOrg(http)
         try:
-            box = await provider.create_mailbox(
-                MailboxSpec(address=f"user{idx}@vibe-hub.ccwu.cc")
-            )
+            box = await provider.create_mailbox(MailboxSpec(address=f"user{idx}@vibe-hub.ccwu.cc"))
             assert box.token == f"mb_tok_{idx}:{expected_sess}"
         finally:
             await http.close()
@@ -444,13 +431,9 @@ async def test_dispoemail_list_and_get_messages_forbidden_raises_auth_error():
         def _make_err_handler(code: int):
             def handler(request: httpx.Request) -> httpx.Response:
                 if request.url.path.startswith("/api/inboxes/"):
-                    return httpx.Response(
-                        code, json={"error": "unauthorized/forbidden"}
-                    )
+                    return httpx.Response(code, json={"error": "unauthorized/forbidden"})
                 if request.url.path.startswith("/api/messages/"):
-                    return httpx.Response(
-                        code, json={"error": "unauthorized/forbidden"}
-                    )
+                    return httpx.Response(code, json={"error": "unauthorized/forbidden"})
                 return httpx.Response(404)
 
             return handler

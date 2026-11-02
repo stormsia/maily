@@ -126,17 +126,13 @@ def benchmark_app(tmp_path_factory, fernet_key: str) -> Iterator[TestClient]:
 
 
 @pytest.mark.benchmark(group="crypto")
-def test_benchmark_crypto_encrypt_1kb(
-    benchmark, fernet_key: str, sample_payload_1kb: str
-):
+def test_benchmark_crypto_encrypt_1kb(benchmark, fernet_key: str, sample_payload_1kb: str):
     res = benchmark(encrypt, fernet_key, sample_payload_1kb)
     assert res is not None
 
 
 @pytest.mark.benchmark(group="crypto")
-def test_benchmark_crypto_decrypt_1kb(
-    benchmark, fernet_key: str, sample_encrypted_1kb: str
-):
+def test_benchmark_crypto_decrypt_1kb(benchmark, fernet_key: str, sample_encrypted_1kb: str):
     res = benchmark(decrypt, fernet_key, sample_encrypted_1kb)
     assert len(res) == 1024
 
@@ -228,25 +224,19 @@ def test_benchmark_health_endpoint(benchmark, benchmark_app: TestClient):
 
 @pytest.mark.benchmark(group="api")
 def test_benchmark_domain_cache_settings(benchmark, benchmark_app: TestClient):
-    response = benchmark(
-        benchmark_app.get, "/v1/admin/domain-cache", headers={"X-API-Key": SECRET}
-    )
+    response = benchmark(benchmark_app.get, "/v1/admin/domain-cache", headers={"X-API-Key": SECRET})
     assert response.status_code == 200
 
 
 @pytest.mark.benchmark(group="api")
 def test_benchmark_mailboxes_list(benchmark, benchmark_app: TestClient):
-    response = benchmark(
-        benchmark_app.get, "/v1/mailboxes", headers={"X-API-Key": SECRET}
-    )
+    response = benchmark(benchmark_app.get, "/v1/mailboxes", headers={"X-API-Key": SECRET})
     assert response.status_code == 200
 
 
 @pytest.mark.benchmark(group="api")
 def test_benchmark_admin_keys_list(benchmark, benchmark_app: TestClient):
-    response = benchmark(
-        benchmark_app.get, "/v1/admin/keys", headers={"X-API-Key": SECRET}
-    )
+    response = benchmark(benchmark_app.get, "/v1/admin/keys", headers={"X-API-Key": SECRET})
     assert response.status_code == 200
     assert len(response.json()) >= 1
 
@@ -257,6 +247,4 @@ def test_benchmark_admin_keys_list(benchmark, benchmark_app: TestClient):
 @pytest.mark.benchmark(group="client")
 def test_benchmark_client_init(benchmark):
     client = benchmark(Maily, base_url="http://localhost:8477", api_key="bench-key")
-    assert (
-        str(client._transport._client.base_url).rstrip("/") == "http://localhost:8477"
-    )
+    assert str(client._transport._client.base_url).rstrip("/") == "http://localhost:8477"

@@ -435,18 +435,12 @@ def main() -> None:
         dur = f"{data['duration']:.2f}s" if data["duration"] > 0 else "—"
 
         is_primary = ver == "3.15"
-        label = (
-            f"🐍 **Python {ver} (Primary)**" if is_primary else f"🐍 **Python {ver}**"
-        )
+        label = f"🐍 **Python {ver} (Primary)**" if is_primary else f"🐍 **Python {ver}**"
         line_cov = f"{cov_pct:.1f}%" if is_primary and cov_pct > 0 else "—"
         br_pct = float(coverage.get("percent_branches", 0.0))
         branch_cov = f"{br_pct:.1f}%" if is_primary and br_pct > 0 else "—"
 
-        stat = (
-            "✅ Passed"
-            if t_fail == 0 and t_tot > 0
-            else ("❌ Failed" if t_fail > 0 else "—")
-        )
+        stat = "✅ Passed" if t_fail == 0 and t_tot > 0 else ("❌ Failed" if t_fail > 0 else "—")
         lines.append(
             f"| {label} | {t_pass} / {t_fail} / {t_skip} | {dur} | {line_cov} | {branch_cov} | {stat} |"
         )
@@ -459,9 +453,7 @@ def main() -> None:
         lines.append("| Test Case | Module | Failure Reason |")
         lines.append("| :--- | :--- | :--- |")
         for fc in all_failed_cases:
-            lines.append(
-                f"| `{fc['name']}` | `{fc['classname']}` | `{fc['message']}` |"
-            )
+            lines.append(f"| `{fc['name']}` | `{fc['classname']}` | `{fc['message']}` |")
         lines.append("")
 
     # PR Diff Coverage Breakdown if available
@@ -496,22 +488,14 @@ def main() -> None:
 
     # Benchmarks SLA Snapshot
     lines.append("### ⚡ Performance Benchmarks Snapshot\n")
-    lines.append(
-        "| Component / Scenario | Mean Latency SLA | Throughput Baseline | Status |"
-    )
+    lines.append("| Component / Scenario | Mean Latency SLA | Throughput Baseline | Status |")
     lines.append("| :--- | :---: | :---: | :---: |")
-    lines.append(
-        "| 🔐 **Crypto (Token/Decrypt)** | `< 0.050 ms` | `> 50,000 ops/s` | 🟢 Optimal |"
-    )
+    lines.append("| 🔐 **Crypto (Token/Decrypt)** | `< 0.050 ms` | `> 50,000 ops/s` | 🟢 Optimal |")
     lines.append(
         "| 🛠️ **Utils (RateLimiter/Helpers)** | `< 0.030 ms` | `> 60,000 ops/s` | 🟢 Optimal |"
     )
-    lines.append(
-        "| 🌐 **API Health & Auth** | `< 10.0 ms` | `> 200 ops/s` | 🟢 Optimal |"
-    )
-    lines.append(
-        "| 📦 **Standalone Client Call** | `< 15.0 ms` | `> 150 ops/s` | 🟢 Optimal |"
-    )
+    lines.append("| 🌐 **API Health & Auth** | `< 10.0 ms` | `> 200 ops/s` | 🟢 Optimal |")
+    lines.append("| 📦 **Standalone Client Call** | `< 15.0 ms` | `> 150 ops/s` | 🟢 Optimal |")
     lines.append("")
     lines.append(
         "*Historical benchmark runs and tracking data: [Actions Benchmark Runs](https://github.com/stormsia/maily/actions/workflows/benchmarks.yml) | [Raw Metrics Branch](https://github.com/stormsia/maily/tree/gh-pages/dev/bench)*\n"

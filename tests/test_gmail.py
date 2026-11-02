@@ -249,9 +249,7 @@ async def test_concurrent_ensure_access_refreshes_once():
 @pytest.mark.asyncio
 async def test_refresh_invalid_grant_raises_mail_auth_error():
     def handler(request: httpx.Request) -> httpx.Response:
-        return httpx.Response(
-            400, json={"error": "invalid_grant", "error_description": "revoked"}
-        )
+        return httpx.Response(400, json={"error": "invalid_grant", "error_description": "revoked"})
 
     http = await _http(handler)
     oauth = GmailOAuth("cid", "csec", http)

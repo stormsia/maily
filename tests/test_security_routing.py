@@ -32,9 +32,7 @@ def test_path_traversal_prevention(tmp_path: Path):
 def test_invalid_bearer_token_rejection(tmp_path: Path):
     """Verify malformed authorization headers are safely rejected."""
     with client_for(tmp_path) as client:
-        resp = client.get(
-            "/v1/mailboxes", headers={"X-API-Key": "invalid_random_key_12345"}
-        )
+        resp = client.get("/v1/mailboxes", headers={"X-API-Key": "invalid_random_key_12345"})
         assert resp.status_code == 401
         assert resp.headers.get("x-mailtm-error") == "api_key"
 
@@ -43,16 +41,12 @@ def test_bearer_authorization_header(tmp_path: Path):
     """Verify Authorization: Bearer token is supported for auth and rejected if bad."""
     with client_for(tmp_path) as client:
         # Invalid Bearer
-        resp = client.get(
-            "/v1/providers", headers={"Authorization": "Bearer bad-token"}
-        )
+        resp = client.get("/v1/providers", headers={"Authorization": "Bearer bad-token"})
         assert resp.status_code == 401
         assert resp.headers.get("x-mailtm-error") == "api_key"
 
         # Valid Bearer
-        resp_valid = client.get(
-            "/v1/providers", headers={"Authorization": f"Bearer {ROOT}"}
-        )
+        resp_valid = client.get("/v1/providers", headers={"Authorization": f"Bearer {ROOT}"})
         assert resp_valid.status_code == 200
 
 

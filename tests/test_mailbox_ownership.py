@@ -66,9 +66,7 @@ def _key(client: TestClient, name: str, scope: dict[str, object]) -> str:
             created = await key_svc.create_key(
                 session,
                 client.app.state.settings,
-                key_svc.KeyCreate(
-                    name=name, expires_at=None, scope=scope, root_key=ROOT_KEY
-                ),
+                key_svc.KeyCreate(name=name, expires_at=None, scope=scope, root_key=ROOT_KEY),
             )
             await session.commit()
             return created.secret
@@ -162,9 +160,7 @@ def test_create_stamps_owner_key_id_and_root_stamps_null(client: TestClient) -> 
     key_a = _key(client, "a", _scope())
     owned = _create_mailbox(client, key_a, "owned@x.com")
     client.app.state.registry = ProviderRegistry([StubProvider(address="root@x.com")])
-    root_row = client.post(
-        "/v1/mailboxes", json={"provider": "stub"}, headers=_auth(ROOT_KEY)
-    )
+    root_row = client.post("/v1/mailboxes", json={"provider": "stub"}, headers=_auth(ROOT_KEY))
     assert root_row.status_code == 200, root_row.text
     session_factory = client.app.state.session_factory
 
@@ -174,9 +170,7 @@ def test_create_stamps_owner_key_id_and_root_stamps_null(client: TestClient) -> 
             from maily.db.models import ApiKey
 
             row = (
-                await session.execute(
-                    select(ApiKey).where(ApiKey.secret_sha256 == digest)
-                )
+                await session.execute(select(ApiKey).where(ApiKey.secret_sha256 == digest))
             ).scalar_one()
             return row.id
 
@@ -187,9 +181,7 @@ def test_create_stamps_owner_key_id_and_root_stamps_null(client: TestClient) -> 
 def test_create_provider_outside_scope_is_forbidden(client: TestClient) -> None:
     """Given a key allowed only stub, creating on other is 403 forbidden."""
     key_a = _key(client, "a", _scope(providers=["stub"]))
-    client.app.state.registry = ProviderRegistry(
-        [StubProvider(slug="other", address="o@x.com")]
-    )
+    client.app.state.registry = ProviderRegistry([StubProvider(slug="other", address="o@x.com")])
     response = client.post(
         "/v1/mailboxes",
         json={"provider": "other"},
@@ -223,30 +215,20 @@ def test_message_routes_require_owner_and_action(client: TestClient) -> None:
     listed = client.get(f"/v1/mailboxes/{mailbox_id}/messages", headers=_auth(reader))
     assert listed.status_code == 403
     assert listed.json()["detail"] == "forbidden"
-    fetched = client.get(
-        f"/v1/mailboxes/{mailbox_id}/messages/m1", headers=_auth(reader)
-    )
+    fetched = client.get(f"/v1/mailboxes/{mailbox_id}/messages/m1", headers=_auth(reader))
     assert fetched.status_code == 403
-    source = client.get(
-        f"/v1/mailboxes/{mailbox_id}/messages/m1/source", headers=_auth(reader)
-    )
+    source = client.get(f"/v1/mailboxes/{mailbox_id}/messages/m1/source", headers=_auth(reader))
     assert source.status_code == 403
     writer = _key(
         client,
         "writer",
         _scope(actions=["messages:read"]),
     )
-    marked = client.post(
-        f"/v1/mailboxes/{mailbox_id}/messages/m1/read", headers=_auth(writer)
-    )
+    marked = client.post(f"/v1/mailboxes/{mailbox_id}/messages/m1/read", headers=_auth(writer))
     assert marked.status_code == 403
-    removed = client.delete(
-        f"/v1/mailboxes/{mailbox_id}/messages/m1", headers=_auth(writer)
-    )
+    removed = client.delete(f"/v1/mailboxes/{mailbox_id}/messages/m1", headers=_auth(writer))
     assert removed.status_code == 403
-    owner_list = client.get(
-        f"/v1/mailboxes/{mailbox_id}/messages", headers=_auth(key_b)
-    )
+    owner_list = client.get(f"/v1/mailboxes/{mailbox_id}/messages", headers=_auth(key_b))
     assert owner_list.status_code == 200
 
 
@@ -254,9 +236,7 @@ def test_create_without_mailboxes_write_is_forbidden(client: TestClient) -> None
     """Given a key that can only read mailboxes, POST /v1/mailboxes is 403."""
     key_a = _key(client, "a", _scope(actions=["mailboxes:read"]))
     client.app.state.registry = ProviderRegistry([StubProvider(address="nope@x.com")])
-    response = client.post(
-        "/v1/mailboxes", json={"provider": "stub"}, headers=_auth(key_a)
-    )
+    response = client.post("/v1/mailboxes", json={"provider": "stub"}, headers=_auth(key_a))
     assert response.status_code == 403
     assert response.json()["detail"] == "forbidden"
 
@@ -287,9 +267,7 @@ def test_gmail_create_without_grant_does_not_pick_ungranted_parent(
             await session.commit()
 
     client.portal.call(_seed)
-    response = client.post(
-        "/v1/mailboxes", json={"provider": "gmail"}, headers=_auth(key_a)
-    )
+    response = client.post("/v1/mailboxes", json={"provider": "gmail"}, headers=_auth(key_a))
     assert response.status_code == 403
     assert response.json()["detail"] == "no gmail parent granted"
     assert "x-mailtm-error" not in response.headers

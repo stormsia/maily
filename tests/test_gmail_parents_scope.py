@@ -46,9 +46,7 @@ def _run(coro: Awaitable[_T]) -> _T:
 
 
 def _scope(actions: list[str], parent_ids: list[int]) -> str:
-    return json.dumps(
-        {"providers": ["gmail"], "parent_ids": parent_ids, "actions": actions}
-    )
+    return json.dumps({"providers": ["gmail"], "parent_ids": parent_ids, "actions": actions})
 
 
 def _principal(*, key_id: int, actions: list[str], parent_ids: list[int]) -> Principal:
@@ -122,8 +120,7 @@ async def _seed_account(
         email=email,
         refresh_token_enc=encrypt(secret, refresh_token),
         access_token_enc=encrypt(secret, "live-access"),
-        access_expires_at=datetime.now(timezone.utc).replace(tzinfo=None)
-        + timedelta(hours=1),
+        access_expires_at=datetime.now(timezone.utc).replace(tzinfo=None) + timedelta(hours=1),
         send_as_json=json.dumps([email]),
         status="active",
         owner_key_id=owner_key_id,
@@ -230,9 +227,7 @@ def test_key_deletes_only_its_parent() -> None:
     """Given own and other parents, delete is allowed only when owner_key_id equals the caller."""
     own = GmailParent(id=1, email=_OWN_EMAIL, refresh_token="r", owner_key_id=7)
     other = GmailParent(id=2, email=_OTHER_EMAIL, refresh_token="r", owner_key_id=9)
-    root_owned = GmailParent(
-        id=3, email=_ROOT_EMAIL, refresh_token="r", owner_key_id=None
-    )
+    root_owned = GmailParent(id=3, email=_ROOT_EMAIL, refresh_token="r", owner_key_id=None)
     caller = _principal(key_id=7, actions=["parents:delete"], parent_ids=[])
     assert gmail_router._may_mutate_parent(caller, own) is True
     with pytest.raises(HTTPException) as other_caught:
@@ -250,9 +245,7 @@ def test_list_accounts_hides_other_keys_and_shows_granted_root_parents() -> None
         GmailParent(id=1, email=_OWN_EMAIL, refresh_token="r", owner_key_id=7),
         GmailParent(id=2, email=_OTHER_EMAIL, refresh_token="r", owner_key_id=9),
         GmailParent(id=3, email=_ROOT_EMAIL, refresh_token="r", owner_key_id=None),
-        GmailParent(
-            id=4, email="ungranted@corp.io", refresh_token="r", owner_key_id=None
-        ),
+        GmailParent(id=4, email="ungranted@corp.io", refresh_token="r", owner_key_id=None),
     ]
     caller = _principal(key_id=7, actions=["parents:read"], parent_ids=[3])
     visible = gmail_router._visible_parents(caller, parents)
@@ -344,9 +337,7 @@ def test_db_store_round_trips_owner_key_id(tmp_path: Path) -> None:
             assert loaded.owner_key_id == 7
             assert loaded.status == "expired"
             root_owned = await store.add(
-                GmailParent(
-                    id=0, email=_ROOT_EMAIL, refresh_token="r", owner_key_id=None
-                )
+                GmailParent(id=0, email=_ROOT_EMAIL, refresh_token="r", owner_key_id=None)
             )
             assert (await store.get(root_owned.id)).owner_key_id is None
         finally:

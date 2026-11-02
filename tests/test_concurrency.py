@@ -110,12 +110,8 @@ async def test_concurrent_100_workers_wal_mode(tmp_path):
         await asyncio.gather(*(write_task(i) for i in range(100)))
 
         async with session_factory() as session:
-            total_boxes = (
-                await session.execute(select(func.count(Mailbox.id)))
-            ).scalar()
-            total_msgs = (
-                await session.execute(select(func.count(Message.id)))
-            ).scalar()
+            total_boxes = (await session.execute(select(func.count(Mailbox.id)))).scalar()
+            total_msgs = (await session.execute(select(func.count(Message.id)))).scalar()
             assert total_boxes == 100
             assert total_msgs == 100
     finally:

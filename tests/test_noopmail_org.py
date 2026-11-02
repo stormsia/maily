@@ -87,9 +87,7 @@ async def test_create_mailbox_with_address():
     http = _http(handler)
     provider = NoopMail(http)
     try:
-        box = await provider.create_mailbox(
-            MailboxSpec(address="al234tf05o@yzcalo.com")
-        )
+        box = await provider.create_mailbox(MailboxSpec(address="al234tf05o@yzcalo.com"))
         assert box.provider == "noopmail.org"
         assert box.address == "al234tf05o@yzcalo.com"
         assert box.token == ""  # noopmail does not have api-tokens

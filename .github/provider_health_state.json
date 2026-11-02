@@ -11,14 +11,14 @@
       "last_status": "operational"
     },
     "mail.tm": {
-      "consecutive_failures": 0,
-      "issue_number": null,
-      "last_status": "operational"
-    },
-    "noopmail.org": {
       "consecutive_failures": 1,
       "issue_number": null,
       "last_status": "degraded"
+    },
+    "noopmail.org": {
+      "consecutive_failures": 0,
+      "issue_number": null,
+      "last_status": "operational"
     },
     "temp-mail.io": {
       "consecutive_failures": 0,

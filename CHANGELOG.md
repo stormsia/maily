@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.5.0](https://github.com/stormsia/maily/compare/v0.4.1...v0.5.0) (2026-11-02)
+
+
+### Features
+
+* **client:** standalone maily-client packaging and publishing setup ([04ac7f3](https://github.com/stormsia/maily/commit/04ac7f359ce8955f338508bba8a6acdb85cc6678))
+* **dashboard:** add github links, version check and manual gmail oauth callback ([ec2b44b](https://github.com/stormsia/maily/commit/ec2b44bc285a31c07a5b30ae0c9702c0a70d39e6))
+* **docker:** enhance Docker setup with pre-built image instructions and new compose file ([1f50ac1](https://github.com/stormsia/maily/commit/1f50ac1b3c1ed13283cd0480023ed54656826560))
+* **release:** add static files for version tracking in release process ([7c20cf2](https://github.com/stormsia/maily/commit/7c20cf237f8c81c57a33238bb072b6edbaf67d3c))
+
+
+### Bug Fixes
+
+* **ci:** enable oidc tokenless upload for codecov coverage ([df4d607](https://github.com/stormsia/maily/commit/df4d6073f9636bb4f6cc0ce645346636d32b8f85))
+* **ci:** prevent test hangs with pytest-timeout, mocked api calls and stable concurrency ([2f5c63b](https://github.com/stormsia/maily/commit/2f5c63b61ca5eb297ac2b3c3959f8cc9642969c6))
+
 ## [0.4.1](https://github.com/stormsia/maily/compare/v0.4.0...v0.4.1) (2026-11-02)
 
 

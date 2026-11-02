@@ -184,7 +184,7 @@ jobs:
 
       - name: Run Pytest suite
         if: matrix.python-version != '3.15'
-        run: uv run python -m pytest -q --junitxml=junit-${{ matrix.python-version }}.xml
+        run: uv run python -m pytest -q -n 0 --junitxml=junit-${{ matrix.python-version }}.xml
 
       - name: Run Pytest suite with coverage (Python 3.15)
         if: matrix.python-version == '3.15'

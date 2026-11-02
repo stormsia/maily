@@ -75,6 +75,7 @@ dev = [
     "pytest>=9.2.0",
     "pytest-asyncio>=1.4.1",
     "pytest-xdist>=3.8.0",
+    "pytest-timeout>=2.4.0",
     "ruff>=0.17.3",
     "mypy>=2.4.1",
     "pytest-cov>=7.1.0",
@@ -107,6 +108,9 @@ asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "function"
 # Each test builds its own temp SQLite via tmp_path, so workers do not share a database.
 addopts = "-n auto"
+# Strict per-test timeout ensures tests never hang indefinitely in CI or local runs
+timeout = 60
+timeout_method = "thread"
 # "src" makes the package importable; "." (repo root) makes `tests` importable
 # as a package (`tests.helpers`) even when pytest is invoked as a bare script
 # instead of `python -m pytest`.
@@ -211,4 +215,5 @@ pytest_add_cli_args = [
 dev = [
     "hypothesis>=6.170.14",
     "locust>=2.47.0",
+    "pytest-timeout>=2.4.0",
 ]

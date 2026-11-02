@@ -6,6 +6,9 @@ import base64
 import json
 from datetime import datetime, timezone
 from pathlib import Path
+from unittest.mock import patch
+
+import httpx
 
 from maily.app.routers.health import _iso_utc, _json_len, _safe_error
 from maily.providers.gmail.parse import extract_parts
@@ -82,13 +85,24 @@ def test_security_response_headers_and_config(tmp_path: Path):
         assert cfg.get("github_url") == "https://github.com/stormsia/maily"
         assert cfg.get("version") == cfg["client_version"]
 
-        # Check /v1/updates/check
-        updates_resp = client.get("/v1/updates/check")
-        assert updates_resp.status_code == 200
-        updates_data = updates_resp.json()
-        assert "current" in updates_data
-        assert "latest" in updates_data
-        assert "update_available" in updates_data
+        # Check /v1/updates/check with mocked external GitHub release response
+        with patch("httpx.AsyncClient.get") as mock_gh_get:
+            mock_gh_get.return_value = httpx.Response(
+                200,
+                json={
+                    "tag_name": "v9.9.9",
+                    "html_url": "https://github.com/stormsia/maily/releases/tag/v9.9.9",
+                },
+                request=httpx.Request(
+                    "GET", "https://api.github.com/repos/stormsia/maily/releases/latest"
+                ),
+            )
+            updates_resp = client.get("/v1/updates/check")
+            assert updates_resp.status_code == 200
+            updates_data = updates_resp.json()
+            assert "current" in updates_data
+            assert updates_data["latest"] == "9.9.9"
+            assert updates_data["update_available"] is True
 
 
 def test_health_internal_helpers():

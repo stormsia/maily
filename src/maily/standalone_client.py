@@ -442,7 +442,11 @@ def self_update(
 # --------------------------------------------------------------------------- #
 # Transport
 # --------------------------------------------------------------------------- #
-_TRANSIENT_NETWORK_ERRORS = (httpx.ConnectTimeout, httpx.ConnectError, httpx.NetworkError)
+_TRANSIENT_NETWORK_ERRORS = (
+    httpx.ConnectTimeout,
+    httpx.ConnectError,
+    httpx.NetworkError,
+)
 
 
 def _parse_retry_after(header_val: str | None, attempt: int, backoff: float) -> float:
@@ -529,7 +533,12 @@ class _Transport:
             if resp.status_code >= 400:
                 detail = _extract_detail(resp)
                 logger.warning(
-                    "{} {} -> {} ({:.0f}ms): {}", method, path, resp.status_code, elapsed, detail
+                    "{} {} -> {} ({:.0f}ms): {}",
+                    method,
+                    path,
+                    resp.status_code,
+                    elapsed,
+                    detail,
                 )
                 if resp.status_code == 429 and attempt < self.max_retries:
                     delay = self._parse_retry_after(resp.headers.get("Retry-After"), attempt)
@@ -607,7 +616,13 @@ def _extract_detail(resp: httpx.Response) -> str:
                     field = ""
                     if isinstance(loc, (list, tuple)):
                         parts = [str(p) for p in loc]
-                        if parts and parts[0] in ("body", "query", "path", "header", "cookie"):
+                        if parts and parts[0] in (
+                            "body",
+                            "query",
+                            "path",
+                            "header",
+                            "cookie",
+                        ):
                             parts = parts[1:]
                         field = ".".join(parts)
                     if field and msg:
@@ -777,7 +792,8 @@ class MessagesAPI:
         mid = _mailbox_id_val(mailbox_id)
         return MessageSummary.model_validate(
             await self._t.request(
-                "POST", f"/v1/mailboxes/{mid}/messages/{quote(message_id, safe='')}/read"
+                "POST",
+                f"/v1/mailboxes/{mid}/messages/{quote(message_id, safe='')}/read",
             )
         )
 
@@ -792,7 +808,8 @@ class MessagesAPI:
         mid = _mailbox_id_val(mailbox_id)
         return MessageSource.model_validate(
             await self._t.request(
-                "GET", f"/v1/mailboxes/{mid}/messages/{quote(message_id, safe='')}/source"
+                "GET",
+                f"/v1/mailboxes/{mid}/messages/{quote(message_id, safe='')}/source",
             )
         )
 
@@ -1232,7 +1249,10 @@ class AdminAPI:
         client_secret: str,
         redirect_uri: str | None = None,
     ) -> GmailCreds:
-        payload: dict[str, str] = {"client_id": client_id, "client_secret": client_secret}
+        payload: dict[str, str] = {
+            "client_id": client_id,
+            "client_secret": client_secret,
+        }
         if redirect_uri:
             payload["redirect_uri"] = redirect_uri
         return GmailCreds.model_validate(
@@ -1314,7 +1334,7 @@ class AdminAPI:
 class Maily:
     """Async client for maily. Use via `async with` or close manually.
 
-        async with Maily("http://127.0.0.1:8477", api_key="sk-…") as api:
+        async with Maily("http://127.0.0.1:8477", api_key="your_secret_api_key") as api:
             box = await api.create_temp_mailbox()
             code = await api.wait_for_code(box)
             print("Verification code:", code)
@@ -2081,7 +2101,7 @@ class SyncMaily:
     manual asyncio.run() or event loop closure issues.
 
     Example:
-        with SyncMaily("http://127.0.0.1:8477", api_key="sk-...") as api:
+        with SyncMaily("http://127.0.0.1:8477", api_key="your_secret_api_key") as api:
             box = api.create_temp_mailbox()
             code = api.wait_for_code(box)
             print("Verification code:", code)

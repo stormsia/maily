@@ -224,7 +224,7 @@ from maily_client import Maily, WaitTimeoutError
 
 
 async def main():
-    async with Maily("http://127.0.0.1:8477", api_key="sk-...") as api:
+    async with Maily("http://127.0.0.1:8477", api_key="your_secret_api_key") as api:
         # Create a disposable mailbox with automatic domain selection
         box = await api.create_temp_mailbox()
         print(f"Disposable email: {box.address}")
@@ -265,7 +265,7 @@ async with Maily("http://127.0.0.1:8477") as api:
 from maily_client import SyncMaily
 # Or via server package: from maily import SyncMaily
 
-with SyncMaily("http://127.0.0.1:8477", api_key="sk-...") as api:
+with SyncMaily("http://127.0.0.1:8477", api_key="your_secret_api_key") as api:
     box = api.create_temp_mailbox()
     code = api.wait_for_code(box, timeout=45.0)
     print(f"Received code synchronously: {code}")

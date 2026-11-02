@@ -53,7 +53,7 @@ services:
       # --- Security and authentication ---
       # When MAILY_HOST=0.0.0.0, the service strictly requires a non-empty API key.
       # A safe default key is provided for quick start; override it in .env!
-      - MAILY_API_KEY=${MAILY_API_KEY:-maily_secret_api_key_2026}
+      - MAILY_API_KEY=${MAILY_API_KEY:-your_secret_api_key}
       - MAILY_SECRET_KEY=${MAILY_SECRET_KEY:-}
       - MAILY_SECRET_KEY_PATH=${MAILY_SECRET_KEY_PATH:-/data/maily.key}
 

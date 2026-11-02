@@ -85,7 +85,7 @@ from maily.client import Maily
 
 
 async def run() -> None:
-    async with Maily("http://127.0.0.1:8477", api_key="sk-your-key") as client:
+    async with Maily("http://127.0.0.1:8477", api_key="your_secret_api_key") as client:
         box = await client.create_temp_mailbox()
         print(f"Created: {box.address}")
 
@@ -100,7 +100,7 @@ For synchronous test suites (standard Pytest, unittest, Selenium, or quick proce
 ```python
 from maily.client import SyncMaily
 
-with SyncMaily("http://127.0.0.1:8477", api_key="sk-your-key") as client:
+with SyncMaily("http://127.0.0.1:8477", api_key="your_secret_api_key") as client:
     box = client.create_temp_mailbox()
     print(f"Sync mailbox created: {box.address}")
 

@@ -119,7 +119,7 @@ from maily_client import Maily
 
 async def main() -> None:
     # Connect to your self-hosted maily server
-    async with Maily("http://127.0.0.1:8477", api_key="sk-your-api-key") as api:
+    async with Maily("http://127.0.0.1:8477", api_key="your_secret_api_key") as api:
         # Check server health
         health = await api.health.ping()
         print(f"Server health: {health.status}")
@@ -237,7 +237,7 @@ For synchronous test suites (standard Pytest, unittest, Selenium) or scripts whe
 from maily_client import SyncMaily
 
 # Sync context manager automatically manages an isolated background thread and event loop
-with SyncMaily("http://127.0.0.1:8477", api_key="sk-your-key") as api:
+with SyncMaily("http://127.0.0.1:8477", api_key="your_secret_api_key") as api:
     # 1. Create a mailbox synchronously
     box = api.create_temp_mailbox()
     print(f"Created mailbox: {box.address}")

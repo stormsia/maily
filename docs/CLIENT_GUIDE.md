@@ -40,7 +40,7 @@ A comprehensive guide and cookbook for [`maily-client`](https://pypi.org/project
 
 ## Installation
 
-### Standard Installation (PyPI)
+### Preferred — PyPI Package
 
 ```bash
 pip install maily-client
@@ -51,7 +51,13 @@ Or with `uv`:
 uv add maily-client
 ```
 
-### Zero-Install Single-File Vendoring
+### Alternative 1: Direct from GitHub
+
+```bash
+pip install "maily-client @ git+https://github.com/stormsia/maily.git#subdirectory=client"
+```
+
+### Alternative 2: Zero-Install Single-File Vendoring
 
 You can copy `client.py` directly into your repository:
 

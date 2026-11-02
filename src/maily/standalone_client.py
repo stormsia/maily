@@ -13,8 +13,12 @@ Single canonical source of truth for the client. Two ways to use this code:
 Self-contained: does not pull in server dependencies (FastAPI, SQLAlchemy,
 uvicorn, etc.), requires only httpx, loguru, and pydantic.
 
+    # Preferred — install from PyPI:
+    pip install maily-client
+
+    # Or directly from the GitHub repository:
     pip install "maily-client @ git+https://github.com/stormsia/maily.git#subdirectory=client"
-    # or copy the file into your project:
+    # Or copy the single-file client directly into your project:
     #   curl -O https://raw.githubusercontent.com/stormsia/maily/main/client/client.py
 
 Self-update: the client can check the version on git and update itself from

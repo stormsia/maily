@@ -455,8 +455,12 @@
           <span>Installation</span>
           <button class="copy-btn" onclick="copySnippet(this)">Copy</button>
         </div>
-        <pre class="code-content">pip install "maily-client @ git+https://github.com/stormsia/maily.git#subdirectory=client"
-# or copy the standalone client.py file directly:
+        <pre class="code-content"># Preferred — PyPI package:
+pip install maily-client
+
+# Alternative — directly from GitHub:
+pip install "maily-client @ git+https://github.com/stormsia/maily.git#subdirectory=client"
+# Alternative — single-file download (zero install):
 curl -O https://raw.githubusercontent.com/stormsia/maily/main/client/client.py</pre>
       </div>
 

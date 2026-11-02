@@ -22,19 +22,19 @@ Standalone, zero-heavy-dependency Python client for the [maily](https://github.c
 
 ## Installation
 
-### Via pip
+### Preferred — via PyPI:
 
 ```bash
 pip install maily-client
 ```
 
-Or from the GitHub repository:
+### Alternative 1: Direct from GitHub:
 
 ```bash
 pip install "maily-client @ git+https://github.com/stormsia/maily.git#subdirectory=client"
 ```
 
-### Standalone Single-File Download (Zero Install)
+### Alternative 2: Standalone Single-File Download (Zero Install)
 
 Because `client.py` has no internal server dependencies, you can download it directly into your project:
 

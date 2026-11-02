@@ -89,6 +89,15 @@ docker compose up -d --build
 
 ### Option B — Local (Python 3.13+)
 
+#### 1. From PyPI (Recommended)
+
+```bash
+pip install maily-server
+maily
+```
+
+#### 2. From Git Source (Development)
+
 ```bash
 git clone https://github.com/stormsia/maily.git && cd maily
 python -m venv .venv
@@ -116,9 +125,20 @@ The repository includes a dedicated, self-contained standalone Python client pac
 
 ### Installation
 
+#### Preferred — PyPI package:
+
 ```bash
 pip install maily-client
-# or copy client/client.py directly into your script!
+```
+
+#### Alternative options:
+
+```bash
+# Directly from GitHub repository:
+pip install "maily-client @ git+https://github.com/stormsia/maily.git#subdirectory=client"
+
+# Or download the zero-dependency single-file client directly into your project:
+curl -O https://raw.githubusercontent.com/stormsia/maily/main/client/client.py
 ```
 
 > ⚠️ **Important: Attribute Access vs Dictionary Key Access**

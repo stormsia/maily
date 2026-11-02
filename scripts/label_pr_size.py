@@ -26,7 +26,6 @@ SIZE_DEFINITIONS = [
 
 IGNORED_PATTERNS = [
     "uv.lock",
-    "client/client.py",
     "client/maily_client.py",
     "*.svg",
     "*.png",

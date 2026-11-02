@@ -1,5 +1,4 @@
 include py.typed
 include README.md
 include LICENSE
-include client.py
 include maily_client.py

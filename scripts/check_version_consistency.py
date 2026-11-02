@@ -5,7 +5,7 @@ Verifies that:
 1. pyproject.toml defines a valid SemVer 2.0.0 version.
 2. src/maily/__init__.py matches pyproject.toml.
 3. src/maily/standalone_client.py matches pyproject.toml.
-4. client/client.py and client/maily_client.py match pyproject.toml.
+4. client/maily_client.py matches pyproject.toml.
 5. If a git tag or expected version is passed via --tag/--expected, it strictly matches.
 """
 
@@ -106,7 +106,6 @@ def main() -> int:
             repo_root / "src" / "maily" / "standalone_client.py",
             "python",
         ),
-        "client/client.py": (repo_root / "client" / "client.py", "python"),
         "client/maily_client.py": (repo_root / "client" / "maily_client.py", "python"),
         "client/pyproject.toml": (repo_root / "client" / "pyproject.toml", "toml"),
         ".release-please-manifest.json": (repo_root / ".release-please-manifest.json", "json"),

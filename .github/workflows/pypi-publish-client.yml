@@ -80,7 +80,6 @@ jobs:
           uv venv .smoke_venv
           uv pip install --python .smoke_venv client/dist/*.whl
           .smoke_venv/bin/python3 -c "import maily_client; print('Imported maily_client version:', maily_client.__version__)"
-          .smoke_venv/bin/python3 -c "import client; print('Imported client version:', client.__version__)"
           .smoke_venv/bin/python3 -c "from maily_client import Maily, SyncMaily; print('Imported Maily successfully')"
           .smoke_venv/bin/maily-client --help > /dev/null
           rm -rf .smoke_venv

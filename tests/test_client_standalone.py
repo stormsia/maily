@@ -1,4 +1,4 @@
-"""Standalone client/client.py: self-contained, versioned, auto-updatable."""
+"""Standalone client/maily_client.py: self-contained, versioned, auto-updatable."""
 
 from __future__ import annotations
 
@@ -18,8 +18,7 @@ import maily.client as pkg_client
 from maily import standalone_client
 from maily.standalone_client import ClientError, _main
 
-CLIENT_FILE = Path(__file__).resolve().parents[1] / "client" / "client.py"
-MAILY_CLIENT_FILE = Path(__file__).resolve().parents[1] / "client" / "maily_client.py"
+CLIENT_FILE = Path(__file__).resolve().parents[1] / "client" / "maily_client.py"
 ALLOWED_TOP_LEVEL_IMPORTS = {"httpx", "loguru", "pydantic"}
 
 
@@ -42,19 +41,18 @@ def _imported_top_level(source: str) -> set[str]:
 
 
 def test_client_file_is_self_contained():
-    for file_path in (CLIENT_FILE, MAILY_CLIENT_FILE):
-        source = file_path.read_text(encoding="utf-8")
-        imported = _imported_top_level(source)
-        # no server package (fastapi/sqlalchemy/uvicorn/maily itself), only
-        # light client deps beyond the stdlib
-        unexpected = {
-            name
-            for name in imported
-            if name not in ALLOWED_TOP_LEVEL_IMPORTS
-            and name not in __import__("sys").stdlib_module_names
-        }
-        assert not unexpected, f"{file_path.name} imports unexpected modules: {unexpected}"
-        assert "maily" not in imported
+    source = CLIENT_FILE.read_text(encoding="utf-8")
+    imported = _imported_top_level(source)
+    # no server package (fastapi/sqlalchemy/uvicorn/maily itself), only
+    # light client deps beyond the stdlib
+    unexpected = {
+        name
+        for name in imported
+        if name not in ALLOWED_TOP_LEVEL_IMPORTS
+        and name not in __import__("sys").stdlib_module_names
+    }
+    assert not unexpected, f"{CLIENT_FILE.name} imports unexpected modules: {unexpected}"
+    assert "maily" not in imported
 
 
 def test_versions_stay_in_sync():
@@ -80,11 +78,9 @@ def test_standalone_mirror_is_current():
     build.loader.exec_module(build_mod)
 
     expected = build_mod.render()
-    for file_path in (CLIENT_FILE, MAILY_CLIENT_FILE):
-        assert file_path.read_text(encoding="utf-8") == expected, (
-            f"{file_path.name} is stale — run `python scripts/build_client.py`"
-        )
-    assert CLIENT_FILE.read_text(encoding="utf-8") == MAILY_CLIENT_FILE.read_text(encoding="utf-8")
+    assert CLIENT_FILE.read_text(encoding="utf-8") == expected, (
+        f"{CLIENT_FILE.name} is stale — run `python scripts/build_client.py`"
+    )
 
 
 def test_api_surface_matches_packaged_client():
@@ -96,7 +92,7 @@ def test_api_surface_matches_packaged_client():
 
 
 def test_import_maily_client_as_module():
-    spec = importlib.util.spec_from_file_location("maily_client", MAILY_CLIENT_FILE)
+    spec = importlib.util.spec_from_file_location("maily_client", CLIENT_FILE)
     assert spec and spec.loader
     mod = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(mod)

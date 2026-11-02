@@ -4,7 +4,7 @@ Single canonical source of truth for the client. Two ways to use this code:
 
     1. Inside the server package — via the thin proxy `maily.client`
        (this module is imported from there).
-    2. Outside — the `client/maily_client.py` (and `client/client.py`) files,
+    2. Outside — the `client/maily_client.py` file in the repo root,
        which are generated from this module via `scripts/build_client.py`
        (adds only the 'generated' banner). Do not edit generated client files
        by hand — edit here and regenerate; parity is enforced by
@@ -38,7 +38,6 @@ Self-update: the client can check the version on git and update itself from
         import maily_client
         from maily_client import Maily, self_update, check_update
 
-        # (Note: `from client import Maily` is also supported for backward compatibility)
 
         self_update()          # async-free, updates the client file on disk
         up = check_update()    # (current, remote) if an update is available, else None
@@ -2441,7 +2440,7 @@ class SyncMaily:
 
 
 # --------------------------------------------------------------------------- #
-# CLI: python client.py check|update|version
+# CLI: python maily_client.py check|update|version
 # --------------------------------------------------------------------------- #
 def _main(argv: list[str] | None = None) -> int:
     args = sys.argv[1:] if argv is None else list(argv)

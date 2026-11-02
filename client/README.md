@@ -49,11 +49,7 @@ pip install maily-client
 ### Import in Python:
 
 ```python
-# Standard canonical import (recommended):
 from maily_client import Maily, SyncMaily, WaitTimeoutError
-
-# Backward compatibility alias (also fully supported):
-from client import Maily
 ```
 
 ### Alternative 1: Direct from GitHub:

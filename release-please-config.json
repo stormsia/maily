@@ -60,7 +60,6 @@
       "extra-files": [
         "src/maily/__init__.py",
         "src/maily/standalone_client.py",
-        "client/client.py",
         "client/maily_client.py",
         "client/pyproject.toml",
         "src/maily/static/index.html",

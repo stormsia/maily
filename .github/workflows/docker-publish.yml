@@ -65,7 +65,7 @@ jobs:
         run: |
           uv sync --frozen
           uv run python scripts/build_client.py
-          cp client/client.py maily-standalone-client.py
+          cp client/maily_client.py maily-standalone-client.py
           uv build
           cd client && uv build
 

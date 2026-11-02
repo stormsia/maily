@@ -3,6 +3,9 @@ name: Deploy Documentation to GitHub Pages
 on:
   push:
     branches: [main]
+  workflow_run:
+    workflows: ["Performance Benchmarks Tracking"]
+    types: [completed]
   workflow_dispatch:
 
 permissions:
@@ -14,13 +17,14 @@ concurrency:
 
 jobs:
   build-docs:
-    name: Build API Documentation
+    name: Build Unified Developer Portal & Documentation
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7
         with:
           persist-credentials: false
+          fetch-depth: 0
 
       - name: Install uv
         uses: astral-sh/setup-uv@v7
@@ -35,81 +39,15 @@ jobs:
       - name: Install dependencies
         run: uv sync --frozen --all-extras
 
-      - name: Export OpenAPI Schema and generate static API documentation
+      - name: Build Unified Portal (Docs, Benchmarks, Security & Quality Analytics)
         run: |
-          mkdir -p public
-          uv run python -c "
-          import json
-          from maily.app.main import create_app
-          app = create_app()
-          schema = app.openapi()
-          with open('public/openapi.json', 'w', encoding='utf-8') as f:
-              json.dump(schema, f, indent=2)
-          "
-          cat << 'EOF' > public/index.html
-          <!DOCTYPE html>
-          <html lang="en">
-          <head>
-            <meta charset="utf-8" />
-            <meta name="viewport" content="width=device-width, initial-scale=1" />
-            <title>maily API Interactive Documentation (Swagger UI)</title>
-            <link rel="stylesheet" href="https://unpkg.com/swagger-ui-dist@5/swagger-ui.css" />
-            <style>
-              body { margin: 0; background: #f8fafc; font-family: system-ui, sans-serif; }
-              .top-nav { display: flex; align-items: center; justify-content: space-between; padding: 12px 24px; background: #0f172a; border-bottom: 1px solid #334155; color: #f8fafc; }
-              .top-nav a { color: #38bdf8; text-decoration: none; margin-left: 16px; font-weight: 500; font-size: 14px; }
-              .top-nav a:hover { text-decoration: underline; }
-              .swagger-ui .topbar { display: none; }
-              .swagger-ui .wrapper { max-width: 1200px; margin: 0 auto; padding: 20px; }
-            </style>
-          </head>
-          <body>
-            <div class="top-nav">
-              <div><strong>maily</strong> API Documentation</div>
-              <div>
-                <a href="redoc.html">Switch to ReDoc</a>
-                <a href="openapi.json" download>Download OpenAPI JSON</a>
-              </div>
-            </div>
-            <div id="swagger-ui"></div>
-            <script src="https://unpkg.com/swagger-ui-dist@5/swagger-ui-bundle.js"></script>
-            <script>
-              window.onload = () => {
-                window.ui = SwaggerUIBundle({
-                  url: 'openapi.json',
-                  dom_id: '#swagger-ui',
-                  deepLinking: true,
-                  presets: [
-                    SwaggerUIBundle.presets.apis,
-                    SwaggerUIBundle.SwaggerUIStandalonePreset
-                  ]
-                });
-              };
-            </script>
-          </body>
-          </html>
-          EOF
-
-          cat << 'EOF' > public/redoc.html
-          <!DOCTYPE html>
-          <html lang="en">
-          <head>
-            <meta charset="utf-8" />
-            <meta name="viewport" content="width=device-width, initial-scale=1" />
-            <title>maily API Documentation (ReDoc)</title>
-            <style>body { margin: 0; padding: 0; }</style>
-          </head>
-          <body>
-            <redoc spec-url="openapi.json"></redoc>
-            <script src="https://cdn.redoc.ly/redoc/latest/bundles/redoc.standalone.js"></script>
-          </body>
-          </html>
-          EOF
+          git fetch origin gh-pages:gh-pages || true
+          uv run python scripts/build_pages_site.py
 
       - name: Upload HTML Documentation Artifact
         uses: actions/upload-artifact@v7
         with:
-          name: maily-api-docs
+          name: maily-portal
           path: public/
           retention-days: 14
 

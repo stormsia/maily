@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.4.1](https://github.com/stormsia/maily/compare/v0.4.0...v0.4.1) (2026-11-02)
+
+
+### Bug Fixes
+
+* **ci:** grant actions write and provide GH_REPO to release-please CD dispatch ([a6830db](https://github.com/stormsia/maily/commit/a6830dbb818f5a995290e2ae321974e3c935bf57))
+* **db:** bundle alembic migrations inside package to fix standalone pip install ([1fc522c](https://github.com/stormsia/maily/commit/1fc522c78fd462bbbb124fc97dc055c4d48350c0))
+
 ## [0.4.0](https://github.com/stormsia/maily/compare/v0.3.0...v0.4.0) (2026-11-02)
 
 

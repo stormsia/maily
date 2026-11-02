@@ -9,6 +9,7 @@ on:
 permissions:
   contents: write
   pull-requests: write
+  actions: write
 
 concurrency:
   group: release-please
@@ -33,9 +34,10 @@ jobs:
         if: ${{ steps.release.outputs.releases_created == 'true' && env.RELEASE_PLEASE_TOKEN == '' }}
         run: |
           echo "Release created for tag: $TAG. Triggering CD publish pipelines via workflow_dispatch..."
-          gh workflow run pypi-publish.yml --ref "$TAG"
-          gh workflow run pypi-publish-client.yml --ref "$TAG"
-          gh workflow run docker-publish.yml --ref "$TAG"
+          gh workflow run pypi-publish.yml --ref "$TAG" || echo "Warning: Could not trigger pypi-publish.yml via GITHUB_TOKEN (actions:write or PAT required)."
+          gh workflow run pypi-publish-client.yml --ref "$TAG" || echo "Warning: Could not trigger pypi-publish-client.yml via GITHUB_TOKEN (actions:write or PAT required)."
+          gh workflow run docker-publish.yml --ref "$TAG" || echo "Warning: Could not trigger docker-publish.yml via GITHUB_TOKEN (actions:write or PAT required)."
         env:
           TAG: ${{ steps.release.outputs.tag_name }}
+          GH_REPO: ${{ github.repository }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

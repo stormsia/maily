@@ -13,6 +13,7 @@ rules:
       - pages.yml
       - pip-audit.yml
       - pypi-publish.yml
+      - pypi-publish-client.yml
       - release-drafter.yml
       - semantic-pr.yml
       - stale.yml

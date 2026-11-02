@@ -18,10 +18,10 @@ from pathlib import Path
 from fastapi.testclient import TestClient
 from sqlalchemy import select
 
-from mailtmapi.app.services.retention import utcnow_naive
-from mailtmapi.crypto import encrypt
-from mailtmapi.db.models import ApiKey, KeyRetention, Mailbox
-from mailtmapi.providers.registry import ProviderRegistry
+from maily.app.services.retention import utcnow_naive
+from maily.crypto import encrypt
+from maily.db.models import ApiKey, KeyRetention, Mailbox
+from maily.providers.registry import ProviderRegistry
 from tests.api_keys_support import (
     FERNET,
     PLUS_DETAIL,
@@ -118,7 +118,9 @@ def test_key_a_cannot_get_or_list_key_b_mailbox(tmp_path: Path) -> None:
         _a_id, key_a = issue(client, {"name": "a"})
         _b_id, key_b = issue(client, {"name": "b"})
         client.app.state.registry = ProviderRegistry([StubProvider(address="b@x.com")])
-        created = client.post("/v1/mailboxes", json={"provider": "stub"}, headers=auth(key_b))
+        created = client.post(
+            "/v1/mailboxes", json={"provider": "stub"}, headers=auth(key_b)
+        )
         assert created.status_code == 200, created.text
         mailbox_id = created.json()["id"]
         forbid(client.get(f"/v1/mailboxes/{mailbox_id}", headers=auth(key_a)))
@@ -134,7 +136,11 @@ def test_key_a_create_outside_providers_is_403(tmp_path: Path) -> None:
         client.app.state.registry = ProviderRegistry(
             [StubProvider(slug="other", address="o@x.com")]
         )
-        forbid(client.post("/v1/mailboxes", json={"provider": "other"}, headers=auth(secret)))
+        forbid(
+            client.post(
+                "/v1/mailboxes", json={"provider": "other"}, headers=auth(secret)
+            )
+        )
 
 
 def test_key_a_create_on_ungranted_root_parent_is_403(tmp_path: Path) -> None:
@@ -158,12 +164,20 @@ def test_gmail_create_without_parent_id_uses_granted_parent(tmp_path: Path) -> N
         outside = seed_parent(
             client, email="outside@gmail.com", refresh_token="out", owner_key_id=None
         )
-        granted = seed_parent(client, email=_BARE, refresh_token="in", owner_key_id=None)
+        granted = seed_parent(
+            client, email=_BARE, refresh_token="in", owner_key_id=None
+        )
         _key_id, secret = issue(
             client,
-            {"providers": ["gmail"], "parent_ids": [granted], "actions": ["mailboxes:write"]},
+            {
+                "providers": ["gmail"],
+                "parent_ids": [granted],
+                "actions": ["mailboxes:write"],
+            },
         )
-        created = client.post("/v1/mailboxes", json={"provider": "gmail"}, headers=auth(secret))
+        created = client.post(
+            "/v1/mailboxes", json={"provider": "gmail"}, headers=auth(secret)
+        )
         assert created.status_code == 200, created.text
         parent_id = mailbox_parent(client, created.json()["id"])
     assert parent_id == granted
@@ -173,16 +187,24 @@ def test_gmail_create_without_parent_id_uses_granted_parent(tmp_path: Path) -> N
 def test_gmail_create_with_empty_grant_is_403(tmp_path: Path) -> None:
     """Given two active parents and an empty parent grant, gmail create is 403."""
     with client_for(tmp_path) as client:
-        seed_parent(client, email="one@gmail.com", refresh_token="r1", owner_key_id=None)
-        seed_parent(client, email="two@gmail.com", refresh_token="r2", owner_key_id=None)
+        seed_parent(
+            client, email="one@gmail.com", refresh_token="r1", owner_key_id=None
+        )
+        seed_parent(
+            client, email="two@gmail.com", refresh_token="r2", owner_key_id=None
+        )
         _key_id, secret = issue(client, {"providers": ["gmail"], "parent_ids": []})
-        response = client.post("/v1/mailboxes", json={"provider": "gmail"}, headers=auth(secret))
+        response = client.post(
+            "/v1/mailboxes", json={"provider": "gmail"}, headers=auth(secret)
+        )
     assert response.status_code == 403
     assert response.json()["detail"] == "no gmail parent granted"
     assert response.headers.get("x-mailtm-error") is None
 
 
-def test_key_with_parents_add_imports_and_deletes_only_its_parent(tmp_path: Path) -> None:
+def test_key_with_parents_add_imports_and_deletes_only_its_parent(
+    tmp_path: Path,
+) -> None:
     """Given parents:add, import then delete of that parent is 200 and 204."""
     recorder = RecordingGmail(profile_email="mine@gmail.com")
     with client_for(tmp_path) as client:
@@ -194,7 +216,9 @@ def test_key_with_parents_add_imports_and_deletes_only_its_parent(tmp_path: Path
             headers=auth(secret),
         )
         assert imported.status_code == 200, imported.text
-        deleted = client.delete(f"/v1/gmail/accounts/{imported.json()['id']}", headers=auth(secret))
+        deleted = client.delete(
+            f"/v1/gmail/accounts/{imported.json()['id']}", headers=auth(secret)
+        )
     assert deleted.status_code == 204
 
 
@@ -213,7 +237,9 @@ def test_import_of_root_email_is_403_and_token_unchanged(tmp_path: Path) -> None
     recorder = RecordingGmail(profile_email="root@gmail.com")
     with client_for(tmp_path) as client:
         stub_gmail(client, recorder)
-        seed_parent(client, email="root@gmail.com", refresh_token="kept", owner_key_id=None)
+        seed_parent(
+            client, email="root@gmail.com", refresh_token="kept", owner_key_id=None
+        )
         _key_id, secret = issue(client, {"actions": ["parents:add"]})
         response = client.post(
             "/v1/gmail/accounts/import",
@@ -227,7 +253,9 @@ def test_import_of_root_email_is_403_and_token_unchanged(tmp_path: Path) -> None
 def test_bare_gmail_address_is_400(tmp_path: Path) -> None:
     """Given user@gmail.com, POST /v1/mailboxes is 400 and names the plus-alias rule."""
     with client_for(tmp_path) as client:
-        parent_id = seed_parent(client, email=_BARE, refresh_token="r", owner_key_id=None)
+        parent_id = seed_parent(
+            client, email=_BARE, refresh_token="r", owner_key_id=None
+        )
         response = client.post(
             "/v1/mailboxes",
             json={"provider": "gmail", "parent_id": parent_id, "address": _BARE},
@@ -240,7 +268,9 @@ def test_bare_gmail_address_is_400(tmp_path: Path) -> None:
 def test_plus_alias_reaches_provider_boundary(tmp_path: Path) -> None:
     """Given user+tag@gmail.com and a stubbed parent, create is not rejected as non-plus."""
     with client_for(tmp_path) as client:
-        parent_id = seed_parent(client, email=_BARE, refresh_token="r", owner_key_id=None)
+        parent_id = seed_parent(
+            client, email=_BARE, refresh_token="r", owner_key_id=None
+        )
         response = client.post(
             "/v1/mailboxes",
             json={"provider": "gmail", "parent_id": parent_id, "address": _ALIAS},
@@ -256,7 +286,9 @@ def test_recipient_miss_does_not_call_trash(tmp_path: Path) -> None:
     recorder = RecordingGmail(profile_email=_BARE, message=_message([("To", _BARE)]))
     with client_for(tmp_path) as client:
         stub_gmail(client, recorder)
-        parent_id = seed_parent(client, email=_BARE, refresh_token="r", owner_key_id=None)
+        parent_id = seed_parent(
+            client, email=_BARE, refresh_token="r", owner_key_id=None
+        )
         granted: KeySpec = {**_WRITE, "parent_ids": [parent_id]}
         _key_id, secret = issue(client, granted)
         created = client.post(
@@ -266,8 +298,12 @@ def test_recipient_miss_does_not_call_trash(tmp_path: Path) -> None:
         )
         assert created.status_code == 200, created.text
         mailbox_id = created.json()["id"]
-        fetched = client.get(f"/v1/mailboxes/{mailbox_id}/messages/m1", headers=auth(secret))
-        deleted = client.delete(f"/v1/mailboxes/{mailbox_id}/messages/m1", headers=auth(secret))
+        fetched = client.get(
+            f"/v1/mailboxes/{mailbox_id}/messages/m1", headers=auth(secret)
+        )
+        deleted = client.delete(
+            f"/v1/mailboxes/{mailbox_id}/messages/m1", headers=auth(secret)
+        )
     assert fetched.status_code == 404
     assert deleted.status_code == 404
     assert recorder.trash_calls() == []
@@ -278,7 +314,8 @@ def test_key_sweep_does_not_delete_root_mailbox(tmp_path: Path) -> None:
     with client_for(tmp_path) as client:
         client.app.state.registry = ProviderRegistry([StubProvider()])
         _key_id, issued = issue(
-            client, {"name": "sweep", "actions": ["retention:write"], "providers": ["stub"]}
+            client,
+            {"name": "sweep", "actions": ["retention:write"], "providers": ["stub"]},
         )
         _seed_root_mailbox(client, utcnow_naive() - timedelta(days=10))
         _seed_key_ttl(client, secret=issued)
@@ -315,9 +352,13 @@ def _seed_key_ttl(client: TestClient, *, secret: str) -> None:
     async def _insert() -> None:
         async with client.app.state.session_factory() as session:
             key = (
-                await session.execute(select(ApiKey).where(ApiKey.secret_sha256 == digest))
+                await session.execute(
+                    select(ApiKey).where(ApiKey.secret_sha256 == digest)
+                )
             ).scalar_one()
-            session.add(KeyRetention(key_id=key.id, provider="stub", mailbox_ttl_hours=1))
+            session.add(
+                KeyRetention(key_id=key.id, provider="stub", mailbox_ttl_hours=1)
+            )
             await session.commit()
 
     client.portal.call(_insert)
@@ -363,8 +404,12 @@ def test_delete_of_key_with_live_mailbox_is_409(tmp_path: Path) -> None:
     """Given a live mailbox owned by the key, DELETE is 409."""
     with client_for(tmp_path) as client:
         key_id, secret = issue(client)
-        client.app.state.registry = ProviderRegistry([StubProvider(address="live@x.com")])
-        created = client.post("/v1/mailboxes", json={"provider": "stub"}, headers=auth(secret))
+        client.app.state.registry = ProviderRegistry(
+            [StubProvider(address="live@x.com")]
+        )
+        created = client.post(
+            "/v1/mailboxes", json={"provider": "stub"}, headers=auth(secret)
+        )
         assert created.status_code == 200, created.text
         deleted = client.delete(f"/v1/admin/keys/{key_id}", headers=auth(ROOT))
     assert deleted.status_code == 409

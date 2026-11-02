@@ -3,8 +3,8 @@ from __future__ import annotations
 import httpx
 import pytest
 
-from mailtmapi.client import ApiError, MailTMAPI
-from mailtmapi.exceptions import MailAPIError
+from maily.client import ApiError, Maily
+from maily.exceptions import MailAPIError
 
 
 def _client(handler) -> httpx.AsyncClient:
@@ -25,11 +25,18 @@ async def test_wait_for_message_polls_until_hit():
             return httpx.Response(200, json=[])
         return httpx.Response(
             200,
-            json=[{"id": 9, "message_api_id": "9", "subject": "Code", "from_address": "a@b.c"}],
+            json=[
+                {
+                    "id": 9,
+                    "message_api_id": "9",
+                    "subject": "Code",
+                    "from_address": "a@b.c",
+                }
+            ],
         )
 
     client = _client(handler)
-    api = MailTMAPI(client=client)
+    api = Maily(client=client)
     try:
         msg = await api.wait_for_message(1, timeout=5, interval=0.01)
         assert msg.id == 9
@@ -45,7 +52,7 @@ async def test_wait_for_message_times_out():
         return httpx.Response(200, json=[])
 
     client = _client(handler)
-    api = MailTMAPI(client=client)
+    api = Maily(client=client)
     try:
         with pytest.raises(TimeoutError):
             await api.wait_for_message(1, timeout=0.05, interval=0.01)
@@ -59,7 +66,7 @@ async def test_error_mapping_raises_api_error():
         return httpx.Response(404, json={"detail": "mailbox 404 not found"})
 
     client = _client(handler)
-    api = MailTMAPI(client=client)
+    api = Maily(client=client)
     try:
         with pytest.raises(ApiError) as exc:
             await api.mailbox(404)
@@ -80,7 +87,7 @@ async def test_refresh_domain_cache_posts_and_parses():
         )
 
     client = _client(handler)
-    api = MailTMAPI(client=client)
+    api = Maily(client=client)
     try:
         result = await api.refresh_domain_cache()
         assert result.refreshed == ["mail.tm"]
@@ -94,9 +101,9 @@ def test_sdk_shim_still_importable_with_deprecation_warning():
 
     with warnings.catch_warnings(record=True) as caught:
         warnings.simplefilter("always")
-        from mailtmapi.sdk import MailTMAPI as SdkMailTMAPI
+        from maily.sdk import Maily as SdkMaily
 
-        assert SdkMailTMAPI is MailTMAPI
+        assert SdkMaily is Maily
         assert any(issubclass(w.category, DeprecationWarning) for w in caught)
 
 

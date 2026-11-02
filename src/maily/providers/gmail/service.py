@@ -6,9 +6,9 @@ import time
 import urllib.parse
 from contextlib import suppress
 
-from mailtmapi.exceptions import MailAPIError, MailAuthError, MailNotFoundError, MailValidationError
-from mailtmapi.http import HttpClient
-from mailtmapi.providers.base import (
+from maily.exceptions import MailAPIError, MailAuthError, MailNotFoundError, MailValidationError
+from maily.http import HttpClient
+from maily.providers.base import (
     MailboxInfo,
     MailboxSpec,
     MessageDetail,
@@ -18,8 +18,8 @@ from mailtmapi.providers.base import (
     Target,
     TargetKind,
 )
-from mailtmapi.utils.misc import random_string
-from mailtmapi.utils.retry import async_retry
+from maily.utils.misc import random_string
+from maily.utils.retry import async_retry
 
 from .oauth import GmailOAuth
 from .parse import (

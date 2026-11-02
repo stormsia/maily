@@ -16,7 +16,7 @@ from ..exceptions import (
     MailValidationError,
 )
 
-logger = logging.getLogger("mailtmapi.errors")
+logger = logging.getLogger("maily.errors")
 
 
 def _json(

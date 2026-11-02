@@ -270,7 +270,7 @@ function heroBanner({ health, config, isSweeping, onRefresh, onSweep }) {
           h("span", {
             class: `badge ${authProtected ? "badge--ok" : "badge--warn"} mono`,
             style: "font-size:10px",
-            title: authProtected ? "Protected by MAILTM_API_KEY" : "No API key configured (open local access)",
+            title: authProtected ? "Protected by MAILY_API_KEY" : "No API key configured (open local access)",
           }, authProtected ? "auth on" : "no auth key")),
         h("div", { style: "font-size:var(--fs-12);color:var(--muted);margin-top:2px" },
           isHealthy

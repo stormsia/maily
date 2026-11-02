@@ -11,19 +11,19 @@ from cryptography.fernet import Fernet
 from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-logger = logging.getLogger("mailtmapi.settings")
+logger = logging.getLogger("maily.settings")
 
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
-        env_prefix="MAILTM_",
+        env_prefix="MAILY_",
         env_file=".env",
         extra="ignore",
     )
 
     api_key: str = ""
     secret_key: str = ""
-    database_url: str = "sqlite+aiosqlite:///mailtm.db"
+    database_url: str = "sqlite+aiosqlite:///maily.db"
     host: str = "127.0.0.1"
     port: int = 8477
     proxy: str | None = None
@@ -41,7 +41,7 @@ class Settings(BaseSettings):
     gmail_auth_uri: str = "https://accounts.google.com/o/oauth2/v2/auth"
     gmail_token_uri: str = "https://oauth2.googleapis.com/token"
     gmail_redirect_uri: str = ""
-    secret_key_path: Path = Field(default=Path("mailtm.key"))
+    secret_key_path: Path = Field(default=Path("maily.key"))
     retention_interval_seconds: int = 60
     db_maintenance_enabled: bool = True
     db_maintenance_interval_minutes: int = 60
@@ -92,7 +92,7 @@ class Settings(BaseSettings):
             raw = json.loads(Path(self.gmail_credentials_path).read_text(encoding="utf-8"))
             installed = raw.get("installed") or raw.get("web") or raw
             return installed["client_id"], installed["client_secret"]
-        raise RuntimeError("Set MAILTM_GMAIL_CLIENT_ID/SECRET or MAILTM_GMAIL_CREDENTIALS_PATH")
+        raise RuntimeError("Set MAILY_GMAIL_CLIENT_ID/SECRET or MAILY_GMAIL_CREDENTIALS_PATH")
 
     def default_gmail_redirect_uri(self) -> str:
         return self.gmail_redirect_uri or f"http://{self.host}:{self.port}/v1/gmail/oauth/callback"

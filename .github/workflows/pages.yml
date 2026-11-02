@@ -9,7 +9,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: 'pages'
+  group: "pages"
   cancel-in-progress: false
 
 jobs:
@@ -40,7 +40,7 @@ jobs:
           mkdir -p public
           uv run python -c "
           import json
-          from mailtmapi.app.main import create_app
+          from maily.app.main import create_app
           app = create_app()
           schema = app.openapi()
           with open('public/openapi.json', 'w', encoding='utf-8') as f:
@@ -52,7 +52,7 @@ jobs:
           <head>
             <meta charset="utf-8" />
             <meta name="viewport" content="width=device-width, initial-scale=1" />
-            <title>mailtmapi API Interactive Documentation (Swagger UI)</title>
+            <title>maily API Interactive Documentation (Swagger UI)</title>
             <link rel="stylesheet" href="https://unpkg.com/swagger-ui-dist@5/swagger-ui.css" />
             <style>
               body { margin: 0; background: #f8fafc; font-family: system-ui, sans-serif; }
@@ -65,7 +65,7 @@ jobs:
           </head>
           <body>
             <div class="top-nav">
-              <div><strong>mailtmapi</strong> API Documentation</div>
+              <div><strong>maily</strong> API Documentation</div>
               <div>
                 <a href="redoc.html">Switch to ReDoc</a>
                 <a href="openapi.json" download>Download OpenAPI JSON</a>
@@ -96,7 +96,7 @@ jobs:
           <head>
             <meta charset="utf-8" />
             <meta name="viewport" content="width=device-width, initial-scale=1" />
-            <title>mailtmapi API Documentation (ReDoc)</title>
+            <title>maily API Documentation (ReDoc)</title>
             <style>body { margin: 0; padding: 0; }</style>
           </head>
           <body>
@@ -109,7 +109,7 @@ jobs:
       - name: Upload HTML Documentation Artifact
         uses: actions/upload-artifact@v7
         with:
-          name: mailtmapi-api-docs
+          name: maily-api-docs
           path: public/
           retention-days: 14
 

@@ -1,4 +1,4 @@
-/* mailtmapi admin — shared UI: DOM helpers, toasts, modals, formatting. */
+/* maily admin — shared UI: DOM helpers, toasts, modals, formatting. */
 
 export function refreshIcons() {
   if (window.lucide?.createIcons) window.lucide.createIcons();

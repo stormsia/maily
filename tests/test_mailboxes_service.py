@@ -5,17 +5,17 @@ from pathlib import Path
 import pytest
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
-from mailtmapi.app.services import mailboxes as svc
-from mailtmapi.db.models import Base, Mailbox
-from mailtmapi.exceptions import (
+from maily.app.services import mailboxes as svc
+from maily.db.models import Base, Mailbox
+from maily.exceptions import (
     MailAPIError,
     MailConflictError,
     MailNotFoundError,
     MailValidationError,
 )
-from mailtmapi.providers.base import MailboxInfo
-from mailtmapi.providers.registry import ProviderRegistry
-from mailtmapi.settings import Settings
+from maily.providers.base import MailboxInfo
+from maily.providers.registry import ProviderRegistry
+from maily.settings import Settings
 from tests.helpers import StubProvider
 
 SECRET = "test-secret"

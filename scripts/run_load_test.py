@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""Automated Macro Load & Stress Test Runner for mailtmapi using Locust.
+"""Automated Macro Load & Stress Test Runner for maily using Locust.
 
-Launches mailtmapi server in an isolated environment, runs headless Locust load
+Launches maily server in an isolated environment, runs headless Locust load
 scenarios with concurrency, asserts strict SLOs (0% error rate, p95 < 65ms),
 and exports rich markdown reports for CI/CD Step Summary.
 """
@@ -37,7 +37,12 @@ def wait_for_server(url: str, timeout_sec: float = 15.0) -> bool:
 
 def warmup_server(port: int, root_key: str, rounds: int = 5) -> None:
     """Warm up server event loop and SQLite queries to avoid cold-start skew."""
-    endpoints = ["/health", "/v1/mailboxes", "/v1/admin/domain-cache", "/v1/admin/keys/me"]
+    endpoints = [
+        "/health",
+        "/v1/mailboxes",
+        "/v1/admin/domain-cache",
+        "/v1/admin/keys/me",
+    ]
     for _ in range(rounds):
         for ep in endpoints:
             req = Request(
@@ -61,10 +66,17 @@ def main() -> int:
         "--users", type=int, default=25, help="Number of concurrent users (default: 25)"
     )
     parser.add_argument(
-        "--spawn-rate", type=int, default=10, help="User spawn rate per second (default: 10)"
+        "--spawn-rate",
+        type=int,
+        default=10,
+        help="User spawn rate per second (default: 10)",
     )
-    parser.add_argument("--run-time", default="10s", help="Load test duration (default: 10s)")
-    parser.add_argument("--port", type=int, default=8478, help="Target server port (default: 8478)")
+    parser.add_argument(
+        "--run-time", default="10s", help="Load test duration (default: 10s)"
+    )
+    parser.add_argument(
+        "--port", type=int, default=8478, help="Target server port (default: 8478)"
+    )
     parser.add_argument(
         "--max-p95-ms",
         type=float,
@@ -98,7 +110,7 @@ def main() -> int:
         sys.executable,
         "-m",
         "uvicorn",
-        "mailtmapi.app.main:create_app",
+        "maily.app.main:create_app",
         "--factory",
         "--host",
         "127.0.0.1",
@@ -154,7 +166,9 @@ def main() -> int:
     # Parse and validate results
     stats_csv = out_dir / "locust_stats_stats.csv"
     if not stats_csv.is_file():
-        print(f"Error: Expected Locust stats file not found: {stats_csv}", file=sys.stderr)
+        print(
+            f"Error: Expected Locust stats file not found: {stats_csv}", file=sys.stderr
+        )
         return 1
 
     rows: list[dict[str, str]] = []
@@ -185,7 +199,9 @@ def main() -> int:
     print(f"Latency p99:    {p99_ms:.2f} ms (max: {args.max_p99_ms:.1f} ms)")
 
     summary_file = os.environ.get("GITHUB_STEP_SUMMARY")
-    all_passed = fail_count == 0 and p95_ms <= args.max_p95_ms and p99_ms <= args.max_p99_ms
+    all_passed = (
+        fail_count == 0 and p95_ms <= args.max_p95_ms and p99_ms <= args.max_p99_ms
+    )
     if summary_file:
         with open(summary_file, "a", encoding="utf-8") as sf:
             sf.write("### ⚡ Macro Load & Stress Test Summary\n\n")
@@ -208,7 +224,9 @@ def main() -> int:
                 f"| **p99 Latency** | {p99_ms:.2f} ms | `< {args.max_p99_ms:.1f} ms` | {'🟢' if p99_ms <= args.max_p99_ms else '🔴'} |\n\n"
             )
 
-            sf.write("| Endpoint / Task | Requests | Failures | Median (ms) | p95 (ms) | Req/s |\n")
+            sf.write(
+                "| Endpoint / Task | Requests | Failures | Median (ms) | p95 (ms) | Req/s |\n"
+            )
             sf.write("| :--- | :---: | :---: | :---: | :---: | :---: |\n")
             for r in rows[:-1]:
                 name = r.get("Name", "unknown")
@@ -217,10 +235,15 @@ def main() -> int:
                 med = float(r.get("50%", 0) or 0)
                 p95 = float(r.get("95%", 0) or 0)
                 r_rps = float(r.get("Requests/s", 0) or 0)
-                sf.write(f"| `{name}` | {cnt:,} | {fc} | {med:.1f} | {p95:.1f} | {r_rps:,.1f} |\n")
+                sf.write(
+                    f"| `{name}` | {cnt:,} | {fc} | {med:.1f} | {p95:.1f} | {r_rps:,.1f} |\n"
+                )
 
     if fail_count > 0:
-        print(f"::error::Load test failed with {fail_count} request failure(s)!", file=sys.stderr)
+        print(
+            f"::error::Load test failed with {fail_count} request failure(s)!",
+            file=sys.stderr,
+        )
         return 1
 
     if p95_ms > args.max_p95_ms:

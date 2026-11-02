@@ -18,7 +18,7 @@ from sqlalchemy.ext.asyncio import (
     create_async_engine,
 )
 
-from mailtmapi.app.authz import (
+from maily.app.authz import (
     Principal,
     owns_mailbox,
     parent_allowed,
@@ -27,8 +27,8 @@ from mailtmapi.app.authz import (
     require_principal,
     require_root,
 )
-from mailtmapi.db.models import ApiKey, Base, Mailbox
-from mailtmapi.settings import Settings
+from maily.db.models import ApiKey, Base, Mailbox
+from maily.settings import Settings
 
 _T = TypeVar("_T")
 
@@ -86,7 +86,9 @@ async def _direct_db(tmp_path: Path) -> _Db:
     engine = create_async_engine(f"sqlite+aiosqlite:///{tmp_path / 'direct.db'}")
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
-    return _Db(factory=async_sessionmaker(engine, expire_on_commit=False), engine=engine)
+    return _Db(
+        factory=async_sessionmaker(engine, expire_on_commit=False), engine=engine
+    )
 
 
 async def _call_principal(
@@ -134,7 +136,9 @@ async def _insert_key(
 
 
 def _scope(providers: list[str], parent_ids: list[int], actions: list[str]) -> str:
-    return json.dumps({"providers": providers, "parent_ids": parent_ids, "actions": actions})
+    return json.dumps(
+        {"providers": providers, "parent_ids": parent_ids, "actions": actions}
+    )
 
 
 def _principal(*, scope_json: str, key_id: int = 3) -> Principal:
@@ -488,7 +492,9 @@ def test_root_bypasses_require_action() -> None:
     # Then the same principal is returned
 
     async def _body() -> Principal:
-        return await require_action("mailboxes:write")(Principal(is_root=True, key=None))
+        return await require_action("mailboxes:write")(
+            Principal(is_root=True, key=None)
+        )
 
     resolved = _run(_body())
     assert resolved.is_root is True
@@ -522,7 +528,9 @@ def test_env_key_wins_over_colliding_row(tmp_path: Path) -> None:
     assert principal.key is None
 
 
-def test_expiry_equal_to_now_is_401(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_expiry_equal_to_now_is_401(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     # Given expires_at equal to the clock authz uses
     # When that secret is presented to require_principal
     # Then the key is rejected as expired
@@ -550,7 +558,7 @@ def test_expiry_equal_to_now_is_401(tmp_path: Path, monkeypatch: pytest.MonkeyPa
         finally:
             await db.engine.dispose()
 
-    monkeypatch.setattr("mailtmapi.app.authz.utcnow_naive", lambda: frozen)
+    monkeypatch.setattr("maily.app.authz.utcnow_naive", lambda: frozen)
     status, detail, header = _status(_run(_body()))
     assert status == 401
     assert detail == "invalid api key"

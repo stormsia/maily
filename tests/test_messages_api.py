@@ -4,9 +4,9 @@ from pathlib import Path
 
 from fastapi.testclient import TestClient
 
-from mailtmapi.app.main import create_app
-from mailtmapi.providers.registry import ProviderRegistry
-from mailtmapi.settings import Settings
+from maily.app.main import create_app
+from maily.providers.registry import ProviderRegistry
+from maily.settings import Settings
 from tests.helpers import StubProvider
 
 SECRET = "test-secret"
@@ -109,7 +109,9 @@ def test_deleted_message_stays_deleted_when_provider_lists_it(tmp_path: Path):
         import sqlite3
 
         conn = sqlite3.connect(str(tmp_path / "test.db"))
-        row = conn.execute("SELECT is_deleted FROM messages WHERE message_api_id = 'm1'").fetchone()
+        row = conn.execute(
+            "SELECT is_deleted FROM messages WHERE message_api_id = 'm1'"
+        ).fetchone()
         conn.close()
         assert row == (1,)
 

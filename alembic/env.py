@@ -5,8 +5,8 @@ from logging.config import fileConfig
 from alembic import context
 from sqlalchemy import engine_from_config, pool
 
-from mailtmapi.db.models import Base
-from mailtmapi.settings import Settings
+from maily.db.models import Base
+from maily.settings import Settings
 
 config = context.config
 if config.config_file_name is not None:

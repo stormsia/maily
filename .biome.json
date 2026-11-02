@@ -25,6 +25,8 @@
     }
   },
   "files": {
-    "includes": ["src/mailtmapi/static/js/**"]
+    "includes": [
+      "src/maily/static/js/**"
+    ]
   }
 }

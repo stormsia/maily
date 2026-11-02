@@ -5,9 +5,9 @@ import json
 import httpx
 import pytest
 
-from mailtmapi.http import HttpClient
-from mailtmapi.providers.base import MailboxInfo, MailboxSpec
-from mailtmapi.providers.mailtm import MailTM
+from maily.http import HttpClient
+from maily.providers.base import MailboxInfo, MailboxSpec
+from maily.providers.mailtm import MailTM
 
 
 def _http(handler) -> HttpClient:
@@ -59,7 +59,9 @@ async def test_create_mailbox_posts_account_and_token():
     http = _http(handler)
     provider = MailTM(http)
     try:
-        box = await provider.create_mailbox(MailboxSpec(address="user@mail.tm", password="secret"))
+        box = await provider.create_mailbox(
+            MailboxSpec(address="user@mail.tm", password="secret")
+        )
         assert box.provider == "mail.tm"
         assert box.address == "user@mail.tm"
         assert box.token == "jwt-token"
@@ -156,14 +158,22 @@ async def test_delete_mailbox_and_messages():
             return httpx.Response(200, json={"seen": True})
         if request.method == "GET" and "/sources/" in request.url.path:
             return httpx.Response(
-                200, json={"id": "src1", "data": "raw-source-data", "downloadUrl": "http://dl"}
+                200,
+                json={
+                    "id": "src1",
+                    "data": "raw-source-data",
+                    "downloadUrl": "http://dl",
+                },
             )
         return httpx.Response(404)
 
     http = _http(handler)
     provider = MailTM(http)
     mailbox = MailboxInfo(
-        provider="mail.tm", address="user@mail.tm", token="jwt-token", provider_account_id="acc123"
+        provider="mail.tm",
+        address="user@mail.tm",
+        token="jwt-token",
+        provider_account_id="acc123",
     )
     try:
         # Delete mailbox
@@ -172,7 +182,9 @@ async def test_delete_mailbox_and_messages():
         assert ("DELETE", "/accounts/acc123") in deleted_paths
 
         # Delete mailbox with no account id
-        no_acc_box = MailboxInfo(provider="mail.tm", address="user@mail.tm", token="jwt-token")
+        no_acc_box = MailboxInfo(
+            provider="mail.tm", address="user@mail.tm", token="jwt-token"
+        )
         assert await provider.delete_mailbox(no_acc_box) is False
 
         # Delete message
@@ -198,11 +210,14 @@ async def test_create_mailbox_auto_domain():
     def handler(request: httpx.Request) -> httpx.Response:
         if request.method == "GET" and request.url.path == "/domains":
             return httpx.Response(
-                200, json={"hydra:member": [{"domain": "autodomain.com", "isActive": True}]}
+                200,
+                json={"hydra:member": [{"domain": "autodomain.com", "isActive": True}]},
             )
         if request.method == "POST" and request.url.path == "/accounts":
             body = json.loads(request.content)
-            return httpx.Response(201, json={"id": "acc_auto", "address": body["address"]})
+            return httpx.Response(
+                201, json={"id": "acc_auto", "address": body["address"]}
+            )
         if request.method == "POST" and request.url.path == "/token":
             return httpx.Response(200, json={"token": "auto_jwt"})
         return httpx.Response(404)

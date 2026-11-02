@@ -360,7 +360,7 @@ async def save_gmail_creds(
     if env and env[2] == "env":
         raise HTTPException(
             409,
-            "Gmail OAuth credentials are managed by environment variables (MAILTM_GMAIL_CLIENT_ID/SECRET).",
+            "Gmail OAuth credentials are managed by environment variables (MAILY_GMAIL_CLIENT_ID/SECRET).",
         )
     cid, csec = body.client_id.strip(), body.client_secret.strip()
     if not cid or not csec:

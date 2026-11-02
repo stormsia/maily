@@ -1,11 +1,11 @@
-# -=- THIS FILE IS GENERATED from src/mailtmapi/standalone_client.py -=-
+# -=- THIS FILE IS GENERATED from src/maily/standalone_client.py -=-
 # Do not edit by hand; edit the canonical file and run:
 #   python scripts/build_client.py
-"""mailtmapi standalone client — CANONICAL single-file implementation.
+"""maily standalone client — CANONICAL single-file implementation.
 
 Single canonical source of truth for the client. Two ways to use this code:
 
-    1. Inside the server package — via the thin proxy `mailtmapi.client`
+    1. Inside the server package — via the thin proxy `maily.client`
        (this module is imported from there).
     2. Outside — the `client/client.py` file in the repo root, which
        is generated from this module via `scripts/build_client.py`
@@ -16,22 +16,22 @@ Single canonical source of truth for the client. Two ways to use this code:
 Self-contained: does not pull in server dependencies (FastAPI, SQLAlchemy,
 uvicorn, etc.), requires only httpx, loguru, and pydantic.
 
-    pip install "mailtmapi-client @ git+https://github.com/stormsia/mailtmapi.git#subdirectory=client"
+    pip install "maily-client @ git+https://github.com/stormsia/maily.git#subdirectory=client"
     # or copy the file into your project:
-    #   curl -O https://raw.githubusercontent.com/stormsia/mailtmapi/main/client/client.py
+    #   curl -O https://raw.githubusercontent.com/stormsia/maily/main/client/client.py
 
 Self-update: the client can check the version on git and update itself from
     the repo's client/client.py:
 
-        mailtmapi-client check           # check if a new version is on git
-        mailtmapi-client update          # download and install the new version
+        maily-client check           # check if a new version is on git
+        maily-client update          # download and install the new version
 
     (or `python client.py check/update` if running locally).
 
     From code:
 
         import client
-        from client import MailTMAPI, self_update, check_update
+        from client import Maily, self_update, check_update
 
         self_update()          # async-free, updates the client file on disk
         up = check_update()    # (current, remote) if an update is available, else None
@@ -60,13 +60,13 @@ __version__ = "0.3.0"
 # Where the client fetches itself for self-updates (override with env var).
 CLIENT_SOURCE = os.environ.get(
     "MAILTMAPI_CLIENT_SOURCE",
-    "https://raw.githubusercontent.com/stormsia/mailtmapi/main/client/client.py",
+    "https://raw.githubusercontent.com/stormsia/maily/main/client/client.py",
 )
 
 __all__ = [
     # Client and sections
-    "MailTMAPI",
-    "SyncMailTMAPI",
+    "Maily",
+    "SyncMaily",
     "SyncHealthAPI",
     "SyncConfigAPI",
     "SyncProvidersAPI",
@@ -135,7 +135,7 @@ __all__ = [
 
 
 # --------------------------------------------------------------------------- #
-# Response models (self-contained — do not depend on mailtmapi.schemas)
+# Response models (self-contained — do not depend on maily.schemas)
 # --------------------------------------------------------------------------- #
 class _Base(BaseModel):
     model_config = ConfigDict(from_attributes=True, extra="ignore")
@@ -325,7 +325,7 @@ _URL_RE = re.compile(r"https?://[^\s<>\"')\]]+", re.IGNORECASE)
 # Errors
 # --------------------------------------------------------------------------- #
 class ClientError(Exception):
-    """Base client error for mailtmapi."""
+    """Base client error for maily."""
 
 
 class WaitTimeoutError(ClientError, TimeoutError):
@@ -337,7 +337,9 @@ class ApiError(ClientError):
 
     def __init__(self, status_code: int | None, detail: str = "") -> None:
         self.status_code = status_code
-        self.detail = detail or (f"HTTP {status_code}" if status_code else "request failed")
+        self.detail = detail or (
+            f"HTTP {status_code}" if status_code else "request failed"
+        )
         super().__init__(self.detail)
 
 
@@ -425,7 +427,7 @@ def self_update(
 
     import inspect
 
-    path = inspect.getsourcefile(MailTMAPI) or __file__
+    path = inspect.getsourcefile(Maily) or __file__
     _atomic_replace(path, text)
     logger.info("client updated {} -> {} ({})", __version__, remote, path)
     if after is not None:
@@ -436,7 +438,11 @@ def self_update(
 # --------------------------------------------------------------------------- #
 # Transport
 # --------------------------------------------------------------------------- #
-_TRANSIENT_NETWORK_ERRORS = (httpx.ConnectTimeout, httpx.ConnectError, httpx.NetworkError)
+_TRANSIENT_NETWORK_ERRORS = (
+    httpx.ConnectTimeout,
+    httpx.ConnectError,
+    httpx.NetworkError,
+)
 
 
 def _parse_retry_after(header_val: str | None, attempt: int, backoff: float) -> float:
@@ -467,7 +473,9 @@ class _Transport:
         max_retries: int = 0,
         retry_backoff: float = 0.5,
     ) -> None:
-        self._client = client or httpx.AsyncClient(base_url=base_url.rstrip("/"), timeout=timeout)
+        self._client = client or httpx.AsyncClient(
+            base_url=base_url.rstrip("/"), timeout=timeout
+        )
         self._owns_client = client is None
         self._headers: dict[str, str] = {}
         if api_key:
@@ -513,20 +521,31 @@ class _Transport:
                     )
                     await asyncio.sleep(delay)
                     continue
-                logger.opt(exception=False).warning("{} {} failed: {}", method, path, exc)
+                logger.opt(exception=False).warning(
+                    "{} {} failed: {}", method, path, exc
+                )
                 raise ApiError(None, f"network error: {exc}") from exc
             except httpx.HTTPError as exc:
-                logger.opt(exception=False).warning("{} {} failed: {}", method, path, exc)
+                logger.opt(exception=False).warning(
+                    "{} {} failed: {}", method, path, exc
+                )
                 raise ApiError(None, f"network error: {exc}") from exc
 
             elapsed = (time.perf_counter() - started) * 1000
             if resp.status_code >= 400:
                 detail = _extract_detail(resp)
                 logger.warning(
-                    "{} {} -> {} ({:.0f}ms): {}", method, path, resp.status_code, elapsed, detail
+                    "{} {} -> {} ({:.0f}ms): {}",
+                    method,
+                    path,
+                    resp.status_code,
+                    elapsed,
+                    detail,
                 )
                 if resp.status_code == 429 and attempt < self.max_retries:
-                    delay = self._parse_retry_after(resp.headers.get("Retry-After"), attempt)
+                    delay = self._parse_retry_after(
+                        resp.headers.get("Retry-After"), attempt
+                    )
                     logger.warning(
                         "{} {} rate limited (429), retrying in {:.2f}s (attempt {}/{})",
                         method,
@@ -564,7 +583,9 @@ class _Transport:
                     raise UpstreamProviderError(resp.status_code, detail)
                 raise ApiError(resp.status_code, detail)
 
-            logger.debug("{} {} -> {} ({:.0f}ms)", method, path, resp.status_code, elapsed)
+            logger.debug(
+                "{} {} -> {} ({:.0f}ms)", method, path, resp.status_code, elapsed
+            )
             if resp.status_code == 204:
                 return None
             return resp.json()
@@ -601,7 +622,13 @@ def _extract_detail(resp: httpx.Response) -> str:
                     field = ""
                     if isinstance(loc, (list, tuple)):
                         parts = [str(p) for p in loc]
-                        if parts and parts[0] in ("body", "query", "path", "header", "cookie"):
+                        if parts and parts[0] in (
+                            "body",
+                            "query",
+                            "path",
+                            "header",
+                            "cookie",
+                        ):
                             parts = parts[1:]
                         field = ".".join(parts)
                     if field and msg:
@@ -618,7 +645,9 @@ def _extract_detail(resp: httpx.Response) -> str:
                     formatted.append(str(item))
             if formatted:
                 return "; ".join(formatted)
-        if detail is not None and not (isinstance(detail, (dict, list, str)) and not detail):
+        if detail is not None and not (
+            isinstance(detail, (dict, list, str)) and not detail
+        ):
             return str(detail)[:300]
         return str(body)[:300]
 
@@ -660,7 +689,10 @@ class ProvidersAPI:
 
     async def list(self) -> list[Provider]:
         """All available providers."""
-        return [Provider.model_validate(p) for p in await self._t.request("GET", "/v1/providers")]
+        return [
+            Provider.model_validate(p)
+            for p in await self._t.request("GET", "/v1/providers")
+        ]
 
     async def targets(self, provider: str | None = None) -> builtins.list[Target]:
         """Mailbox creation targets: domains (domain providers) or Gmail accounts."""
@@ -698,7 +730,9 @@ class MailboxesAPI:
             }.items()
             if v is not None
         }
-        return Mailbox.model_validate(await self._t.request("POST", "/v1/mailboxes", json=payload))
+        return Mailbox.model_validate(
+            await self._t.request("POST", "/v1/mailboxes", json=payload)
+        )
 
     async def list(
         self,
@@ -723,17 +757,23 @@ class MailboxesAPI:
             params["offset"] = str(offset)
         return [
             Mailbox.model_validate(m)
-            for m in await self._t.request("GET", "/v1/mailboxes", params=params or None)
+            for m in await self._t.request(
+                "GET", "/v1/mailboxes", params=params or None
+            )
         ]
 
     async def get(self, mailbox_id: int | Mailbox) -> Mailbox:
         mid = _mailbox_id_val(mailbox_id)
-        return Mailbox.model_validate(await self._t.request("GET", f"/v1/mailboxes/{mid}"))
+        return Mailbox.model_validate(
+            await self._t.request("GET", f"/v1/mailboxes/{mid}")
+        )
 
     async def by_address(self, email: str) -> Mailbox:
         """Find mailbox by full email address."""
         return Mailbox.model_validate(
-            await self._t.request("GET", f"/v1/mailboxes/by-address/{quote(email, safe='')}")
+            await self._t.request(
+                "GET", f"/v1/mailboxes/by-address/{quote(email, safe='')}"
+            )
         )
 
     async def delete(self, mailbox_id: int | Mailbox) -> None:
@@ -748,7 +788,9 @@ class MessagesAPI:
     def __init__(self, transport: _Transport) -> None:
         self._t = transport
 
-    async def list(self, mailbox_id: int | Mailbox, page: int = 1) -> list[MessageSummary]:
+    async def list(
+        self, mailbox_id: int | Mailbox, page: int = 1
+    ) -> list[MessageSummary]:
         """List messages (paginated)."""
         mid = _mailbox_id_val(mailbox_id)
         return [
@@ -767,11 +809,14 @@ class MessagesAPI:
             )
         )
 
-    async def mark_read(self, mailbox_id: int | Mailbox, message_id: str) -> MessageSummary:
+    async def mark_read(
+        self, mailbox_id: int | Mailbox, message_id: str
+    ) -> MessageSummary:
         mid = _mailbox_id_val(mailbox_id)
         return MessageSummary.model_validate(
             await self._t.request(
-                "POST", f"/v1/mailboxes/{mid}/messages/{quote(message_id, safe='')}/read"
+                "POST",
+                f"/v1/mailboxes/{mid}/messages/{quote(message_id, safe='')}/read",
             )
         )
 
@@ -786,7 +831,8 @@ class MessagesAPI:
         mid = _mailbox_id_val(mailbox_id)
         return MessageSource.model_validate(
             await self._t.request(
-                "GET", f"/v1/mailboxes/{mid}/messages/{quote(message_id, safe='')}/source"
+                "GET",
+                f"/v1/mailboxes/{mid}/messages/{quote(message_id, safe='')}/source",
             )
         )
 
@@ -848,7 +894,9 @@ class MessagesAPI:
             if keyword:
                 keywords.append(keyword.casefold())
         try:
-            code_pattern = re.compile(digit_code_mask, re.IGNORECASE) if digit_code_mask else None
+            code_pattern = (
+                re.compile(digit_code_mask, re.IGNORECASE) if digit_code_mask else None
+            )
         except re.error as exc:
             raise ValueError(
                 f"Invalid regular expression digit_code_mask: {digit_code_mask!r}"
@@ -870,14 +918,18 @@ class MessagesAPI:
                 message_id = msg.message_api_id
                 if message_id in examined:
                     continue
-                if sender_domain and not _is_from_domain(msg.from_address, sender_domain):
+                if sender_domain and not _is_from_domain(
+                    msg.from_address, sender_domain
+                ):
                     examined.add(message_id)
                     continue
 
                 try:
                     detail = await self.get(mid, message_id)
                 except Exception:
-                    logger.exception("Failed to load message details for %s", message_id)
+                    logger.exception(
+                        "Failed to load message details for %s", message_id
+                    )
                     continue
 
                 examined.add(message_id)
@@ -898,7 +950,9 @@ class MessagesAPI:
                 if code_pattern:
                     match = code_pattern.search(body)
                     if match:
-                        confirmation_code = match.group(1) if match.lastindex else match.group(0)
+                        confirmation_code = (
+                            match.group(1) if match.lastindex else match.group(0)
+                        )
 
                 if confirmation_link is None and confirmation_code is None:
                     continue
@@ -1007,7 +1061,9 @@ class GmailAPI:
 
     async def oauth_start(self) -> OAuthStart:
         """OAuth authorization URL: open in browser to link any Google account."""
-        return OAuthStart.model_validate(await self._t.request("POST", "/v1/gmail/oauth/start"))
+        return OAuthStart.model_validate(
+            await self._t.request("POST", "/v1/gmail/oauth/start")
+        )
 
     async def import_account(
         self,
@@ -1073,11 +1129,15 @@ class KeysAPI:
 
     async def get(self, key_id: int) -> ApiKeyOut:
         """Root only. Get key details by ID (without secret)."""
-        return ApiKeyOut.model_validate(await self._t.request("GET", f"/v1/admin/keys/{key_id}"))
+        return ApiKeyOut.model_validate(
+            await self._t.request("GET", f"/v1/admin/keys/{key_id}")
+        )
 
     async def me(self) -> ApiKeyMeOut:
         """Get current active key details (from X-API-Key header)."""
-        return ApiKeyMeOut.model_validate(await self._t.request("GET", "/v1/admin/keys/me"))
+        return ApiKeyMeOut.model_validate(
+            await self._t.request("GET", "/v1/admin/keys/me")
+        )
 
     async def secret(self, key_id: int) -> str:
         """Root only. Reveal key secret."""
@@ -1106,7 +1166,9 @@ class KeysAPI:
         self, key_id: int, retention: builtins.list[dict[str, Any]]
     ) -> builtins.list[KeyRetentionOut]:
         """Root only. Set custom retention TTL rules for the key."""
-        data = await self._t.request("PUT", f"/v1/admin/keys/{key_id}/retention", json=retention)
+        data = await self._t.request(
+            "PUT", f"/v1/admin/keys/{key_id}/retention", json=retention
+        )
         return [KeyRetentionOut.model_validate(r) for r in data]
 
     async def rotate(self, key_id: int) -> ApiKeyCreatedOut:
@@ -1133,7 +1195,8 @@ class AdminAPI:
 
     async def retention_list(self) -> list[Retention]:
         return [
-            Retention.model_validate(r) for r in await self._t.request("GET", "/v1/admin/retention")
+            Retention.model_validate(r)
+            for r in await self._t.request("GET", "/v1/admin/retention")
         ]
 
     async def retention_set(
@@ -1159,7 +1222,9 @@ class AdminAPI:
         )
 
     async def retention_disable(self, provider: str) -> None:
-        await self._t.request("DELETE", f"/v1/admin/retention/{quote(provider, safe='')}")
+        await self._t.request(
+            "DELETE", f"/v1/admin/retention/{quote(provider, safe='')}"
+        )
 
     async def retention_run(self, *, force_maintenance: bool = False) -> SweepResult:
         """Run cleanup now: sweep expired mailboxes and messages."""
@@ -1173,7 +1238,9 @@ class AdminAPI:
 
     async def domain_cache(self) -> DomainCache:
         """Current domain cache status (enabled, interval, providers)."""
-        return DomainCache.model_validate(await self._t.request("GET", "/v1/admin/domain-cache"))
+        return DomainCache.model_validate(
+            await self._t.request("GET", "/v1/admin/domain-cache")
+        )
 
     async def domain_cache_save(
         self,
@@ -1201,7 +1268,9 @@ class AdminAPI:
         )
 
     async def gmail_creds(self) -> GmailCreds:
-        return GmailCreds.model_validate(await self._t.request("GET", "/v1/admin/gmail/creds"))
+        return GmailCreds.model_validate(
+            await self._t.request("GET", "/v1/admin/gmail/creds")
+        )
 
     async def gmail_creds_save(
         self,
@@ -1209,7 +1278,10 @@ class AdminAPI:
         client_secret: str,
         redirect_uri: str | None = None,
     ) -> GmailCreds:
-        payload: dict[str, str] = {"client_id": client_id, "client_secret": client_secret}
+        payload: dict[str, str] = {
+            "client_id": client_id,
+            "client_secret": client_secret,
+        }
         if redirect_uri:
             payload["redirect_uri"] = redirect_uri
         return GmailCreds.model_validate(
@@ -1274,7 +1346,9 @@ class AdminAPI:
         self, key_id: int, retention: list[dict[str, Any]]
     ) -> list[dict[str, Any]]:
         """Root only. Replaces that key's retention rows."""
-        return await self._t.request("PUT", f"/v1/admin/keys/{key_id}/retention", json=retention)
+        return await self._t.request(
+            "PUT", f"/v1/admin/keys/{key_id}/retention", json=retention
+        )
 
     async def key_rotate(self, key_id: int) -> dict[str, Any]:
         """Root only. Rotates the secret; the response includes the new secret once."""
@@ -1288,10 +1362,10 @@ class AdminAPI:
 # --------------------------------------------------------------------------- #
 # Public client
 # --------------------------------------------------------------------------- #
-class MailTMAPI:
-    """Async client for mailtmapi. Use via `async with` or close manually.
+class Maily:
+    """Async client for maily. Use via `async with` or close manually.
 
-        async with MailTMAPI("http://127.0.0.1:8477", api_key="sk-…") as api:
+        async with Maily("http://127.0.0.1:8477", api_key="sk-…") as api:
             box = await api.create_temp_mailbox()
             code = await api.wait_for_code(box)
             print("Verification code:", code)
@@ -1354,7 +1428,7 @@ class MailTMAPI:
         remote = str(cfg.get("client_version") or "")
         if remote and remote != __version__:
             logger.warning(
-                "client {} != server {} — update client: `mailtmapi-client update`",
+                "client {} != server {} — update client: `maily-client update`",
                 __version__,
                 remote,
             )
@@ -1441,7 +1515,7 @@ class MailTMAPI:
     async def close(self) -> None:
         await self._transport.close()
 
-    async def __aenter__(self) -> MailTMAPI:
+    async def __aenter__(self) -> Maily:
         return self
 
     async def __aexit__(self, *_exc: Any) -> None:
@@ -1480,19 +1554,27 @@ class MailTMAPI:
     async def delete_mailbox(self, mailbox_id: int | Mailbox) -> None:
         await self.mailboxes.delete(mailbox_id)
 
-    async def list_messages(self, mailbox_id: int | Mailbox, page: int = 1) -> list[MessageSummary]:
+    async def list_messages(
+        self, mailbox_id: int | Mailbox, page: int = 1
+    ) -> list[MessageSummary]:
         return await self.messages.list(mailbox_id, page=page)
 
-    async def get_message(self, mailbox_id: int | Mailbox, message_id: str) -> MessageDetail:
+    async def get_message(
+        self, mailbox_id: int | Mailbox, message_id: str
+    ) -> MessageDetail:
         return await self.messages.get(mailbox_id, message_id)
 
-    async def mark_read(self, mailbox_id: int | Mailbox, message_id: str) -> MessageSummary:
+    async def mark_read(
+        self, mailbox_id: int | Mailbox, message_id: str
+    ) -> MessageSummary:
         return await self.messages.mark_read(mailbox_id, message_id)
 
     async def delete_message(self, mailbox_id: int | Mailbox, message_id: str) -> None:
         await self.messages.delete(mailbox_id, message_id)
 
-    async def get_source(self, mailbox_id: int | Mailbox, message_id: str) -> MessageSource:
+    async def get_source(
+        self, mailbox_id: int | Mailbox, message_id: str
+    ) -> MessageSource:
         return await self.messages.source(mailbox_id, message_id)
 
     async def gmail_oauth_start(self) -> OAuthStart:
@@ -1501,7 +1583,9 @@ class MailTMAPI:
     async def gmail_import_account(
         self, *, refresh_token: str | None = None, token_json: Any = None
     ) -> GmailAccount:
-        return await self.gmail.import_account(refresh_token=refresh_token, token_json=token_json)
+        return await self.gmail.import_account(
+            refresh_token=refresh_token, token_json=token_json
+        )
 
     async def list_gmail_accounts(self) -> list[GmailAccount]:
         return await self.gmail.accounts()
@@ -1791,7 +1875,9 @@ class SyncGmailAPI:
     ) -> GmailAccount:
         """Import an existing token (refresh_token or token_json)."""
         return self._run(
-            self._async.import_account(refresh_token=refresh_token, token_json=token_json)
+            self._async.import_account(
+                refresh_token=refresh_token, token_json=token_json
+            )
         )
 
     def accounts(self) -> list[GmailAccount]:
@@ -2029,15 +2115,15 @@ class SyncAdminAPI:
 # --------------------------------------------------------------------------- #
 # Synchronous client facade
 # --------------------------------------------------------------------------- #
-class SyncMailTMAPI:
-    """Synchronous client facade for mailtmapi.
+class SyncMaily:
+    """Synchronous client facade for maily.
 
     Runs a dedicated background daemon thread with a persistent asyncio event loop,
     allowing synchronous callers to execute all client operations safely without
     manual asyncio.run() or event loop closure issues.
 
     Example:
-        with SyncMailTMAPI("http://127.0.0.1:8477", api_key="sk-...") as api:
+        with SyncMaily("http://127.0.0.1:8477", api_key="sk-...") as api:
             box = api.create_temp_mailbox()
             code = api.wait_for_code(box)
             print("Verification code:", code)
@@ -2066,7 +2152,7 @@ class SyncMailTMAPI:
     ) -> None:
         self._loop = asyncio.new_event_loop()
         self._closed = False
-        self._async_client: MailTMAPI | None = None
+        self._async_client: Maily | None = None
 
         ready = threading.Event()
         init_err: list[BaseException] = []
@@ -2075,7 +2161,7 @@ class SyncMailTMAPI:
             asyncio.set_event_loop(self._loop)
             try:
                 try:
-                    self._async_client = MailTMAPI(
+                    self._async_client = Maily(
                         base_url=base_url,
                         api_key=api_key,
                         timeout=timeout,
@@ -2101,7 +2187,9 @@ class SyncMailTMAPI:
                         )
                 self._loop.close()
 
-        self._thread = threading.Thread(target=_run_loop, name="SyncMailTMAPI-worker", daemon=True)
+        self._thread = threading.Thread(
+            target=_run_loop, name="SyncMaily-worker", daemon=True
+        )
         self._thread.start()
         ready.wait()
 
@@ -2147,14 +2235,14 @@ class SyncMailTMAPI:
         if self._closed or not self._loop.is_running():
             if asyncio.iscoroutine(coro):
                 coro.close()
-            raise ClientError("SyncMailTMAPI is closed")
+            raise ClientError("SyncMaily is closed")
         future = asyncio.run_coroutine_threadsafe(coro, self._loop)
         return future.result()
 
     def set_api_key(self, api_key: str) -> None:
         """Update API key dynamically."""
         if self._closed or not self._async_client:
-            raise ClientError("SyncMailTMAPI is closed")
+            raise ClientError("SyncMaily is closed")
         self._async_client.set_api_key(api_key)
 
     def check_client_version(self) -> str:
@@ -2170,7 +2258,9 @@ class SyncMailTMAPI:
     ) -> Mailbox:
         """Convenience helper: create a temporary mailbox in one call."""
         assert self._async_client is not None
-        return self._run(self._async_client.create_temp_mailbox(provider=provider, domain=domain))
+        return self._run(
+            self._async_client.create_temp_mailbox(provider=provider, domain=domain)
+        )
 
     def wait_for_code(
         self,
@@ -2244,14 +2334,16 @@ class SyncMailTMAPI:
         self._closed = True
         if self._async_client and self._loop.is_running():
             with suppress(Exception):
-                future = asyncio.run_coroutine_threadsafe(self._async_client.close(), self._loop)
+                future = asyncio.run_coroutine_threadsafe(
+                    self._async_client.close(), self._loop
+                )
                 future.result(timeout=10.0)
         if self._loop.is_running():
             self._loop.call_soon_threadsafe(self._loop.stop)
         if self._thread.is_alive() and threading.current_thread() is not self._thread:
             self._thread.join(timeout=5.0)
 
-    def __enter__(self) -> SyncMailTMAPI:
+    def __enter__(self) -> SyncMaily:
         return self
 
     def __exit__(self, *_exc: Any) -> None:
@@ -2287,7 +2379,9 @@ class SyncMailTMAPI:
         self, provider: str | None = None, active: bool | None = None
     ) -> list[Mailbox]:
         assert self._async_client is not None
-        return self._run(self._async_client.list_mailboxes(provider=provider, active=active))
+        return self._run(
+            self._async_client.list_mailboxes(provider=provider, active=active)
+        )
 
     def mailbox(self, mailbox_id: int | Mailbox) -> Mailbox:
         assert self._async_client is not None
@@ -2301,7 +2395,9 @@ class SyncMailTMAPI:
         assert self._async_client is not None
         return self._run(self._async_client.delete_mailbox(mailbox_id))
 
-    def list_messages(self, mailbox_id: int | Mailbox, page: int = 1) -> list[MessageSummary]:
+    def list_messages(
+        self, mailbox_id: int | Mailbox, page: int = 1
+    ) -> list[MessageSummary]:
         assert self._async_client is not None
         return self._run(self._async_client.list_messages(mailbox_id, page=page))
 
@@ -2390,9 +2486,9 @@ def _main(argv: list[str] | None = None) -> int:
         print(__doc__.split("\n\n")[1].strip(), file=sys.stderr)
         print(
             "\nusage:\n"
-            "  mailtmapi-client version     - show version\n"
-            "  mailtmapi-client check       - check git for a newer version\n"
-            "  mailtmapi-client update      - update client file from git\n"
+            "  maily-client version     - show version\n"
+            "  maily-client check       - check git for a newer version\n"
+            "  maily-client update      - update client file from git\n"
             "  (or: python client.py check/update)\n",
             file=sys.stderr,
         )

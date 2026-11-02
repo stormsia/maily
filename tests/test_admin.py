@@ -6,11 +6,11 @@ from pathlib import Path
 
 from fastapi.testclient import TestClient
 
-from mailtmapi.app.main import create_app
-from mailtmapi.app.services.retention import utcnow_naive
-from mailtmapi.crypto import encrypt
-from mailtmapi.providers.registry import ProviderRegistry
-from mailtmapi.settings import Settings
+from maily.app.main import create_app
+from maily.app.services.retention import utcnow_naive
+from maily.crypto import encrypt
+from maily.providers.registry import ProviderRegistry
+from maily.settings import Settings
 from tests.helpers import StubProvider
 
 SECRET = "test-secret"
@@ -53,7 +53,9 @@ def test_retention_crud(tmp_path):
 
         r = client.get("/v1/admin/retention")
         assert r.status_code == 200
-        assert r.json() == [{"provider": "stub", "mailbox_ttl_hours": 24, "message_ttl_hours": 12}]
+        assert r.json() == [
+            {"provider": "stub", "mailbox_ttl_hours": 24, "message_ttl_hours": 12}
+        ]
 
         r = client.delete("/v1/admin/retention/stub")
         assert r.status_code == 204
@@ -123,7 +125,7 @@ def test_retention_sweep(tmp_path: Path):
 
 
 def test_retention_marks_mailbox_deleted_when_provider_delete_fails(tmp_path: Path):
-    from mailtmapi.exceptions import MailAPIError
+    from maily.exceptions import MailAPIError
 
     class Boom(StubProvider):
         async def delete_mailbox(self, mailbox) -> bool:
@@ -146,7 +148,9 @@ def test_retention_marks_mailbox_deleted_when_provider_delete_fails(tmp_path: Pa
             " VALUES (?, 'stub', 'child', ?, ?)",
             (box_id, old.isoformat(), now.isoformat()),
         )
-        conn.execute("INSERT INTO retention (provider, mailbox_ttl_hours) VALUES ('stub', 24)")
+        conn.execute(
+            "INSERT INTO retention (provider, mailbox_ttl_hours) VALUES ('stub', 24)"
+        )
         conn.commit()
         conn.close()
 
@@ -156,7 +160,8 @@ def test_retention_marks_mailbox_deleted_when_provider_delete_fails(tmp_path: Pa
 
         conn = _db(tmp_path)
         row = conn.execute(
-            "SELECT address, is_deleted, is_active FROM mailboxes WHERE id = ?", (box_id,)
+            "SELECT address, is_deleted, is_active FROM mailboxes WHERE id = ?",
+            (box_id,),
         ).fetchone()
         msg = conn.execute(
             "SELECT message_api_id FROM messages WHERE mailbox_id = ?", (box_id,)
@@ -167,7 +172,7 @@ def test_retention_marks_mailbox_deleted_when_provider_delete_fails(tmp_path: Pa
 
 
 def test_retention_keeps_message_when_provider_delete_fails(tmp_path: Path):
-    from mailtmapi.exceptions import MailAPIError
+    from maily.exceptions import MailAPIError
 
     class Boom(StubProvider):
         async def delete_message(self, mailbox, message_id: str) -> bool:
@@ -190,7 +195,9 @@ def test_retention_keeps_message_when_provider_delete_fails(tmp_path: Path):
             " VALUES (?, 'stub', 'stuck-msg', ?, ?)",
             (box_id, old.isoformat(), now.isoformat()),
         )
-        conn.execute("INSERT INTO retention (provider, message_ttl_hours) VALUES ('stub', 24)")
+        conn.execute(
+            "INSERT INTO retention (provider, message_ttl_hours) VALUES ('stub', 24)"
+        )
         conn.commit()
         conn.close()
 
@@ -225,7 +232,9 @@ def test_retention_deletes_mailbox_that_has_messages(tmp_path: Path):
             " VALUES (?, 'stub', 'kid', ?, ?)",
             (box_id, old.isoformat(), now.isoformat()),
         )
-        conn.execute("INSERT INTO retention (provider, mailbox_ttl_hours) VALUES ('stub', 24)")
+        conn.execute(
+            "INSERT INTO retention (provider, mailbox_ttl_hours) VALUES ('stub', 24)"
+        )
         conn.commit()
         conn.close()
 
@@ -321,7 +330,12 @@ def test_stats_backfill_is_idempotent_across_restarts(tmp_path: Path):
         conn.execute(
             "INSERT INTO messages (mailbox_id, provider, message_api_id, received_at, cached_at)"
             " VALUES (?, 'stub', ?, ?, ?)",
-            (mb_id, f"m{i}", (now - timedelta(minutes=minutes)).isoformat(), now.isoformat()),
+            (
+                mb_id,
+                f"m{i}",
+                (now - timedelta(minutes=minutes)).isoformat(),
+                now.isoformat(),
+            ),
         )
     conn.commit()
     conn.close()
@@ -358,7 +372,10 @@ def test_gmail_creds_crud(tmp_path):
         # save via dashboard
         r = client.put(
             "/v1/admin/gmail/creds",
-            json={"client_id": "cid-123.apps.googleusercontent.com", "client_secret": "topsecret"},
+            json={
+                "client_id": "cid-123.apps.googleusercontent.com",
+                "client_secret": "topsecret",
+            },
         )
         assert r.status_code == 200
         body = r.json()

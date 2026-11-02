@@ -17,11 +17,11 @@ import httpx
 from fastapi.testclient import TestClient
 from typing_extensions import TypedDict
 
-from mailtmapi.app.main import create_app
-from mailtmapi.crypto import encrypt
-from mailtmapi.db.models import GmailAccount
-from mailtmapi.http import HttpClient
-from mailtmapi.settings import Settings
+from maily.app.main import create_app
+from maily.crypto import encrypt
+from maily.db.models import GmailAccount
+from maily.http import HttpClient
+from maily.settings import Settings
 
 ROOT = "root"
 FERNET = "x" * 32
@@ -124,7 +124,7 @@ def stored_refresh(client: TestClient, email: str) -> str:
 
 def mailbox_parent(client: TestClient, mailbox_id: int) -> int | None:
     async def _load() -> int | None:
-        from mailtmapi.db.models import Mailbox
+        from maily.db.models import Mailbox
 
         async with client.app.state.session_factory() as session:
             row = await session.get(Mailbox, mailbox_id)
@@ -152,12 +152,18 @@ class RecordingGmail:
         if path.endswith("/token"):
             return httpx.Response(
                 200,
-                json={"access_token": "refreshed", "expires_in": 3600, "token_type": "Bearer"},
+                json={
+                    "access_token": "refreshed",
+                    "expires_in": 3600,
+                    "token_type": "Bearer",
+                },
             )
         if path.endswith("/profile"):
             return httpx.Response(200, json={"emailAddress": self.profile_email})
         if path.endswith("/settings/sendAs"):
-            return httpx.Response(200, json={"sendAs": [{"sendAsEmail": self.profile_email}]})
+            return httpx.Response(
+                200, json={"sendAs": [{"sendAsEmail": self.profile_email}]}
+            )
         if request.method == "GET" and path.endswith("/messages/m1") and fmt == "full":
             return httpx.Response(200, json=self.message or {})
         if request.method == "POST" and path.endswith("/trash"):
@@ -174,6 +180,8 @@ def stub_gmail(client: TestClient, recorder: RecordingGmail) -> None:
     async def _swap() -> None:
         http: HttpClient = client.app.state.http
         await http._client.aclose()
-        http._client = httpx.AsyncClient(transport=httpx.MockTransport(recorder.handler))
+        http._client = httpx.AsyncClient(
+            transport=httpx.MockTransport(recorder.handler)
+        )
 
     client.portal.call(_swap)

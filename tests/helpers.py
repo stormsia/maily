@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 
-from mailtmapi.providers.base import (
+from maily.providers.base import (
     MailboxInfo,
     MailboxSpec,
     MessageDetail,
@@ -18,7 +18,9 @@ STAMP = datetime(2026, 1, 2, 3, 4, 5, tzinfo=timezone.utc)
 
 
 def make_targets(slug: str, *labels: str) -> list[Target]:
-    return [Target(id=label, kind="domain", provider=slug, label=label) for label in labels]
+    return [
+        Target(id=label, kind="domain", provider=slug, label=label) for label in labels
+    ]
 
 
 class StubProvider:
@@ -69,7 +71,9 @@ class StubProvider:
         self.delete_mailbox_calls.append(mailbox.address)
         return True
 
-    async def list_messages(self, mailbox: MailboxInfo, page: int = 1) -> list[MessageSummary]:
+    async def list_messages(
+        self, mailbox: MailboxInfo, page: int = 1
+    ) -> list[MessageSummary]:
         if self._messages is not None:
             return list(self._messages)
         return [

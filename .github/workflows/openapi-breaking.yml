@@ -3,9 +3,9 @@ name: OpenAPI Breaking Changes Gate
 on:
   pull_request:
     paths:
-      - 'src/mailtmapi/**'
-      - 'scripts/check_openapi_breaking.py'
-      - '.github/workflows/openapi-breaking.yml'
+      - "src/maily/**"
+      - "scripts/check_openapi_breaking.py"
+      - ".github/workflows/openapi-breaking.yml"
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -44,7 +44,7 @@ jobs:
 
       - name: Generate current HEAD OpenAPI spec
         run: |
-          uv run python -c "from mailtmapi.app.main import create_app; import json; json.dump(create_app().openapi(), open('head_openapi.json', 'w'))"
+          uv run python -c "from maily.app.main import create_app; import json; json.dump(create_app().openapi(), open('head_openapi.json', 'w'))"
 
       - name: Generate base branch OpenAPI spec
         env:
@@ -52,7 +52,7 @@ jobs:
         run: |
           git fetch origin "$BASE_REF" --depth=1
           git worktree add /tmp/base-branch "origin/$BASE_REF"
-          (cd /tmp/base-branch && uv sync --frozen --all-extras && uv run python -c "from mailtmapi.app.main import create_app; import json; json.dump(create_app().openapi(), open('$GITHUB_WORKSPACE/base_openapi.json', 'w'))") || true
+          (cd /tmp/base-branch && uv sync --frozen --all-extras && uv run python -c "from maily.app.main import create_app; import json; json.dump(create_app().openapi(), open('$GITHUB_WORKSPACE/base_openapi.json', 'w'))") || true
           git worktree remove --force /tmp/base-branch || true
 
       - name: Compare OpenAPI specifications

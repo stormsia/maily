@@ -14,7 +14,7 @@ from ..settings import Settings
 api_key_header = APIKeyHeader(
     name="X-API-Key",
     auto_error=False,
-    description="API key (required only when the server runs with MAILTM_API_KEY set).",
+    description="API key (required only when the server runs with MAILY_API_KEY set).",
 )
 
 

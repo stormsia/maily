@@ -75,7 +75,7 @@ def _refuse_open_bind(settings: Settings) -> None:
         return
     raise RuntimeError(
         "Refusing to listen on a non-loopback address without an API key. "
-        "Set MAILTM_API_KEY or bind MAILTM_HOST to 127.0.0.1."
+        "Set MAILY_API_KEY or bind MAILY_HOST to 127.0.0.1."
     )
 
 
@@ -193,7 +193,7 @@ async def lifespan(app: FastAPI):
 def create_app(settings: Settings | None = None) -> FastAPI:
     settings = settings or get_settings()
     app = FastAPI(
-        title="mailtmapi",
+        title="maily",
         version=__version__,
         lifespan=lifespan,
         description=(
@@ -238,7 +238,7 @@ def run() -> None:
 
     settings = get_settings()
     uvicorn.run(
-        "mailtmapi.app.main:create_app",
+        "maily.app.main:create_app",
         factory=True,
         host=settings.host,
         port=settings.port,

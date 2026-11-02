@@ -18,7 +18,7 @@ from ...providers.base import Target
 from ...providers.registry import ProviderRegistry
 from ...settings import Settings
 
-logger = logging.getLogger("mailtmapi.domain_cache")
+logger = logging.getLogger("maily.domain_cache")
 
 _KEY_ENABLED = "domain_cache.enabled"
 _KEY_INTERVAL = "domain_cache.interval_seconds"

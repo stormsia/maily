@@ -1,9 +1,9 @@
-/* mailtmapi admin — fetch wrapper + per-endpoint functions.
+/* maily admin — fetch wrapper + per-endpoint functions.
    All URLs are relative (/v1/...) so the app works same-origin.
-   Auth: X-API-Key from localStorage ("mailtm_api_key"); on 401 the
+   Auth: X-API-Key from localStorage ("maily_api_key"); on 401 the
    registered handler prompts for a key and we retry once. */
 
-const KEY_NAME = "mailtm_api_key";
+const KEY_NAME = "maily_api_key";
 
 export function getApiKey() {
   try {

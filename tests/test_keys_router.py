@@ -13,8 +13,8 @@ from pathlib import Path
 
 from fastapi.testclient import TestClient
 
-from mailtmapi.app.main import create_app
-from mailtmapi.settings import Settings
+from maily.app.main import create_app
+from maily.settings import Settings
 
 ROOT = "root-secret"
 FERNET = "x" * 32
@@ -27,7 +27,9 @@ CREATE_BODY = {
     "name": "ops",
     "expires_at": None,
     "scope": SCOPE,
-    "retention": [{"provider": "mail.tm", "mailbox_ttl_hours": 24, "message_ttl_hours": 12}],
+    "retention": [
+        {"provider": "mail.tm", "mailbox_ttl_hours": 24, "message_ttl_hours": 12}
+    ],
 }
 
 
@@ -75,7 +77,9 @@ def test_create_returns_secret_and_list_omits_it(tmp_path: Path) -> None:
 def test_reveal_returns_the_same_secret_twice(tmp_path: Path) -> None:
     """Given a created key, two secret GETs return the create-time plaintext."""
     with _client(tmp_path) as client:
-        created = client.post("/v1/admin/keys", json=CREATE_BODY, headers=_root()).json()
+        created = client.post(
+            "/v1/admin/keys", json=CREATE_BODY, headers=_root()
+        ).json()
         first = client.get(f"/v1/admin/keys/{created['id']}/secret", headers=_root())
         second = client.get(f"/v1/admin/keys/{created['id']}/secret", headers=_root())
         assert first.status_code == 200
@@ -87,7 +91,9 @@ def test_reveal_returns_the_same_secret_twice(tmp_path: Path) -> None:
 def test_rotate_invalidates_old_secret_and_keeps_id(tmp_path: Path) -> None:
     """Given a rotated key, the old secret is 401 and the new secret authenticates."""
     with _client(tmp_path) as client:
-        created = client.post("/v1/admin/keys", json=CREATE_BODY, headers=_root()).json()
+        created = client.post(
+            "/v1/admin/keys", json=CREATE_BODY, headers=_root()
+        ).json()
         rotated = client.post(f"/v1/admin/keys/{created['id']}/rotate", headers=_root())
         assert rotated.status_code == 200
         body = rotated.json()
@@ -103,7 +109,9 @@ def test_rotate_invalidates_old_secret_and_keeps_id(tmp_path: Path) -> None:
 def test_issued_key_collection_is_403_without_error_header(tmp_path: Path) -> None:
     """Given an issued key, GET /v1/admin/keys is 403 forbidden with no X-MailTM-Error."""
     with _client(tmp_path) as client:
-        created = client.post("/v1/admin/keys", json=CREATE_BODY, headers=_root()).json()
+        created = client.post(
+            "/v1/admin/keys", json=CREATE_BODY, headers=_root()
+        ).json()
         res = client.get("/v1/admin/keys", headers=_issued(created["secret"]))
         assert res.status_code == 403
         assert res.json()["detail"] == "forbidden"
@@ -113,7 +121,9 @@ def test_issued_key_collection_is_403_without_error_header(tmp_path: Path) -> No
 def test_issued_key_me_returns_row_without_secret(tmp_path: Path) -> None:
     """Given an issued key, GET /me returns name, expiry, parsed scope, and retention."""
     with _client(tmp_path) as client:
-        created = client.post("/v1/admin/keys", json=CREATE_BODY, headers=_root()).json()
+        created = client.post(
+            "/v1/admin/keys", json=CREATE_BODY, headers=_root()
+        ).json()
         res = client.get("/v1/admin/keys/me", headers=_issued(created["secret"]))
         assert res.status_code == 200
         body = res.json()
@@ -140,7 +150,9 @@ def test_root_me_is_root_flag(tmp_path: Path) -> None:
 def test_delete_of_key_with_live_mailbox_is_409(tmp_path: Path) -> None:
     """Given a live mailbox owned by the key, DELETE is 409 and the key remains."""
     with _client(tmp_path) as client:
-        created = client.post("/v1/admin/keys", json=CREATE_BODY, headers=_root()).json()
+        created = client.post(
+            "/v1/admin/keys", json=CREATE_BODY, headers=_root()
+        ).json()
     _seed_live_mailbox(tmp_path, created["id"])
     with _client(tmp_path) as client:
         res = client.delete(f"/v1/admin/keys/{created['id']}", headers=_root())

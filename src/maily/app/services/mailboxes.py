@@ -22,7 +22,7 @@ from .stats_history import (
     record,
 )
 
-logger = logging.getLogger("mailtmapi.mailboxes")
+logger = logging.getLogger("maily.mailboxes")
 
 
 async def _undo_provider_create(prov, info: MailboxInfo) -> None:

@@ -5,8 +5,8 @@ import email.utils
 from contextlib import suppress
 from datetime import datetime, timezone
 
-from mailtmapi.exceptions import MailValidationError
-from mailtmapi.providers.base import Attachment, MessageDetail, MessageSource, MessageSummary, Party
+from maily.exceptions import MailValidationError
+from maily.providers.base import Attachment, MessageDetail, MessageSource, MessageSummary, Party
 
 _API_BASE = "https://gmail.googleapis.com/gmail/v1/users/me"
 _RECIPIENT_HEADERS = ("to", "cc", "delivered-to")

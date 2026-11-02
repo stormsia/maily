@@ -11,10 +11,10 @@ import json
 import httpx
 import pytest
 
-from mailtmapi.exceptions import MailNotFoundError
-from mailtmapi.http import HttpClient
-from mailtmapi.providers.base import MailboxInfo, MailboxSpec
-from mailtmapi.providers.noopmail_org import NoopMail
+from maily.exceptions import MailNotFoundError
+from maily.http import HttpClient
+from maily.providers.base import MailboxInfo, MailboxSpec
+from maily.providers.noopmail_org import NoopMail
 
 _UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:155.0) Gecko/20100101 Firefox/155.0"
 
@@ -87,7 +87,9 @@ async def test_create_mailbox_with_address():
     http = _http(handler)
     provider = NoopMail(http)
     try:
-        box = await provider.create_mailbox(MailboxSpec(address="al234tf05o@yzcalo.com"))
+        box = await provider.create_mailbox(
+            MailboxSpec(address="al234tf05o@yzcalo.com")
+        )
         assert box.provider == "noopmail.org"
         assert box.address == "al234tf05o@yzcalo.com"
         assert box.token == ""  # noopmail does not have api-tokens

@@ -6,13 +6,13 @@ import httpx
 import pytest
 from fastapi.testclient import TestClient
 
-from mailtmapi.app.main import create_app
-from mailtmapi.exceptions import MailNotFoundError
-from mailtmapi.http import HttpClient
-from mailtmapi.providers.anonymmail_net import AnonymMailNet
-from mailtmapi.providers.base import MailboxInfo, MailboxSpec, MessageDetail, Party
-from mailtmapi.providers.registry import ProviderRegistry
-from mailtmapi.settings import Settings
+from maily.app.main import create_app
+from maily.exceptions import MailNotFoundError
+from maily.http import HttpClient
+from maily.providers.anonymmail_net import AnonymMailNet
+from maily.providers.base import MailboxInfo, MailboxSpec, MessageDetail, Party
+from maily.providers.registry import ProviderRegistry
+from maily.settings import Settings
 
 SECRET = "test-secret"
 
@@ -46,7 +46,9 @@ async def test_anonymmail_fetch_targets():
             )
         if request.url.path == "/api/getDomains":
             assert request.headers["x-csrf-token"] == "csrf123"
-            return httpx.Response(200, json=[{"domain": "anon1.net"}, {"domain": "anon2.net"}])
+            return httpx.Response(
+                200, json=[{"domain": "anon1.net"}, {"domain": "anon2.net"}]
+            )
         return httpx.Response(404)
 
     http = _http(handler)
@@ -64,11 +66,15 @@ async def test_anonymmail_fetch_targets():
 async def test_anonymmail_create_and_delete_mailbox():
     def handler(request: httpx.Request) -> httpx.Response:
         if request.url.path == "/":
-            return httpx.Response(200, text='<input name="csrf_test_name" value="csrf123">')
+            return httpx.Response(
+                200, text='<input name="csrf_test_name" value="csrf123">'
+            )
         if request.url.path == "/api/getDomains":
             return httpx.Response(200, json=[{"domain": "anonymmail.net"}])
         if request.url.path == "/api/create":
-            return httpx.Response(200, json={"success": True, "email": "mytest@anonymmail.net"})
+            return httpx.Response(
+                200, json={"success": True, "email": "mytest@anonymmail.net"}
+            )
         if request.url.path == "/api/delete":
             return httpx.Response(200, json={"success": True})
         return httpx.Response(404)
@@ -76,7 +82,9 @@ async def test_anonymmail_create_and_delete_mailbox():
     http = _http(handler)
     provider = AnonymMailNet(http)
     try:
-        box = await provider.create_mailbox(MailboxSpec(address="mytest@anonymmail.net"))
+        box = await provider.create_mailbox(
+            MailboxSpec(address="mytest@anonymmail.net")
+        )
         assert box.address == "mytest@anonymmail.net"
         assert box.provider == "anonymmail.net"
 
@@ -111,7 +119,10 @@ async def test_anonymmail_unique_identity_per_mailbox():
             sess_id = f"sess_{len(captured_uids)}"
             return httpx.Response(
                 200,
-                json={"success": True, "email": request.read().decode("utf-8").split("email=")[1]},
+                json={
+                    "success": True,
+                    "email": request.read().decode("utf-8").split("email=")[1],
+                },
                 headers={"Set-Cookie": f"ci_session={sess_id}; path=/"},
             )
         if request.url.path == "/api/get":
@@ -168,7 +179,9 @@ async def test_anonymmail_feed_disappears_on_second_request_provider_level():
     def handler(request: httpx.Request) -> httpx.Response:
         nonlocal calls_get
         if request.url.path == "/":
-            return httpx.Response(200, text='<input name="csrf_test_name" value="csrf123">')
+            return httpx.Response(
+                200, text='<input name="csrf_test_name" value="csrf123">'
+            )
         if request.url.path == "/api/get":
             calls_get += 1
             if calls_get == 1:
@@ -233,11 +246,15 @@ def test_anonymmail_full_api_flow(tmp_path: Path):
     def handler(request: httpx.Request) -> httpx.Response:
         nonlocal calls_get, delete_called
         if request.url.path == "/":
-            return httpx.Response(200, text='<input name="csrf_test_name" value="csrf123">')
+            return httpx.Response(
+                200, text='<input name="csrf_test_name" value="csrf123">'
+            )
         if request.url.path == "/api/getDomains":
             return httpx.Response(200, json=[{"domain": "anonymmail.net"}])
         if request.url.path == "/api/create":
-            return httpx.Response(200, json={"success": True, "email": "test@anonymmail.net"})
+            return httpx.Response(
+                200, json={"success": True, "email": "test@anonymmail.net"}
+            )
         if request.url.path == "/api/get":
             calls_get += 1
             if calls_get == 1:
@@ -286,7 +303,8 @@ def test_anonymmail_full_api_flow(tmp_path: Path):
         client.app.state.registry = ProviderRegistry([provider])
         # 1. Create mailbox
         r = client.post(
-            "/v1/mailboxes", json={"provider": "anonymmail.net", "address": "test@anonymmail.net"}
+            "/v1/mailboxes",
+            json={"provider": "anonymmail.net", "address": "test@anonymmail.net"},
         )
         assert r.status_code == 200, r.json()
         mb_id = r.json()["id"]
@@ -355,7 +373,9 @@ async def test_anonymmail_cache_isolation_per_mailbox():
     def handler(request: httpx.Request) -> httpx.Response:
         cookie = request.headers.get("cookie", "")
         if request.url.path == "/":
-            return httpx.Response(200, text='<input name="csrf_test_name" value="csrf123">')
+            return httpx.Response(
+                200, text='<input name="csrf_test_name" value="csrf123">'
+            )
         if request.url.path == "/api/get":
             body = request.read().decode("utf-8")
             if "user1%40anonymmail.net" in body or "user1@anonymmail.net" in body:
@@ -378,7 +398,9 @@ async def test_anonymmail_cache_isolation_per_mailbox():
                             }
                         },
                     )
-                return httpx.Response(200, json={"user1@anonymmail.net": {"emails": []}})
+                return httpx.Response(
+                    200, json={"user1@anonymmail.net": {"emails": []}}
+                )
             if "user2%40anonymmail.net" in body or "user2@anonymmail.net" in body:
                 feed_counts["user2@anonymmail.net"] += 1
                 if feed_counts["user2@anonymmail.net"] == 1:
@@ -399,7 +421,9 @@ async def test_anonymmail_cache_isolation_per_mailbox():
                             }
                         },
                     )
-                return httpx.Response(200, json={"user2@anonymmail.net": {"emails": []}})
+                return httpx.Response(
+                    200, json={"user2@anonymmail.net": {"emails": []}}
+                )
             return httpx.Response(200, json={})
         if request.url.path == "/email":
             msg_id = request.url.params.get("id")
@@ -474,11 +498,14 @@ async def test_anonymmail_cache_isolation_per_mailbox():
 @pytest.mark.asyncio
 async def test_anonymmail_lru_cache_eviction_protects_active_mailbox():
     """Verify that when cache exceeds 1000 mailboxes, least recently used mailboxes
-    are evicted, and the active mailbox (even if originally inserted early) is preserved."""
+    are evicted, and the active mailbox (even if originally inserted early) is preserved.
+    """
 
     def handler(request: httpx.Request) -> httpx.Response:
         if request.url.path == "/":
-            return httpx.Response(200, text='<input name="csrf_test_name" value="csrf123">')
+            return httpx.Response(
+                200, text='<input name="csrf_test_name" value="csrf123">'
+            )
         if request.url.path == "/api/get":
             return httpx.Response(
                 200,

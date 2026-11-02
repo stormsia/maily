@@ -3,11 +3,11 @@ name: PR Performance Regression Gate
 on:
   pull_request:
     paths:
-      - 'src/mailtmapi/**'
-      - 'client/**'
-      - 'tests/test_benchmarks.py'
-      - 'pyproject.toml'
-      - 'scripts/compare_benchmarks.py'
+      - "src/maily/**"
+      - "client/**"
+      - "tests/test_benchmarks.py"
+      - "pyproject.toml"
+      - "scripts/compare_benchmarks.py"
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -73,7 +73,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           REPO: ${{ github.repository }}
         run: |
-          COMMENT_HEADER="<!-- mailtmapi-pr-benchmark-summary -->"
+          COMMENT_HEADER="<!-- maily-pr-benchmark-summary -->"
           COMMENT_BODY=$(printf "%s\n\n%s" "$COMMENT_HEADER" "$(cat bench_summary.md)")
 
           # Find existing comment from this action

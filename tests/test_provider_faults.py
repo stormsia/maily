@@ -3,14 +3,14 @@
 import httpx
 import pytest
 
-from mailtmapi.exceptions import (
+from maily.exceptions import (
     MailAuthError,
     MailRateLimitError,
     MailTimeoutError,
 )
-from mailtmapi.http import HttpClient
-from mailtmapi.providers.noopmail_org.service import NoopMail
-from mailtmapi.providers.tempmail_plus.service import TempMailPlus
+from maily.http import HttpClient
+from maily.providers.noopmail_org.service import NoopMail
+from maily.providers.tempmail_plus.service import TempMailPlus
 
 
 @pytest.mark.asyncio

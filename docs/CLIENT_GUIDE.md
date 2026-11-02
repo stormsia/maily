@@ -1,6 +1,6 @@
-# MailTMAPI Client Developer Guide & Cookbook
+# Maily Client Developer Guide & Cookbook
 
-A comprehensive guide and cookbook for [`mailtmapi-client`](https://pypi.org/project/mailtmapi-client/) — the standalone, fully-typed Python SDK for the [mailtmapi](https://github.com/stormsia/mailtmapi) disposable multi-provider mail API.
+A comprehensive guide and cookbook for [`maily-client`](https://pypi.org/project/maily-client/) — the standalone, fully-typed Python SDK for the [maily](https://github.com/stormsia/maily) disposable multi-provider mail API.
 
 ---
 
@@ -24,16 +24,16 @@ A comprehensive guide and cookbook for [`mailtmapi-client`](https://pypi.org/pro
   - [Admin & Retention Maintenance (`.admin`)](#admin--retention-maintenance-admin)
   - [Health & System (`.health`)](#health--system-health)
 - [Error Handling & 422 Validation Details](#error-handling--422-validation-details)
-- [Self-Updating CLI (`mailtmapi-client`)](#self-updating-cli-mailtmapi-client)
+- [Self-Updating CLI (`maily-client`)](#self-updating-cli-maily-client)
 
 ---
 
 ## Overview
 
-`mailtmapi-client` is engineered specifically for testing suites, automation scripts, and scrapers:
+`maily-client` is engineered specifically for testing suites, automation scripts, and scrapers:
 - **Zero Heavy Dependencies**: Powered exclusively by `httpx`, `pydantic`, and `loguru`.
 - **PEP 561 Compliant**: Includes `py.typed` marker for static type checking with Mypy and Pyright.
-- **Dual Execution Engines**: Async-first with high concurrency (`MailTMAPI`), plus a synchronous facade (`SyncMailTMAPI`).
+- **Dual Execution Engines**: Async-first with high concurrency (`Maily`), plus a synchronous facade (`SyncMaily`).
 - **Single-File Option**: The entire client is packaged into a single file `client.py` that can be vendored or downloaded directly.
 
 ---
@@ -43,12 +43,12 @@ A comprehensive guide and cookbook for [`mailtmapi-client`](https://pypi.org/pro
 ### Standard Installation (PyPI)
 
 ```bash
-pip install mailtmapi-client
+pip install maily-client
 ```
 
 Or with `uv`:
 ```bash
-uv add mailtmapi-client
+uv add maily-client
 ```
 
 ### Zero-Install Single-File Vendoring
@@ -57,10 +57,10 @@ You can copy `client.py` directly into your repository:
 
 ```bash
 # Linux / macOS
-curl -sSL https://raw.githubusercontent.com/stormsia/mailtmapi/main/client/client.py -o client.py
+curl -sSL https://raw.githubusercontent.com/stormsia/maily/main/client/client.py -o client.py
 
 # Windows PowerShell
-Invoke-WebRequest -Uri "https://raw.githubusercontent.com/stormsia/mailtmapi/main/client/client.py" -OutFile "client.py"
+Invoke-WebRequest -Uri "https://raw.githubusercontent.com/stormsia/maily/main/client/client.py" -OutFile "client.py"
 ```
 
 Requires runtime dependencies: `pip install httpx pydantic loguru`.
@@ -69,17 +69,17 @@ Requires runtime dependencies: `pip install httpx pydantic loguru`.
 
 ## Core Concepts: Async vs Sync
 
-### Async Engine: `MailTMAPI`
+### Async Engine: `Maily`
 
-Use `MailTMAPI` with `async with` context manager in FastAPI, Asyncio scripts, or `pytest-asyncio`:
+Use `Maily` with `async with` context manager in FastAPI, Asyncio scripts, or `pytest-asyncio`:
 
 ```python
 import asyncio
-from mailtmapi.client import MailTMAPI
+from maily.client import Maily
 
 
 async def run() -> None:
-    async with MailTMAPI("http://127.0.0.1:8477", api_key="sk-your-key") as client:
+    async with Maily("http://127.0.0.1:8477", api_key="sk-your-key") as client:
         box = await client.create_temp_mailbox()
         print(f"Created: {box.address}")
 
@@ -87,14 +87,14 @@ async def run() -> None:
 asyncio.run(run())
 ```
 
-### Synchronous Facade: `SyncMailTMAPI`
+### Synchronous Facade: `SyncMaily`
 
-For synchronous test suites (standard Pytest, unittest, Selenium, or quick procedural scripts), use `SyncMailTMAPI`. It wraps async coroutines seamlessly without requiring manual `asyncio.run()` boilerplate:
+For synchronous test suites (standard Pytest, unittest, Selenium, or quick procedural scripts), use `SyncMaily`. It wraps async coroutines seamlessly without requiring manual `asyncio.run()` boilerplate:
 
 ```python
-from mailtmapi.client import SyncMailTMAPI
+from maily.client import SyncMaily
 
-with SyncMailTMAPI("http://127.0.0.1:8477", api_key="sk-your-key") as client:
+with SyncMaily("http://127.0.0.1:8477", api_key="sk-your-key") as client:
     box = client.create_temp_mailbox()
     print(f"Sync mailbox created: {box.address}")
 
@@ -140,12 +140,12 @@ Set up a reusable pytest fixture that generates a fresh disposable mailbox per t
 ```python
 # conftest.py
 import pytest
-from mailtmapi.client import MailTMAPI, MailboxDetail
+from maily.client import Maily, MailboxDetail
 
 
 @pytest.fixture
 async def temp_mailbox():
-    async with MailTMAPI("http://127.0.0.1:8477") as client:
+    async with Maily("http://127.0.0.1:8477") as client:
         # Create a fresh mailbox
         box: MailboxDetail = await client.create_temp_mailbox()
         try:
@@ -184,12 +184,12 @@ Automate a complete browser signup flow in Playwright:
 
 ```python
 import asyncio
-from mailtmapi.client import MailTMAPI
+from maily.client import Maily
 from playwright.async_api import async_playwright
 
 
 async def test_web_signup():
-    async with MailTMAPI("http://127.0.0.1:8477") as mail_api:
+    async with Maily("http://127.0.0.1:8477") as mail_api:
         # Create disposable inbox
         box = await mail_api.create_temp_mailbox()
 
@@ -227,16 +227,16 @@ asyncio.run(test_web_signup())
 
 ### Recipe 3: Selenium Email Activation Link Click
 
-Automate clicking an email verification link using Selenium WebDriver and the synchronous client `SyncMailTMAPI`:
+Automate clicking an email verification link using Selenium WebDriver and the synchronous client `SyncMaily`:
 
 ```python
-from mailtmapi.client import SyncMailTMAPI
+from maily.client import SyncMaily
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 
 
 def test_activation_link_flow():
-    with SyncMailTMAPI("http://127.0.0.1:8477") as mail_api:
+    with SyncMaily("http://127.0.0.1:8477") as mail_api:
         box = mail_api.create_temp_mailbox()
 
         driver = webdriver.Chrome()
@@ -264,7 +264,7 @@ def test_activation_link_flow():
 Some external mail services or anti-spam filters experience delays. Fine-tune timeout and check interval to prevent unnecessary rate limiting while ensuring fast resolution:
 
 ```python
-async with MailTMAPI("http://127.0.0.1:8477") as api:
+async with Maily("http://127.0.0.1:8477") as api:
     box = await api.create_temp_mailbox()
 
     # Poll every 3 seconds, wait up to 180 seconds
@@ -291,11 +291,11 @@ async with MailTMAPI("http://127.0.0.1:8477") as api:
 Configure client-side retries with exponential backoff for unstable network conditions or rate-limited endpoints:
 
 ```python
-from mailtmapi.client import MailTMAPI
+from maily.client import Maily
 
 # Automatically retry up to 3 times on HTTP 502/504 or connection timeouts
 # Automatically respects HTTP 429 'Retry-After' header
-api = MailTMAPI(
+api = Maily(
     base_url="http://127.0.0.1:8477",
     api_key="your-api-key",
     max_retries=3,
@@ -310,7 +310,7 @@ api = MailTMAPI(
 Continuously listen for incoming messages using an async generator:
 
 ```python
-async with MailTMAPI("http://127.0.0.1:8477") as api:
+async with Maily("http://127.0.0.1:8477") as api:
     box = await api.mailboxes.create(domain="mail.tm")
 
     print(f"Listening for emails on {box.address}...")
@@ -439,7 +439,7 @@ await api.check_client_version()
 
 ## Error Handling & 422 Validation Details
 
-`mailtmapi-client` raises strongly-typed exceptions rooted in `ClientError`:
+`maily-client` raises strongly-typed exceptions rooted in `ClientError`:
 
 ```
 ClientError
@@ -458,9 +458,9 @@ ClientError
 FastAPI field errors are automatically formatted into readable messages:
 
 ```python
-from mailtmapi.client import MailTMAPI, ValidationError
+from maily.client import Maily, ValidationError
 
-async with MailTMAPI("http://127.0.0.1:8477") as api:
+async with Maily("http://127.0.0.1:8477") as api:
     try:
         await api.mailboxes.create(domain="invalid domain!@#")
     except ValidationError as exc:
@@ -471,17 +471,17 @@ async with MailTMAPI("http://127.0.0.1:8477") as api:
 
 ---
 
-## Self-Updating CLI (`mailtmapi-client`)
+## Self-Updating CLI (`maily-client`)
 
-When installed as a package, `mailtmapi-client` provides a command-line interface:
+When installed as a package, `maily-client` provides a command-line interface:
 
 ```bash
 # Print current client version
-mailtmapi-client version
+maily-client version
 
 # Check if a newer version is available in git
-mailtmapi-client check
+maily-client check
 
 # Automatically download and update standalone client.py
-mailtmapi-client update
+maily-client update
 ```

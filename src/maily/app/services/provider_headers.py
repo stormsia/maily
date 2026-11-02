@@ -15,7 +15,7 @@ from ...providers.registry import ProviderRegistry
 from ...providers.tempmail_io.headers import build_headers, fetch_cors_header
 from ...settings import Settings
 
-logger = logging.getLogger("mailtmapi.provider_headers")
+logger = logging.getLogger("maily.provider_headers")
 
 SLUG = "temp-mail.io"
 

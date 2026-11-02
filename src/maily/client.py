@@ -1,9 +1,9 @@
 """In-package alias for the canonical standalone client.
 
-The implementation lives in one place — :mod:`mailtmapi.standalone_client`
+The implementation lives in one place — :mod:`maily.standalone_client`
 (the self-contained single-file client). This module re-exports it,
-preserving compatibility with ``from mailtmapi.client import MailTMAPI``
-(used by the dashboard, tests, and ``mailtmapi.sdk``).
+preserving compatibility with ``from maily.client import Maily``
+(used by the dashboard, tests, and ``maily.sdk``).
 """
 
 from __future__ import annotations
@@ -37,7 +37,7 @@ from .standalone_client import (
     Mailbox,
     MailboxesAPI,
     MailboxOut,
-    MailTMAPI,
+    Maily,
     MessageDetail,
     MessageDetailOut,
     MessageOut,
@@ -62,7 +62,7 @@ from .standalone_client import (
     SyncHealthAPI,
     SyncKeysAPI,
     SyncMailboxesAPI,
-    SyncMailTMAPI,
+    SyncMaily,
     SyncMessagesAPI,
     SyncProvidersAPI,
     Target,
@@ -77,8 +77,8 @@ from .standalone_client import (
 
 __all__ = [
     # Client and sections
-    "MailTMAPI",
-    "SyncMailTMAPI",
+    "Maily",
+    "SyncMaily",
     "SyncHealthAPI",
     "SyncConfigAPI",
     "SyncProvidersAPI",

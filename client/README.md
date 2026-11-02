@@ -1,11 +1,11 @@
-# mailtmapi-client
+# maily-client
 
-[![PyPI version](https://img.shields.io/pypi/v/mailtmapi-client.svg)](https://pypi.org/project/mailtmapi-client/)
-[![Python versions](https://img.shields.io/pypi/pyversions/mailtmapi-client.svg)](https://pypi.org/project/mailtmapi-client/)
+[![PyPI version](https://img.shields.io/pypi/v/maily-client.svg)](https://pypi.org/project/maily-client/)
+[![Python versions](https://img.shields.io/pypi/pyversions/maily-client.svg)](https://pypi.org/project/maily-client/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Typing: Typed](https://img.shields.io/badge/typing-typed-blue.svg)](https://peps.python.org/pep-0561/)
 
-Standalone, zero-heavy-dependency Python client for the [mailtmapi](https://github.com/stormsia/mailtmapi) disposable multi-provider mail API (supporting Mail.tm, custom domains, and Gmail OAuth).
+Standalone, zero-heavy-dependency Python client for the [maily](https://github.com/stormsia/maily) disposable multi-provider mail API (supporting Mail.tm, custom domains, and Gmail OAuth).
 
 ---
 
@@ -13,10 +13,10 @@ Standalone, zero-heavy-dependency Python client for the [mailtmapi](https://gith
 
 - **Single-File Portability**: Ships as a single self-contained file (`client.py`) requiring only `httpx`, `loguru`, and `pydantic`.
 - **Fully Typed**: 100% type-annotated with PEP 561 `py.typed` compliance and Pydantic response models.
-- **Async & Sync Support**: Native `async/await` (`MailTMAPI`) with high-concurrency polling, plus a lightweight synchronous facade (`SyncMailTMAPI`).
+- **Async & Sync Support**: Native `async/await` (`Maily`) with high-concurrency polling, plus a lightweight synchronous facade (`SyncMaily`).
 - **Automation Helpers**: Built-in polling and regex extraction for OTP verification codes (`wait_for_code`) and account activation links (`wait_for_link`).
 - **Resilient Networking**: Optional exponential backoff retry policy handling transient errors (HTTP 502/504, connection timeouts) and honoring HTTP 429 `Retry-After`.
-- **Self-Updating CLI**: Built-in CLI tool `mailtmapi-client` to check for and apply updates directly from git.
+- **Self-Updating CLI**: Built-in CLI tool `maily-client` to check for and apply updates directly from git.
 
 ---
 
@@ -25,13 +25,13 @@ Standalone, zero-heavy-dependency Python client for the [mailtmapi](https://gith
 ### Via pip
 
 ```bash
-pip install mailtmapi-client
+pip install maily-client
 ```
 
 Or from the GitHub repository:
 
 ```bash
-pip install "mailtmapi-client @ git+https://github.com/stormsia/mailtmapi.git#subdirectory=client"
+pip install "maily-client @ git+https://github.com/stormsia/maily.git#subdirectory=client"
 ```
 
 ### Standalone Single-File Download (Zero Install)
@@ -40,10 +40,10 @@ Because `client.py` has no internal server dependencies, you can download it dir
 
 ```bash
 # Linux / macOS
-curl -O https://raw.githubusercontent.com/stormsia/mailtmapi/main/client/client.py
+curl -O https://raw.githubusercontent.com/stormsia/maily/main/client/client.py
 
 # Windows PowerShell
-Invoke-WebRequest -Uri "https://raw.githubusercontent.com/stormsia/mailtmapi/main/client/client.py" -OutFile "client.py"
+Invoke-WebRequest -Uri "https://raw.githubusercontent.com/stormsia/maily/main/client/client.py" -OutFile "client.py"
 ```
 
 Dependencies for standalone use:
@@ -57,7 +57,7 @@ pip install httpx loguru pydantic
 ## ⚠️ Important: Attribute Access vs Dictionary Key Access
 
 > **CRITICAL RULE:**
-> In `mailtmapi-client`, **native dot/attribute access is supported ONLY on Pydantic models and specifically `ExtractedConfirmation`** (which implements `Mapping` and allows dual access: both `res.confirmation_code` and `res["confirmation_code"]`).
+> In `maily-client`, **native dot/attribute access is supported ONLY on Pydantic models and specifically `ExtractedConfirmation`** (which implements `Mapping` and allows dual access: both `res.confirmation_code` and `res["confirmation_code"]`).
 >
 > **All other client methods returning standard Python dictionaries** (such as `await api.config.get()`, `sync_api.config.get()`, or raw response dicts) **DO NOT support attribute/dot access**. You MUST access dictionary values using standard bracket key indexing (`d["key"]`), NEVER dot syntax (`d.key`).
 
@@ -91,12 +91,12 @@ print(cfg["client_version"])  # ✅ CORRECT: standard dictionary indexing
 
 ```python
 import asyncio
-from client import MailTMAPI
+from client import Maily
 
 
 async def main() -> None:
-    # Connect to your self-hosted mailtmapi server
-    async with MailTMAPI("http://127.0.0.1:8477", api_key="sk-your-api-key") as api:
+    # Connect to your self-hosted maily server
+    async with Maily("http://127.0.0.1:8477", api_key="sk-your-api-key") as api:
         # Check server health
         health = await api.health.ping()
         print(f"Server health: {health.status}")
@@ -115,11 +115,11 @@ Ideal for automated signup flows (e.g., Pytest, Playwright, Selenium):
 
 ```python
 import asyncio
-from client import MailTMAPI
+from client import Maily
 
 
 async def main() -> None:
-    async with MailTMAPI("http://127.0.0.1:8477") as api:
+    async with Maily("http://127.0.0.1:8477") as api:
         box = await api.create_temp_mailbox()
         print(f"Use {box.address} in your registration form...")
 
@@ -144,11 +144,11 @@ Extract confirmation or magic links automatically from incoming HTML or plain-te
 
 ```python
 import asyncio
-from client import MailTMAPI
+from client import Maily
 
 
 async def main() -> None:
-    async with MailTMAPI("http://127.0.0.1:8477") as api:
+    async with Maily("http://127.0.0.1:8477") as api:
         box = await api.create_temp_mailbox()
         print(f"Waiting for activation email to: {box.address}...")
 
@@ -171,11 +171,11 @@ Extract both link and code simultaneously in a single polling loop:
 
 ```python
 import asyncio
-from client import ExtractedConfirmation, MailTMAPI
+from client import ExtractedConfirmation, Maily
 
 
 async def main() -> None:
-    async with MailTMAPI("http://127.0.0.1:8477") as api:
+    async with Maily("http://127.0.0.1:8477") as api:
         box = await api.create_temp_mailbox()
 
         res: ExtractedConfirmation | None = await api.wait_for_confirmation_email(
@@ -203,15 +203,15 @@ async def main() -> None:
 asyncio.run(main())
 ```
 
-### 5. Synchronous Facade (`SyncMailTMAPI`)
+### 5. Synchronous Facade (`SyncMaily`)
 
 For synchronous test suites (standard Pytest, unittest, Selenium) or scripts where `async/await` is inconvenient:
 
 ```python
-from client import SyncMailTMAPI
+from client import SyncMaily
 
 # Sync context manager automatically manages an isolated background thread and event loop
-with SyncMailTMAPI("http://127.0.0.1:8477", api_key="sk-your-key") as api:
+with SyncMaily("http://127.0.0.1:8477", api_key="sk-your-key") as api:
     # 1. Create a mailbox synchronously
     box = api.create_temp_mailbox()
     print(f"Created mailbox: {box.address}")
@@ -242,7 +242,7 @@ with SyncMailTMAPI("http://127.0.0.1:8477", api_key="sk-your-key") as api:
 
 ## API Overview & Structure
 
-`MailTMAPI` exposes organized domain resource sections as well as top-level flat convenience methods:
+`Maily` exposes organized domain resource sections as well as top-level flat convenience methods:
 
 ### Resource Sections
 
@@ -261,7 +261,7 @@ with SyncMailTMAPI("http://127.0.0.1:8477", api_key="sk-your-key") as api:
 
 ## Flat Facade Shortcut Methods
 
-Both `MailTMAPI` (async) and `SyncMailTMAPI` (sync) provide direct top-level facade shortcuts for rapid automation. All 19 flat shortcut methods forward directly to their respective section implementations:
+Both `Maily` (async) and `SyncMaily` (sync) provide direct top-level facade shortcuts for rapid automation. All 19 flat shortcut methods forward directly to their respective section implementations:
 
 | # | Facade Method Signature | Return Type | Description |
 |---|---|---|---|
@@ -297,20 +297,20 @@ Both `MailTMAPI` (async) and `SyncMailTMAPI` (sync) provide direct top-level fac
 
 ## CLI Commands
 
-The package includes a command-line interface executable as `mailtmapi-client` (or via `python client.py`):
+The package includes a command-line interface executable as `maily-client` (or via `python client.py`):
 
 ```bash
 # Display help and usage
-mailtmapi-client --help
+maily-client --help
 
 # Show current installed client version
-mailtmapi-client version
+maily-client version
 
 # Check GitHub repository for newer version (exit codes: 0=up-to-date, 2=update available, 1=network error)
-mailtmapi-client check
+maily-client check
 
 # Download and replace local client file with latest release from GitHub
-mailtmapi-client update
+maily-client update
 ```
 
 ### CLI Exit Codes
@@ -323,7 +323,7 @@ mailtmapi-client update
 
 ### Environment Variables
 
-- `MAILTMAPI_CLIENT_SOURCE`: URL to fetch the canonical client from when checking or updating (defaults to GitHub `main` branch raw file: `https://raw.githubusercontent.com/stormsia/mailtmapi/main/src/mailtmapi/standalone_client.py`).
+- `MAILTMAPI_CLIENT_SOURCE`: URL to fetch the canonical client from when checking or updating (defaults to GitHub `main` branch raw file: `https://raw.githubusercontent.com/stormsia/maily/main/src/maily/standalone_client.py`).
 
 ---
 
@@ -348,9 +348,9 @@ ClientError
 FastAPI validation errors returning a list of field error objects (`[{"loc": ["body", "domain"], "msg": "..."}]`) are automatically formatted into readable messages:
 
 ```python
-from client import MailTMAPI, ValidationError
+from client import Maily, ValidationError
 
-async with MailTMAPI("http://127.0.0.1:8477") as api:
+async with Maily("http://127.0.0.1:8477") as api:
     try:
         # Invalid input parameters
         await api.mailboxes.create(domain="invalid domain!@#")
@@ -365,10 +365,10 @@ async with MailTMAPI("http://127.0.0.1:8477") as api:
 When `max_retries > 0`, the client automatically honors HTTP 429 `Retry-After` headers and applies exponential backoff for transient HTTP 502/504 errors and network connection timeouts:
 
 ```python
-from client import MailTMAPI, RateLimitError
+from client import Maily, RateLimitError
 
 # Configure client-side retry policy
-api = MailTMAPI(
+api = Maily(
     "http://127.0.0.1:8477",
     max_retries=3,  # Retry up to 3 times before raising
     retry_backoff=0.5,  # Base backoff in seconds (0.5s, 1.0s, 2.0s)

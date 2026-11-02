@@ -1,4 +1,4 @@
-/* mailtmapi admin — entry: routing, health, settings, shared wiring. */
+/* maily admin — entry: routing, health, settings, shared wiring. */
 import { api, getApiKey, setApiKey, setAuthRequiredHandler } from "./api.js";
 import { h, toast, refreshIcons, openModal, closeModal } from "./ui.js";
 import { render as renderOverview, cleanup as cleanupOverview } from "./pages/overview.js";
@@ -217,7 +217,7 @@ function openSettings() {
     h("div", { class: "field" },
       h("label", {}, "API key"),
       h("div", { class: "pass-wrap" }, input, toggle),
-      h("p", { class: "field-hint" }, "Required only if the server runs with MAILTM_API_KEY set. Stored locally in your browser.")));
+      h("p", { class: "field-hint" }, "Required only if the server runs with MAILY_API_KEY set. Stored locally in your browser.")));
 
   openModal({
     title: "Settings",
@@ -255,7 +255,7 @@ setAuthRequiredHandler(async () => {
     });
     openModal({
       title: "API key required",
-      sub: "The server answered 401. Paste the key configured as MAILTM_API_KEY.",
+      sub: "The server answered 401. Paste the key configured as MAILY_API_KEY.",
       body: h("div", { class: "field" }, h("label", {}, "API key"), input),
       actions: [
         { label: "Continue without key", onClick: () => resolve(false) },

@@ -1,8 +1,8 @@
-"""mailtmapi standalone client — CANONICAL single-file implementation.
+"""maily standalone client — CANONICAL single-file implementation.
 
 Single canonical source of truth for the client. Two ways to use this code:
 
-    1. Inside the server package — via the thin proxy `mailtmapi.client`
+    1. Inside the server package — via the thin proxy `maily.client`
        (this module is imported from there).
     2. Outside — the `client/client.py` file in the repo root, which
        is generated from this module via `scripts/build_client.py`
@@ -13,22 +13,22 @@ Single canonical source of truth for the client. Two ways to use this code:
 Self-contained: does not pull in server dependencies (FastAPI, SQLAlchemy,
 uvicorn, etc.), requires only httpx, loguru, and pydantic.
 
-    pip install "mailtmapi-client @ git+https://github.com/stormsia/mailtmapi.git#subdirectory=client"
+    pip install "maily-client @ git+https://github.com/stormsia/maily.git#subdirectory=client"
     # or copy the file into your project:
-    #   curl -O https://raw.githubusercontent.com/stormsia/mailtmapi/main/client/client.py
+    #   curl -O https://raw.githubusercontent.com/stormsia/maily/main/client/client.py
 
 Self-update: the client can check the version on git and update itself from
     the repo's client/client.py:
 
-        mailtmapi-client check           # check if a new version is on git
-        mailtmapi-client update          # download and install the new version
+        maily-client check           # check if a new version is on git
+        maily-client update          # download and install the new version
 
     (or `python client.py check/update` if running locally).
 
     From code:
 
         import client
-        from client import MailTMAPI, self_update, check_update
+        from client import Maily, self_update, check_update
 
         self_update()          # async-free, updates the client file on disk
         up = check_update()    # (current, remote) if an update is available, else None
@@ -56,14 +56,14 @@ __version__ = "0.3.0"
 
 # Where the client fetches itself for self-updates (override with env var).
 CLIENT_SOURCE = os.environ.get(
-    "MAILTMAPI_CLIENT_SOURCE",
-    "https://raw.githubusercontent.com/stormsia/mailtmapi/main/client/client.py",
+    "MAILY_CLIENT_SOURCE",
+    "https://raw.githubusercontent.com/stormsia/maily/main/client/client.py",
 )
 
 __all__ = [
     # Client and sections
-    "MailTMAPI",
-    "SyncMailTMAPI",
+    "Maily",
+    "SyncMaily",
     "SyncHealthAPI",
     "SyncConfigAPI",
     "SyncProvidersAPI",
@@ -132,7 +132,7 @@ __all__ = [
 
 
 # --------------------------------------------------------------------------- #
-# Response models (self-contained — do not depend on mailtmapi.schemas)
+# Response models (self-contained — do not depend on maily.schemas)
 # --------------------------------------------------------------------------- #
 class _Base(BaseModel):
     model_config = ConfigDict(from_attributes=True, extra="ignore")
@@ -322,7 +322,7 @@ _URL_RE = re.compile(r"https?://[^\s<>\"')\]]+", re.IGNORECASE)
 # Errors
 # --------------------------------------------------------------------------- #
 class ClientError(Exception):
-    """Base client error for mailtmapi."""
+    """Base client error for maily."""
 
 
 class WaitTimeoutError(ClientError, TimeoutError):
@@ -411,7 +411,7 @@ def self_update(
     """Update the client file with the new version from git.
 
     Returns True if the file was replaced, False if the version is already current.
-    The source URL can be overridden with the MAILTMAPI_CLIENT_SOURCE env var.
+    The source URL can be overridden with the MAILY_CLIENT_SOURCE env var.
     """
     text = _fetch_client(source_url)
     remote = _parse_version(text)
@@ -422,7 +422,7 @@ def self_update(
 
     import inspect
 
-    path = inspect.getsourcefile(MailTMAPI) or __file__
+    path = inspect.getsourcefile(Maily) or __file__
     _atomic_replace(path, text)
     logger.info("client updated {} -> {} ({})", __version__, remote, path)
     if after is not None:
@@ -1285,10 +1285,10 @@ class AdminAPI:
 # --------------------------------------------------------------------------- #
 # Public client
 # --------------------------------------------------------------------------- #
-class MailTMAPI:
-    """Async client for mailtmapi. Use via `async with` or close manually.
+class Maily:
+    """Async client for maily. Use via `async with` or close manually.
 
-        async with MailTMAPI("http://127.0.0.1:8477", api_key="sk-…") as api:
+        async with Maily("http://127.0.0.1:8477", api_key="sk-…") as api:
             box = await api.create_temp_mailbox()
             code = await api.wait_for_code(box)
             print("Verification code:", code)
@@ -1351,7 +1351,7 @@ class MailTMAPI:
         remote = str(cfg.get("client_version") or "")
         if remote and remote != __version__:
             logger.warning(
-                "client {} != server {} — update client: `mailtmapi-client update`",
+                "client {} != server {} — update client: `maily-client update`",
                 __version__,
                 remote,
             )
@@ -1438,7 +1438,7 @@ class MailTMAPI:
     async def close(self) -> None:
         await self._transport.close()
 
-    async def __aenter__(self) -> MailTMAPI:
+    async def __aenter__(self) -> Maily:
         return self
 
     async def __aexit__(self, *_exc: Any) -> None:
@@ -2026,15 +2026,15 @@ class SyncAdminAPI:
 # --------------------------------------------------------------------------- #
 # Synchronous client facade
 # --------------------------------------------------------------------------- #
-class SyncMailTMAPI:
-    """Synchronous client facade for mailtmapi.
+class SyncMaily:
+    """Synchronous client facade for maily.
 
     Runs a dedicated background daemon thread with a persistent asyncio event loop,
     allowing synchronous callers to execute all client operations safely without
     manual asyncio.run() or event loop closure issues.
 
     Example:
-        with SyncMailTMAPI("http://127.0.0.1:8477", api_key="sk-...") as api:
+        with SyncMaily("http://127.0.0.1:8477", api_key="sk-...") as api:
             box = api.create_temp_mailbox()
             code = api.wait_for_code(box)
             print("Verification code:", code)
@@ -2063,7 +2063,7 @@ class SyncMailTMAPI:
     ) -> None:
         self._loop = asyncio.new_event_loop()
         self._closed = False
-        self._async_client: MailTMAPI | None = None
+        self._async_client: Maily | None = None
 
         ready = threading.Event()
         init_err: list[BaseException] = []
@@ -2072,7 +2072,7 @@ class SyncMailTMAPI:
             asyncio.set_event_loop(self._loop)
             try:
                 try:
-                    self._async_client = MailTMAPI(
+                    self._async_client = Maily(
                         base_url=base_url,
                         api_key=api_key,
                         timeout=timeout,
@@ -2098,7 +2098,7 @@ class SyncMailTMAPI:
                         )
                 self._loop.close()
 
-        self._thread = threading.Thread(target=_run_loop, name="SyncMailTMAPI-worker", daemon=True)
+        self._thread = threading.Thread(target=_run_loop, name="SyncMaily-worker", daemon=True)
         self._thread.start()
         ready.wait()
 
@@ -2144,14 +2144,14 @@ class SyncMailTMAPI:
         if self._closed or not self._loop.is_running():
             if asyncio.iscoroutine(coro):
                 coro.close()
-            raise ClientError("SyncMailTMAPI is closed")
+            raise ClientError("SyncMaily is closed")
         future = asyncio.run_coroutine_threadsafe(coro, self._loop)
         return future.result()
 
     def set_api_key(self, api_key: str) -> None:
         """Update API key dynamically."""
         if self._closed or not self._async_client:
-            raise ClientError("SyncMailTMAPI is closed")
+            raise ClientError("SyncMaily is closed")
         self._async_client.set_api_key(api_key)
 
     def check_client_version(self) -> str:
@@ -2248,7 +2248,7 @@ class SyncMailTMAPI:
         if self._thread.is_alive() and threading.current_thread() is not self._thread:
             self._thread.join(timeout=5.0)
 
-    def __enter__(self) -> SyncMailTMAPI:
+    def __enter__(self) -> SyncMaily:
         return self
 
     def __exit__(self, *_exc: Any) -> None:
@@ -2387,9 +2387,9 @@ def _main(argv: list[str] | None = None) -> int:
         print(__doc__.split("\n\n")[1].strip(), file=sys.stderr)
         print(
             "\nusage:\n"
-            "  mailtmapi-client version     - show version\n"
-            "  mailtmapi-client check       - check git for a newer version\n"
-            "  mailtmapi-client update      - update client file from git\n"
+            "  maily-client version     - show version\n"
+            "  maily-client check       - check git for a newer version\n"
+            "  maily-client update      - update client file from git\n"
             "  (or: python client.py check/update)\n",
             file=sys.stderr,
         )

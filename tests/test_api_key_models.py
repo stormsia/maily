@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from sqlalchemy import DateTime, Integer, String, Text
 
-from mailtmapi.db.models import ApiKey, GmailAccount, KeyRetention, Mailbox
+from maily.db.models import ApiKey, GmailAccount, KeyRetention, Mailbox
 
 
 def test_api_keys_columns_when_metadata_is_inspected() -> None:

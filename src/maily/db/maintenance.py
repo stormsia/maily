@@ -18,7 +18,7 @@ from sqlalchemy.ext.asyncio import (
 from ..settings import Settings
 from .models import AppSetting
 
-logger = logging.getLogger("mailtmapi.db.maintenance")
+logger = logging.getLogger("maily.db.maintenance")
 
 SETTING_KEY_LAST_MAINTENANCE = "db_maintenance.last_run_at"
 

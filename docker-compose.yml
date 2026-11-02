@@ -1,25 +1,25 @@
 # ==============================================================================
-# Production Docker Compose for mailtmapi
+# Production Docker Compose for maily
 # ==============================================================================
 # Start:
 #   docker compose up -d --build
 # View logs:
-#   docker compose logs -f mailtmapi
+#   docker compose logs -f maily
 # Stop:
 #   docker compose down
 #
 # Settings can be overridden via .env file in the project root.
 # ==============================================================================
 
-name: mailtmapi
+name: maily
 
 services:
-  mailtmapi:
+  maily:
     build:
       context: .
       dockerfile: Dockerfile
-    image: mailtmapi:latest
-    container_name: mailtmapi
+    image: maily:latest
+    container_name: maily
     restart: unless-stopped
     init: true
 
@@ -31,7 +31,7 @@ services:
 
     volumes:
       # Persistent storage for SQLite DB (mailtm.db) and encryption key (mailtm.key)
-      - mailtmapi_data:/data
+      - maily_data:/data
       # For local development with live code reloading:
       # - ./src:/app/src:ro
 
@@ -106,4 +106,4 @@ networks:
     driver: bridge
 
 volumes:
-  mailtmapi_data:
+  maily_data:

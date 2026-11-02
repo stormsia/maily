@@ -6,13 +6,18 @@ from urllib.parse import parse_qs
 import httpx
 import pytest
 
-from mailtmapi.app.services import mailboxes as mailbox_svc
-from mailtmapi.exceptions import MailNotFoundError, MailValidationError
-from mailtmapi.http import HttpClient
-from mailtmapi.providers.base import MailboxInfo, MailboxSpec
-from mailtmapi.providers.gmail import GmailOAuth, GmailParent, GmailProvider, MemoryGmailStore
-from mailtmapi.providers.registry import ProviderRegistry
-from mailtmapi.settings import Settings
+from maily.app.services import mailboxes as mailbox_svc
+from maily.exceptions import MailNotFoundError, MailValidationError
+from maily.http import HttpClient
+from maily.providers.base import MailboxInfo, MailboxSpec
+from maily.providers.gmail import (
+    GmailOAuth,
+    GmailParent,
+    GmailProvider,
+    MemoryGmailStore,
+)
+from maily.providers.registry import ProviderRegistry
+from maily.settings import Settings
 from tests.helpers import StubProvider
 from tests.test_mailboxes_service import FakeSession
 
@@ -69,7 +74,9 @@ async def _http(handler) -> HttpClient:
     return http
 
 
-async def _provider(payload: dict | None = None) -> tuple[GmailProvider, _RecordingHttp]:
+async def _provider(
+    payload: dict | None = None,
+) -> tuple[GmailProvider, _RecordingHttp]:
     store = MemoryGmailStore()
     await store.add(
         GmailParent(
@@ -96,7 +103,9 @@ def _mailbox(address: str = ALIAS) -> MailboxInfo:
     )
 
 
-def _mutating(calls: list[tuple[str, str, str | None]]) -> list[tuple[str, str, str | None]]:
+def _mutating(
+    calls: list[tuple[str, str, str | None]],
+) -> list[tuple[str, str, str | None]]:
     return [
         call
         for call in calls
@@ -133,7 +142,9 @@ async def test_create_mailbox_rejects_unrelated_plus_alias_when_not_a_base():
     provider, _recorder = await _provider()
     try:
         with pytest.raises(MailValidationError) as exc:
-            await provider.create_mailbox(MailboxSpec(parent_id=1, address="other+tag@gmail.com"))
+            await provider.create_mailbox(
+                MailboxSpec(parent_id=1, address="other+tag@gmail.com")
+            )
     finally:
         await provider.close()
     assert PLUS_DETAIL not in str(exc.value)
@@ -205,7 +216,9 @@ async def test_service_create_keeps_plus_gmail_address_when_alias_is_valid():
 @pytest.mark.asyncio
 async def test_get_message_is_not_found_when_only_bare_address_is_recipient():
     """A message addressed only to the stripped base is not this mailbox's mail."""
-    provider, recorder = await _provider(_full_payload("m1", [("To", BARE), ("Cc", "")]))
+    provider, recorder = await _provider(
+        _full_payload("m1", [("To", BARE), ("Cc", "")])
+    )
     try:
         with pytest.raises(MailNotFoundError):
             await provider.get_message(_mailbox(), "m1")
@@ -231,7 +244,9 @@ async def test_delete_message_does_not_trash_when_only_bare_address_is_recipient
 @pytest.mark.asyncio
 async def test_mark_read_does_not_modify_when_alias_is_absent():
     """BCC-only mail has none of To, Cc, or Delivered-To and must not modify labels."""
-    provider, recorder = await _provider(_full_payload("m1", [("To", "other@gmail.com")]))
+    provider, recorder = await _provider(
+        _full_payload("m1", [("To", "other@gmail.com")])
+    )
     try:
         with pytest.raises(MailNotFoundError):
             await provider.mark_read(_mailbox(), "m1")
@@ -291,7 +306,9 @@ async def test_get_source_fetches_raw_when_delivered_to_matches():
 @pytest.mark.asyncio
 async def test_delete_message_trashes_when_cc_matches():
     """A matching recipient check is what allows the trash call."""
-    provider, recorder = await _provider(_full_payload("m1", [("Cc", "user+tag@gmail.com")]))
+    provider, recorder = await _provider(
+        _full_payload("m1", [("Cc", "user+tag@gmail.com")])
+    )
     try:
         deleted = await provider.delete_message(_mailbox(), "m1")
     finally:

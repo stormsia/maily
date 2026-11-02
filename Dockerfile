@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1.7
 # ==============================================================================
-# Ultra-Lean Production Multi-Stage Dockerfile for mailtmapi
+# Ultra-Lean Production Multi-Stage Dockerfile for maily
 # ==============================================================================
 
 # ---------- Stage 1: Build & Dependencies ----------
@@ -81,4 +81,4 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
     CMD ["python", "-c", "import os, sys, urllib.request; port = os.getenv('MAILTM_PORT', '8477'); sys.exit(0 if urllib.request.urlopen(f'http://127.0.0.1:{port}/health', timeout=3).status == 200 else 1)"]
 
 ENTRYPOINT ["/entrypoint.sh"]
-CMD ["mailtmapi"]
+CMD ["maily"]

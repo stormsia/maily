@@ -2,14 +2,14 @@ from __future__ import annotations
 
 import pytest
 
-from mailtmapi.providers.base import (
+from maily.providers.base import (
     HttpProvider,
     MailboxInfo,
     ProviderCapabilities,
     get_capabilities,
     split_address,
 )
-from mailtmapi.providers.registry import ProviderRegistry
+from maily.providers.registry import ProviderRegistry
 from tests.helpers import StubProvider
 
 
@@ -46,7 +46,9 @@ def test_get_capabilities():
     class CustomProvider:
         slug = "custom"
         kind = "domain"
-        capabilities = ProviderCapabilities(can_set_password=True, supports_mark_read=True)
+        capabilities = ProviderCapabilities(
+            can_set_password=True, supports_mark_read=True
+        )
 
     caps2 = get_capabilities(CustomProvider())
     assert caps2.can_set_password is True

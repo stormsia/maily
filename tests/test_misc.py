@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import string
 
-from mailtmapi.utils.misc import _ADDR, _PASS, random_password, random_string
+from maily.utils.misc import _ADDR, _PASS, random_password, random_string
 
 
 def test_constants():

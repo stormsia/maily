@@ -1,4 +1,4 @@
-"""Locust load and stress scenario for mailtmapi API."""
+"""Locust load and stress scenario for maily API."""
 
 from __future__ import annotations
 
@@ -8,7 +8,7 @@ ROOT_KEY = "test-secret-load-test-key-32bytes!"
 
 
 class MailTMUser(HttpUser):
-    """Simulates realistic mixed workload against mailtmapi server."""
+    """Simulates realistic mixed workload against maily server."""
 
     wait_time = between(0.01, 0.05)
 

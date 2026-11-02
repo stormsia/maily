@@ -5,8 +5,8 @@ from pathlib import Path
 import pytest
 from fastapi.testclient import TestClient
 
-from mailtmapi.app.main import create_app
-from mailtmapi.settings import Settings
+from maily.app.main import create_app
+from maily.settings import Settings
 
 
 def _app(tmp_path: Path, **kwargs) -> TestClient:
@@ -60,14 +60,14 @@ def test_health_includes_domain_cache_status(tmp_path):
 
 
 def test_config_exposes_client_version(tmp_path):
-    import mailtmapi
+    import maily
 
     with _app(tmp_path, api_key="sekret") as client:
         # /v1/config is auth-free: it powers the dashboard banner and the
         # standalone client's auto-update check
         body = client.get("/v1/config").json()
         assert body["api_key_required"] is True
-        assert body["client_version"] == mailtmapi.__version__
+        assert body["client_version"] == maily.__version__
 
 
 def test_api_key_enforced_when_set(tmp_path):
@@ -77,8 +77,14 @@ def test_api_key_enforced_when_set(tmp_path):
         assert client.get("/v1/gmail/oauth/callback").status_code == 400
         # protected ones require key
         assert client.get("/v1/providers").status_code == 401
-        assert client.get("/v1/providers", headers={"X-API-Key": "sekret"}).status_code == 200
-        assert client.get("/v1/providers", headers={"X-API-Key": "wrong"}).status_code == 401
+        assert (
+            client.get("/v1/providers", headers={"X-API-Key": "sekret"}).status_code
+            == 200
+        )
+        assert (
+            client.get("/v1/providers", headers={"X-API-Key": "wrong"}).status_code
+            == 401
+        )
 
 
 def test_api_key_401_is_tagged(tmp_path):
@@ -106,21 +112,26 @@ def test_cross_origin_api_is_rejected(tmp_path):
         # no Origin (curl, tests, server-to-server) or same-origin → allowed
         assert client.get("/v1/providers").status_code == 200
         assert (
-            client.get("/v1/providers", headers={"Origin": "http://testserver"}).status_code == 200
+            client.get(
+                "/v1/providers", headers={"Origin": "http://testserver"}
+            ).status_code
+            == 200
         )
         # foreign origin is refused outright, even though /v1 is key-protected
         res = client.get("/v1/providers", headers={"Origin": "http://evil.example"})
         assert res.status_code == 403
         assert res.json().get("code") == "cross_origin"
         # sandboxed/opaque origins ("null") are not trusted
-        assert client.get("/v1/providers", headers={"Origin": "null"}).status_code == 403
+        assert (
+            client.get("/v1/providers", headers={"Origin": "null"}).status_code == 403
+        )
 
 
 def test_provider_auth_401_is_tagged_distinctly():
     from fastapi import FastAPI
 
-    from mailtmapi.app.errors import register_errors
-    from mailtmapi.exceptions import MailAuthError
+    from maily.app.errors import register_errors
+    from maily.exceptions import MailAuthError
 
     app = FastAPI()
     register_errors(app)
@@ -136,7 +147,7 @@ def test_provider_auth_401_is_tagged_distinctly():
 
 
 def test_mailboxes_list_respects_q_limit_offset(tmp_path):
-    from mailtmapi.providers.registry import ProviderRegistry
+    from maily.providers.registry import ProviderRegistry
     from tests.helpers import StubProvider
 
     def create(client: TestClient, address: str) -> None:
@@ -175,11 +186,13 @@ def test_mailboxes_list_respects_q_limit_offset(tmp_path):
 
 
 def test_create_duplicate_live_address_is_409(tmp_path):
-    from mailtmapi.providers.registry import ProviderRegistry
+    from maily.providers.registry import ProviderRegistry
     from tests.helpers import StubProvider
 
     with _app(tmp_path) as client:
-        client.app.state.registry = ProviderRegistry([StubProvider(address="dup@x.com")])
+        client.app.state.registry = ProviderRegistry(
+            [StubProvider(address="dup@x.com")]
+        )
         first = client.post("/v1/mailboxes", json={"provider": "stub"})
         assert first.status_code == 200
         second = client.post("/v1/mailboxes", json={"provider": "stub"})
@@ -188,11 +201,13 @@ def test_create_duplicate_live_address_is_409(tmp_path):
 
 
 def test_create_reuses_address_after_soft_delete(tmp_path):
-    from mailtmapi.providers.registry import ProviderRegistry
+    from maily.providers.registry import ProviderRegistry
     from tests.helpers import StubProvider
 
     with _app(tmp_path) as client:
-        client.app.state.registry = ProviderRegistry([StubProvider(address="again@x.com")])
+        client.app.state.registry = ProviderRegistry(
+            [StubProvider(address="again@x.com")]
+        )
         first = client.post("/v1/mailboxes", json={"provider": "stub"})
         assert first.status_code == 200
         deleted = client.delete(f"/v1/mailboxes/{first.json()['id']}")
@@ -205,8 +220,8 @@ def test_create_reuses_address_after_soft_delete(tmp_path):
 
 def test_delete_mailbox_soft_deletes_before_provider_error(tmp_path):
     """Provider delete failure must not leave the local mailbox active."""
-    from mailtmapi.exceptions import MailAPIError
-    from mailtmapi.providers.registry import ProviderRegistry
+    from maily.exceptions import MailAPIError
+    from maily.providers.registry import ProviderRegistry
     from tests.helpers import StubProvider
 
     class Boom(StubProvider):
@@ -239,7 +254,7 @@ def test_datetimes_serialized_with_explicit_utc_z(tmp_path):
     """Naive-UTC storage must be emitted with 'Z' so clients don't read it as local time."""
     from datetime import datetime
 
-    from mailtmapi.providers.registry import ProviderRegistry
+    from maily.providers.registry import ProviderRegistry
     from tests.helpers import StubProvider
 
     with _app(tmp_path) as client:
@@ -254,4 +269,6 @@ def test_datetimes_serialized_with_explicit_utc_z(tmp_path):
         msgs = client.get(f"/v1/mailboxes/{mb.json()['id']}/messages").json()
         received = msgs[0]["received_at"]
         assert received.endswith("Z")
-        assert datetime.fromisoformat(received.replace("Z", "+00:00")).tzinfo is not None
+        assert (
+            datetime.fromisoformat(received.replace("Z", "+00:00")).tzinfo is not None
+        )

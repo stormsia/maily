@@ -16,12 +16,12 @@ from cryptography.fernet import Fernet
 from fastapi.testclient import TestClient
 from sqlalchemy import select
 
-from mailtmapi.app.main import create_app
-from mailtmapi.app.services import keys as key_svc
-from mailtmapi.crypto import encrypt
-from mailtmapi.db.models import GmailAccount, Mailbox
-from mailtmapi.providers.registry import ProviderRegistry
-from mailtmapi.settings import Settings
+from maily.app.main import create_app
+from maily.app.services import keys as key_svc
+from maily.crypto import encrypt
+from maily.db.models import GmailAccount, Mailbox
+from maily.providers.registry import ProviderRegistry
+from maily.settings import Settings
 from tests.helpers import StubProvider
 
 ROOT_KEY = "root-secret"
@@ -66,7 +66,9 @@ def _key(client: TestClient, name: str, scope: dict[str, object]) -> str:
             created = await key_svc.create_key(
                 session,
                 client.app.state.settings,
-                key_svc.KeyCreate(name=name, expires_at=None, scope=scope, root_key=ROOT_KEY),
+                key_svc.KeyCreate(
+                    name=name, expires_at=None, scope=scope, root_key=ROOT_KEY
+                ),
             )
             await session.commit()
             return created.secret
@@ -109,7 +111,9 @@ def client(tmp_path: Path) -> Iterator[TestClient]:
         yield app
 
 
-def test_get_other_owners_mailbox_is_forbidden_when_row_exists(client: TestClient) -> None:
+def test_get_other_owners_mailbox_is_forbidden_when_row_exists(
+    client: TestClient,
+) -> None:
     """Given key B owns a mailbox, key A GET is 403 and does not set X-MailTM-Error."""
     key_a = _key(client, "a", _scope())
     key_b = _key(client, "b", _scope())
@@ -120,7 +124,9 @@ def test_get_other_owners_mailbox_is_forbidden_when_row_exists(client: TestClien
     assert "x-mailtm-error" not in response.headers
 
 
-def test_list_hides_other_owners_mailbox_when_both_keys_created(client: TestClient) -> None:
+def test_list_hides_other_owners_mailbox_when_both_keys_created(
+    client: TestClient,
+) -> None:
     """Given mailboxes owned by A and B, A's list contains only A's address."""
     key_a = _key(client, "a", _scope())
     key_b = _key(client, "b", _scope())
@@ -131,7 +137,9 @@ def test_list_hides_other_owners_mailbox_when_both_keys_created(client: TestClie
     assert [row["address"] for row in listed.json()] == ["a@x.com"]
 
 
-def test_get_missing_mailbox_is_not_found_when_id_does_not_exist(client: TestClient) -> None:
+def test_get_missing_mailbox_is_not_found_when_id_does_not_exist(
+    client: TestClient,
+) -> None:
     """Given no row for the id, GET stays 404 even for an issued key."""
     key_a = _key(client, "a", _scope())
     response = client.get("/v1/mailboxes/999999", headers=_auth(key_a))
@@ -154,17 +162,21 @@ def test_create_stamps_owner_key_id_and_root_stamps_null(client: TestClient) -> 
     key_a = _key(client, "a", _scope())
     owned = _create_mailbox(client, key_a, "owned@x.com")
     client.app.state.registry = ProviderRegistry([StubProvider(address="root@x.com")])
-    root_row = client.post("/v1/mailboxes", json={"provider": "stub"}, headers=_auth(ROOT_KEY))
+    root_row = client.post(
+        "/v1/mailboxes", json={"provider": "stub"}, headers=_auth(ROOT_KEY)
+    )
     assert root_row.status_code == 200, root_row.text
     session_factory = client.app.state.session_factory
 
     async def _key_id() -> int:
         async with session_factory() as session:
             digest = __import__("hashlib").sha256(key_a.encode()).hexdigest()
-            from mailtmapi.db.models import ApiKey
+            from maily.db.models import ApiKey
 
             row = (
-                await session.execute(select(ApiKey).where(ApiKey.secret_sha256 == digest))
+                await session.execute(
+                    select(ApiKey).where(ApiKey.secret_sha256 == digest)
+                )
             ).scalar_one()
             return row.id
 
@@ -175,7 +187,9 @@ def test_create_stamps_owner_key_id_and_root_stamps_null(client: TestClient) -> 
 def test_create_provider_outside_scope_is_forbidden(client: TestClient) -> None:
     """Given a key allowed only stub, creating on other is 403 forbidden."""
     key_a = _key(client, "a", _scope(providers=["stub"]))
-    client.app.state.registry = ProviderRegistry([StubProvider(slug="other", address="o@x.com")])
+    client.app.state.registry = ProviderRegistry(
+        [StubProvider(slug="other", address="o@x.com")]
+    )
     response = client.post(
         "/v1/mailboxes",
         json={"provider": "other"},
@@ -209,20 +223,30 @@ def test_message_routes_require_owner_and_action(client: TestClient) -> None:
     listed = client.get(f"/v1/mailboxes/{mailbox_id}/messages", headers=_auth(reader))
     assert listed.status_code == 403
     assert listed.json()["detail"] == "forbidden"
-    fetched = client.get(f"/v1/mailboxes/{mailbox_id}/messages/m1", headers=_auth(reader))
+    fetched = client.get(
+        f"/v1/mailboxes/{mailbox_id}/messages/m1", headers=_auth(reader)
+    )
     assert fetched.status_code == 403
-    source = client.get(f"/v1/mailboxes/{mailbox_id}/messages/m1/source", headers=_auth(reader))
+    source = client.get(
+        f"/v1/mailboxes/{mailbox_id}/messages/m1/source", headers=_auth(reader)
+    )
     assert source.status_code == 403
     writer = _key(
         client,
         "writer",
         _scope(actions=["messages:read"]),
     )
-    marked = client.post(f"/v1/mailboxes/{mailbox_id}/messages/m1/read", headers=_auth(writer))
+    marked = client.post(
+        f"/v1/mailboxes/{mailbox_id}/messages/m1/read", headers=_auth(writer)
+    )
     assert marked.status_code == 403
-    removed = client.delete(f"/v1/mailboxes/{mailbox_id}/messages/m1", headers=_auth(writer))
+    removed = client.delete(
+        f"/v1/mailboxes/{mailbox_id}/messages/m1", headers=_auth(writer)
+    )
     assert removed.status_code == 403
-    owner_list = client.get(f"/v1/mailboxes/{mailbox_id}/messages", headers=_auth(key_b))
+    owner_list = client.get(
+        f"/v1/mailboxes/{mailbox_id}/messages", headers=_auth(key_b)
+    )
     assert owner_list.status_code == 200
 
 
@@ -230,12 +254,16 @@ def test_create_without_mailboxes_write_is_forbidden(client: TestClient) -> None
     """Given a key that can only read mailboxes, POST /v1/mailboxes is 403."""
     key_a = _key(client, "a", _scope(actions=["mailboxes:read"]))
     client.app.state.registry = ProviderRegistry([StubProvider(address="nope@x.com")])
-    response = client.post("/v1/mailboxes", json={"provider": "stub"}, headers=_auth(key_a))
+    response = client.post(
+        "/v1/mailboxes", json={"provider": "stub"}, headers=_auth(key_a)
+    )
     assert response.status_code == 403
     assert response.json()["detail"] == "forbidden"
 
 
-def test_gmail_create_without_grant_does_not_pick_ungranted_parent(client: TestClient) -> None:
+def test_gmail_create_without_grant_does_not_pick_ungranted_parent(
+    client: TestClient,
+) -> None:
     """Given two active parents and an empty parent grant, gmail create is 403."""
     key_a = _key(client, "a", _scope(providers=["gmail"], parent_ids=[]))
     session_factory = client.app.state.session_factory
@@ -259,7 +287,9 @@ def test_gmail_create_without_grant_does_not_pick_ungranted_parent(client: TestC
             await session.commit()
 
     client.portal.call(_seed)
-    response = client.post("/v1/mailboxes", json={"provider": "gmail"}, headers=_auth(key_a))
+    response = client.post(
+        "/v1/mailboxes", json={"provider": "gmail"}, headers=_auth(key_a)
+    )
     assert response.status_code == 403
     assert response.json()["detail"] == "no gmail parent granted"
     assert "x-mailtm-error" not in response.headers

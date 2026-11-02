@@ -1,18 +1,18 @@
-# mailtmapi
+# maily
 
 **Self-hosted multi-provider temporary email API with a sleek admin dashboard & modern async Python client.**
 
 Create disposable mailboxes on demand, receive emails in real time, extract verification codes and confirmation links automatically — all through one clean REST API, an async-first Python client, and a dark-themed web console. Runs locally or in Docker, stores state in SQLite, and protects access with scoped API keys and encrypted credentials.
 
-[![CI Pipeline](https://github.com/stormsia/mailtmapi/actions/workflows/ci.yml/badge.svg)](https://github.com/stormsia/mailtmapi/actions/workflows/ci.yml)
-[![CodeQL Security](https://github.com/stormsia/mailtmapi/actions/workflows/codeql.yml/badge.svg)](https://github.com/stormsia/mailtmapi/actions/workflows/codeql.yml)
-[![Security Audit](https://github.com/stormsia/mailtmapi/actions/workflows/pip-audit.yml/badge.svg)](https://github.com/stormsia/mailtmapi/actions/workflows/pip-audit.yml)
-[![Gitleaks Scan](https://github.com/stormsia/mailtmapi/actions/workflows/gitleaks.yml/badge.svg)](https://github.com/stormsia/mailtmapi/actions/workflows/gitleaks.yml)
-[![Code Coverage](https://codecov.io/gh/stormsia/mailtmapi/branch/main/graph/badge.svg)](https://codecov.io/gh/stormsia/mailtmapi)
-[![Docker GHCR](https://img.shields.io/badge/Docker-ghcr.io-blue?logo=docker&logoColor=white)](https://github.com/stormsia/mailtmapi/pkgs/container/mailtmapi)
-[![PyPI version](https://img.shields.io/pypi/v/mailtmapi.svg)](https://pypi.org/project/mailtmapi/)
-[![API Docs](https://img.shields.io/badge/Docs-GitHub%20Pages-success?logo=github)](https://stormsia.github.io/mailtmapi/)
-[![Python](https://img.shields.io/badge/Python-3.13%20%7C%203.14%20%7C%203.15-3776AB?logo=python&logoColor=white)](https://github.com/stormsia/mailtmapi)
+[![CI Pipeline](https://github.com/stormsia/maily/actions/workflows/ci.yml/badge.svg)](https://github.com/stormsia/maily/actions/workflows/ci.yml)
+[![CodeQL Security](https://github.com/stormsia/maily/actions/workflows/codeql.yml/badge.svg)](https://github.com/stormsia/maily/actions/workflows/codeql.yml)
+[![Security Audit](https://github.com/stormsia/maily/actions/workflows/pip-audit.yml/badge.svg)](https://github.com/stormsia/maily/actions/workflows/pip-audit.yml)
+[![Gitleaks Scan](https://github.com/stormsia/maily/actions/workflows/gitleaks.yml/badge.svg)](https://github.com/stormsia/maily/actions/workflows/gitleaks.yml)
+[![Code Coverage](https://codecov.io/gh/stormsia/maily/branch/main/graph/badge.svg)](https://codecov.io/gh/stormsia/maily)
+[![Docker GHCR](https://img.shields.io/badge/Docker-ghcr.io-blue?logo=docker&logoColor=white)](https://github.com/stormsia/maily/pkgs/container/maily)
+[![PyPI version](https://img.shields.io/pypi/v/maily.svg)](https://pypi.org/project/maily/)
+[![API Docs](https://img.shields.io/badge/Docs-GitHub%20Pages-success?logo=github)](https://stormsia.github.io/maily/)
+[![Python](https://img.shields.io/badge/Python-3.13%20%7C%203.14%20%7C%203.15-3776AB?logo=python&logoColor=white)](https://github.com/stormsia/maily)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 ---
@@ -79,7 +79,7 @@ Create disposable mailboxes on demand, receive emails in real time, extract veri
 ### Option A — Docker (recommended)
 
 ```bash
-git clone https://github.com/stormsia/mailtmapi.git && cd mailtmapi
+git clone https://github.com/stormsia/maily.git && cd maily
 cp .env.example .env        # adjust if needed
 docker compose up -d --build
 ```
@@ -90,7 +90,7 @@ docker compose up -d --build
 ### Option B — Local (Python 3.13+)
 
 ```bash
-git clone https://github.com/stormsia/mailtmapi.git && cd mailtmapi
+git clone https://github.com/stormsia/maily.git && cd maily
 python -m venv .venv
 # Windows:
 .venv\Scripts\activate
@@ -98,32 +98,32 @@ python -m venv .venv
 source .venv/bin/activate
 
 pip install -e ".[dev]"
-mailtmapi
+maily
 ```
 
 Development server with auto-reload:
 ```bash
-uvicorn mailtmapi.app.main:create_app --factory --reload --port 8477
+uvicorn maily.app.main:create_app --factory --reload --port 8477
 ```
 
 ---
 
-## 🐍 Standalone Python Client SDK (`mailtmapi-client`)
+## 🐍 Standalone Python Client SDK (`maily-client`)
 
-The repository includes a dedicated, self-contained standalone Python client package (`mailtmapi-client`) requiring only `httpx`, `pydantic`, and `loguru`. It supports both high-concurrency `async/await` (`MailTMAPI`) and a synchronous facade (`SyncMailTMAPI`).
+The repository includes a dedicated, self-contained standalone Python client package (`maily-client`) requiring only `httpx`, `pydantic`, and `loguru`. It supports both high-concurrency `async/await` (`Maily`) and a synchronous facade (`SyncMaily`).
 
 > 📖 **Full Documentation:** See [docs/CLIENT_GUIDE.md](docs/CLIENT_GUIDE.md) and [client/README.md](client/README.md) for comprehensive recipes (Pytest fixtures, Playwright/Selenium automation, streaming, and retry policies).
 
 ### Installation
 
 ```bash
-pip install mailtmapi-client
+pip install maily-client
 # or copy client/client.py directly into your script!
 ```
 
 > ⚠️ **Important: Attribute Access vs Dictionary Key Access**
 >
-> In `mailtmapi-client`, native dot/attribute access is supported **ONLY on Pydantic models and specifically `ExtractedConfirmation`** (which implements `Mapping` and supports dual access: e.g. `res.subject`, `res.confirmation_code` as well as `res["confirmation_link"]`).
+> In `maily-client`, native dot/attribute access is supported **ONLY on Pydantic models and specifically `ExtractedConfirmation`** (which implements `Mapping` and supports dual access: e.g. `res.subject`, `res.confirmation_code` as well as `res["confirmation_link"]`).
 >
 > All other client methods returning standard Python dictionaries (such as `await api.config.get()`) **DO NOT support attribute/dot access**. You MUST use standard dictionary key indexing (`dict["key"]`), never dot access (`dict.key`).
 
@@ -131,11 +131,11 @@ pip install mailtmapi-client
 
 ```python
 import asyncio
-from mailtmapi.client import MailTMAPI, WaitTimeoutError
+from maily.client import Maily, WaitTimeoutError
 
 
 async def main():
-    async with MailTMAPI("http://127.0.0.1:8477", api_key="sk-...") as api:
+    async with Maily("http://127.0.0.1:8477", api_key="sk-...") as api:
         # Create a disposable mailbox with automatic domain selection
         box = await api.create_temp_mailbox()
         print(f"Disposable email: {box.address}")
@@ -154,7 +154,7 @@ asyncio.run(main())
 ### Confirmation Extraction (`ExtractedConfirmation` Dual Access)
 
 ```python
-async with MailTMAPI("http://127.0.0.1:8477") as api:
+async with Maily("http://127.0.0.1:8477") as api:
     box = await api.create_temp_mailbox()
 
     # Wait for email and extract both verification code and activation link
@@ -169,12 +169,12 @@ async with MailTMAPI("http://127.0.0.1:8477") as api:
         print(f"Code: {res['confirmation_code']}")
 ```
 
-### Synchronous Client (`SyncMailTMAPI`)
+### Synchronous Client (`SyncMaily`)
 
 ```python
-from mailtmapi.client import SyncMailTMAPI
+from maily.client import SyncMaily
 
-with SyncMailTMAPI("http://127.0.0.1:8477", api_key="sk-...") as api:
+with SyncMaily("http://127.0.0.1:8477", api_key="sk-...") as api:
     box = api.create_temp_mailbox()
     code = api.wait_for_code(box, timeout=45.0)
     print(f"Received code synchronously: {code}")
@@ -183,7 +183,7 @@ with SyncMailTMAPI("http://127.0.0.1:8477", api_key="sk-...") as api:
 ### Confirmation Link Extraction
 
 ```python
-async with MailTMAPI("http://127.0.0.1:8477") as api:
+async with Maily("http://127.0.0.1:8477") as api:
     box = await api.create_temp_mailbox(provider="tempmail.plus")
     print(f"Address: {box.address}")
 
@@ -195,7 +195,7 @@ async with MailTMAPI("http://127.0.0.1:8477") as api:
 ### Real-Time Email Streaming (Async Iterator)
 
 ```python
-async with MailTMAPI("http://127.0.0.1:8477") as api:
+async with Maily("http://127.0.0.1:8477") as api:
     box = await api.mailboxes.create(domain="mail.tm")
 
     # Continuously yields new messages as they arrive
@@ -210,7 +210,7 @@ async with MailTMAPI("http://127.0.0.1:8477") as api:
 All API errors inherit from `ApiError`, which inherits from `ClientError`:
 
 ```python
-from mailtmapi.client import (
+from maily.client import (
     AuthenticationError,  # 401: Invalid API key
     ForbiddenError,  # 403: Scope denied
     NotFoundError,  # 404: Mailbox or message missing
@@ -231,7 +231,7 @@ except AuthenticationError:
 ### Scoped API Key Management
 
 ```python
-async with MailTMAPI("http://127.0.0.1:8477", api_key="root_secret") as api:
+async with Maily("http://127.0.0.1:8477", api_key="root_secret") as api:
     # Create key restricted to mail.tm only
     new_key = await api.keys.create(
         name="bot-worker",
@@ -243,7 +243,7 @@ async with MailTMAPI("http://127.0.0.1:8477", api_key="root_secret") as api:
 ### Retention & Database Maintenance
 
 ```python
-async with MailTMAPI("http://127.0.0.1:8477", api_key="root_secret") as api:
+async with Maily("http://127.0.0.1:8477", api_key="root_secret") as api:
     # Run regular retention sweep (triggers DB maintenance if interval has elapsed)
     res = await api.admin.retention_run()
     print(f"Deleted: {res.mailboxes_deleted} boxes, {res.messages_deleted} messages")

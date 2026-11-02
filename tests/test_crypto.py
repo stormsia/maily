@@ -5,7 +5,7 @@ import logging
 import pytest
 from cryptography.fernet import Fernet, InvalidToken
 
-from mailtmapi.crypto import _fernet, decrypt, encrypt, is_fernet_key, logger
+from maily.crypto import _fernet, decrypt, encrypt, is_fernet_key, logger
 
 
 def _key() -> str:
@@ -13,7 +13,7 @@ def _key() -> str:
 
 
 def test_logger_name():
-    assert logger.name == "mailtmapi.crypto"
+    assert logger.name == "maily.crypto"
 
 
 def test_roundtrip_with_fernet_key():
@@ -29,7 +29,7 @@ def test_simple_secret_is_reusable():
 
 
 def test_simple_secret_emits_warning(caplog):
-    with caplog.at_level(logging.WARNING, logger="mailtmapi.crypto"):
+    with caplog.at_level(logging.WARNING, logger="maily.crypto"):
         encrypt("not-a-fernet-key", "sample")
     assert (
         "secret is not a valid Fernet key; deriving a key via sha256(secret). "

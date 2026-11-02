@@ -3,8 +3,8 @@
 
 Verifies that:
 1. pyproject.toml defines a valid SemVer 2.0.0 version.
-2. src/mailtmapi/__init__.py matches pyproject.toml.
-3. src/mailtmapi/standalone_client.py matches pyproject.toml.
+2. src/maily/__init__.py matches pyproject.toml.
+3. src/maily/standalone_client.py matches pyproject.toml.
 4. client/client.py matches pyproject.toml.
 5. If a git tag or expected version is passed via --tag/--expected, it strictly matches.
 """
@@ -27,7 +27,9 @@ SEMVER_REGEX = re.compile(
     r"(?:\+(?P<buildmetadata>[0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$"
 )
 
-VERSION_ASSIGN_REGEX = re.compile(r"^__version__\s*=\s*[\"']([^\"']+)[\"']", re.MULTILINE)
+VERSION_ASSIGN_REGEX = re.compile(
+    r"^__version__\s*=\s*[\"']([^\"']+)[\"']", re.MULTILINE
+)
 
 
 def extract_version_from_file(path: Path) -> str:
@@ -64,7 +66,9 @@ def main() -> int:
     parser = argparse.ArgumentParser(
         description="Verify SemVer and version consistency across the codebase."
     )
-    parser.add_argument("--tag", help="Optional git tag to compare against (e.g. v1.2.3 or 1.2.3)")
+    parser.add_argument(
+        "--tag", help="Optional git tag to compare against (e.g. v1.2.3 or 1.2.3)"
+    )
     parser.add_argument("--expected", help="Explicit expected version string")
     args = parser.parse_args()
 
@@ -88,10 +92,10 @@ def main() -> int:
 
     # 3. Read versions from package and client files
     files_to_check = {
-        "src/mailtmapi/__init__.py": repo_root / "src" / "mailtmapi" / "__init__.py",
-        "src/mailtmapi/standalone_client.py": repo_root
+        "src/maily/__init__.py": repo_root / "src" / "maily" / "__init__.py",
+        "src/maily/standalone_client.py": repo_root
         / "src"
-        / "mailtmapi"
+        / "maily"
         / "standalone_client.py",
         "client/client.py": repo_root / "client" / "client.py",
     }
@@ -137,7 +141,9 @@ def main() -> int:
             print(f"  - {err}", file=sys.stderr)
         return 1
 
-    print(f"\n🎉 All files are consistent and conform to SemVer 2.0.0: v{pyproject_ver}")
+    print(
+        f"\n🎉 All files are consistent and conform to SemVer 2.0.0: v{pyproject_ver}"
+    )
     return 0
 
 

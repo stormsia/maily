@@ -1,18 +1,18 @@
 area:core:
   - changed-files:
-      - any-glob-to-any-file: ['src/mailtmapi/app/**', 'src/mailtmapi/settings.py', 'src/mailtmapi/crypto.py']
+      - any-glob-to-any-file: ['src/maily/app/**', 'src/maily/settings.py', 'src/maily/crypto.py']
 
 area:db:
   - changed-files:
-      - any-glob-to-any-file: ['src/mailtmapi/db/**', 'alembic/**']
+      - any-glob-to-any-file: ['src/maily/db/**', 'alembic/**']
 
 area:providers:
   - changed-files:
-      - any-glob-to-any-file: ['src/mailtmapi/providers/**']
+      - any-glob-to-any-file: ['src/maily/providers/**']
 
 area:frontend:
   - changed-files:
-      - any-glob-to-any-file: ['src/mailtmapi/static/**']
+      - any-glob-to-any-file: ['src/maily/static/**']
 
 area:tests:
   - changed-files:
@@ -20,7 +20,7 @@ area:tests:
 
 area:client:
   - changed-files:
-      - any-glob-to-any-file: ['client/**', 'src/mailtmapi/standalone_client.py', 'scripts/build_client.py']
+      - any-glob-to-any-file: ['client/**', 'src/maily/standalone_client.py', 'scripts/build_client.py']
 
 area:docs:
   - changed-files:
@@ -32,7 +32,7 @@ area:ci:
 
 security:
   - changed-files:
-      - any-glob-to-any-file: ['src/mailtmapi/crypto.py', '.github/workflows/*audit*.yml', '.github/workflows/*gitleaks*.yml', '.github/workflows/*trivy*.yml', '.github/workflows/*codeql*.yml']
+      - any-glob-to-any-file: ['src/maily/crypto.py', '.github/workflows/*audit*.yml', '.github/workflows/*gitleaks*.yml', '.github/workflows/*trivy*.yml', '.github/workflows/*codeql*.yml']
 
 dependencies:
   - changed-files:

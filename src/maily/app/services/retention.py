@@ -25,7 +25,7 @@ from ..services.stats_history import (
     record,
 )
 
-logger = logging.getLogger("mailtmapi.retention")
+logger = logging.getLogger("maily.retention")
 
 
 def utcnow_naive() -> datetime:

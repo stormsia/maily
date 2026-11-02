@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="theme-color" content="#0b0e14" />
-  <title>mailtmapi · Documentation & API Reference</title>
+  <title>Maily · Documentation & API Reference</title>
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%237c6cff'/%3E%3Cpath d='M8 12l8 6 8-6' stroke='white' stroke-width='2.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3Crect x='7' y='10' width='18' height='13' rx='2.5' stroke='white' stroke-width='2.5' fill='none'/%3E%3C/svg%3E" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -420,7 +420,7 @@
     <a class="brand" href="/" title="Back to dashboard">
       <span class="brand-mark">✉</span>
       <span>
-        <span style="display:block">mailtmapi</span>
+        <span style="display:block">Maily</span>
         <span class="brand-sub">Developer Hub</span>
       </span>
     </a>
@@ -446,7 +446,7 @@
     <div class="tab-content" id="tab-python">
       <h2 class="section-title">Standalone Python Async Client</h2>
       <p class="section-desc">
-        <code>mailtmapi-client</code> is a zero-dependency (only httpx, loguru, pydantic) single-file client.
+        <code>maily-client</code> is a zero-dependency (only httpx, loguru, pydantic) single-file client.
         Full async support, typed pydantic models, granular exception hierarchy, and high-level verification helpers.
       </p>
 
@@ -455,9 +455,9 @@
           <span>Installation</span>
           <button class="copy-btn" onclick="copySnippet(this)">Copy</button>
         </div>
-        <pre class="code-content">pip install "mailtmapi-client @ git+https://github.com/stormsia/mailtmapi.git#subdirectory=client"
+        <pre class="code-content">pip install "maily-client @ git+https://github.com/stormsia/maily.git#subdirectory=client"
 # or copy the standalone client.py file directly:
-curl -O https://raw.githubusercontent.com/stormsia/mailtmapi/main/client/client.py</pre>
+curl -O https://raw.githubusercontent.com/stormsia/maily/main/client/client.py</pre>
       </div>
 
       <div class="code-box">
@@ -466,10 +466,10 @@ curl -O https://raw.githubusercontent.com/stormsia/mailtmapi/main/client/client.
           <button class="copy-btn" onclick="copySnippet(this)">Copy</button>
         </div>
         <pre class="code-content">import asyncio
-from mailtmapi.client import MailTMAPI, WaitTimeoutError, AuthenticationError
+from maily.client import Maily, WaitTimeoutError, AuthenticationError
 
 async def main():
-    async with MailTMAPI("http://127.0.0.1:8477", api_key="sk-...") as api:
+    async with Maily("http://127.0.0.1:8477", api_key="sk-...") as api:
         # 1. Create temporary mailbox automatically picking the best domain
         box = await api.create_temp_mailbox()
         print(f"Created mailbox: {box.address}")
@@ -489,7 +489,7 @@ asyncio.run(main())</pre>
           <span>Extract confirmation link</span>
           <button class="copy-btn" onclick="copySnippet(this)">Copy</button>
         </div>
-        <pre class="code-content">async with MailTMAPI("http://127.0.0.1:8477", api_key="sk-...") as api:
+        <pre class="code-content">async with Maily("http://127.0.0.1:8477", api_key="sk-...") as api:
     box = await api.create_temp_mailbox(provider="tempmail.plus")
 
     # Wait for email and extract confirmation URL containing 'verify' or 'activate'
@@ -506,7 +506,7 @@ asyncio.run(main())</pre>
           <span>Real-time email stream (Async Generator)</span>
           <button class="copy-btn" onclick="copySnippet(this)">Copy</button>
         </div>
-        <pre class="code-content">async with MailTMAPI("http://127.0.0.1:8477") as api:
+        <pre class="code-content">async with Maily("http://127.0.0.1:8477") as api:
     box = await api.mailboxes.create(domain="mail.tm")
     print(f"Listening for incoming messages on {box.address}...")
 
@@ -522,7 +522,7 @@ asyncio.run(main())</pre>
           <span>Manage scoped API Keys</span>
           <button class="copy-btn" onclick="copySnippet(this)">Copy</button>
         </div>
-        <pre class="code-content">async with MailTMAPI("http://127.0.0.1:8477", api_key="root_secret") as api:
+        <pre class="code-content">async with Maily("http://127.0.0.1:8477", api_key="root_secret") as api:
     # Create key restricted to mail.tm only
     key = await api.keys.create(
         name="bot-worker",
@@ -536,7 +536,7 @@ asyncio.run(main())</pre>
           <span>Retention sweep & database maintenance</span>
           <button class="copy-btn" onclick="copySnippet(this)">Copy</button>
         </div>
-        <pre class="code-content">async with MailTMAPI("http://127.0.0.1:8477", api_key="root_secret") as api:
+        <pre class="code-content">async with Maily("http://127.0.0.1:8477", api_key="root_secret") as api:
     # Run regular retention sweep (performs VACUUM / maintenance if interval is due)
     res = await api.admin.retention_run()
     print(f"Deleted: {res.mailboxes_deleted} mailboxes, {res.messages_deleted} messages")
@@ -550,7 +550,7 @@ asyncio.run(main())</pre>
     <div class="tab-content" id="tab-providers">
       <h2 class="section-title">Active Provider Adapters</h2>
       <p class="section-desc">
-        mailtmapi seamlessly aggregates public temporary-mail networks and private Gmail parent accounts into one unified REST API.
+        Maily seamlessly aggregates public temporary-mail networks and private Gmail parent accounts into one unified REST API.
       </p>
 
       <div class="table-wrap">

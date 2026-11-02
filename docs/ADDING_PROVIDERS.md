@@ -1,12 +1,12 @@
-# Guide: Adding New Email Providers to mailtmapi (for AI Agents & Developers)
+# Guide: Adding New Email Providers to maily (for AI Agents & Developers)
 
-This guide provides an end-to-end, deterministic specification for adding new temporary-email provider adapters to `mailtmapi`. It is tailored specifically for **AI coding agents** and human contributors to ensure high reliability, 100% test coverage, and clean architectural alignment.
+This guide provides an end-to-end, deterministic specification for adding new temporary-email provider adapters to `maily`. It is tailored specifically for **AI coding agents** and human contributors to ensure high reliability, 100% test coverage, and clean architectural alignment.
 
 ---
 
 ## 🏗️ 1. Architecture & Core Contracts
 
-Every provider adapter in `mailtmapi` is a class implementing the `MailProvider` protocol (`src/mailtmapi/providers/base.py`).
+Every provider adapter in `maily` is a class implementing the `MailProvider` protocol (`src/maily/providers/base.py`).
 
 Most providers communicate via HTTP and should inherit from `HttpProvider`, which provides:
 - An owned or shared `HttpClient` (with proxy support and configurable default headers).
@@ -36,7 +36,7 @@ MailTM                   TempMailPlus              YourNewProvider
 Each provider declares its capabilities via `ProviderCapabilities`:
 
 ```python
-from mailtmapi.providers.base import ProviderCapabilities
+from maily.providers.base import ProviderCapabilities
 
 capabilities = ProviderCapabilities(
     can_choose_username=True,  # User can pick 'custom_name@...'
@@ -54,10 +54,10 @@ capabilities = ProviderCapabilities(
 
 ## 📂 3. Directory Layout
 
-Place every provider in its own directory under `src/mailtmapi/providers/<provider_slug>/`:
+Place every provider in its own directory under `src/maily/providers/<provider_slug>/`:
 
 ```
-src/mailtmapi/providers/my_provider/
+src/maily/providers/my_provider/
 ├── __init__.py        # Re-exports the provider class
 └── service.py         # Full implementation inheriting from HttpProvider
 tests/
@@ -68,7 +68,7 @@ tests/
 
 ## 💻 4. Step-by-Step Implementation Guide
 
-### Step 4.1: Create `src/mailtmapi/providers/my_provider/__init__.py`
+### Step 4.1: Create `src/maily/providers/my_provider/__init__.py`
 
 ```python
 from .service import MyProvider
@@ -76,7 +76,7 @@ from .service import MyProvider
 __all__ = ["MyProvider"]
 ```
 
-### Step 4.2: Implement `src/mailtmapi/providers/my_provider/service.py`
+### Step 4.2: Implement `src/maily/providers/my_provider/service.py`
 
 Below is the standard, production-tested template for a domain-based provider:
 
@@ -320,9 +320,9 @@ class MyProvider(HttpProvider):
 
 ## 🔌 5. Registration & Live Test Integration
 
-Provider registration is centralized in `src/mailtmapi/providers/registry.py`:
+Provider registration is centralized in `src/maily/providers/registry.py`:
 
-1. Import your new provider in `src/mailtmapi/providers/registry.py`:
+1. Import your new provider in `src/maily/providers/registry.py`:
    ```python
    from .my_provider import MyProvider
    ```
@@ -345,7 +345,7 @@ Provider registration is centralized in `src/mailtmapi/providers/registry.py`:
        ]
    ```
 
-Both `src/mailtmapi/app/main.py` and the live verification suite (`scripts/test_providers_live.py`) load active adapters directly from `create_public_providers()`.
+Both `src/maily/app/main.py` and the live verification suite (`scripts/test_providers_live.py`) load active adapters directly from `create_public_providers()`.
 
 ---
 
@@ -380,7 +380,7 @@ class MyProvider(HttpProvider):
   When the provider recovers (both API and delivery pass), the issue is automatically commented and closed by the bot.
 * **README & PR Badges**:
   - Live status table in `README.md` (`<!-- provider-status:start -->`) updates twice daily;
-  - Sticky notice (`<!-- mailtmapi-pr-provider-health -->`) posts to Pull Requests affecting provider code.
+  - Sticky notice (`<!-- maily-pr-provider-health -->`) posts to Pull Requests affecting provider code.
 
 > 🔒 **Excluded Providers (`EXCLUDED_LIVE_TEST_PROVIDERS`):**
 > By default, **all** registered providers are automatically included in live health and delivery tests. The only exceptions are providers requiring pre-authenticated user credentials or private OAuth accounts (such as Gmail), which are registered in `EXCLUDED_LIVE_TEST_PROVIDERS = frozenset({"gmail"})`.
@@ -398,10 +398,10 @@ from __future__ import annotations
 import httpx
 import pytest
 
-from mailtmapi.exceptions import MailNotFoundError, MailValidationError
-from mailtmapi.http import HttpClient
-from mailtmapi.providers.base import MailboxInfo, MailboxSpec
-from mailtmapi.providers.my_provider import MyProvider
+from maily.exceptions import MailNotFoundError, MailValidationError
+from maily.http import HttpClient
+from maily.providers.base import MailboxInfo, MailboxSpec
+from maily.providers.my_provider import MyProvider
 
 
 def _provider_with_routes(routes: dict[tuple[str, str], httpx.Response]) -> MyProvider:
@@ -499,9 +499,9 @@ Whenever a new provider is added or updated, ensure project documentation and co
    - Increment the supported providers count in the **✨ Features** section.
    - Add the provider name and a concise description to the features list.
    - Add a row to the **🌐 Supported Providers & Capabilities** table detailing its capabilities (`Target Kind`, `Custom Username`, `Custom Domain`, `Passwords / PIN`, `Raw Source`, `Read Tracking`).
-   - If the provider introduces new settings in `src/mailtmapi/settings.py`, document all environment variables in the **⚙️ Configuration Reference** table.
+   - If the provider introduces new settings in `src/maily/settings.py`, document all environment variables in the **⚙️ Configuration Reference** table.
 
-2. **Web Dashboard & Developer Hub (`src/mailtmapi/static/docs.html`)**:
+2. **Web Dashboard & Developer Hub (`src/maily/static/docs.html`)**:
    - Add a corresponding row to the **Supported Providers** table in `#tab-providers` with appropriate badge classes (`badge--domain`, `badge--yes`, `badge--no`, etc.).
 
 3. **Environment Template (`.env.example`)**:
@@ -545,4 +545,4 @@ Before finalizing any new provider implementation, execute the following command
    python scripts/build_client.py --check
    ```
 7. **Verify documentation and configuration sync**:
-   - Verify `README.md`, `src/mailtmapi/static/docs.html`, and `.env.example` include the new provider and any new settings.
+   - Verify `README.md`, `src/maily/static/docs.html`, and `.env.example` include the new provider and any new settings.

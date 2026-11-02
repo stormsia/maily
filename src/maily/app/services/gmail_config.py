@@ -1,6 +1,6 @@
 """UI-managed server config stored in app_settings (key/value).
 
-Gmail OAuth credentials can be provided via env (MAILTM_GMAIL_CLIENT_ID/SECRET
+Gmail OAuth credentials can be provided via env (MAILY_GMAIL_CLIENT_ID/SECRET
 or credentials file) or, alternatively, saved from the admin dashboard. When
 env credentials exist they win; the dashboard reports them as read-only
 (source="env"). The client secret is stored encrypted with the server secret.

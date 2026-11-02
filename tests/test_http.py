@@ -3,8 +3,8 @@ from __future__ import annotations
 import httpx
 import pytest
 
-from mailtmapi.exceptions import MailConflictError, MailServerError, MailValidationError
-from mailtmapi.http import HttpClient
+from maily.exceptions import MailConflictError, MailServerError, MailValidationError
+from maily.http import HttpClient
 
 
 def _client(handler) -> HttpClient:

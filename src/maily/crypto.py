@@ -6,7 +6,7 @@ import logging
 
 from cryptography.fernet import Fernet, InvalidToken
 
-logger = logging.getLogger("mailtmapi.crypto")
+logger = logging.getLogger("maily.crypto")
 
 
 def is_fernet_key(secret: str) -> bool:

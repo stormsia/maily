@@ -9,7 +9,7 @@ from fastapi import HTTPException
 from hypothesis import given
 from hypothesis import strategies as st
 
-from mailtmapi.app.authz import (
+from maily.app.authz import (
     Principal,
     _deny_scope,
     _expired,
@@ -24,9 +24,9 @@ from mailtmapi.app.authz import (
     provider_allowed,
     secret_sha256,
 )
-from mailtmapi.app.middleware.origin import OriginGuard, _netloc, _same_netloc
-from mailtmapi.app.services import keys as key_svc
-from mailtmapi.db.models import ApiKey, Mailbox
+from maily.app.middleware.origin import OriginGuard, _netloc, _same_netloc
+from maily.app.services import keys as key_svc
+from maily.db.models import ApiKey, Mailbox
 
 # --- Hypothesis Property Tests ---
 
@@ -55,7 +55,9 @@ def test_property_is_root_secret(presented: str, expected: str):
     st.one_of(st.none(), st.text()),
     st.one_of(st.none(), st.text()),
 )
-def test_property_presented_secret_priority(x_api_key: str | None, auth_header: str | None):
+def test_property_presented_secret_priority(
+    x_api_key: str | None, auth_header: str | None
+):
     """X-API-Key always takes precedence over Authorization header."""
     res = presented_secret(x_api_key, auth_header)
     if x_api_key:
@@ -111,14 +113,23 @@ def test_parse_scope_malformed_types():
     assert parse_scope("[]") == _deny_scope()
     assert parse_scope('{"providers": "mail.tm"}') == _deny_scope()
     assert (
-        parse_scope('{"providers": ["mail.tm"], "parent_ids": "not_list", "actions": []}')
+        parse_scope(
+            '{"providers": ["mail.tm"], "parent_ids": "not_list", "actions": []}'
+        )
         == _deny_scope()
     )
-    assert parse_scope('{"providers": [123], "parent_ids": [], "actions": []}') == _deny_scope()
     assert (
-        parse_scope('{"providers": [], "parent_ids": ["not_int"], "actions": []}') == _deny_scope()
+        parse_scope('{"providers": [123], "parent_ids": [], "actions": []}')
+        == _deny_scope()
     )
-    assert parse_scope('{"providers": [], "parent_ids": [], "actions": [123]}') == _deny_scope()
+    assert (
+        parse_scope('{"providers": [], "parent_ids": ["not_int"], "actions": []}')
+        == _deny_scope()
+    )
+    assert (
+        parse_scope('{"providers": [], "parent_ids": [], "actions": [123]}')
+        == _deny_scope()
+    )
 
 
 def test_expiry_boundary_conditions():
@@ -169,7 +180,10 @@ def test_expiry_boundary_conditions():
 
 def test_action_allowed_root_and_issued():
     root = Principal(is_root=True, key=None)
-    assert action_allowed(root, "mailboxes:read", "messages:write", "custom:action") is True
+    assert (
+        action_allowed(root, "mailboxes:read", "messages:write", "custom:action")
+        is True
+    )
 
     anon = Principal(is_root=False, key=None)
     assert action_allowed(anon, "mailboxes:read") is False
@@ -210,7 +224,9 @@ def test_provider_allowed_open_and_restricted():
         prefix="p",
         secret_enc="e",
         secret_sha256="s",
-        scope_json=json.dumps({"providers": [], "parent_ids": [], "actions": ["mailboxes:read"]}),
+        scope_json=json.dumps(
+            {"providers": [], "parent_ids": [], "actions": ["mailboxes:read"]}
+        ),
     )
     p_open = Principal(is_root=False, key=key_open)
     assert provider_allowed(p_open, "mail.tm") is True
@@ -256,14 +272,20 @@ def test_parent_allowed_root_and_issued():
 def test_owns_mailbox_rules():
     """Verify ownership rules for root, key owner, and foreign key."""
     root = Principal(is_root=True, key=None)
-    key1 = ApiKey(id=1, name="k1", prefix="p", secret_enc="e", secret_sha256="s", scope_json="{}")
-    key2 = ApiKey(id=2, name="k2", prefix="p", secret_enc="e", secret_sha256="s", scope_json="{}")
+    key1 = ApiKey(
+        id=1, name="k1", prefix="p", secret_enc="e", secret_sha256="s", scope_json="{}"
+    )
+    key2 = ApiKey(
+        id=2, name="k2", prefix="p", secret_enc="e", secret_sha256="s", scope_json="{}"
+    )
     p1 = Principal(is_root=False, key=key1)
     p2 = Principal(is_root=False, key=key2)
     p_none = Principal(is_root=False, key=None)
 
     box_owned_1 = Mailbox(id=1, provider="mail.tm", address="a@b.com", owner_key_id=1)
-    box_unowned = Mailbox(id=2, provider="mail.tm", address="c@d.com", owner_key_id=None)
+    box_unowned = Mailbox(
+        id=2, provider="mail.tm", address="c@d.com", owner_key_id=None
+    )
 
     assert owns_mailbox(root, box_owned_1) is True
     assert owns_mailbox(root, box_unowned) is True
@@ -329,7 +351,10 @@ async def test_origin_guard_same_origin_and_non_v1_allowed():
     scope1 = {
         "type": "http",
         "path": "/docs",
-        "headers": [(b"origin", b"https://attacker.example"), (b"host", b"api.example.com")],
+        "headers": [
+            (b"origin", b"https://attacker.example"),
+            (b"host", b"api.example.com"),
+        ],
     }
     await guard(scope1, None, None)
     assert called is True
@@ -339,7 +364,10 @@ async def test_origin_guard_same_origin_and_non_v1_allowed():
     scope2 = {
         "type": "http",
         "path": "/v1/mailboxes",
-        "headers": [(b"origin", b"https://api.example.com"), (b"host", b"api.example.com")],
+        "headers": [
+            (b"origin", b"https://api.example.com"),
+            (b"host", b"api.example.com"),
+        ],
     }
     await guard(scope2, None, None)
     assert called is True
@@ -379,25 +407,32 @@ def test_keys_parse_scope_strict_validation():
 
     # 2. Scope keys must match exactly
     with pytest.raises(
-        key_svc.InvalidKeyScope, match="^scope requires providers, parent_ids, and actions$"
+        key_svc.InvalidKeyScope,
+        match="^scope requires providers, parent_ids, and actions$",
     ):
         key_svc.parse_scope({"providers": [], "parent_ids": []})
     with pytest.raises(
-        key_svc.InvalidKeyScope, match="^scope requires providers, parent_ids, and actions$"
+        key_svc.InvalidKeyScope,
+        match="^scope requires providers, parent_ids, and actions$",
     ):
-        key_svc.parse_scope({"providers": [], "parent_ids": [], "actions": [], "extra": 1})
+        key_svc.parse_scope(
+            {"providers": [], "parent_ids": [], "actions": [], "extra": 1}
+        )
 
     # 3. Must be lists
     with pytest.raises(
-        key_svc.InvalidKeyScope, match="^providers, parent_ids, and actions must be lists$"
+        key_svc.InvalidKeyScope,
+        match="^providers, parent_ids, and actions must be lists$",
     ):
         key_svc.parse_scope({"providers": "not-list", "parent_ids": [], "actions": []})
     with pytest.raises(
-        key_svc.InvalidKeyScope, match="^providers, parent_ids, and actions must be lists$"
+        key_svc.InvalidKeyScope,
+        match="^providers, parent_ids, and actions must be lists$",
     ):
         key_svc.parse_scope({"providers": [], "parent_ids": 123, "actions": []})
     with pytest.raises(
-        key_svc.InvalidKeyScope, match="^providers, parent_ids, and actions must be lists$"
+        key_svc.InvalidKeyScope,
+        match="^providers, parent_ids, and actions must be lists$",
     ):
         key_svc.parse_scope({"providers": [], "parent_ids": [], "actions": None})
 
@@ -413,7 +448,9 @@ def test_keys_parse_scope_strict_validation():
 
     # 5. Unknown action
     with pytest.raises(key_svc.InvalidKeyScope, match="^unknown action$"):
-        key_svc.parse_scope({"providers": [], "parent_ids": [], "actions": ["not:real"]})
+        key_svc.parse_scope(
+            {"providers": [], "parent_ids": [], "actions": ["not:real"]}
+        )
 
     # 6. Valid scope
     valid = key_svc.parse_scope(

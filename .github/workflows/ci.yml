@@ -93,7 +93,7 @@ jobs:
         run: |
           uv run alembic upgrade head
           uv run alembic check
-          rm -f mailtmapi.db
+          rm -f maily.db
 
       - name: Clean Dependency Architecture (Deptry)
         run: uvx deptry src
@@ -105,18 +105,18 @@ jobs:
         run: uv run python scripts/build_client.py --check
 
       - name: Validate OpenAPI Schema Generation
-        run: uv run python -c "from mailtmapi.app.main import create_app; schema = create_app().openapi(); assert len(schema.get('paths', {})) > 0, 'OpenAPI paths empty'"
+        run: uv run python -c "from maily.app.main import create_app; schema = create_app().openapi(); assert len(schema.get('paths', {})) > 0, 'OpenAPI paths empty'"
 
       - name: JavaScript syntax check (ESM) & Biome Lint
         run: |
-          for f in src/mailtmapi/static/js/*.js src/mailtmapi/static/js/pages/*.js; do
+          for f in src/maily/static/js/*.js src/maily/static/js/pages/*.js; do
             [ -f "$f" ] && node --check "$f"
           done
-          npx --yes @biomejs/biome check src/mailtmapi/static/js || true
+          npx --yes @biomejs/biome check src/maily/static/js || true
 
       - name: Static HTML Assets Lint (HTMLHint)
         run: |
-          npx --yes htmlhint src/mailtmapi/static/*.html
+          npx --yes htmlhint src/maily/static/*.html
 
   type-check:
     name: Type Check (mypy)
@@ -188,7 +188,7 @@ jobs:
       - name: Run Pytest suite with coverage (Python 3.15)
         if: matrix.python-version == '3.15'
         run: |
-          uv run python -m pytest -q -n 0 --cov=mailtmapi --cov-report=xml:coverage.xml --cov-report=term-missing --junitxml=junit-3.15.xml
+          uv run python -m pytest -q -n 0 --cov=maily --cov-report=xml:coverage.xml --cov-report=term-missing --junitxml=junit-3.15.xml
           uv run coverage json -o coverage.json
 
       - name: Check PR Diff Coverage
@@ -275,7 +275,7 @@ jobs:
         with:
           context: .
           load: true
-          tags: mailtmapi:ci-test
+          tags: maily:ci-test
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -283,7 +283,7 @@ jobs:
         run: |
           SMOKE_KEY="dummy_ci_smoke_key"
           START_TIME=$(date +%s)
-          docker run -d -p 8477:8477 -e MAILTM_API_KEY="$SMOKE_KEY" --name ci-smoke-app mailtmapi:ci-test
+          docker run -d -p 8477:8477 -e MAILTM_API_KEY="$SMOKE_KEY" --name ci-smoke-app maily:ci-test
           READY=0
           for i in $(seq 1 30); do
             if curl -s -f http://127.0.0.1:8477/health > /dev/null 2>&1; then

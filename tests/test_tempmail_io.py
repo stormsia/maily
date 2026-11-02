@@ -5,10 +5,10 @@ import json
 import httpx
 import pytest
 
-from mailtmapi.exceptions import MailNotFoundError, MailValidationError
-from mailtmapi.http import HttpClient
-from mailtmapi.providers.base import MailboxInfo, MailboxSpec
-from mailtmapi.providers.tempmail_io import TempMailIO
+from maily.exceptions import MailNotFoundError, MailValidationError
+from maily.http import HttpClient
+from maily.providers.base import MailboxInfo, MailboxSpec
+from maily.providers.tempmail_io import TempMailIO
 
 
 def _http(handler) -> HttpClient:
@@ -75,7 +75,9 @@ async def test_create_mailbox_posts_name_and_domain():
     http = _http(handler)
     provider = TempMailIO(http)
     try:
-        box = await provider.create_mailbox(MailboxSpec(address="al234tf05o@yzcalo.com"))
+        box = await provider.create_mailbox(
+            MailboxSpec(address="al234tf05o@yzcalo.com")
+        )
         assert box.provider == "temp-mail.io"
         assert box.address == "al234tf05o@yzcalo.com"
         assert box.token == "r0M69rpdW2k1Th5RRxna"
@@ -180,7 +182,12 @@ async def test_get_message_maps_detail():
                 "body_html": "<p>hello</p>",
                 "created_at": "2026-09-15T18:56:45Z",
                 "attachments": [
-                    {"id": "1", "filename": "a.txt", "content_type": "text/plain", "size": 12}
+                    {
+                        "id": "1",
+                        "filename": "a.txt",
+                        "content_type": "text/plain",
+                        "size": 12,
+                    }
                 ],
             },
         )

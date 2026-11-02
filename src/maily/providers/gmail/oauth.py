@@ -5,8 +5,8 @@ import time
 import urllib.parse
 from typing import Any
 
-from mailtmapi.exceptions import MailAPIError, MailAuthError, MailValidationError
-from mailtmapi.http import HttpClient
+from maily.exceptions import MailAPIError, MailAuthError, MailValidationError
+from maily.http import HttpClient
 
 SCOPES = [
     "https://www.googleapis.com/auth/gmail.modify",

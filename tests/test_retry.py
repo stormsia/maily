@@ -5,7 +5,7 @@ import random
 
 import pytest
 
-from mailtmapi.exceptions import (
+from maily.exceptions import (
     MailAPIError,
     MailAuthError,
     MailConflictError,
@@ -13,7 +13,7 @@ from mailtmapi.exceptions import (
     MailRateLimitError,
     MailValidationError,
 )
-from mailtmapi.utils.retry import async_retry
+from maily.utils.retry import async_retry
 
 
 @pytest.fixture

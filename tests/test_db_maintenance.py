@@ -9,15 +9,15 @@ from unittest.mock import patch
 from fastapi.testclient import TestClient
 from sqlalchemy import text
 
-from mailtmapi.app.main import create_app
-from mailtmapi.db.engine import SessionFactory, make_engine
-from mailtmapi.db.maintenance import (
+from maily.app.main import create_app
+from maily.db.engine import SessionFactory, make_engine
+from maily.db.maintenance import (
     SETTING_KEY_LAST_MAINTENANCE,
     is_maintenance_due,
     maintain_database,
     reset_maintenance_cache,
 )
-from mailtmapi.settings import Settings
+from maily.settings import Settings
 
 ROOT_KEY = "root-test-key"
 
@@ -50,7 +50,9 @@ def test_maintain_database_direct_sqlite(tmp_path: Path) -> None:
 
     async def _run():
         async with engine.connect() as conn:
-            await conn.execute(text("CREATE TABLE test_tab (id INTEGER PRIMARY KEY, val TEXT)"))
+            await conn.execute(
+                text("CREATE TABLE test_tab (id INTEGER PRIMARY KEY, val TEXT)")
+            )
             await conn.commit()
         result = await maintain_database(engine, busy_timeout_ms=10000)
         assert result["status"] == "completed"
@@ -73,7 +75,8 @@ def test_retention_sweep_runs_maintenance_and_records_setting(tmp_path: Path) ->
         conn = sqlite3.connect(str(db_file))
         cursor = conn.cursor()
         cursor.execute(
-            "SELECT value FROM app_settings WHERE key = ?", (SETTING_KEY_LAST_MAINTENANCE,)
+            "SELECT value FROM app_settings WHERE key = ?",
+            (SETTING_KEY_LAST_MAINTENANCE,),
         )
         row = cursor.fetchone()
         conn.close()
@@ -94,14 +97,17 @@ def test_retention_sweep_throttling_skips_subsequent_runs(tmp_path: Path) -> Non
         conn = sqlite3.connect(str(db_file))
         cursor = conn.cursor()
         cursor.execute(
-            "SELECT value FROM app_settings WHERE key = ?", (SETTING_KEY_LAST_MAINTENANCE,)
+            "SELECT value FROM app_settings WHERE key = ?",
+            (SETTING_KEY_LAST_MAINTENANCE,),
         )
         first_recorded = cursor.fetchone()[0]
         conn.close()
 
         # Second sweep immediately afterwards: should skip maintenance because 60 mins haven't elapsed
-        with patch("mailtmapi.db.maintenance.maintain_database") as mock_maint:
-            res2 = client.post("/v1/admin/retention/run", headers={"X-API-Key": ROOT_KEY})
+        with patch("maily.db.maintenance.maintain_database") as mock_maint:
+            res2 = client.post(
+                "/v1/admin/retention/run", headers={"X-API-Key": ROOT_KEY}
+            )
             assert res2.status_code == 200
             # maintain_database was not called because it was throttled
             mock_maint.assert_not_called()
@@ -110,7 +116,8 @@ def test_retention_sweep_throttling_skips_subsequent_runs(tmp_path: Path) -> Non
         conn = sqlite3.connect(str(db_file))
         cursor = conn.cursor()
         cursor.execute(
-            "SELECT value FROM app_settings WHERE key = ?", (SETTING_KEY_LAST_MAINTENANCE,)
+            "SELECT value FROM app_settings WHERE key = ?",
+            (SETTING_KEY_LAST_MAINTENANCE,),
         )
         second_recorded = cursor.fetchone()[0]
         conn.close()
@@ -125,7 +132,7 @@ def test_force_maintenance_bypasses_throttle(tmp_path: Path) -> None:
 
         # Second run with force_maintenance=true
         with patch(
-            "mailtmapi.db.maintenance.maintain_database", wraps=maintain_database
+            "maily.db.maintenance.maintain_database", wraps=maintain_database
         ) as mock_maint:
             res = client.post(
                 "/v1/admin/retention/run?force_maintenance=true",
@@ -137,7 +144,7 @@ def test_force_maintenance_bypasses_throttle(tmp_path: Path) -> None:
 
 def test_maintenance_disabled_via_settings(tmp_path: Path) -> None:
     client, _ = _make_app(tmp_path, maintenance_enabled=False)
-    with client, patch("mailtmapi.db.maintenance.maintain_database") as mock_maint:
+    with client, patch("maily.db.maintenance.maintain_database") as mock_maint:
         res = client.post("/v1/admin/retention/run", headers={"X-API-Key": ROOT_KEY})
         assert res.status_code == 200
         mock_maint.assert_not_called()
@@ -163,8 +170,10 @@ def test_scoped_sweep_does_not_trigger_maintenance(tmp_path: Path) -> None:
         issued_key = key_res.json()["secret"]
 
         # Run sweep with issued key
-        with patch("mailtmapi.db.maintenance.maybe_run_maintenance") as mock_maybe_maint:
-            res = client.post("/v1/admin/retention/run", headers={"X-API-Key": issued_key})
+        with patch("maily.db.maintenance.maybe_run_maintenance") as mock_maybe_maint:
+            res = client.post(
+                "/v1/admin/retention/run", headers={"X-API-Key": issued_key}
+            )
             assert res.status_code == 200
             mock_maybe_maint.assert_not_called()
 
@@ -175,11 +184,18 @@ def test_maintenance_lock_error_handled_gracefully(tmp_path: Path) -> None:
     with client:
 
         async def _fake_failing_maint(*args, **kwargs):
-            return {"status": "skipped", "reason": "locked", "error": "database is locked"}
+            return {
+                "status": "skipped",
+                "reason": "locked",
+                "error": "database is locked",
+            }
 
-        with patch("mailtmapi.db.maintenance.maintain_database", side_effect=_fake_failing_maint):
+        with patch(
+            "maily.db.maintenance.maintain_database", side_effect=_fake_failing_maint
+        ):
             res = client.post(
-                "/v1/admin/retention/run?force_maintenance=true", headers={"X-API-Key": ROOT_KEY}
+                "/v1/admin/retention/run?force_maintenance=true",
+                headers={"X-API-Key": ROOT_KEY},
             )
             # Sweep completes successfully without 500 error!
             assert res.status_code == 200
@@ -203,12 +219,15 @@ def test_is_maintenance_due_calculation(tmp_path: Path) -> None:
         assert await is_maintenance_due(factory, engine, settings, now=now) is False
 
         # 2. Just ran at 12:00:00 -> not due at 12:15:00 (15 min elapsed, 30 min required)
-        from mailtmapi.db.maintenance import record_maintenance_at
+        from maily.db.maintenance import record_maintenance_at
 
         await record_maintenance_at(factory, engine, now)
 
         not_due_time = now + timedelta(minutes=15)
-        assert await is_maintenance_due(factory, engine, settings, now=not_due_time) is False
+        assert (
+            await is_maintenance_due(factory, engine, settings, now=not_due_time)
+            is False
+        )
 
         # 3. Due at 12:30:00 (30 min elapsed)
         due_time = now + timedelta(minutes=30)
@@ -216,7 +235,10 @@ def test_is_maintenance_due_calculation(tmp_path: Path) -> None:
 
         # 4. Due at 12:45:00 (45 min elapsed)
         overdue_time = now + timedelta(minutes=45)
-        assert await is_maintenance_due(factory, engine, settings, now=overdue_time) is True
+        assert (
+            await is_maintenance_due(factory, engine, settings, now=overdue_time)
+            is True
+        )
 
         await engine.dispose()
 

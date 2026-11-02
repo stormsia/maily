@@ -7,9 +7,9 @@ import json
 from datetime import datetime, timezone
 from pathlib import Path
 
-from mailtmapi.app.routers.health import _iso_utc, _json_len, _safe_error
-from mailtmapi.providers.gmail.parse import extract_parts
-from mailtmapi.settings import Settings
+from maily.app.routers.health import _iso_utc, _json_len, _safe_error
+from maily.providers.gmail.parse import extract_parts
+from maily.settings import Settings
 from tests.api_keys_support import ROOT, client_for
 
 
@@ -23,13 +23,18 @@ def test_path_traversal_prevention(tmp_path: Path):
         ]
         for url in payloads:
             resp = client.get(url)
-            assert resp.status_code in (400, 404), f"Failed for {url}: {resp.status_code}"
+            assert resp.status_code in (
+                400,
+                404,
+            ), f"Failed for {url}: {resp.status_code}"
 
 
 def test_invalid_bearer_token_rejection(tmp_path: Path):
     """Verify malformed authorization headers are safely rejected."""
     with client_for(tmp_path) as client:
-        resp = client.get("/v1/mailboxes", headers={"X-API-Key": "invalid_random_key_12345"})
+        resp = client.get(
+            "/v1/mailboxes", headers={"X-API-Key": "invalid_random_key_12345"}
+        )
         assert resp.status_code == 401
         assert resp.headers.get("x-mailtm-error") == "api_key"
 
@@ -38,19 +43,23 @@ def test_bearer_authorization_header(tmp_path: Path):
     """Verify Authorization: Bearer token is supported for auth and rejected if bad."""
     with client_for(tmp_path) as client:
         # Invalid Bearer
-        resp = client.get("/v1/providers", headers={"Authorization": "Bearer bad-token"})
+        resp = client.get(
+            "/v1/providers", headers={"Authorization": "Bearer bad-token"}
+        )
         assert resp.status_code == 401
         assert resp.headers.get("x-mailtm-error") == "api_key"
 
         # Valid Bearer
-        resp_valid = client.get("/v1/providers", headers={"Authorization": f"Bearer {ROOT}"})
+        resp_valid = client.get(
+            "/v1/providers", headers={"Authorization": f"Bearer {ROOT}"}
+        )
         assert resp_valid.status_code == 200
 
 
 def test_security_response_headers_and_config(tmp_path: Path):
     """Verify health and public config endpoints respond correctly."""
     with client_for(tmp_path) as client:
-        from mailtmapi.db.models import DomainCache
+        from maily.db.models import DomainCache
 
         async def _seed():
             async with client.app.state.session_factory() as session:
@@ -141,7 +150,7 @@ def test_settings_secret_generation_and_credentials(tmp_path: Path):
     # Sanitize proxy & get_settings
     s_proxy = Settings(proxy="   ", secret_key="x" * 32, _env_file=None)
     assert s_proxy.proxy is None
-    from mailtmapi.settings import get_settings
+    from maily.settings import get_settings
 
     assert get_settings() is not None
 

@@ -6,9 +6,9 @@ from datetime import datetime, timezone
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
-from mailtmapi.crypto import decrypt, encrypt
-from mailtmapi.db.models import GmailAccount
-from mailtmapi.exceptions import MailNotFoundError
+from maily.crypto import decrypt, encrypt
+from maily.db.models import GmailAccount
+from maily.exceptions import MailNotFoundError
 
 from .store import GmailParent
 

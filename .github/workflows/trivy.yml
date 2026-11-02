@@ -5,7 +5,7 @@ on:
     branches: [main]
   pull_request:
   schedule:
-    - cron: '0 4 * * 2' # Weekly on Tuesday at 04:00 UTC
+    - cron: "0 4 * * 2" # Weekly on Tuesday at 04:00 UTC
   workflow_dispatch:
 
 concurrency:
@@ -34,35 +34,35 @@ jobs:
         with:
           context: .
           load: true
-          tags: mailtmapi:trivy-scan
+          tags: maily:trivy-scan
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
       - name: Run Trivy container vulnerability scanner (SARIF)
         uses: aquasecurity/trivy-action@v0.36.0
         with:
-          image-ref: 'mailtmapi:trivy-scan'
-          format: 'sarif'
-          output: 'trivy-results.sarif'
-          severity: 'CRITICAL,HIGH'
-          trivyignores: '.trivyignore'
+          image-ref: "maily:trivy-scan"
+          format: "sarif"
+          output: "trivy-results.sarif"
+          severity: "CRITICAL,HIGH"
+          trivyignores: ".trivyignore"
 
       - name: Run Trivy container scanner (Table output for log & summary)
         uses: aquasecurity/trivy-action@v0.36.0
         with:
-          image-ref: 'mailtmapi:trivy-scan'
-          format: 'table'
-          severity: 'CRITICAL,HIGH'
+          image-ref: "maily:trivy-scan"
+          format: "table"
+          severity: "CRITICAL,HIGH"
           ignore-unfixed: true
-          trivyignores: '.trivyignore'
-          exit-code: '1'
+          trivyignores: ".trivyignore"
+          exit-code: "1"
 
       - name: Upload Trivy SARIF results to Security tab
         uses: github/codeql-action/upload-sarif@v4
         if: always() && hashFiles('trivy-results.sarif') != ''
         continue-on-error: true
         with:
-          sarif_file: 'trivy-results.sarif'
+          sarif_file: "trivy-results.sarif"
 
       - name: Upload Trivy SARIF Artifact
         uses: actions/upload-artifact@v7

@@ -1,9 +1,9 @@
 """Deprecated alias module.
 
 The flat SDK client and the section-based client were merged into
-``mailtmapi.client``. Importing names from ``mailtmapi.sdk`` still works via
+``maily.client``. Importing names from ``maily.sdk`` still works via
 the re-exports below, but emits a ``DeprecationWarning`` — prefer
-``from mailtmapi.client import MailTMAPI``.
+``from maily.client import Maily``.
 """
 
 from __future__ import annotations
@@ -24,7 +24,7 @@ from .client import (
     HealthOut,
     Mailbox,
     MailboxesAPI,
-    MailTMAPI,
+    Maily,
     MessageDetail,
     MessagesAPI,
     MessageSource,
@@ -38,13 +38,13 @@ from .client import (
 )
 
 warnings.warn(
-    "mailtmapi.sdk is deprecated; use mailtmapi.client instead",
+    "maily.sdk is deprecated; use maily.client instead",
     DeprecationWarning,
     stacklevel=2,
 )
 
 __all__ = [
-    "MailTMAPI",
+    "Maily",
     "ClientError",
     "ApiError",
     "HealthOut",

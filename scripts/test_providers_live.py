@@ -28,9 +28,9 @@ ROOT_DIR = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT_DIR / "src"))
 sys.path.insert(0, str(ROOT_DIR / "scripts"))
 
-from mailtmapi.http import HttpClient
-from mailtmapi.providers import EXCLUDED_LIVE_TEST_PROVIDERS, create_public_providers
-from mailtmapi.providers.base import MailboxInfo, MailboxSpec
+from maily.http import HttpClient
+from maily.providers import EXCLUDED_LIVE_TEST_PROVIDERS, create_public_providers
+from maily.providers.base import MailboxInfo, MailboxSpec
 from test_mail_sender import TestEmailSender
 
 __test__ = False
@@ -119,7 +119,9 @@ async def execute_provider_operations(
 
     try:
         # 1. Target discovery
-        targets = await asyncio.wait_for(provider.list_targets(fresh=True), timeout=timeout_s)
+        targets = await asyncio.wait_for(
+            provider.list_targets(fresh=True), timeout=timeout_s
+        )
         if not targets:
             raise RuntimeError(f"No available domain targets returned by {slug}")
         targets_count = len(targets)
@@ -206,7 +208,11 @@ async def execute_email_delivery(
         async with TestEmailSender(timeout=15.0) as sender:
             send_res = await sender.send(mailbox.address)
             if not send_res.success:
-                return False, time.monotonic() - t0, f"Dispatcher failed: {send_res.detail}"
+                return (
+                    False,
+                    time.monotonic() - t0,
+                    f"Dispatcher failed: {send_res.detail}",
+                )
 
         # Poll for message arrival
         deadline = time.monotonic() + poll_timeout_s
@@ -217,7 +223,11 @@ async def execute_email_delivery(
                 total_time = time.monotonic() - t0
                 return True, total_time, ""
 
-        return False, time.monotonic() - t0, f"Message not delivered within {poll_timeout_s:.0f}s"
+        return (
+            False,
+            time.monotonic() - t0,
+            f"Message not delivered within {poll_timeout_s:.0f}s",
+        )
 
     except Exception as exc:
         return False, time.monotonic() - t0, str(exc)
@@ -255,7 +265,9 @@ def manage_github_issues(
     repo = os.environ.get("GITHUB_REPOSITORY") or os.environ.get("REPO")
 
     if not gh_token or not repo:
-        print("Note: GitHub issue management skipped (missing GH_TOKEN or GITHUB_REPOSITORY).")
+        print(
+            "Note: GitHub issue management skipped (missing GH_TOKEN or GITHUB_REPOSITORY)."
+        )
         return
 
     now_iso = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
@@ -270,7 +282,9 @@ def manage_github_issues(
             # Check if this provider was previously in outage with an open issue
             issue_num = p_state.get("issue_number")
             if issue_num:
-                print(f"Provider {r.slug} recovered! Auto-closing issue #{issue_num}...")
+                print(
+                    f"Provider {r.slug} recovered! Auto-closing issue #{issue_num}..."
+                )
                 deliv_info = (
                     f"🟢 Delivered in {r.delivery_duration_s:.1f}s"
                     if r.delivery_tested
@@ -317,7 +331,8 @@ def manage_github_issues(
                     p_state["issue_number"] = None
                 except Exception as exc:
                     print(
-                        f"Warning: Failed to auto-close issue #{issue_num}: {exc}", file=sys.stderr
+                        f"Warning: Failed to auto-close issue #{issue_num}: {exc}",
+                        file=sys.stderr,
                     )
 
             p_state["consecutive_failures"] = 0
@@ -326,8 +341,14 @@ def manage_github_issues(
         else:
             p_state["consecutive_failures"] = p_state.get("consecutive_failures", 0) + 1
             failures = p_state["consecutive_failures"]
-            outage_type = "Email Delivery" if r.effective_stage == "delivery" else "API Operations"
-            p_state["last_status"] = f"{r.effective_stage}_outage" if failures >= 3 else "degraded"
+            outage_type = (
+                "Email Delivery"
+                if r.effective_stage == "delivery"
+                else "API Operations"
+            )
+            p_state["last_status"] = (
+                f"{r.effective_stage}_outage" if failures >= 3 else "degraded"
+            )
 
             print(
                 f"Provider {r.slug} failed at stage '{r.effective_stage}' ({failures} consecutive failure(s))."
@@ -335,7 +356,9 @@ def manage_github_issues(
 
             # Circuit breaker: open an issue after exactly 3 consecutive failures
             if failures >= 3 and not p_state.get("issue_number"):
-                print(f"Opening degradation issue for {r.slug} (3 consecutive failures)...")
+                print(
+                    f"Opening degradation issue for {r.slug} (3 consecutive failures)..."
+                )
                 title = f"[Provider Outage] {r.name} ({r.slug}) {outage_type} failed 3 consecutive checks"
                 body = (
                     f"<!-- automated-provider-outage-issue -->\n"
@@ -355,7 +378,7 @@ def manage_github_issues(
                     f"* **Mailbox Tested:** `{r.mailbox_address or 'N/A'}`\n\n"
                     f"### 🛠️ Recommended Actions\n"
                     f"1. Check if upstream domain, MX records, or API signatures changed at [{r.name}]({r.website}).\n"
-                    f"2. Inspect recent commits touching `src/mailtmapi/providers/{r.slug.replace('.', '_')}/`.\n"
+                    f"2. Inspect recent commits touching `src/maily/providers/{r.slug.replace('.', '_')}/`.\n"
                     f"3. Verify if provider IP ranges are blocking GitHub Actions runners or test mail dispatchers.\n\n"
                     f"---\n"
                     f"*This issue was automatically created by the Provider Health Suite and will automatically close once restored.*"
@@ -381,7 +404,10 @@ def manage_github_issues(
                         p_state["issue_number"] = int(match.group(1))
                         print(f"Created issue #{p_state['issue_number']} for {r.slug}.")
                 except Exception as exc:
-                    print(f"Warning: Failed to create issue for {r.slug}: {exc}", file=sys.stderr)
+                    print(
+                        f"Warning: Failed to create issue for {r.slug}: {exc}",
+                        file=sys.stderr,
+                    )
 
 
 def generate_status_markdown(
@@ -390,7 +416,9 @@ def generate_status_markdown(
 ) -> str:
     """Generate Markdown status table for README.md and Step Summary."""
     all_ok = all(r.fully_operational for r in results)
-    overall_badge = "🟢 **All Systems Operational**" if all_ok else "🟡 **Degraded Performance**"
+    overall_badge = (
+        "🟢 **All Systems Operational**" if all_ok else "🟡 **Degraded Performance**"
+    )
 
     lines = [
         "<!-- provider-status:start -->",
@@ -405,7 +433,11 @@ def generate_status_markdown(
         targets = str(r.targets_count) if r.success else "—"
 
         if r.delivery_tested:
-            deliv_str = f"🟢 `{r.delivery_duration_s:.1f}s`" if r.delivery_success else "🔴 Failed"
+            deliv_str = (
+                f"🟢 `{r.delivery_duration_s:.1f}s`"
+                if r.delivery_success
+                else "🔴 Failed"
+            )
         else:
             deliv_str = "—"
 
@@ -454,10 +486,12 @@ def post_sticky_pr_comment(results: list[ProviderTestResult], timestamp: str) ->
     gh_token = os.environ.get("GH_TOKEN") or os.environ.get("GITHUB_TOKEN")
 
     if not pr_number or not repo or not gh_token:
-        print("Note: Sticky PR Provider Health comment skipped (missing PR_NUMBER or REPO).")
+        print(
+            "Note: Sticky PR Provider Health comment skipped (missing PR_NUMBER or REPO)."
+        )
         return
 
-    marker = "<!-- mailtmapi-pr-provider-health -->"
+    marker = "<!-- maily-pr-provider-health -->"
     all_ok = all(r.fully_operational for r in results)
     verdict = (
         "🟢 **PASS (All 7 Providers Verified)**"
@@ -512,7 +546,9 @@ def post_sticky_pr_comment(results: list[ProviderTestResult], timestamp: str) ->
         existing_id = out.strip().splitlines()[0] if out.strip() else None
 
         if existing_id:
-            print(f"Updating existing PR Provider Health comment (ID: {existing_id})...")
+            print(
+                f"Updating existing PR Provider Health comment (ID: {existing_id})..."
+            )
             cmd_update = [
                 "gh",
                 "api",
@@ -532,10 +568,17 @@ def post_sticky_pr_comment(results: list[ProviderTestResult], timestamp: str) ->
 
 
 async def async_main() -> int:
-    parser = argparse.ArgumentParser(description="Test live mail providers and email delivery")
-    parser.add_argument("--all", action="store_true", help="Test all 7 public providers")
+    parser = argparse.ArgumentParser(
+        description="Test live mail providers and email delivery"
+    )
     parser.add_argument(
-        "--providers", type=str, default="", help="Comma-separated provider slugs to test"
+        "--all", action="store_true", help="Test all 7 public providers"
+    )
+    parser.add_argument(
+        "--providers",
+        type=str,
+        default="",
+        help="Comma-separated provider slugs to test",
     )
     parser.add_argument(
         "--with-delivery",
@@ -566,11 +609,17 @@ async def async_main() -> int:
         "--update-readme", action="store_true", help="Update README.md status table"
     )
     parser.add_argument(
-        "--manage-issues", action="store_true", help="Auto-create or close GitHub issues"
+        "--manage-issues",
+        action="store_true",
+        help="Auto-create or close GitHub issues",
     )
-    parser.add_argument("--sticky-pr", action="store_true", help="Post or update sticky PR comment")
     parser.add_argument(
-        "--state-file", type=Path, default=ROOT_DIR / ".github" / "provider_health_state.json"
+        "--sticky-pr", action="store_true", help="Post or update sticky PR comment"
+    )
+    parser.add_argument(
+        "--state-file",
+        type=Path,
+        default=ROOT_DIR / ".github" / "provider_health_state.json",
     )
     parser.add_argument(
         "--timeout", type=float, default=30.0, help="Per-provider timeout in seconds"
@@ -611,7 +660,10 @@ async def async_main() -> int:
             print("testing delivery...", end=" ", flush=True)
             res.delivery_tested = True
             d_ok, d_dur, d_err = await execute_email_delivery(
-                provider, client, poll_timeout_s=args.timeout, simulate_outage=do_sim_deliv
+                provider,
+                client,
+                poll_timeout_s=args.timeout,
+                simulate_outage=do_sim_deliv,
             )
             res.delivery_success = d_ok
             res.delivery_duration_s = d_dur
@@ -620,7 +672,9 @@ async def async_main() -> int:
         results.append(res)
         status_tag = "🟢 PASS" if res.success else f"🔴 FAIL ({res.stage})"
         deliv_tag = (
-            f"| Delivery: {'🟢' if res.delivery_success else '🔴'}" if res.delivery_tested else ""
+            f"| Delivery: {'🟢' if res.delivery_success else '🔴'}"
+            if res.delivery_tested
+            else ""
         )
         print(f"{status_tag} in {res.duration_s:.2f}s {deliv_tag}")
         if res.error:
@@ -648,7 +702,11 @@ async def async_main() -> int:
     if args.manage_issues:
         run_id = os.environ.get("GITHUB_RUN_ID", "")
         repo = os.environ.get("GITHUB_REPOSITORY", "")
-        run_url = f"https://github.com/{repo}/actions/runs/{run_id}" if run_id and repo else ""
+        run_url = (
+            f"https://github.com/{repo}/actions/runs/{run_id}"
+            if run_id and repo
+            else ""
+        )
         manage_github_issues(results, state, run_url=run_url)
         save_health_state(args.state_file, state)
 
@@ -658,7 +716,9 @@ async def async_main() -> int:
 
     print("\nSummary:")
     passed_count = sum(1 for r in results if r.fully_operational)
-    print(f"Total: {len(results)} | Passed: {passed_count} | Failed: {len(results) - passed_count}")
+    print(
+        f"Total: {len(results)} | Passed: {passed_count} | Failed: {len(results) - passed_count}"
+    )
 
     return 0
 

@@ -8,13 +8,13 @@ import pytest
 from cryptography.fernet import Fernet
 from fastapi.testclient import TestClient
 
-from mailtmapi.app.authz import parse_scope, secret_sha256
-from mailtmapi.app.main import create_app
-from mailtmapi.crypto import decrypt, encrypt
-from mailtmapi.schemas import MessageDetailOut, MessageOut
-from mailtmapi.settings import Settings
-from mailtmapi.standalone_client import MailTMAPI
-from mailtmapi.utils.misc import random_password, random_string
+from maily.app.authz import parse_scope, secret_sha256
+from maily.app.main import create_app
+from maily.crypto import decrypt, encrypt
+from maily.schemas import MessageDetailOut, MessageOut
+from maily.settings import Settings
+from maily.standalone_client import Maily
+from maily.utils.misc import random_password, random_string
 
 SECRET = "test-secret-benchmark-key-32bytes!!"
 _URL_RE = re.compile(r"https?://[^\s<>\"')\]]+", re.IGNORECASE)
@@ -27,7 +27,7 @@ SAMPLE_EMAIL_HTML = """
 <head><title>Verify your account</title></head>
 <body>
   <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-    <h2>Welcome to MailTMAPI Services</h2>
+    <h2>Welcome to Maily Services</h2>
     <p>Thank you for registering. To complete your account activation, please enter the following verification code:</p>
     <div style="font-size: 28px; font-weight: bold; background: #f4f4f4; padding: 12px; text-align: center; letter-spacing: 4px;">
       849201
@@ -47,7 +47,7 @@ SAMPLE_EMAIL_HTML = """
 SAMPLE_MESSAGE_PAYLOAD = {
     "id": 101,
     "message_api_id": "msg_live_api_998877",
-    "subject": "Complete your registration on MailTMAPI",
+    "subject": "Complete your registration on Maily",
     "from_address": "support@service.example.com",
     "from_name": "Service Support",
     "seen": False,
@@ -126,13 +126,17 @@ def benchmark_app(tmp_path_factory, fernet_key: str) -> Iterator[TestClient]:
 
 
 @pytest.mark.benchmark(group="crypto")
-def test_benchmark_crypto_encrypt_1kb(benchmark, fernet_key: str, sample_payload_1kb: str):
+def test_benchmark_crypto_encrypt_1kb(
+    benchmark, fernet_key: str, sample_payload_1kb: str
+):
     res = benchmark(encrypt, fernet_key, sample_payload_1kb)
     assert res is not None
 
 
 @pytest.mark.benchmark(group="crypto")
-def test_benchmark_crypto_decrypt_1kb(benchmark, fernet_key: str, sample_encrypted_1kb: str):
+def test_benchmark_crypto_decrypt_1kb(
+    benchmark, fernet_key: str, sample_encrypted_1kb: str
+):
     res = benchmark(decrypt, fernet_key, sample_encrypted_1kb)
     assert len(res) == 1024
 
@@ -187,7 +191,10 @@ def test_benchmark_extract_verification_code(benchmark):
 def test_benchmark_extract_confirmation_url(benchmark):
     def _find_link() -> str | None:
         urls = _URL_RE.findall(SAMPLE_EMAIL_HTML)
-        return next((u for u in urls if any(kw in u.casefold() for kw in _CONFIRM_KEYWORDS)), None)
+        return next(
+            (u for u in urls if any(kw in u.casefold() for kw in _CONFIRM_KEYWORDS)),
+            None,
+        )
 
     link = benchmark(_find_link)
     assert link is not None
@@ -221,19 +228,25 @@ def test_benchmark_health_endpoint(benchmark, benchmark_app: TestClient):
 
 @pytest.mark.benchmark(group="api")
 def test_benchmark_domain_cache_settings(benchmark, benchmark_app: TestClient):
-    response = benchmark(benchmark_app.get, "/v1/admin/domain-cache", headers={"X-API-Key": SECRET})
+    response = benchmark(
+        benchmark_app.get, "/v1/admin/domain-cache", headers={"X-API-Key": SECRET}
+    )
     assert response.status_code == 200
 
 
 @pytest.mark.benchmark(group="api")
 def test_benchmark_mailboxes_list(benchmark, benchmark_app: TestClient):
-    response = benchmark(benchmark_app.get, "/v1/mailboxes", headers={"X-API-Key": SECRET})
+    response = benchmark(
+        benchmark_app.get, "/v1/mailboxes", headers={"X-API-Key": SECRET}
+    )
     assert response.status_code == 200
 
 
 @pytest.mark.benchmark(group="api")
 def test_benchmark_admin_keys_list(benchmark, benchmark_app: TestClient):
-    response = benchmark(benchmark_app.get, "/v1/admin/keys", headers={"X-API-Key": SECRET})
+    response = benchmark(
+        benchmark_app.get, "/v1/admin/keys", headers={"X-API-Key": SECRET}
+    )
     assert response.status_code == 200
     assert len(response.json()) >= 1
 
@@ -243,5 +256,7 @@ def test_benchmark_admin_keys_list(benchmark, benchmark_app: TestClient):
 
 @pytest.mark.benchmark(group="client")
 def test_benchmark_client_init(benchmark):
-    client = benchmark(MailTMAPI, base_url="http://localhost:8477", api_key="bench-key")
-    assert str(client._transport._client.base_url).rstrip("/") == "http://localhost:8477"
+    client = benchmark(Maily, base_url="http://localhost:8477", api_key="bench-key")
+    assert (
+        str(client._transport._client.base_url).rstrip("/") == "http://localhost:8477"
+    )

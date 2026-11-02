@@ -2,20 +2,20 @@ name: Mutation Testing Suite
 
 on:
   schedule:
-    - cron: '0 2 * * *' # Daily at 02:00 UTC
+    - cron: "0 2 * * *" # Daily at 02:00 UTC
   pull_request:
     paths:
-      - 'src/mailtmapi/**'
-      - 'tests/**'
-      - 'scripts/run_mutation_gate.py'
-      - 'pyproject.toml'
-      - '.github/workflows/mutation-test.yml'
+      - "src/maily/**"
+      - "tests/**"
+      - "scripts/run_mutation_gate.py"
+      - "pyproject.toml"
+      - ".github/workflows/mutation-test.yml"
   workflow_dispatch:
     inputs:
       profile:
-        description: 'Mutation Profile to Run'
+        description: "Mutation Profile to Run"
         required: true
-        default: 'all'
+        default: "all"
         type: choice
         options:
           - all

@@ -118,7 +118,7 @@ export async function render(root, me = null) {
     } else {
       credsLine.append("OAuth configured via server environment",
         h("div", { class: "field-hint", style: "margin-top:2px" },
-          "Managed by MAILTM_GMAIL_CLIENT_ID / MAILTM_GMAIL_CLIENT_SECRET (or MAILTM_GMAIL_CREDENTIALS_PATH) — not editable here."));
+          "Managed by MAILY_GMAIL_CLIENT_ID / MAILY_GMAIL_CLIENT_SECRET (or MAILY_GMAIL_CREDENTIALS_PATH) — not editable here."));
       actionsRow.append(connectBtn());
     }
     refreshIcons();
@@ -202,7 +202,7 @@ export async function render(root, me = null) {
       } else if (step === 3) {
         stepEl.append(
           linkRow("Create the OAuth client", WIZ_URLS.clients,
-            "“Create client” → Application type: Web application → name it (e.g. “mailtmapi”)."),
+            "“Create client” → Application type: Web application → name it (e.g. “maily”)."),
           h("div", { class: "field", style: "margin-bottom:0" },
             h("label", {}, "Authorized redirect URI"),
             h("div", { class: "wz-uri" },

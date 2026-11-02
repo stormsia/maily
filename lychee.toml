@@ -7,7 +7,7 @@ max_cache_age = "1d"
 # Connection settings
 timeout = 10
 max_retries = 3
-user_agent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) mailtmapi-lychee"
+user_agent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) maily-lychee"
 
 # Acceptable HTTP status codes
 accept = [200, 204, 206, 403, 429]
@@ -20,5 +20,5 @@ exclude = [
     '^https://example\.invalid',
     '^https://example\.com',
     '^https://raw\.githubusercontent\.com',
-    '^https://stormsia\.github\.io/mailtmapi',
+    '^https://stormsia\.github\.io/maily',
 ]

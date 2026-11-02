@@ -6,10 +6,15 @@ import time
 import httpx
 import pytest
 
-from mailtmapi.exceptions import MailAPIError, MailAuthError, MailValidationError
-from mailtmapi.http import HttpClient
-from mailtmapi.providers.base import MailboxInfo, MailboxSpec
-from mailtmapi.providers.gmail import GmailOAuth, GmailParent, GmailProvider, MemoryGmailStore
+from maily.exceptions import MailAPIError, MailAuthError, MailValidationError
+from maily.http import HttpClient
+from maily.providers.base import MailboxInfo, MailboxSpec
+from maily.providers.gmail import (
+    GmailOAuth,
+    GmailParent,
+    GmailProvider,
+    MemoryGmailStore,
+)
 
 
 class _CopyingStore(MemoryGmailStore):
@@ -107,7 +112,11 @@ async def test_list_messages_maps_summary():
         path = request.url.path
         if path.endswith("/messages") and request.method == "GET":
             return httpx.Response(
-                200, json={"messages": [{"id": "m1", "threadId": "t1"}], "resultSizeEstimate": 1}
+                200,
+                json={
+                    "messages": [{"id": "m1", "threadId": "t1"}],
+                    "resultSizeEstimate": 1,
+                },
             )
         if path.endswith("/messages/m1"):
             return httpx.Response(
@@ -159,7 +168,8 @@ async def test_refresh_posts_urlencoded():
         seen["content_type"] = request.headers.get("content-type", "")
         seen["body"] = request.content.decode()
         return httpx.Response(
-            200, json={"access_token": "new-at", "expires_in": 3600, "token_type": "Bearer"}
+            200,
+            json={"access_token": "new-at", "expires_in": 3600, "token_type": "Bearer"},
         )
 
     http = await _http(handler)
@@ -239,7 +249,9 @@ async def test_concurrent_ensure_access_refreshes_once():
 @pytest.mark.asyncio
 async def test_refresh_invalid_grant_raises_mail_auth_error():
     def handler(request: httpx.Request) -> httpx.Response:
-        return httpx.Response(400, json={"error": "invalid_grant", "error_description": "revoked"})
+        return httpx.Response(
+            400, json={"error": "invalid_grant", "error_description": "revoked"}
+        )
 
     http = await _http(handler)
     oauth = GmailOAuth("cid", "csec", http)

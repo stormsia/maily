@@ -226,7 +226,7 @@ def post_sticky_pr_comment(comment_body: str, pr_number: str | None = None) -> N
         )
         return
 
-    marker = "<!-- mailtmapi-pr-ci-dashboard -->"
+    marker = "<!-- maily-pr-ci-dashboard -->"
     full_body = f"{marker}\n\n{comment_body}"
 
     try:
@@ -257,7 +257,10 @@ def post_sticky_pr_comment(comment_body: str, pr_number: str | None = None) -> N
             cmd_create = ["gh", "pr", "comment", str(pr), "--body", full_body]
             subprocess.run(cmd_create, check=True, stdout=subprocess.DEVNULL)
     except Exception as exc:
-        print(f"Warning: Failed to update sticky PR comment via gh: {exc}", file=sys.stderr)
+        print(
+            f"Warning: Failed to update sticky PR comment via gh: {exc}",
+            file=sys.stderr,
+        )
 
 
 def main() -> None:
@@ -432,12 +435,18 @@ def main() -> None:
         dur = f"{data['duration']:.2f}s" if data["duration"] > 0 else "—"
 
         is_primary = ver == "3.15"
-        label = f"🐍 **Python {ver} (Primary)**" if is_primary else f"🐍 **Python {ver}**"
+        label = (
+            f"🐍 **Python {ver} (Primary)**" if is_primary else f"🐍 **Python {ver}**"
+        )
         line_cov = f"{cov_pct:.1f}%" if is_primary and cov_pct > 0 else "—"
         br_pct = float(coverage.get("percent_branches", 0.0))
         branch_cov = f"{br_pct:.1f}%" if is_primary and br_pct > 0 else "—"
 
-        stat = "✅ Passed" if t_fail == 0 and t_tot > 0 else ("❌ Failed" if t_fail > 0 else "—")
+        stat = (
+            "✅ Passed"
+            if t_fail == 0 and t_tot > 0
+            else ("❌ Failed" if t_fail > 0 else "—")
+        )
         lines.append(
             f"| {label} | {t_pass} / {t_fail} / {t_skip} | {dur} | {line_cov} | {branch_cov} | {stat} |"
         )
@@ -450,7 +459,9 @@ def main() -> None:
         lines.append("| Test Case | Module | Failure Reason |")
         lines.append("| :--- | :--- | :--- |")
         for fc in all_failed_cases:
-            lines.append(f"| `{fc['name']}` | `{fc['classname']}` | `{fc['message']}` |")
+            lines.append(
+                f"| `{fc['name']}` | `{fc['classname']}` | `{fc['message']}` |"
+            )
         lines.append("")
 
     # PR Diff Coverage Breakdown if available
@@ -485,17 +496,25 @@ def main() -> None:
 
     # Benchmarks SLA Snapshot
     lines.append("### ⚡ Performance Benchmarks Snapshot\n")
-    lines.append("| Component / Scenario | Mean Latency SLA | Throughput Baseline | Status |")
+    lines.append(
+        "| Component / Scenario | Mean Latency SLA | Throughput Baseline | Status |"
+    )
     lines.append("| :--- | :---: | :---: | :---: |")
-    lines.append("| 🔐 **Crypto (Token/Decrypt)** | `< 0.050 ms` | `> 50,000 ops/s` | 🟢 Optimal |")
+    lines.append(
+        "| 🔐 **Crypto (Token/Decrypt)** | `< 0.050 ms` | `> 50,000 ops/s` | 🟢 Optimal |"
+    )
     lines.append(
         "| 🛠️ **Utils (RateLimiter/Helpers)** | `< 0.030 ms` | `> 60,000 ops/s` | 🟢 Optimal |"
     )
-    lines.append("| 🌐 **API Health & Auth** | `< 10.0 ms` | `> 200 ops/s` | 🟢 Optimal |")
-    lines.append("| 📦 **Standalone Client Call** | `< 15.0 ms` | `> 150 ops/s` | 🟢 Optimal |")
+    lines.append(
+        "| 🌐 **API Health & Auth** | `< 10.0 ms` | `> 200 ops/s` | 🟢 Optimal |"
+    )
+    lines.append(
+        "| 📦 **Standalone Client Call** | `< 15.0 ms` | `> 150 ops/s` | 🟢 Optimal |"
+    )
     lines.append("")
     lines.append(
-        "*Historical benchmark runs and tracking data: [Actions Benchmark Runs](https://github.com/stormsia/mailtmapi/actions/workflows/benchmarks.yml) | [Raw Metrics Branch](https://github.com/stormsia/mailtmapi/tree/gh-pages/dev/bench)*\n"
+        "*Historical benchmark runs and tracking data: [Actions Benchmark Runs](https://github.com/stormsia/maily/actions/workflows/benchmarks.yml) | [Raw Metrics Branch](https://github.com/stormsia/maily/tree/gh-pages/dev/bench)*\n"
     )
 
     # Static Analysis, Architecture & Packaging
@@ -512,13 +531,13 @@ def main() -> None:
         f"| **Spelling** | Typos `1.51.1` | Entire repository | {format_status_icon(lint_status)} |"
     )
     lines.append(
-        f"| **Dead Code & Architecture** | Vulture & Deptry | `src/mailtmapi` | {format_status_icon(lint_status)} |"
+        f"| **Dead Code & Architecture** | Vulture & Deptry | `src/maily` | {format_status_icon(lint_status)} |"
     )
     lines.append(
         f"| **Database Migrations** | Alembic `upgrade head && check` | Schema & migrations consistency | {format_status_icon(lint_status)} |"
     )
     lines.append(
-        f"| **Frontend Assets** | Biome & HTMLHint | `src/mailtmapi/static` (JS & HTML) | {format_status_icon(lint_status)} |"
+        f"| **Frontend Assets** | Biome & HTMLHint | `src/maily/static` (JS & HTML) | {format_status_icon(lint_status)} |"
     )
     lines.append(
         f"| **API & Client Mirror** | OpenAPI & `build_client.py` | Schema export & standalone sync | {format_status_icon(lint_status)} |"

@@ -3,7 +3,7 @@ name: Publish to PyPI
 on:
   push:
     tags:
-      - 'v*.*.*'
+      - "v*.*.*"
   workflow_dispatch:
 
 permissions:
@@ -17,7 +17,7 @@ jobs:
     runs-on: ubuntu-latest
     environment:
       name: pypi
-      url: https://pypi.org/p/mailtmapi
+      url: https://pypi.org/p/maily
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7
@@ -49,7 +49,7 @@ jobs:
         uses: actions/attest-build-provenance@v4
         if: startsWith(github.ref, 'refs/tags/')
         with:
-          subject-path: 'dist/*'
+          subject-path: "dist/*"
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v7

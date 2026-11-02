@@ -3,10 +3,10 @@ from __future__ import annotations
 import httpx
 import pytest
 
-from mailtmapi.exceptions import MailValidationError
-from mailtmapi.http import HttpClient
-from mailtmapi.providers.base import MailboxInfo, MailboxSpec
-from mailtmapi.providers.tempmail_plus import TempMailPlus
+from maily.exceptions import MailValidationError
+from maily.http import HttpClient
+from maily.providers.base import MailboxInfo, MailboxSpec
+from maily.providers.tempmail_plus import TempMailPlus
 
 _HTML = """
 <html>

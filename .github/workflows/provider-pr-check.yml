@@ -3,12 +3,12 @@ name: PR Live Provider Compatibility Gate
 on:
   pull_request:
     paths:
-      - 'src/mailtmapi/providers/**'
-      - 'src/mailtmapi/app/routers/**'
-      - 'src/mailtmapi/http.py'
-      - 'scripts/test_providers_live.py'
-      - 'scripts/test_mail_sender/**'
-      - '.github/workflows/provider-pr-check.yml'
+      - "src/maily/providers/**"
+      - "src/maily/app/routers/**"
+      - "src/maily/http.py"
+      - "scripts/test_providers_live.py"
+      - "scripts/test_mail_sender/**"
+      - ".github/workflows/provider-pr-check.yml"
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}

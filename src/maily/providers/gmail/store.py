@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Protocol
 
-from mailtmapi.exceptions import MailNotFoundError
+from maily.exceptions import MailNotFoundError
 
 
 @dataclass

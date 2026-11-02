@@ -6,10 +6,10 @@ from datetime import datetime, timezone
 import pytest
 from sqlalchemy import func, select
 
-from mailtmapi.db.engine import SessionFactory, make_engine
-from mailtmapi.db.maintenance import maintain_database
-from mailtmapi.db.models import Base, Mailbox, Message
-from mailtmapi.settings import Settings
+from maily.db.engine import SessionFactory, make_engine
+from maily.db.maintenance import maintain_database
+from maily.db.models import Base, Mailbox, Message
+from maily.settings import Settings
 
 
 @pytest.mark.asyncio
@@ -110,8 +110,12 @@ async def test_concurrent_100_workers_wal_mode(tmp_path):
         await asyncio.gather(*(write_task(i) for i in range(100)))
 
         async with session_factory() as session:
-            total_boxes = (await session.execute(select(func.count(Mailbox.id)))).scalar()
-            total_msgs = (await session.execute(select(func.count(Message.id)))).scalar()
+            total_boxes = (
+                await session.execute(select(func.count(Mailbox.id)))
+            ).scalar()
+            total_msgs = (
+                await session.execute(select(func.count(Message.id)))
+            ).scalar()
             assert total_boxes == 100
             assert total_msgs == 100
     finally:

@@ -45,7 +45,15 @@ def find_breaking_changes(
 
         # 2. Check for removed HTTP methods on existing endpoint
         for method, base_op in base_methods.items():
-            if method.lower() not in ("get", "post", "put", "delete", "patch", "options", "head"):
+            if method.lower() not in (
+                "get",
+                "post",
+                "put",
+                "delete",
+                "patch",
+                "options",
+                "head",
+            ):
                 continue
 
             if method not in head_methods:
@@ -55,8 +63,12 @@ def find_breaking_changes(
             head_op = head_methods[method]
 
             # 3. Check parameters
-            base_params = {(p.get("name"), p.get("in")): p for p in base_op.get("parameters", [])}
-            head_params = {(p.get("name"), p.get("in")): p for p in head_op.get("parameters", [])}
+            base_params = {
+                (p.get("name"), p.get("in")): p for p in base_op.get("parameters", [])
+            }
+            head_params = {
+                (p.get("name"), p.get("in")): p for p in head_op.get("parameters", [])
+            }
 
             # Check for removed parameters
             for (p_name, p_in), _p_def in base_params.items():
@@ -81,7 +93,9 @@ def find_breaking_changes(
             base_rb = base_op.get("requestBody", {})
             head_rb = head_op.get("requestBody", {})
             if not base_rb.get("required", False) and head_rb.get("required", False):
-                breaking.append(f"Request body made required on `{method.upper()} {path}`")
+                breaking.append(
+                    f"Request body made required on `{method.upper()} {path}`"
+                )
 
             # 5. Check removed success response codes
             base_responses = base_op.get("responses", {})
@@ -98,7 +112,8 @@ def find_breaking_changes(
             methods = [
                 m.upper()
                 for m in head_methods
-                if m.lower() in ("get", "post", "put", "delete", "patch", "options", "head")
+                if m.lower()
+                in ("get", "post", "put", "delete", "patch", "options", "head")
             ]
             non_breaking.append(f"Added endpoint: `{', '.join(methods)} {path}`")
         else:
@@ -119,10 +134,12 @@ def post_sticky_pr_comment(comment_body: str, has_changes: bool = True) -> None:
     gh_token = os.environ.get("GH_TOKEN") or os.environ.get("GITHUB_TOKEN")
 
     if not pr_number or not repo or not gh_token:
-        print("Note: Sticky PR OpenAPI comment skipped (missing PR_NUMBER or REPO or GH_TOKEN).")
+        print(
+            "Note: Sticky PR OpenAPI comment skipped (missing PR_NUMBER or REPO or GH_TOKEN)."
+        )
         return
 
-    marker = "<!-- mailtmapi-pr-openapi-breaking -->"
+    marker = "<!-- maily-pr-openapi-breaking -->"
     full_body = f"{marker}\n\n{comment_body}"
 
     try:
@@ -153,7 +170,9 @@ def post_sticky_pr_comment(comment_body: str, has_changes: bool = True) -> None:
             cmd_create = ["gh", "pr", "comment", str(pr_number), "--body", full_body]
             subprocess.run(cmd_create, check=True, stdout=subprocess.DEVNULL)
     except Exception as exc:
-        print(f"Warning: Failed to update sticky OpenAPI comment: {exc}", file=sys.stderr)
+        print(
+            f"Warning: Failed to update sticky OpenAPI comment: {exc}", file=sys.stderr
+        )
 
 
 def main() -> int:
@@ -196,7 +215,9 @@ def main() -> int:
         summary_lines.append("")
 
     if not breaking and not non_breaking:
-        summary_lines.append("✅ No schema changes detected. API contract is 100% compatible.")
+        summary_lines.append(
+            "✅ No schema changes detected. API contract is 100% compatible."
+        )
 
     summary_text = "\n".join(summary_lines)
     print(summary_text)

@@ -3,7 +3,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "mailtmapi"
+name = "maily"
 version = "0.3.0"
 description = "Local multi-provider mail API"
 readme = "README.md"
@@ -36,10 +36,10 @@ dev = [
 ]
 
 [project.scripts]
-mailtmapi = "mailtmapi.app.main:run"
+maily = "maily.app.main:run"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/mailtmapi"]
+packages = ["src/maily"]
 
 [tool.hatch.build.targets.wheel.sources]
 "src" = ""
@@ -76,7 +76,7 @@ ignore = [
 # Make first-party classification stable across ruff versions; otherwise the
 # `tests` package is sorted by version-dependent heuristic heuristics and CI
 # (fresh install) may differ from the local venv.
-known-first-party = ["mailtmapi", "tests"]
+known-first-party = ["maily", "tests"]
 
 [tool.mypy]
 python_version = "3.15"
@@ -95,8 +95,8 @@ module = ["tests.test_client", "tests.test_client_standalone", "tests.test_sdk"]
 ignore_errors = false
 
 [tool.coverage.run]
-source = ["src/mailtmapi"]
-omit = ["src/mailtmapi/static/*", "*/tests/*"]
+source = ["src/maily"]
+omit = ["src/maily/static/*", "*/tests/*"]
 branch = true
 
 [tool.coverage.report]
@@ -121,12 +121,12 @@ also_copy = [
     "alembic.ini",
 ]
 only_mutate = [
-    "src/mailtmapi/utils/misc.py",
-    "src/mailtmapi/crypto.py",
-    "src/mailtmapi/app/authz.py",
-    "src/mailtmapi/app/services/keys.py",
-    "src/mailtmapi/app/services/retention.py",
-    "src/mailtmapi/utils/retry.py",
+    "src/maily/utils/misc.py",
+    "src/maily/crypto.py",
+    "src/maily/app/authz.py",
+    "src/maily/app/services/keys.py",
+    "src/maily/app/services/retention.py",
+    "src/maily/utils/retry.py",
 ]
 pytest_add_cli_args_test_selection = [
     "tests/test_crypto.py",

@@ -1,6 +1,6 @@
 """Generate the deployable standalone client at client/client.py.
 
-The canonical single source of truth for the client is `src/mailtmapi/standalone_client.py`.
+The canonical single source of truth for the client is `src/maily/standalone_client.py`.
 This script copies it to `client/client.py` and prepends the "generated" banner
 so that pip-installable or downloaded artifacts remain in sync with the implementation.
 
@@ -16,11 +16,11 @@ import argparse
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-CANONICAL = ROOT / "src" / "mailtmapi" / "standalone_client.py"
+CANONICAL = ROOT / "src" / "maily" / "standalone_client.py"
 OUTPUT = ROOT / "client" / "client.py"
 
 BANNER = (
-    "# -=- THIS FILE IS GENERATED from src/mailtmapi/standalone_client.py -=-\n"
+    "# -=- THIS FILE IS GENERATED from src/maily/standalone_client.py -=-\n"
     "# Do not edit by hand; edit the canonical file and run:\n"
     "#   python scripts/build_client.py\n"
 )

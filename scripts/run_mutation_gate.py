@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Intelligent Mutation Testing Runner & Quality Gate for mailtmapi.
+"""Intelligent Mutation Testing Runner & Quality Gate for maily.
 
 Supports:
 1. Predefined module profiles (crypto_misc, auth_security, retention_retry, all).
@@ -23,32 +23,32 @@ from typing_extensions import TypedDict
 
 # Mapping of critical source files to their targeted test suites
 FILE_TO_TESTS_MAP: dict[str, list[str]] = {
-    "src/mailtmapi/crypto.py": ["tests/test_crypto.py"],
-    "src/mailtmapi/utils/misc.py": ["tests/test_misc.py"],
-    "src/mailtmapi/app/authz.py": [
+    "src/maily/crypto.py": ["tests/test_crypto.py"],
+    "src/maily/utils/misc.py": ["tests/test_misc.py"],
+    "src/maily/app/authz.py": [
         "tests/test_authz.py",
         "tests/test_authz_properties.py",
         "tests/test_scope_filters.py",
         "tests/test_mailbox_ownership.py",
         "tests/test_security_routing.py",
     ],
-    "src/mailtmapi/app/services/keys.py": [
+    "src/maily/app/services/keys.py": [
         "tests/test_keys_service.py",
         "tests/test_keys_router.py",
         "tests/test_api_keys.py",
         "tests/test_authz_properties.py",
     ],
-    "src/mailtmapi/app/middleware/origin.py": [
+    "src/maily/app/middleware/origin.py": [
         "tests/test_security_routing.py",
         "tests/test_authz_properties.py",
     ],
-    "src/mailtmapi/app/services/retention.py": [
+    "src/maily/app/services/retention.py": [
         "tests/test_retention_lifecycle.py",
         "tests/test_retention_scope.py",
         "tests/test_stats_retention_history.py",
     ],
-    "src/mailtmapi/utils/retry.py": ["tests/test_retry.py"],
-    "src/mailtmapi/app/services/mailboxes.py": [
+    "src/maily/utils/retry.py": ["tests/test_retry.py"],
+    "src/maily/app/services/mailboxes.py": [
         "tests/test_mailboxes_service.py",
         "tests/test_mailbox_ownership.py",
     ],
@@ -65,8 +65,8 @@ class ProfileConfig(TypedDict):
 PROFILES: dict[str, ProfileConfig] = {
     "crypto_misc": {
         "mutate": [
-            "src/mailtmapi/crypto.py",
-            "src/mailtmapi/utils/misc.py",
+            "src/maily/crypto.py",
+            "src/maily/utils/misc.py",
         ],
         "tests": [
             "tests/test_crypto.py",
@@ -77,9 +77,9 @@ PROFILES: dict[str, ProfileConfig] = {
     },
     "auth_security": {
         "mutate": [
-            "src/mailtmapi/app/authz.py",
-            "src/mailtmapi/app/services/keys.py",
-            "src/mailtmapi/app/middleware/origin.py",
+            "src/maily/app/authz.py",
+            "src/maily/app/services/keys.py",
+            "src/maily/app/middleware/origin.py",
         ],
         "tests": [
             "tests/test_authz.py",
@@ -96,8 +96,8 @@ PROFILES: dict[str, ProfileConfig] = {
     },
     "retention_retry": {
         "mutate": [
-            "src/mailtmapi/app/services/retention.py",
-            "src/mailtmapi/utils/retry.py",
+            "src/maily/app/services/retention.py",
+            "src/maily/utils/retry.py",
         ],
         "tests": [
             "tests/test_retention_lifecycle.py",
@@ -116,7 +116,11 @@ def get_diff_files(base_ref: str) -> list[str]:
     try:
         cmd = ["git", "diff", "--name-only", f"{base_ref}...HEAD"]
         output = subprocess.check_output(cmd, text=True, stderr=subprocess.DEVNULL)
-        return [line.strip().replace("\\", "/") for line in output.splitlines() if line.strip()]
+        return [
+            line.strip().replace("\\", "/")
+            for line in output.splitlines()
+            if line.strip()
+        ]
     except Exception as exc:
         print(f"Warning: Failed to compute git diff against {base_ref}: {exc}")
         return []
@@ -214,7 +218,9 @@ def evaluate_mutation_results(
             )
             sf.write("| Metric | Count | Target / Ratchet |\n")
             sf.write("| :--- | :---: | :---: |\n")
-            sf.write(f"| **Mutation Score** | **{score:.1f}%** | $\\ge {min_score:.1f}%$ |\n")
+            sf.write(
+                f"| **Mutation Score** | **{score:.1f}%** | $\\ge {min_score:.1f}%$ |\n"
+            )
             sf.write(f"| Total Mutants | {total} | — |\n")
             sf.write(f"| Killed Mutants | {killed} | — |\n")
             sf.write(f"| Survived Mutants | {survived} | $\\le {max_survived}$ |\n")
@@ -272,7 +278,9 @@ def main() -> int:
 
     if args.diff_base:
         diff_files = get_diff_files(args.diff_base)
-        print(f"Detected {len(diff_files)} modified file(s) in PR diff against {args.diff_base}")
+        print(
+            f"Detected {len(diff_files)} modified file(s) in PR diff against {args.diff_base}"
+        )
         matched_files: list[str] = []
         for df in diff_files:
             if df in FILE_TO_TESTS_MAP:
@@ -280,7 +288,9 @@ def main() -> int:
                 target_tests.update(FILE_TO_TESTS_MAP[df])
 
         if not matched_files:
-            print("🟢 No mutation-monitored files touched in this PR diff. Skipping mutation run.")
+            print(
+                "🟢 No mutation-monitored files touched in this PR diff. Skipping mutation run."
+            )
             summary_path = os.environ.get("GITHUB_STEP_SUMMARY")
             if summary_path:
                 with open(summary_path, "a", encoding="utf-8") as sf:

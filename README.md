@@ -14,7 +14,19 @@ Create disposable mailboxes on demand, receive emails in real time, extract veri
 [![PyPI client](https://img.shields.io/pypi/v/maily-client.svg?label=maily-client)](https://pypi.org/project/maily-client/)
 [![API Docs](https://img.shields.io/badge/Docs-GitHub%20Pages-success?logo=github)](https://stormsia.github.io/maily/)
 [![Python](https://img.shields.io/badge/Python-3.13%20%7C%203.14%20%7C%203.15-3776AB?logo=python&logoColor=white)](https://github.com/stormsia/maily)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://github.com/stormsia/maily/blob/main/LICENSE)
+
+---
+
+### 🔗 Quick Links
+
+- 📖 **Documentation & API Explorer:** [https://stormsia.github.io/maily/](https://stormsia.github.io/maily/)
+- 🚀 **Server Package (PyPI):** [https://pypi.org/project/maily-server/](https://pypi.org/project/maily-server/)
+- 📦 **Client SDK (PyPI):** [https://pypi.org/project/maily-client/](https://pypi.org/project/maily-client/)
+- 🐳 **Docker Container:** [ghcr.io/stormsia/maily](https://github.com/stormsia/maily/pkgs/container/maily)
+- 🐙 **GitHub Repository:** [https://github.com/stormsia/maily](https://github.com/stormsia/maily)
+- 🐛 **Issue Tracker:** [https://github.com/stormsia/maily/issues](https://github.com/stormsia/maily/issues)
+- 📝 **Changelog:** [https://github.com/stormsia/maily/blob/main/CHANGELOG.md](https://github.com/stormsia/maily/blob/main/CHANGELOG.md)
 
 ---
 
@@ -53,7 +65,7 @@ Create disposable mailboxes on demand, receive emails in real time, extract veri
 | **temp.tf** | `domain` | ✅ Supported | ✅ Supported | ❌ No | ✅ Supported | ⚪ No-op |
 | **gmail** | `parent` | ✅ `+alias` | ❌ Own Account | ❌ OAuth2 | ✅ Supported | ✅ Supported |
 
-> 💡 **Extending Providers:** Want to add your own provider? Check out the comprehensive guide for developers and AI agents in [docs/ADDING_PROVIDERS.md](docs/ADDING_PROVIDERS.md).
+> 💡 **Extending Providers:** Want to add your own provider? Check out the comprehensive guide for developers and AI agents in [docs/ADDING_PROVIDERS.md](https://github.com/stormsia/maily/blob/main/docs/ADDING_PROVIDERS.md).
 
 <!-- provider-status:start -->
 ### 🌐 Live Provider Operational Status
@@ -70,7 +82,7 @@ Create disposable mailboxes on demand, receive emails in real time, extract veri
 | [DispoEmail.org](https://dispoemail.org) | `dispoemail.org` | 4 | 🟢 PASS | 🟢 `3.6s` | `0.84s` | 🟢 Operational |
 | [NoopMail.org](https://noopmail.org) | `noopmail.org` | 13 | 🟢 PASS | 🟢 `6.2s` | `15.27s` | 🟢 Operational |
 
-*Automated health checks run twice daily via GitHub Actions.*
+*Automated health checks run hourly via GitHub Actions.*
 <!-- provider-status:end -->
 
 ---
@@ -175,7 +187,7 @@ uvicorn maily.app.main:create_app --factory --reload --port 8477
 
 The repository includes a dedicated, self-contained standalone Python client package (`maily-client`) requiring only `httpx`, `pydantic`, and `loguru`. It supports both high-concurrency `async/await` (`Maily`) and a synchronous facade (`SyncMaily`).
 
-> 📖 **Full Documentation:** See [docs/CLIENT_GUIDE.md](docs/CLIENT_GUIDE.md) and [client/README.md](client/README.md) for comprehensive recipes (Pytest fixtures, Playwright/Selenium automation, streaming, and retry policies).
+> 📖 **Full Documentation:** See [CLIENT_GUIDE.md](https://github.com/stormsia/maily/blob/main/docs/CLIENT_GUIDE.md) and [maily-client README](https://github.com/stormsia/maily/blob/main/client/README.md) for comprehensive recipes (Pytest fixtures, Playwright/Selenium automation, streaming, and retry policies).
 
 ### Installation
 
@@ -191,8 +203,8 @@ pip install maily-client
 # Directly from GitHub repository:
 pip install "maily-client @ git+https://github.com/stormsia/maily.git#subdirectory=client"
 
-# Or download the zero-dependency single-file client directly into your project:
-curl -O https://raw.githubusercontent.com/stormsia/maily/main/client/client.py
+# Or download the zero-dependency single-file client directly:
+curl -O https://raw.githubusercontent.com/stormsia/maily/main/client/maily_client.py
 ```
 
 > ⚠️ **Important: Attribute Access vs Dictionary Key Access**
@@ -205,7 +217,10 @@ curl -O https://raw.githubusercontent.com/stormsia/maily/main/client/client.py
 
 ```python
 import asyncio
-from maily.client import Maily, WaitTimeoutError
+
+# Preferred when using maily-client SDK:
+from maily_client import Maily, WaitTimeoutError
+# (Or if using the maily-server package directly: from maily import Maily, WaitTimeoutError)
 
 
 async def main():
@@ -246,7 +261,9 @@ async with Maily("http://127.0.0.1:8477") as api:
 ### Synchronous Client (`SyncMaily`)
 
 ```python
-from maily.client import SyncMaily
+# Standalone client:
+from maily_client import SyncMaily
+# Or via server package: from maily import SyncMaily
 
 with SyncMaily("http://127.0.0.1:8477", api_key="sk-...") as api:
     box = api.create_temp_mailbox()

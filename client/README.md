@@ -1,31 +1,59 @@
 # maily-client
 
 [![PyPI version](https://img.shields.io/pypi/v/maily-client.svg)](https://pypi.org/project/maily-client/)
+[![PyPI Downloads](https://img.shields.io/pypi/dm/maily-client.svg)](https://pypi.org/project/maily-client/)
 [![Python versions](https://img.shields.io/pypi/pyversions/maily-client.svg)](https://pypi.org/project/maily-client/)
+[![CI Pipeline](https://github.com/stormsia/maily/actions/workflows/ci.yml/badge.svg)](https://github.com/stormsia/maily/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Typing: Typed](https://img.shields.io/badge/typing-typed-blue.svg)](https://peps.python.org/pep-0561/)
+[![maily-server](https://img.shields.io/pypi/v/maily-server.svg?label=maily-server)](https://pypi.org/project/maily-server/)
+[![API Docs](https://img.shields.io/badge/Docs-GitHub%20Pages-success?logo=github)](https://stormsia.github.io/maily/)
 
-Standalone, zero-heavy-dependency Python client for the [maily](https://github.com/stormsia/maily) disposable multi-provider mail API (supporting Mail.tm, custom domains, and Gmail OAuth).
+**Fast, fully-typed async & sync Python SDK for the [maily](https://github.com/stormsia/maily) multi-provider temporary email platform.**
+
+Built for integration tests (Pytest, Playwright, Selenium, Cypress), automation bots, and QA verification pipelines. Features 1-line disposable mailbox creation, automatic OTP verification code extraction via regex, magic activation link parsing, real-time message streaming, and resilient networking.
 
 ---
 
-## Features
+### 🔗 Quick Links
 
-- **Single-File Portability**: Ships as a single self-contained file (`client.py`) requiring only `httpx`, `loguru`, and `pydantic`.
-- **Fully Typed**: 100% type-annotated with PEP 561 `py.typed` compliance and Pydantic response models.
-- **Async & Sync Support**: Native `async/await` (`Maily`) with high-concurrency polling, plus a lightweight synchronous facade (`SyncMaily`).
-- **Automation Helpers**: Built-in polling and regex extraction for OTP verification codes (`wait_for_code`) and account activation links (`wait_for_link`).
+- 📖 **Documentation & Guides:** [https://stormsia.github.io/maily/](https://stormsia.github.io/maily/)
+- 🚀 **Server Package (PyPI):** [https://pypi.org/project/maily-server/](https://pypi.org/project/maily-server/)
+- 📦 **Client Package (PyPI):** [https://pypi.org/project/maily-client/](https://pypi.org/project/maily-client/)
+- 🐙 **GitHub Repository:** [https://github.com/stormsia/maily](https://github.com/stormsia/maily)
+- 🐛 **Issue Tracker:** [https://github.com/stormsia/maily/issues](https://github.com/stormsia/maily/issues)
+- 📝 **Changelog:** [https://github.com/stormsia/maily/blob/main/CHANGELOG.md](https://github.com/stormsia/maily/blob/main/CHANGELOG.md)
+
+---
+
+## ✨ Key Features
+
+- **Standard Import (`maily_client`)**: Clean, conflict-free Python imports (`from maily_client import Maily, SyncMaily`).
+- **Single-File Portability**: Ships as a lightweight client requiring only `httpx`, `loguru`, and `pydantic`. Zero heavy dependencies.
+- **Fully Typed (PEP 561)**: 100% type annotations with `py.typed` compliance and Pydantic response models for rich IDE autocompletion.
+- **Async & Sync Support**: Native `async/await` (`Maily`) with high-concurrency polling, plus a lightweight synchronous facade (`SyncMaily`) for traditional test suites.
+- **Magic Verification Extraction**: Built-in polling and regex extraction for OTP verification codes (`wait_for_code`) and account activation links (`wait_for_link`).
 - **Resilient Networking**: Optional exponential backoff retry policy handling transient errors (HTTP 502/504, connection timeouts) and honoring HTTP 429 `Retry-After`.
 - **Self-Updating CLI**: Built-in CLI tool `maily-client` to check for and apply updates directly from git.
 
 ---
 
-## Installation
+## 📦 Installation & Import
 
 ### Preferred — via PyPI:
 
 ```bash
 pip install maily-client
+```
+
+### Import in Python:
+
+```python
+# Standard canonical import (recommended):
+from maily_client import Maily, SyncMaily, WaitTimeoutError
+
+# Backward compatibility alias (also fully supported):
+from client import Maily
 ```
 
 ### Alternative 1: Direct from GitHub:
@@ -36,18 +64,17 @@ pip install "maily-client @ git+https://github.com/stormsia/maily.git#subdirecto
 
 ### Alternative 2: Standalone Single-File Download (Zero Install)
 
-Because `client.py` has no internal server dependencies, you can download it directly into your project:
+Because the client has no internal server dependencies, you can download `maily_client.py` directly into your project:
 
 ```bash
 # Linux / macOS
-curl -O https://raw.githubusercontent.com/stormsia/maily/main/client/client.py
+curl -O https://raw.githubusercontent.com/stormsia/maily/main/client/maily_client.py
 
 # Windows PowerShell
-Invoke-WebRequest -Uri "https://raw.githubusercontent.com/stormsia/maily/main/client/client.py" -OutFile "client.py"
+Invoke-WebRequest -Uri "https://raw.githubusercontent.com/stormsia/maily/main/client/maily_client.py" -OutFile "maily_client.py"
 ```
 
 Dependencies for standalone use:
-
 ```bash
 pip install httpx loguru pydantic
 ```
@@ -85,13 +112,13 @@ print(cfg["client_version"])  # ✅ CORRECT: standard dictionary indexing
 
 ---
 
-## Quickstart
+## 🚀 Quickstart
 
 ### 1. Basic Mailbox Creation & Health Check
 
 ```python
 import asyncio
-from client import Maily
+from maily_client import Maily
 
 
 async def main() -> None:
@@ -115,7 +142,7 @@ Ideal for automated signup flows (e.g., Pytest, Playwright, Selenium):
 
 ```python
 import asyncio
-from client import Maily
+from maily_client import Maily, WaitTimeoutError
 
 
 async def main() -> None:
@@ -125,14 +152,17 @@ async def main() -> None:
 
         # Wait up to 60 seconds for an incoming email with an OTP
         # Default pattern matches 4 to 8 digits (\b\d{4,8}\b)
-        otp_code = await api.wait_for_code(
-            box,
-            pattern=r"\b(\d{6})\b",  # Optional custom regex
-            sender_domain="auth.example.com",  # Optional sender domain filter
-            timeout=60.0,
-            check_interval=2.0,
-        )
-        print(f"Extracted verification code: {otp_code}")
+        try:
+            otp_code = await api.wait_for_code(
+                box,
+                pattern=r"\b(\d{6})\b",  # Optional custom regex
+                sender_domain="auth.example.com",  # Optional sender domain filter
+                timeout=60.0,
+                check_interval=2.0,
+            )
+            print(f"Extracted verification code: {otp_code}")
+        except WaitTimeoutError:
+            print("Timed out waiting for verification code.")
 
 
 asyncio.run(main())
@@ -144,7 +174,7 @@ Extract confirmation or magic links automatically from incoming HTML or plain-te
 
 ```python
 import asyncio
-from client import Maily
+from maily_client import Maily
 
 
 async def main() -> None:
@@ -167,11 +197,11 @@ asyncio.run(main())
 
 ### 4. Advanced Confirmation Extraction (`wait_for_confirmation_email`)
 
-Extract both link and code simultaneously in a single polling loop:
+Extract both link and code simultaneously in a single polling loop with dual-access support:
 
 ```python
 import asyncio
-from client import ExtractedConfirmation, Maily
+from maily_client import ExtractedConfirmation, Maily
 
 
 async def main() -> None:
@@ -208,7 +238,7 @@ asyncio.run(main())
 For synchronous test suites (standard Pytest, unittest, Selenium) or scripts where `async/await` is inconvenient:
 
 ```python
-from client import SyncMaily
+from maily_client import SyncMaily
 
 # Sync context manager automatically manages an isolated background thread and event loop
 with SyncMaily("http://127.0.0.1:8477", api_key="sk-your-key") as api:
@@ -240,7 +270,7 @@ with SyncMaily("http://127.0.0.1:8477", api_key="sk-your-key") as api:
 
 ---
 
-## API Overview & Structure
+## 🛠️ API Overview & Structure
 
 `Maily` exposes organized domain resource sections as well as top-level flat convenience methods:
 
@@ -259,7 +289,7 @@ with SyncMaily("http://127.0.0.1:8477", api_key="sk-your-key") as api:
 
 ---
 
-## Flat Facade Shortcut Methods
+## ⚡ Flat Facade Shortcut Methods
 
 Both `Maily` (async) and `SyncMaily` (sync) provide direct top-level facade shortcuts for rapid automation. All 19 flat shortcut methods forward directly to their respective section implementations:
 
@@ -295,9 +325,9 @@ Both `Maily` (async) and `SyncMaily` (sync) provide direct top-level facade shor
 
 ---
 
-## CLI Commands
+## 💻 CLI Commands
 
-The package includes a command-line interface executable as `maily-client` (or via `python client.py`):
+The package includes a command-line interface executable as `maily-client` (or via `python -m maily_client`):
 
 ```bash
 # Display help and usage
@@ -323,11 +353,11 @@ maily-client update
 
 ### Environment Variables
 
-- `MAILYAPI_CLIENT_SOURCE`: URL to fetch the canonical client from when checking or updating (defaults to GitHub `main` branch raw file: `https://raw.githubusercontent.com/stormsia/maily/main/src/maily/standalone_client.py`).
+- `MAILY_CLIENT_SOURCE`: URL to fetch the canonical client from when checking or updating (defaults to GitHub `main` branch raw file: `https://raw.githubusercontent.com/stormsia/maily/main/client/maily_client.py`).
 
 ---
 
-## Error Handling & Resiliency
+## 🛡️ Error Handling & Resiliency
 
 The client provides explicit exceptions inheriting from `ClientError`:
 
@@ -348,7 +378,7 @@ ClientError
 FastAPI validation errors returning a list of field error objects (`[{"loc": ["body", "domain"], "msg": "..."}]`) are automatically formatted into readable messages:
 
 ```python
-from client import Maily, ValidationError
+from maily_client import Maily, ValidationError
 
 async with Maily("http://127.0.0.1:8477") as api:
     try:
@@ -365,7 +395,7 @@ async with Maily("http://127.0.0.1:8477") as api:
 When `max_retries > 0`, the client automatically honors HTTP 429 `Retry-After` headers and applies exponential backoff for transient HTTP 502/504 errors and network connection timeouts:
 
 ```python
-from client import Maily, RateLimitError
+from maily_client import Maily, RateLimitError
 
 # Configure client-side retry policy
 api = Maily(
@@ -383,6 +413,6 @@ except RateLimitError as exc:
 
 ---
 
-## License
+## 📄 License
 
 This project is licensed under the [MIT License](https://opensource.org/licenses/MIT).

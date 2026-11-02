@@ -5,20 +5,47 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "maily-client"
 version = "0.4.1"  # x-release-please-version
-description = "Standalone single-file async client for a self-hosted maily server"
+description = "Fast, typed async & sync Python client for maily temporary email server with OTP and link extraction"
 readme = "README.md"
 license = "MIT"
 requires-python = ">=3.10"
-keywords = ["temporary-email", "disposable-email", "testing", "automation", "mailtm", "client", "sdk"]
+authors = [
+    { name = "stormsia", email = "stormsia@users.noreply.github.com" },
+]
+maintainers = [
+    { name = "stormsia", email = "stormsia@users.noreply.github.com" },
+]
+keywords = [
+    "temporary-email",
+    "disposable-email",
+    "temp-mail",
+    "mailtm",
+    "mail-client",
+    "testing",
+    "automation",
+    "e2e-testing",
+    "otp",
+    "verification-code",
+    "asyncio",
+    "sdk",
+    "client",
+    "httpx",
+]
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
+    "Intended Audience :: Information Technology",
+    "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
     "Topic :: Communications :: Email",
+    "Topic :: Internet :: WWW/HTTP",
+    "Topic :: Software Development :: Testing",
+    "Topic :: Software Development :: Libraries :: Python Modules",
     "Typing :: Typed",
 ]
 dependencies = [
@@ -29,15 +56,17 @@ dependencies = [
 
 [project.urls]
 Homepage = "https://github.com/stormsia/maily"
+Documentation = "https://stormsia.github.io/maily/"
 Repository = "https://github.com/stormsia/maily"
 Issues = "https://github.com/stormsia/maily/issues"
-Documentation = "https://github.com/stormsia/maily#readme"
+Changelog = "https://github.com/stormsia/maily/blob/main/CHANGELOG.md"
+Server = "https://pypi.org/project/maily-server/"
 
 [project.scripts]
-maily-client = "client:_main"
+maily-client = "maily_client:_main"
 
 [tool.setuptools]
-py-modules = ["client"]
+py-modules = ["maily_client", "client"]
 
 [tool.setuptools.package-data]
 "*" = ["py.typed"]

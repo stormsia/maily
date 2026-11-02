@@ -4,9 +4,9 @@ Single canonical source of truth for the client. Two ways to use this code:
 
     1. Inside the server package — via the thin proxy `maily.client`
        (this module is imported from there).
-    2. Outside — the `client/client.py` file in the repo root, which
-       is generated from this module via `scripts/build_client.py`
-       (adds only the 'generated' banner). Do not edit `client/client.py`
+    2. Outside — the `client/maily_client.py` (and `client/client.py`) files,
+       which are generated from this module via `scripts/build_client.py`
+       (adds only the 'generated' banner). Do not edit generated client files
        by hand — edit here and regenerate; parity is enforced by
        `tests/test_client_standalone.py::test_standalone_mirror_is_current`.
 
@@ -16,23 +16,29 @@ uvicorn, etc.), requires only httpx, loguru, and pydantic.
     # Preferred — install from PyPI:
     pip install maily-client
 
+    # Standard import:
+    from maily_client import Maily, SyncMaily
+
     # Or directly from the GitHub repository:
     pip install "maily-client @ git+https://github.com/stormsia/maily.git#subdirectory=client"
+
     # Or copy the single-file client directly into your project:
-    #   curl -O https://raw.githubusercontent.com/stormsia/maily/main/client/client.py
+    #   curl -O https://raw.githubusercontent.com/stormsia/maily/main/client/maily_client.py
 
 Self-update: the client can check the version on git and update itself from
-    the repo's client/client.py:
+    the repo's client/maily_client.py:
 
         maily-client check           # check if a new version is on git
         maily-client update          # download and install the new version
 
-    (or `python client.py check/update` if running locally).
+    (or `python maily_client.py check/update` if running standalone).
 
     From code:
 
-        import client
-        from client import Maily, self_update, check_update
+        import maily_client
+        from maily_client import Maily, self_update, check_update
+
+        # (Note: `from client import Maily` is also supported for backward compatibility)
 
         self_update()          # async-free, updates the client file on disk
         up = check_update()    # (current, remote) if an update is available, else None
@@ -61,7 +67,7 @@ __version__ = "0.4.1"  # x-release-please-version
 # Where the client fetches itself for self-updates (override with env var).
 CLIENT_SOURCE = os.environ.get(
     "MAILY_CLIENT_SOURCE",
-    "https://raw.githubusercontent.com/stormsia/maily/main/client/client.py",
+    "https://raw.githubusercontent.com/stormsia/maily/main/client/maily_client.py",
 )
 
 __all__ = [
@@ -2446,7 +2452,7 @@ def _main(argv: list[str] | None = None) -> int:
             "  maily-client version     - show version\n"
             "  maily-client check       - check git for a newer version\n"
             "  maily-client update      - update client file from git\n"
-            "  (or: python client.py check/update)\n",
+            "  (or: python maily_client.py check/update)\n",
             file=sys.stderr,
         )
         return 0

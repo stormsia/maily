@@ -1,7 +1,7 @@
-"""Generate the deployable standalone client at client/client.py.
+"""Generate deployable standalone client files at client/maily_client.py and client/client.py.
 
 The canonical single source of truth for the client is `src/maily/standalone_client.py`.
-This script copies it to `client/client.py` and prepends the "generated" banner
+This script copies it to `client/maily_client.py` and `client/client.py` and prepends the "generated" banner
 so that pip-installable or downloaded artifacts remain in sync with the implementation.
 
     python scripts/build_client.py            # regenerate (dry-run: --check)
@@ -17,7 +17,10 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 CANONICAL = ROOT / "src" / "maily" / "standalone_client.py"
-OUTPUT = ROOT / "client" / "client.py"
+OUTPUTS = [
+    ROOT / "client" / "maily_client.py",
+    ROOT / "client" / "client.py",
+]
 
 BANNER = (
     "# -=- THIS FILE IS GENERATED from src/maily/standalone_client.py -=-\n"
@@ -35,25 +38,29 @@ def main() -> int:
     parser.add_argument(
         "--check",
         action="store_true",
-        help="fail (exit 1) if client/client.py is stale instead of writing it",
+        help="fail (exit 1) if generated client files are stale instead of writing them",
     )
     args = parser.parse_args()
 
     content = render()
-    current = OUTPUT.read_text(encoding="utf-8") if OUTPUT.exists() else ""
-    if current == content:
-        print(f"up to date: {OUTPUT.relative_to(ROOT)}")
-        return 0
-    if args.check:
-        print(
-            f"STALE: {OUTPUT.relative_to(ROOT)} differs from the canonical client; "
-            "run `python scripts/build_client.py`",
-            file=__import__("sys").stderr,
-        )
-        return 1
-    OUTPUT.write_text(content, encoding="utf-8")
-    print(f"regenerated: {OUTPUT.relative_to(ROOT)}")
-    return 0
+    stale = False
+    for output in OUTPUTS:
+        current = output.read_text(encoding="utf-8") if output.exists() else ""
+        if current == content:
+            print(f"up to date: {output.relative_to(ROOT)}")
+        else:
+            stale = True
+            if args.check:
+                print(
+                    f"STALE: {output.relative_to(ROOT)} differs from the canonical client; "
+                    "run `python scripts/build_client.py`",
+                    file=__import__("sys").stderr,
+                )
+            else:
+                output.write_text(content, encoding="utf-8")
+                print(f"regenerated: {output.relative_to(ROOT)}")
+
+    return 1 if (stale and args.check) else 0
 
 
 if __name__ == "__main__":

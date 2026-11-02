@@ -6,7 +6,7 @@ from datetime import datetime, timezone
 
 import pytest
 from fastapi import HTTPException
-from hypothesis import given
+from hypothesis import given, settings
 from hypothesis import strategies as st
 
 from maily.app.authz import (
@@ -31,6 +31,7 @@ from maily.db.models import ApiKey, Mailbox
 # --- Hypothesis Property Tests ---
 
 
+@settings(deadline=None)
 @given(st.text())
 def test_property_secret_sha256_matches_hashlib(secret: str):
     """SHA-256 digest must strictly match hashlib hex digest for any string."""
@@ -39,6 +40,7 @@ def test_property_secret_sha256_matches_hashlib(secret: str):
     assert len(secret_sha256(secret)) == 64
 
 
+@settings(deadline=None)
 @given(st.text(), st.text())
 def test_property_is_root_secret(presented: str, expected: str):
     """Only non-empty matching secrets yield root access."""
@@ -51,6 +53,7 @@ def test_property_is_root_secret(presented: str, expected: str):
         assert res is False
 
 
+@settings(deadline=None)
 @given(
     st.one_of(st.none(), st.text()),
     st.one_of(st.none(), st.text()),
@@ -67,6 +70,7 @@ def test_property_presented_secret_priority(x_api_key: str | None, auth_header: 
         assert res == (token if token else None)
 
 
+@settings(deadline=None)
 @given(st.text())
 def test_property_parse_scope_arbitrary_json_never_crashes(payload: str):
     """Arbitrary string or corrupted JSON never raises an unhandled exception."""

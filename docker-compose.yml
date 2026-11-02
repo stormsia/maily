@@ -27,7 +27,7 @@ services:
       - no-new-privileges:true
 
     ports:
-      - "${MAILTM_PORT:-8477}:8477"
+      - "${MAILY_PORT:-8477}:8477"
 
     volumes:
       # Persistent storage for SQLite DB (mailtm.db) and encryption key (mailtm.key)
@@ -45,36 +45,36 @@ services:
 
     environment:
       # --- Network settings ---
-      - MAILTM_HOST=0.0.0.0
-      - MAILTM_PORT=${MAILTM_PORT:-8477}
+      - MAILY_HOST=0.0.0.0
+      - MAILY_PORT=${MAILY_PORT:-8477}
 
       # --- Security and authentication ---
-      # When MAILTM_HOST=0.0.0.0, the service strictly requires a non-empty API key.
+      # When MAILY_HOST=0.0.0.0, the service strictly requires a non-empty API key.
       # A safe default key is provided for quick start; override it in .env!
-      - MAILTM_API_KEY=${MAILTM_API_KEY:-mailtm_secret_api_key_2026}
-      - MAILTM_SECRET_KEY=${MAILTM_SECRET_KEY:-}
-      - MAILTM_SECRET_KEY_PATH=${MAILTM_SECRET_KEY_PATH:-/data/mailtm.key}
+      - MAILY_API_KEY=${MAILY_API_KEY:-mailtm_secret_api_key_2026}
+      - MAILY_SECRET_KEY=${MAILY_SECRET_KEY:-}
+      - MAILY_SECRET_KEY_PATH=${MAILY_SECRET_KEY_PATH:-/data/mailtm.key}
 
       # --- Database ---
-      - MAILTM_DATABASE_URL=${MAILTM_DATABASE_URL:-sqlite+aiosqlite:////data/mailtm.db}
+      - MAILY_DATABASE_URL=${MAILY_DATABASE_URL:-sqlite+aiosqlite:////data/mailtm.db}
 
       # --- Proxying and retention ---
-      - MAILTM_PROXY=${MAILTM_PROXY:-}
-      - MAILTM_RETENTION_INTERVAL_SECONDS=${MAILTM_RETENTION_INTERVAL_SECONDS:-60}
+      - MAILY_PROXY=${MAILY_PROXY:-}
+      - MAILY_RETENTION_INTERVAL_SECONDS=${MAILY_RETENTION_INTERVAL_SECONDS:-60}
 
       # --- Provider domain cache ---
-      - MAILTM_DOMAIN_CACHE_ENABLED=${MAILTM_DOMAIN_CACHE_ENABLED:-true}
-      - MAILTM_DOMAIN_CACHE_INTERVAL_SECONDS=${MAILTM_DOMAIN_CACHE_INTERVAL_SECONDS:-1800}
-      - MAILTM_PROVIDER_HEADERS_TTL_SECONDS=${MAILTM_PROVIDER_HEADERS_TTL_SECONDS:-21600}
+      - MAILY_DOMAIN_CACHE_ENABLED=${MAILY_DOMAIN_CACHE_ENABLED:-true}
+      - MAILY_DOMAIN_CACHE_INTERVAL_SECONDS=${MAILY_DOMAIN_CACHE_INTERVAL_SECONDS:-1800}
+      - MAILY_PROVIDER_HEADERS_TTL_SECONDS=${MAILY_PROVIDER_HEADERS_TTL_SECONDS:-21600}
 
       # --- Provider settings ---
-      - MAILTM_TEMP_TF_GMAIL_DOT=${MAILTM_TEMP_TF_GMAIL_DOT:-true}
-      - MAILTM_TEMP_TF_GMAIL_PLUS=${MAILTM_TEMP_TF_GMAIL_PLUS:-true}
+      - MAILY_TEMP_TF_GMAIL_DOT=${MAILY_TEMP_TF_GMAIL_DOT:-true}
+      - MAILY_TEMP_TF_GMAIL_PLUS=${MAILY_TEMP_TF_GMAIL_PLUS:-true}
 
       # --- Gmail OAuth (optional) ---
-      - MAILTM_GMAIL_CLIENT_ID=${MAILTM_GMAIL_CLIENT_ID:-}
-      - MAILTM_GMAIL_CLIENT_SECRET=${MAILTM_GMAIL_CLIENT_SECRET:-}
-      - MAILTM_GMAIL_REDIRECT_URI=${MAILTM_GMAIL_REDIRECT_URI:-}
+      - MAILY_GMAIL_CLIENT_ID=${MAILY_GMAIL_CLIENT_ID:-}
+      - MAILY_GMAIL_CLIENT_SECRET=${MAILY_GMAIL_CLIENT_SECRET:-}
+      - MAILY_GMAIL_REDIRECT_URI=${MAILY_GMAIL_REDIRECT_URI:-}
 
     deploy:
       resources:
@@ -91,7 +91,7 @@ services:
         max-file: "3"
 
     healthcheck:
-      test: ["CMD", "python", "-c", "import os, sys, urllib.request; port = os.getenv('MAILTM_PORT', '8477'); sys.exit(0 if urllib.request.urlopen(f'http://127.0.0.1:{port}/health', timeout=3).status == 200 else 1)"]
+      test: ["CMD", "python", "-c", "import os, sys, urllib.request; port = os.getenv('MAILY_PORT', '8477'); sys.exit(0 if urllib.request.urlopen(f'http://127.0.0.1:{port}/health', timeout=3).status == 200 else 1)"]
       interval: 30s
       timeout: 5s
       start_period: 10s

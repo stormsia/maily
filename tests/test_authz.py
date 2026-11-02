@@ -86,7 +86,9 @@ async def _direct_db(tmp_path: Path) -> _Db:
     engine = create_async_engine(f"sqlite+aiosqlite:///{tmp_path / 'direct.db'}")
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
-    return _Db(factory=async_sessionmaker(engine, expire_on_commit=False), engine=engine)
+    return _Db(
+        factory=async_sessionmaker(engine, expire_on_commit=False), engine=engine
+    )
 
 
 async def _call_principal(
@@ -134,7 +136,9 @@ async def _insert_key(
 
 
 def _scope(providers: list[str], parent_ids: list[int], actions: list[str]) -> str:
-    return json.dumps({"providers": providers, "parent_ids": parent_ids, "actions": actions})
+    return json.dumps(
+        {"providers": providers, "parent_ids": parent_ids, "actions": actions}
+    )
 
 
 def _principal(*, scope_json: str, key_id: int = 3) -> Principal:
@@ -151,7 +155,7 @@ def _principal(*, scope_json: str, key_id: int = 3) -> Principal:
 
 
 def test_empty_api_key_yields_root_without_header(tmp_path: Path) -> None:
-    # Given MAILTM_API_KEY is empty (open mode)
+    # Given MAILY_API_KEY is empty (open mode)
     # When require_principal runs with no credential
     # Then the principal is root and no header is required
 
@@ -168,7 +172,7 @@ def test_empty_api_key_yields_root_without_header(tmp_path: Path) -> None:
 
 
 def test_presented_env_key_yields_root(tmp_path: Path) -> None:
-    # Given MAILTM_API_KEY is set
+    # Given MAILY_API_KEY is set
     # When that exact secret is presented to require_principal
     # Then the principal is root
 
@@ -189,7 +193,7 @@ def test_presented_env_key_yields_root(tmp_path: Path) -> None:
 
 
 def test_unknown_secret_is_401_with_api_key_header(tmp_path: Path) -> None:
-    # Given MAILTM_API_KEY is set and the presented secret is not stored
+    # Given MAILY_API_KEY is set and the presented secret is not stored
     # When require_principal runs
     # Then the error is 401 invalid api key with X-MailTM-Error: api_key
 
@@ -370,7 +374,7 @@ def test_owns_mailbox_root_always_and_issued_only_when_owner_matches() -> None:
 
 
 def test_bearer_extracts_like_require_api_key(tmp_path: Path) -> None:
-    # Given MAILTM_API_KEY is set
+    # Given MAILY_API_KEY is set
     # When the secret is sent as Authorization: Bearer to require_principal
     # Then the principal is root
 
@@ -488,7 +492,9 @@ def test_root_bypasses_require_action() -> None:
     # Then the same principal is returned
 
     async def _body() -> Principal:
-        return await require_action("mailboxes:write")(Principal(is_root=True, key=None))
+        return await require_action("mailboxes:write")(
+            Principal(is_root=True, key=None)
+        )
 
     resolved = _run(_body())
     assert resolved.is_root is True
@@ -522,7 +528,9 @@ def test_env_key_wins_over_colliding_row(tmp_path: Path) -> None:
     assert principal.key is None
 
 
-def test_expiry_equal_to_now_is_401(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_expiry_equal_to_now_is_401(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     # Given expires_at equal to the clock authz uses
     # When that secret is presented to require_principal
     # Then the key is rejected as expired

@@ -323,7 +323,7 @@ maily-client update
 
 ### Environment Variables
 
-- `MAILTMAPI_CLIENT_SOURCE`: URL to fetch the canonical client from when checking or updating (defaults to GitHub `main` branch raw file: `https://raw.githubusercontent.com/stormsia/maily/main/src/maily/standalone_client.py`).
+- `MAILYAPI_CLIENT_SOURCE`: URL to fetch the canonical client from when checking or updating (defaults to GitHub `main` branch raw file: `https://raw.githubusercontent.com/stormsia/maily/main/src/maily/standalone_client.py`).
 
 ---
 

@@ -283,7 +283,7 @@ jobs:
         run: |
           SMOKE_KEY="dummy_ci_smoke_key"
           START_TIME=$(date +%s)
-          docker run -d -p 8477:8477 -e MAILTM_API_KEY="$SMOKE_KEY" --name ci-smoke-app maily:ci-test
+          docker run -d -p 8477:8477 -e MAILY_API_KEY="$SMOKE_KEY" --name ci-smoke-app maily:ci-test
           READY=0
           for i in $(seq 1 30); do
             if curl -s -f http://127.0.0.1:8477/health > /dev/null 2>&1; then

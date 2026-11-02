@@ -42,10 +42,10 @@ ENV PYTHONUNBUFFERED=1 \
     PATH="/venv/bin:$PATH" \
     VIRTUAL_ENV=/venv \
     PYTHONPATH=/app/src \
-    MAILTM_HOST=0.0.0.0 \
-    MAILTM_PORT=8477 \
-    MAILTM_DATABASE_URL="sqlite+aiosqlite:////data/mailtm.db" \
-    MAILTM_SECRET_KEY_PATH="/data/mailtm.key"
+    MAILY_HOST=0.0.0.0 \
+    MAILY_PORT=8477 \
+    MAILY_DATABASE_URL="sqlite+aiosqlite:////data/mailtm.db" \
+    MAILY_SECRET_KEY_PATH="/data/mailtm.key"
 
 # 1. Create unprivileged mailtm user and /data working directory
 RUN groupadd -g 1000 mailtm && \
@@ -78,7 +78,7 @@ EXPOSE 8477
 
 # Reliable Healthcheck (HTTP 200 check on dynamic port, exec form without shell process)
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
-    CMD ["python", "-c", "import os, sys, urllib.request; port = os.getenv('MAILTM_PORT', '8477'); sys.exit(0 if urllib.request.urlopen(f'http://127.0.0.1:{port}/health', timeout=3).status == 200 else 1)"]
+    CMD ["python", "-c", "import os, sys, urllib.request; port = os.getenv('MAILY_PORT', '8477'); sys.exit(0 if urllib.request.urlopen(f'http://127.0.0.1:{port}/health', timeout=3).status == 200 else 1)"]
 
 ENTRYPOINT ["/entrypoint.sh"]
 CMD ["maily"]

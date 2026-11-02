@@ -314,21 +314,21 @@ Copy `.env.example` to `.env` and customize:
 
 | Variable | Default | Description |
 |---|---|---|
-| `MAILTM_HOST` | `127.0.0.1` | Bind address (`0.0.0.0` in Docker) |
-| `MAILTM_PORT` | `8477` | HTTP port |
-| `MAILTM_API_KEY` | *(empty)* | Root master key. If empty on loopback, open root access is allowed. Non-loopback requires a key. |
-| `MAILTM_DATABASE_URL` | `sqlite+aiosqlite:///mailtm.db` | SQLite database URI |
-| `MAILTM_SECRET_KEY` | *(auto-generated)* | Fernet encryption key used to protect credentials |
-| `MAILTM_PROXY` | *(empty)* | Optional HTTP/SOCKS5 proxy for upstream provider requests |
-| `MAILTM_RETENTION_INTERVAL_SECONDS` | `60` | Background retention sweep frequency |
-| `MAILTM_DB_MAINTENANCE_ENABLED` | `true` | Enable periodic database maintenance during retention |
-| `MAILTM_DB_MAINTENANCE_INTERVAL_MINUTES` | `60` | Minimum interval between database maintenance runs (in minutes) |
-| `MAILTM_SQLITE_BUSY_TIMEOUT_MS` | `60000` | SQLite lock wait timeout in ms to prevent request drops during maintenance |
-| `MAILTM_DOMAIN_CACHE_INTERVAL_SECONDS` | `1800` | Background domain refresh frequency |
-| `MAILTM_GMAIL_CLIENT_ID` | *(empty)* | Google OAuth2 Client ID |
-| `MAILTM_GMAIL_CLIENT_SECRET` | *(empty)* | Google OAuth2 Client Secret |
-| `MAILTM_TEMP_TF_GMAIL_DOT` | `true` | Enable dot-aliased Gmail addresses for temp.tf (`user.name@gmail.com`) |
-| `MAILTM_TEMP_TF_GMAIL_PLUS` | `true` | Enable plus-aliased Gmail addresses for temp.tf (`username+tag@gmail.com`) |
+| `MAILY_HOST` | `127.0.0.1` | Bind address (`0.0.0.0` in Docker) |
+| `MAILY_PORT` | `8477` | HTTP port |
+| `MAILY_API_KEY` | *(empty)* | Root master key. If empty on loopback, open root access is allowed. Non-loopback requires a key. |
+| `MAILY_DATABASE_URL` | `sqlite+aiosqlite:///mailtm.db` | SQLite database URI |
+| `MAILY_SECRET_KEY` | *(auto-generated)* | Fernet encryption key used to protect credentials |
+| `MAILY_PROXY` | *(empty)* | Optional HTTP/SOCKS5 proxy for upstream provider requests |
+| `MAILY_RETENTION_INTERVAL_SECONDS` | `60` | Background retention sweep frequency |
+| `MAILY_DB_MAINTENANCE_ENABLED` | `true` | Enable periodic database maintenance during retention |
+| `MAILY_DB_MAINTENANCE_INTERVAL_MINUTES` | `60` | Minimum interval between database maintenance runs (in minutes) |
+| `MAILY_SQLITE_BUSY_TIMEOUT_MS` | `60000` | SQLite lock wait timeout in ms to prevent request drops during maintenance |
+| `MAILY_DOMAIN_CACHE_INTERVAL_SECONDS` | `1800` | Background domain refresh frequency |
+| `MAILY_GMAIL_CLIENT_ID` | *(empty)* | Google OAuth2 Client ID |
+| `MAILY_GMAIL_CLIENT_SECRET` | *(empty)* | Google OAuth2 Client Secret |
+| `MAILY_TEMP_TF_GMAIL_DOT` | `true` | Enable dot-aliased Gmail addresses for temp.tf (`user.name@gmail.com`) |
+| `MAILY_TEMP_TF_GMAIL_PLUS` | `true` | Enable plus-aliased Gmail addresses for temp.tf (`username+tag@gmail.com`) |
 
 ---
 

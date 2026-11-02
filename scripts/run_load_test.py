@@ -71,8 +71,12 @@ def main() -> int:
         default=10,
         help="User spawn rate per second (default: 10)",
     )
-    parser.add_argument("--run-time", default="10s", help="Load test duration (default: 10s)")
-    parser.add_argument("--port", type=int, default=8478, help="Target server port (default: 8478)")
+    parser.add_argument(
+        "--run-time", default="10s", help="Load test duration (default: 10s)"
+    )
+    parser.add_argument(
+        "--port", type=int, default=8478, help="Target server port (default: 8478)"
+    )
     parser.add_argument(
         "--max-p95-ms",
         type=float,
@@ -96,11 +100,11 @@ def main() -> int:
 
     root_key = "test-secret-load-test-key-32bytes!"
     env = os.environ.copy()
-    env["MAILTM_DATABASE_URL"] = f"sqlite+aiosqlite:///{db_file}"
-    env["MAILTM_API_KEY"] = root_key
-    env["MAILTM_SECRET_KEY"] = root_key
-    env["MAILTM_HOST"] = "127.0.0.1"
-    env["MAILTM_PORT"] = str(args.port)
+    env["MAILY_DATABASE_URL"] = f"sqlite+aiosqlite:///{db_file}"
+    env["MAILY_API_KEY"] = root_key
+    env["MAILY_SECRET_KEY"] = root_key
+    env["MAILY_HOST"] = "127.0.0.1"
+    env["MAILY_PORT"] = str(args.port)
 
     server_cmd = [
         sys.executable,
@@ -162,7 +166,9 @@ def main() -> int:
     # Parse and validate results
     stats_csv = out_dir / "locust_stats_stats.csv"
     if not stats_csv.is_file():
-        print(f"Error: Expected Locust stats file not found: {stats_csv}", file=sys.stderr)
+        print(
+            f"Error: Expected Locust stats file not found: {stats_csv}", file=sys.stderr
+        )
         return 1
 
     rows: list[dict[str, str]] = []
@@ -193,7 +199,9 @@ def main() -> int:
     print(f"Latency p99:    {p99_ms:.2f} ms (max: {args.max_p99_ms:.1f} ms)")
 
     summary_file = os.environ.get("GITHUB_STEP_SUMMARY")
-    all_passed = fail_count == 0 and p95_ms <= args.max_p95_ms and p99_ms <= args.max_p99_ms
+    all_passed = (
+        fail_count == 0 and p95_ms <= args.max_p95_ms and p99_ms <= args.max_p99_ms
+    )
     if summary_file:
         with open(summary_file, "a", encoding="utf-8") as sf:
             sf.write("### ⚡ Macro Load & Stress Test Summary\n\n")
@@ -216,7 +224,9 @@ def main() -> int:
                 f"| **p99 Latency** | {p99_ms:.2f} ms | `< {args.max_p99_ms:.1f} ms` | {'🟢' if p99_ms <= args.max_p99_ms else '🔴'} |\n\n"
             )
 
-            sf.write("| Endpoint / Task | Requests | Failures | Median (ms) | p95 (ms) | Req/s |\n")
+            sf.write(
+                "| Endpoint / Task | Requests | Failures | Median (ms) | p95 (ms) | Req/s |\n"
+            )
             sf.write("| :--- | :---: | :---: | :---: | :---: | :---: |\n")
             for r in rows[:-1]:
                 name = r.get("Name", "unknown")
@@ -225,7 +235,9 @@ def main() -> int:
                 med = float(r.get("50%", 0) or 0)
                 p95 = float(r.get("95%", 0) or 0)
                 r_rps = float(r.get("Requests/s", 0) or 0)
-                sf.write(f"| `{name}` | {cnt:,} | {fc} | {med:.1f} | {p95:.1f} | {r_rps:,.1f} |\n")
+                sf.write(
+                    f"| `{name}` | {cnt:,} | {fc} | {med:.1f} | {p95:.1f} | {r_rps:,.1f} |\n"
+                )
 
     if fail_count > 0:
         print(

@@ -21,4 +21,6 @@ exclude = [
     '^https://example\.com',
     '^https://raw\.githubusercontent\.com',
     '^https://stormsia\.github\.io/maily',
+    '^https://github\.com/stormsia/maily/pkgs/container',
+    '^https://ghcr\.io',
 ]

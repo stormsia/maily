@@ -1,3 +1,6 @@
+[files]
+extend-exclude = ["CHANGELOG.md"]
+
 [default]
 extend-ignore-re = [
     '(?i)HcTsW_BHeZm9dWhe',
@@ -5,6 +8,7 @@ extend-ignore-re = [
 ]
 
 [default.extend-words]
+ede = "ede"
 INSER = "INSER"
 nd = "nd"
 Whe = "Whe"

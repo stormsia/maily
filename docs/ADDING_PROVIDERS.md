@@ -379,7 +379,7 @@ class MyProvider(HttpProvider):
 * **Auto-recovery**:
   When the provider recovers (both API and delivery pass), the issue is automatically commented and closed by the bot.
 * **README & PR Badges**:
-  - Live status table in `README.md` (`<!-- provider-status:start -->`) updates twice daily;
+  - Live status table in `README.md` (`<!-- provider-status:start -->`) updates hourly;
   - Sticky notice (`<!-- maily-pr-provider-health -->`) posts to Pull Requests affecting provider code.
 
 > 🔒 **Excluded Providers (`EXCLUDED_LIVE_TEST_PROVIDERS`):**

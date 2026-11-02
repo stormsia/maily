@@ -257,8 +257,9 @@ def manage_github_issues(
     results: list[ProviderTestResult],
     state: dict[str, Any],
     run_url: str = "",
+    failure_threshold: int = 3,
 ) -> None:
-    """Create alert issues on 3 consecutive failures, and auto-close upon recovery."""
+    """Create alert issues on reaching failure_threshold consecutive failures, and auto-close upon recovery."""
     gh_token = os.environ.get("GH_TOKEN") or os.environ.get("GITHUB_TOKEN")
     repo = os.environ.get("GITHUB_REPOSITORY") or os.environ.get("REPO")
 
@@ -336,16 +337,23 @@ def manage_github_issues(
             p_state["consecutive_failures"] = p_state.get("consecutive_failures", 0) + 1
             failures = p_state["consecutive_failures"]
             outage_type = "Email Delivery" if r.effective_stage == "delivery" else "API Operations"
-            p_state["last_status"] = f"{r.effective_stage}_outage" if failures >= 3 else "degraded"
+            p_state["last_status"] = (
+                f"{r.effective_stage}_outage" if failures >= failure_threshold else "degraded"
+            )
 
             print(
                 f"Provider {r.slug} failed at stage '{r.effective_stage}' ({failures} consecutive failure(s))."
             )
 
-            # Circuit breaker: open an issue after exactly 3 consecutive failures
-            if failures >= 3 and not p_state.get("issue_number"):
-                print(f"Opening degradation issue for {r.slug} (3 consecutive failures)...")
-                title = f"[Provider Outage] {r.name} ({r.slug}) {outage_type} failed 3 consecutive checks"
+            # Circuit breaker: open an issue after consecutive failures reach threshold
+            if failures >= failure_threshold and not p_state.get("issue_number"):
+                print(
+                    f"Opening degradation issue for {r.slug} ({failures} consecutive failure(s))..."
+                )
+                title = (
+                    f"[Provider Outage] {r.name} ({r.slug}) {outage_type} "
+                    f"failed {failures} consecutive checks"
+                )
                 body = (
                     f"<!-- automated-provider-outage-issue -->\n"
                     f"## 🚨 Automated Provider Degradation Alert: {r.name}\n\n"
@@ -435,7 +443,7 @@ def generate_status_markdown(
         )
 
     lines.append("")
-    lines.append("*Automated health checks run twice daily via GitHub Actions.*")
+    lines.append("*Automated health checks run hourly via GitHub Actions.*")
     lines.append("<!-- provider-status:end -->")
     return "\n".join(lines)
 
@@ -592,6 +600,12 @@ async def async_main() -> int:
         default=ROOT_DIR / ".github" / "provider_health_state.json",
     )
     parser.add_argument(
+        "--failure-threshold",
+        type=int,
+        default=3,
+        help="Consecutive failures before opening an issue (default: 3)",
+    )
+    parser.add_argument(
         "--timeout", type=float, default=30.0, help="Per-provider timeout in seconds"
     )
     args = parser.parse_args()
@@ -671,7 +685,9 @@ async def async_main() -> int:
         run_id = os.environ.get("GITHUB_RUN_ID", "")
         repo = os.environ.get("GITHUB_REPOSITORY", "")
         run_url = f"https://github.com/{repo}/actions/runs/{run_id}" if run_id and repo else ""
-        manage_github_issues(results, state, run_url=run_url)
+        manage_github_issues(
+            results, state, run_url=run_url, failure_threshold=args.failure_threshold
+        )
         save_health_state(args.state_file, state)
 
     # Post sticky PR comment if requested

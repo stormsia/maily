@@ -2,8 +2,8 @@ name: Live Provider Health & E2E Delivery
 
 on:
   schedule:
-    # Run twice daily at 06:00 and 18:00 UTC
-    - cron: '0 6,18 * * *'
+    # Run hourly at minute 0
+    - cron: '0 * * * *'
   workflow_dispatch:
     inputs:
       simulate_api_outage:
@@ -61,7 +61,8 @@ jobs:
             --all \
             --with-delivery \
             --update-readme \
-            --manage-issues
+            --manage-issues \
+            --failure-threshold 3
 
       - name: Commit and push status updates
         run: |
@@ -70,6 +71,7 @@ jobs:
           git add README.md .github/provider_health_state.json
           if ! git diff --staged --quiet; then
             git commit -m "chore(health): update live provider operational status [skip ci]"
+            git pull --rebase origin main
             git push origin main
           else
             echo "No status or state changes to commit."

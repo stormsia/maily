@@ -63,6 +63,8 @@
         "client/client.py",
         "client/maily_client.py",
         "client/pyproject.toml",
+        "src/maily/static/index.html",
+        "src/maily/static/js/app.js",
         "uv.lock"
       ]
     }

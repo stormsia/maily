@@ -132,7 +132,7 @@ async def test_list_messages_maps_and_encodes_email_in_path():
             json=[
                 {
                     "id": "09253cfc-abc",
-                    "from": '"sf_root@outlook.com" <sf_root@outlook.com>',
+                    "from": '"sender@example.com" <sender@example.com>',
                     "to": "al234tf05o@yzcalo.com",
                     "cc": None,
                     "subject": "Hello",
@@ -152,8 +152,8 @@ async def test_list_messages_maps_and_encodes_email_in_path():
         msg = msgs[0]
         assert msg.id == "09253cfc-abc"
         assert msg.subject == "Hello"
-        assert msg.from_.name == "sf_root@outlook.com"
-        assert msg.from_.address == "sf_root@outlook.com"
+        assert msg.from_.name == "sender@example.com"
+        assert msg.from_.address == "sender@example.com"
         assert msg.to[0].address == "al234tf05o@yzcalo.com"
         assert msg.intro == "first line"
         assert msg.seen is False

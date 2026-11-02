@@ -13,13 +13,10 @@ The `maily` team takes the security of our software and users seriously. If you 
 
 ### How to Report
 
-1. **GitHub Private Vulnerability Reporting (Preferred):**
-   Submit a confidential advisory directly via GitHub:
-   [Report a Vulnerability](https://github.com/stormsia/maily/security/advisories/new)
+Please report security vulnerabilities confidentially through **GitHub Private Vulnerability Reporting**:
+[Report a Vulnerability](https://github.com/stormsia/maily/security/advisories/new)
 
-2. **Email:**
-   Send an encrypted or private email to `sf_root@outlook.com` with the subject:
-   `[SECURITY] Vulnerability in maily - <Brief Summary>`.
+This allows you to securely disclose vulnerabilities directly to project maintainers without exposing details publicly.
 
 ### What to Include
 

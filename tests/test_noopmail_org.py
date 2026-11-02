@@ -160,7 +160,7 @@ async def test_list_messages_posts_local_and_domain():
                     "id": "HcTsW_BHeZm9dWhe",
                     "m_id": "CDNKAWl4687wKMey",
                     "to": "al234tf05o@yzcalo.com",
-                    "from": "sf_root@outlook.com",
+                    "from": "sender@example.com",
                     "subject": "thene",
                     "text": "first line\nsecond\n",
                     "hasAttm": 0,
@@ -178,7 +178,7 @@ async def test_list_messages_posts_local_and_domain():
         assert msg.id == "HcTsW_BHeZm9dWhe"
         assert msg.subject == "thene"
         assert msg.from_.name is None
-        assert msg.from_.address == "sf_root@outlook.com"
+        assert msg.from_.address == "sender@example.com"
         assert msg.to[0].address == "al234tf05o@yzcalo.com"
         assert msg.intro == "first line"
         assert msg.seen is False
@@ -230,7 +230,7 @@ async def test_get_message_maps_detail():
             json={
                 "id": "HcTsW_BHeZm9dWhe",
                 "m_id": "CDNKAWl4687wKMey",
-                "from": "sf_root@outlook.com",
+                "from": "sender@example.com",
                 "to": "al234tf05o@yzcalo.com",
                 "cc": None,
                 "subject": "thene",
@@ -248,7 +248,7 @@ async def test_get_message_maps_detail():
         detail = await provider.get_message(_mailbox(), "HcTsW_BHeZm9dWhe")
         assert detail.id == "HcTsW_BHeZm9dWhe"
         assert detail.subject == "thene"
-        assert detail.from_.address == "sf_root@outlook.com"
+        assert detail.from_.address == "sender@example.com"
         assert detail.to[0].address == "al234tf05o@yzcalo.com"
         assert detail.seen is False
         assert detail.text == "hello world\n"

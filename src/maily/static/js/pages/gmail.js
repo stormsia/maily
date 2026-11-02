@@ -82,10 +82,26 @@ export async function render(root, me = null) {
   }
   draw();
 
+  function normalizeRedirectUri(raw) {
+    let uri = (raw || "").trim();
+    if (!uri || uri.includes("0.0.0.0") || !uri.startsWith("http")) {
+      return "http://127.0.0.1:8477/v1/gmail/oauth/callback";
+    }
+    return uri.replace("://0.0.0.0", "://127.0.0.1");
+  }
+
   /** Connect button (primary once configured, ghost otherwise). */
   function connectBtn(kind = "btn-primary") {
     return h("button", { class: `btn ${kind}`, onclick: connect },
       h("i", { "data-lucide": "plug-zap" }), h("span", {}, "Connect Gmail"));
+  }
+
+  function manualCallbackBtn() {
+    return h("button", {
+      class: "btn btn-ghost",
+      title: "Manually complete OAuth if Google redirected to an unreachable address (e.g. behind proxy)",
+      onclick: openManualCallbackModal,
+    }, h("i", { "data-lucide": "link-2" }), h("span", {}, "Manual callback"));
   }
 
   /** Status line + setup/edit affordances on the connect card. */
@@ -93,7 +109,7 @@ export async function render(root, me = null) {
     if (!credentials || !credsLine || !actionsRow) return;
     credsLine.innerHTML = "";
     actionsRow.innerHTML = "";
-    if (!creds) { actionsRow.append(connectBtn()); refreshIcons(); return; }
+    if (!creds) { actionsRow.append(connectBtn(), manualCallbackBtn()); refreshIcons(); return; }
     if (creds.source === "none") {
       credsLine.append(
         h("span", { class: "pill pill--warn" }, "OAuth not configured"));
@@ -106,12 +122,14 @@ export async function render(root, me = null) {
           class: "btn btn-ghost", title: "Already created an OAuth client? Jump straight to the credentials step.",
           onclick: () => openWizard(4),
         }, h("span", {}, "Set up OAuth")),
+        manualCallbackBtn(),
         connectBtn("btn-ghost"));
     } else if (creds.source === "db") {
       credsLine.append("OAuth configured · ",
         h("span", { class: "mono" }, creds.client_id || "—"));
       actionsRow.append(
         connectBtn(),
+        manualCallbackBtn(),
         h("button", {
           class: "btn btn-ghost btn-sm", onclick: () => openWizard(4),
         }, h("span", {}, "Edit")));
@@ -119,7 +137,7 @@ export async function render(root, me = null) {
       credsLine.append("OAuth configured via server environment",
         h("div", { class: "field-hint", style: "margin-top:2px" },
           "Managed by MAILY_GMAIL_CLIENT_ID / MAILY_GMAIL_CLIENT_SECRET (or MAILY_GMAIL_CREDENTIALS_PATH) — not editable here."));
-      actionsRow.append(connectBtn());
+      actionsRow.append(connectBtn(), manualCallbackBtn());
     }
     refreshIcons();
   }
@@ -130,7 +148,7 @@ export async function render(root, me = null) {
     const state = {
       clientId: creds?.source === "db" ? creds.client_id || "" : "",
       secret: "",
-      redirectUri: creds?.redirect_uri || `${location.origin}/v1/gmail/oauth/callback`,
+      redirectUri: normalizeRedirectUri(creds?.redirect_uri),
     };
     let step = Math.min(WIZ_STEPS.length, Math.max(1, startStep));
     let dir = 1;
@@ -268,11 +286,58 @@ export async function render(root, me = null) {
         stepEl.append(foot(backBtn(), nxt));
         idInput.focus();
       } else {
+        const manualInput = h("input", {
+          placeholder: "http://127.0.0.1:8477/v1/gmail/oauth/callback?state=...&code=...",
+          autocomplete: "off", spellcheck: "false",
+          style: "font-family:var(--font-mono);font-size:var(--fs-12);flex:1",
+          "aria-label": "Google redirect URL",
+        });
+        const manualBtn = h("button", {
+          class: "btn btn-ghost btn-sm", type: "button",
+          style: "white-space:nowrap",
+          onclick: async () => {
+            const val = manualInput.value.trim();
+            if (!val) {
+              showError("Paste the redirect URL or code from the browser address bar.");
+              return;
+            }
+            manualBtn.disabled = true;
+            manualBtn.classList.add("is-loading");
+            try {
+              if (valid() && creds?.source !== "db") {
+                const body = { client_id: state.clientId.trim(), client_secret: state.secret };
+                if (state.redirectUri.trim()) body.redirect_uri = state.redirectUri.trim();
+                creds = await api.saveGmailCreds(body);
+              }
+              await api.gmailOAuthCallback({ url_or_code: val });
+              toast("Gmail account connected successfully!", "ok", "check-circle-2");
+              m.close();
+              await reloadAccounts();
+            } catch (err) {
+              showError(err.detail || err.message || "Failed to exchange authorization code.");
+            } finally {
+              manualBtn.disabled = false;
+              manualBtn.classList.remove("is-loading");
+              refreshIcons();
+            }
+          },
+        }, h("i", { "data-lucide": "check" }), h("span", {}, "Complete manually"));
+
+        const manualBox = h("div", { class: "manual-callback-box" },
+          h("div", { class: "manual-callback-title" },
+            h("i", { "data-lucide": "network" }),
+            h("span", { style: "font-weight:600" }, "Behind a proxy or remote server?")),
+          h("p", { class: "small muted" },
+            "If Google redirected to an unreachable address (like 127.0.0.1:8477), copy the entire URL from that browser tab's address bar and paste it below:"),
+          h("div", { style: "display:flex;gap:8px;align-items:center;margin-top:8px" },
+            manualInput, manualBtn));
+
         stepEl.append(
           h("p", {}, "Save & Connect writes the credentials (encrypted) to this server, then opens Google's consent screen in a new tab."),
           creds?.source === "db" ? h("p", { class: "wz-field-note" }, "Existing credentials will be replaced.") : null,
           h("div", { class: "wz-tip" }, h("i", { "data-lucide": "external-link" }),
-            h("span", {}, "After approving, come back here and refresh the page — the account appears in the Connected accounts list.")));
+            h("span", {}, "After approving, come back here and refresh the page — the account appears in the Connected accounts list.")),
+          manualBox);
         const saveEl = h("button", {
           class: "btn btn-primary", type: "button", disabled: !valid(), onclick: saveAndConnect,
         }, h("i", { "data-lucide": "plug-zap" }), h("span", {}, "Save & Connect"));
@@ -385,6 +450,69 @@ export async function render(root, me = null) {
       btn.disabled = false;
       btn.classList.remove("is-loading");
     }
+  }
+
+  async function reloadAccounts() {
+    try {
+      accounts = await api.gmailAccounts();
+      draw();
+    } catch {
+      /* ignore */
+    }
+  }
+
+  function openManualCallbackModal() {
+    const input = h("input", {
+      placeholder: "http://127.0.0.1:8477/v1/gmail/oauth/callback?state=...&code=...",
+      autocomplete: "off", spellcheck: "false",
+      style: "font-family:var(--font-mono);font-size:var(--fs-13);width:100%",
+      "aria-label": "Google redirect URL or authorization code",
+    });
+    const wrap = h("div", {},
+      h("p", { style: "margin-bottom:var(--s-3);color:var(--muted);font-size:var(--fs-13);line-height:1.5" },
+        "When running behind a reverse proxy, Docker, or on a remote server, Google's redirect to ",
+        h("code", {}, "http://127.0.0.1:8477/..."),
+        " may show “Site can’t be reached”. Copy the full URL from that browser tab's address bar and paste it below:"),
+      h("div", { class: "field" },
+        h("label", {}, "Redirect URL or Authorization Code"),
+        input,
+        h("p", { class: "field-hint" }, "Paste the full redirect URL (with ?code=...&state=...) or just the authorization code.")),
+      h("div", { class: "wz-tip", style: "margin-top:var(--s-3)" },
+        h("i", { "data-lucide": "info" }),
+        h("span", {}, "Google authorization codes are single-use and expire within minutes. Paste immediately after granting consent.")));
+
+    openModal({
+      title: "Manual OAuth callback",
+      sub: "Complete Gmail connection from browser redirect URL",
+      body: wrap,
+      wide: true,
+      actions: [
+        { label: "Cancel" },
+        {
+          label: "Connect account",
+          kind: "btn-primary",
+          onClick: async () => {
+            const val = input.value.trim();
+            if (!val) {
+              toast("Please paste the redirect URL or code first.", "warn");
+              return false;
+            }
+            try {
+              await api.gmailOAuthCallback({ url_or_code: val });
+              toast("Gmail account connected successfully!", "ok", "check-circle-2");
+              closeModal();
+              await reloadAccounts();
+              return true;
+            } catch (err) {
+              toast(err.detail || err.message || "Failed to exchange authorization code.", "err");
+              return false;
+            }
+          },
+        },
+      ],
+    });
+    refreshIcons();
+    input.focus();
   }
 
   function draw() {

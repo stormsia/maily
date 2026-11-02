@@ -79,6 +79,16 @@ def test_security_response_headers_and_config(tmp_path: Path):
         assert cfg_resp.status_code == 200
         cfg = cfg_resp.json()
         assert "client_version" in cfg
+        assert cfg.get("github_url") == "https://github.com/stormsia/maily"
+        assert cfg.get("version") == cfg["client_version"]
+
+        # Check /v1/updates/check
+        updates_resp = client.get("/v1/updates/check")
+        assert updates_resp.status_code == 200
+        updates_data = updates_resp.json()
+        assert "current" in updates_data
+        assert "latest" in updates_data
+        assert "update_available" in updates_data
 
 
 def test_health_internal_helpers():
@@ -140,6 +150,10 @@ def test_settings_secret_generation_and_credentials(tmp_path: Path):
     assert cid == "google-client-id"
     assert csec == "google-client-secret"
     assert "oauth/callback" in s3.default_gmail_redirect_uri()
+
+    # host="0.0.0.0" maps to 127.0.0.1 for Google OAuth compliance
+    s_zero = Settings(host="0.0.0.0", port=8477, secret_key="x" * 32, _env_file=None)
+    assert s_zero.default_gmail_redirect_uri() == "http://127.0.0.1:8477/v1/gmail/oauth/callback"
 
     # Sanitize proxy & get_settings
     s_proxy = Settings(proxy="   ", secret_key="x" * 32, _env_file=None)

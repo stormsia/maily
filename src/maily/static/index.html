@@ -69,6 +69,21 @@
           </a>
         </nav>
 
+        <div class="sidebar-meta">
+          <a class="sidebar-github" href="https://github.com/stormsia/maily" target="_blank" rel="noopener noreferrer" title="View maily on GitHub">
+            <i data-lucide="github"></i>
+            <span>GitHub</span>
+            <i data-lucide="external-link" class="ext-ico"></i>
+          </a>
+          <div class="version-badge" id="version-badge" title="Current version — click to check updates" role="button" tabindex="0">
+            <span class="version-tag mono" id="version-tag">v0.4.1</span>
+            <span class="version-dot" id="version-dot" title="Version status"></span>
+            <button class="version-refresh-btn" id="version-refresh-btn" type="button" aria-label="Check for new version" title="Check for new version">
+              <i data-lucide="refresh-cw"></i>
+            </button>
+          </div>
+        </div>
+
         <div class="sidebar-foot">
           <div class="health" id="health-pill" role="status" aria-live="polite">
             <span class="health-dot" id="health-dot"></span>
@@ -101,6 +116,9 @@
             <span class="health-dot" id="health-dot-sm"></span>
             <span class="health-text mono" id="health-text-sm">127.0.0.1:8477</span>
           </span>
+          <a class="btn btn-ghost btn-sm topbar-github-link" href="https://github.com/stormsia/maily" target="_blank" rel="noopener noreferrer" title="View maily on GitHub">
+            <i data-lucide="github"></i><span>GitHub</span>
+          </a>
           <a class="btn btn-ghost btn-sm" href="/docs" target="_blank" rel="noopener" title="API reference">
             <i data-lucide="book-open"></i><span>API docs</span>
           </a>
@@ -127,10 +145,19 @@
 
       <footer class="foot">
         <span class="mono">maily</span>
+        <span class="foot-version mono" id="foot-version">v0.4.1</span>
         <span class="foot-sep">·</span>
         <span>local temp-mail API</span>
         <span class="foot-sep">·</span>
+        <a class="foot-link" href="https://github.com/stormsia/maily" target="_blank" rel="noopener noreferrer">
+          <i data-lucide="github"></i><span>GitHub</span>
+        </a>
+        <span class="foot-sep">·</span>
         <a href="#/retention">retention policy</a>
+        <span class="foot-sep">·</span>
+        <button class="foot-btn" id="foot-check-updates-btn" type="button">
+          <i data-lucide="sparkles"></i><span>Check updates</span>
+        </button>
       </footer>
     </div>
   </div>

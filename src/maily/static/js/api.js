@@ -185,6 +185,54 @@ export const api = {
   runDomainCache: () =>
     request("/v1/admin/domain-cache/run", { method: "POST" }),
   gmailOAuthStart: () => request("/v1/gmail/oauth/start", { method: "POST" }),
+  gmailOAuthCallback: (body) =>
+    request("/v1/gmail/oauth/callback", { method: "POST", body }),
+  checkUpdates: async () => {
+    try {
+      const data = await request("/v1/updates/check");
+      if (data && data.latest) return data;
+    } catch {
+      // Backend check unavailable, proceed with direct GitHub check
+    }
+    try {
+      const res = await fetch("https://api.github.com/repos/stormsia/maily/releases/latest", {
+        headers: { Accept: "application/vnd.github.v3+json" },
+      });
+      if (res.ok) {
+        const d = await res.json();
+        const tag = (d.tag_name || "").replace(/^v/, "");
+        return {
+          current: null,
+          latest: tag,
+          tag: d.tag_name || "",
+          release_url: d.html_url || "https://github.com/stormsia/maily/releases",
+          name: d.name || d.tag_name || "",
+          notes: d.body || "",
+          published_at: d.published_at || "",
+        };
+      }
+    } catch {
+      // ignore
+    }
+    try {
+      const res = await fetch("https://raw.githubusercontent.com/stormsia/maily/main/pyproject.toml");
+      if (res.ok) {
+        const text = await res.text();
+        const m = text.match(/version\s*=\s*"([^"]+)"/);
+        if (m) {
+          return {
+            current: null,
+            latest: m[1],
+            tag: `v${m[1]}`,
+            release_url: `https://github.com/stormsia/maily/releases/tag/v${m[1]}`,
+          };
+        }
+      }
+    } catch {
+      // ignore
+    }
+    return null;
+  },
   gmailCreds: () => request("/v1/admin/gmail/creds"),
   saveGmailCreds: (body) =>
     request("/v1/admin/gmail/creds", { method: "PUT", body }),

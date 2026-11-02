@@ -83,4 +83,47 @@ async def config(request: Request) -> dict[str, Any]:
     return {
         "api_key_required": bool(request.app.state.settings.api_key),
         "client_version": __version__,
+        "version": __version__,
+        "github_url": "https://github.com/stormsia/maily",
+    }
+
+
+def _semver_gt(v1: str, v2: str) -> bool:
+    try:
+        p1 = [int(x) for x in v1.lstrip("v").split(".")[:3]]
+        p2 = [int(x) for x in v2.lstrip("v").split(".")[:3]]
+        return p1 > p2
+    except Exception:
+        return False
+
+
+@router.get("/v1/updates/check")
+async def check_updates(request: Request) -> dict[str, Any]:
+    """Check if a new version is available on GitHub."""
+    import httpx
+
+    from ... import __version__
+
+    latest = __version__
+    release_url = "https://github.com/stormsia/maily/releases"
+    try:
+        async with httpx.AsyncClient(timeout=4.0) as client:
+            resp = await client.get(
+                "https://api.github.com/repos/stormsia/maily/releases/latest",
+                headers={"User-Agent": "maily"},
+            )
+            if resp.status_code == 200:
+                data = resp.json()
+                tag = data.get("tag_name", "").lstrip("v")
+                if tag:
+                    latest = tag
+                    release_url = data.get("html_url", release_url)
+    except Exception:
+        pass
+
+    return {
+        "current": __version__,
+        "latest": latest,
+        "update_available": _semver_gt(latest, __version__),
+        "release_url": release_url,
     }

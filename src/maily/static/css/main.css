@@ -212,8 +212,54 @@ html { scrollbar-color: rgba(255, 255, 255, 0.16) transparent; scrollbar-width: 
   border-color: rgba(124, 108, 255, 0.3);
 }
 .nav-link.active .lucide { color: var(--accent); }
+/* ---------- Sidebar meta (GitHub & Version) ---------- */
+.sidebar-meta {
+  margin-top: auto; display: flex; flex-direction: column; gap: var(--s-2);
+}
+.sidebar-github {
+  display: flex; align-items: center; gap: var(--s-2);
+  padding: 8px var(--s-3); border-radius: var(--r-md);
+  color: var(--muted); text-decoration: none; font-size: var(--fs-13); font-weight: 500;
+  border: 1px solid var(--border-soft); background: rgba(255, 255, 255, 0.02);
+  transition: all var(--t-fast);
+}
+.sidebar-github:hover {
+  color: var(--text); background: rgba(255, 255, 255, 0.06); border-color: var(--border-strong);
+}
+.sidebar-github .ext-ico {
+  margin-left: auto; width: 14px; height: 14px; opacity: 0.6;
+}
+.version-badge {
+  display: flex; align-items: center; gap: var(--s-2);
+  padding: 6px var(--s-3); border-radius: var(--r-md);
+  border: 1px solid var(--border-soft); background: rgba(255, 255, 255, 0.02);
+  cursor: pointer; transition: all var(--t-fast);
+}
+.version-badge:hover {
+  background: rgba(255, 255, 255, 0.05); border-color: var(--border-strong);
+}
+.version-tag { font-size: var(--fs-12); color: var(--muted); }
+.version-dot {
+  width: 8px; height: 8px; border-radius: 50%; background: var(--faint);
+  margin-left: auto; transition: all var(--t-fast);
+}
+.version-dot.ok {
+  background: var(--ok); box-shadow: 0 0 8px rgba(65, 217, 154, 0.6);
+}
+.version-dot.update {
+  background: var(--cyan); box-shadow: 0 0 10px rgba(63, 224, 197, 0.9);
+  animation: pulse 1.8s infinite;
+}
+.version-refresh-btn {
+  background: none; border: none; padding: 2px; color: var(--faint);
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 4px; transition: color var(--t-fast);
+}
+.version-refresh-btn:hover { color: var(--text); }
+.version-refresh-btn .lucide { width: 13px; height: 13px; }
+
 .sidebar-foot {
-  margin-top: auto; display: flex; align-items: center; gap: var(--s-2);
+  display: flex; align-items: center; gap: var(--s-2);
   padding: var(--s-3); border: 1px solid var(--border-soft);
   border-radius: var(--r-md); background: rgba(255, 255, 255, 0.02);
 }
@@ -1011,10 +1057,39 @@ pre.code {
 }
 .wizard-foot .spacer { flex: 1; }
 
+.manual-callback-box {
+  margin-top: var(--s-4);
+  padding: var(--s-3) var(--s-4);
+  border-radius: var(--r-md);
+  background: rgba(124, 108, 255, 0.05);
+  border: 1px dashed var(--accent-line);
+}
+.manual-callback-title {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  font-size: var(--fs-13);
+  color: var(--accent);
+  margin-bottom: 4px;
+}
+.manual-callback-title .lucide {
+  width: 16px;
+  height: 16px;
+}
+
 /* ---------- Footer ---------- */
 .foot { display: flex; align-items: center; gap: var(--s-2); justify-content: center; padding: var(--s-6); color: var(--faint); font-size: var(--fs-12); }
 .foot a { color: var(--muted); text-decoration: none; } .foot a:hover { color: var(--text); }
 .foot-sep { opacity: 0.5; }
+.foot-version { color: var(--muted); font-weight: 500; }
+.foot-link { display: inline-flex; align-items: center; gap: 4px; }
+.foot-btn {
+  background: none; border: none; color: var(--muted); font-size: var(--fs-12);
+  display: inline-flex; align-items: center; gap: 4px; cursor: pointer;
+  padding: 2px 6px; border-radius: 4px; transition: all var(--t-fast);
+}
+.foot-btn:hover { color: var(--text); background: rgba(255, 255, 255, 0.05); }
+.foot-btn .lucide { width: 13px; height: 13px; }
 
 /* ===================================================================
    RESPONSIVE
@@ -1036,7 +1111,7 @@ pre.code {
 @media (max-width: 900px) {
   :root { --sidebar-w: var(--rail-w); }
   .sidebar-inner { padding: var(--s-4) var(--s-2); align-items: center; gap: var(--s-4); }
-  .brand-text, .nav-link span, .sidebar-foot .health { display: none; }
+  .brand-text, .nav-link span, .sidebar-foot .health, .sidebar-meta { display: none; }
   .brand { padding: 0; }
   .nav-link { justify-content: center; padding: 12px; min-height: 44px; }
   .sidebar-foot { flex-direction: column; border: none; background: none; padding: 0; }
@@ -1071,6 +1146,7 @@ pre.code {
   /* Restore hidden elements in drawer */
   .sidebar-inner .brand-text,
   .sidebar-inner .nav-link span,
+  .sidebar-inner .sidebar-meta,
   .sidebar-inner .sidebar-foot .health { display: flex; }
   .sidebar-inner .brand-text { display: flex; flex-direction: column; }
   .sidebar-inner .nav-link span { display: inline; }

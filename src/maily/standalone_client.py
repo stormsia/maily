@@ -1010,6 +1010,23 @@ class GmailAPI:
         """OAuth authorization URL: open in browser to link any Google account."""
         return OAuthStart.model_validate(await self._t.request("POST", "/v1/gmail/oauth/start"))
 
+    async def oauth_callback(
+        self,
+        url_or_code: str,
+        *,
+        state: str | None = None,
+        redirect_uri: str | None = None,
+    ) -> GmailAccount:
+        """Complete OAuth exchange from browser redirect URL or authorization code."""
+        payload: dict[str, Any] = {"url_or_code": url_or_code}
+        if state:
+            payload["state"] = state
+        if redirect_uri:
+            payload["redirect_uri"] = redirect_uri
+        return GmailAccount.model_validate(
+            await self._t.request("POST", "/v1/gmail/oauth/callback", json=payload)
+        )
+
     async def import_account(
         self,
         *,
@@ -1499,6 +1516,15 @@ class Maily:
     async def gmail_oauth_start(self) -> OAuthStart:
         return await self.gmail.oauth_start()
 
+    async def gmail_oauth_callback(
+        self,
+        url_or_code: str,
+        *,
+        state: str | None = None,
+        redirect_uri: str | None = None,
+    ) -> GmailAccount:
+        return await self.gmail.oauth_callback(url_or_code, state=state, redirect_uri=redirect_uri)
+
     async def gmail_import_account(
         self, *, refresh_token: str | None = None, token_json: Any = None
     ) -> GmailAccount:
@@ -1783,6 +1809,18 @@ class SyncGmailAPI:
     def oauth_start(self) -> OAuthStart:
         """OAuth authorization URL: open in browser to link any Google account."""
         return self._run(self._async.oauth_start())
+
+    def oauth_callback(
+        self,
+        url_or_code: str,
+        *,
+        state: str | None = None,
+        redirect_uri: str | None = None,
+    ) -> GmailAccount:
+        """Complete OAuth exchange from browser redirect URL or authorization code."""
+        return self._run(
+            self._async.oauth_callback(url_or_code, state=state, redirect_uri=redirect_uri)
+        )
 
     def import_account(
         self,
@@ -2325,6 +2363,20 @@ class SyncMaily:
     def gmail_oauth_start(self) -> OAuthStart:
         assert self._async_client is not None
         return self._run(self._async_client.gmail_oauth_start())
+
+    def gmail_oauth_callback(
+        self,
+        url_or_code: str,
+        *,
+        state: str | None = None,
+        redirect_uri: str | None = None,
+    ) -> GmailAccount:
+        assert self._async_client is not None
+        return self._run(
+            self._async_client.gmail_oauth_callback(
+                url_or_code, state=state, redirect_uri=redirect_uri
+            )
+        )
 
     def gmail_import_account(
         self, *, refresh_token: str | None = None, token_json: Any = None

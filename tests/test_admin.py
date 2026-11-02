@@ -427,3 +427,63 @@ def test_gmail_creds_env_wins(tmp_path):
         r = client.post("/v1/gmail/oauth/start")
         assert r.status_code == 200
         assert "client_id=env-cid" in r.json()["auth_url"]
+
+
+def test_gmail_redirect_uri_zero_sanitized(tmp_path):
+    with _app(tmp_path) as client:
+        # Saving redirect_uri with 0.0.0.0 is automatically sanitized to 127.0.0.1
+        r = client.put(
+            "/v1/admin/gmail/creds",
+            json={
+                "client_id": "test-cid",
+                "client_secret": "test-sec",
+                "redirect_uri": "http://0.0.0.0:8477/v1/gmail/oauth/callback",
+            },
+        )
+        assert r.status_code == 200
+        assert r.json()["redirect_uri"] == "http://127.0.0.1:8477/v1/gmail/oauth/callback"
+
+        # Reading back confirms 127.0.0.1
+        r = client.get("/v1/admin/gmail/creds")
+        assert r.json()["redirect_uri"] == "http://127.0.0.1:8477/v1/gmail/oauth/callback"
+
+
+def test_gmail_manual_oauth_callback(tmp_path, monkeypatch):
+    with _app(tmp_path) as client:
+        client.put(
+            "/v1/admin/gmail/creds",
+            json={"client_id": "test-cid", "client_secret": "test-sec"},
+        )
+        start = client.post("/v1/gmail/oauth/start").json()
+        state = start["state"]
+
+        async def _mock_exchange(code, redirect_uri):
+            assert "0.0.0.0" not in redirect_uri
+            return {
+                "access_token": "mock-at",
+                "refresh_token": "mock-rt",
+                "expires_at": 9999999999.0,
+                "scopes": "gmail.modify",
+            }
+
+        async def _mock_sync_profile(parent):
+            parent.email = "testuser@gmail.com"
+            parent.status = "active"
+            parent.send_as = ["testuser@gmail.com"]
+            return parent
+
+        monkeypatch.setattr(client.app.state.oauth, "exchange_code", _mock_exchange)
+        monkeypatch.setattr(client.app.state.gmail, "sync_profile", _mock_sync_profile)
+
+        # Manual callback using full browser URL
+        full_url = f"http://127.0.0.1:8477/v1/gmail/oauth/callback?code=mock_code_123&state={state}"
+        r = client.post("/v1/gmail/oauth/callback", json={"url_or_code": full_url})
+        assert r.status_code == 200
+        data = r.json()
+        assert data["email"] == "testuser@gmail.com"
+        assert data["status"] == "active"
+
+        # Check accounts list now includes it
+        accs = client.get("/v1/gmail/accounts").json()
+        assert len(accs) == 1
+        assert accs[0]["email"] == "testuser@gmail.com"

@@ -45,10 +45,11 @@ async def save_creds(
     client_secret: str,
     redirect_uri: str | None = None,
 ) -> None:
+    clean_uri = (redirect_uri or "").replace("://0.0.0.0", "://127.0.0.1")
     for key, value in (
         (KEY_CLIENT_ID, client_id),
         (KEY_CLIENT_SECRET, encrypt(secret, client_secret)),
-        (KEY_REDIRECT_URI, redirect_uri or ""),
+        (KEY_REDIRECT_URI, clean_uri),
     ):
         row = await session.get(AppSetting, key)
         if row is None:
@@ -67,7 +68,8 @@ async def clear_creds(session: AsyncSession) -> None:
 
 async def get_redirect_uri(session: AsyncSession, default: str) -> str:
     row = await session.get(AppSetting, KEY_REDIRECT_URI)
-    return (row.value if row and row.value else default) or default
+    uri = (row.value if row and row.value else default) or default
+    return uri.replace("://0.0.0.0", "://127.0.0.1")
 
 
 async def resolved(settings, session: AsyncSession, secret: str) -> tuple[str, str, str] | None:

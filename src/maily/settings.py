@@ -95,7 +95,11 @@ class Settings(BaseSettings):
         raise RuntimeError("Set MAILY_GMAIL_CLIENT_ID/SECRET or MAILY_GMAIL_CREDENTIALS_PATH")
 
     def default_gmail_redirect_uri(self) -> str:
-        return self.gmail_redirect_uri or f"http://{self.host}:{self.port}/v1/gmail/oauth/callback"
+        if self.gmail_redirect_uri:
+            return self.gmail_redirect_uri.replace("://0.0.0.0", "://127.0.0.1")
+        host = "127.0.0.1" if self.host in ("0.0.0.0", "::", "") else self.host
+        port = self.port or 8477
+        return f"http://{host}:{port}/v1/gmail/oauth/callback"
 
 
 @lru_cache

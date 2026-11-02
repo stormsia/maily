@@ -113,6 +113,13 @@ class OAuthStartOut(_Base):
     state: str
 
 
+class OAuthCallbackIn(BaseModel):
+    url_or_code: str | None = None
+    code: str | None = None
+    state: str | None = None
+    redirect_uri: str | None = None
+
+
 class GmailCredsIn(BaseModel):
     client_id: str
     client_secret: str

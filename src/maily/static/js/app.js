@@ -120,6 +120,9 @@ async function ping() {
 
   try {
     const cfg = await api.config();
+    if (cfg?.client_version || cfg?.version) {
+      updateVersionTags(cfg.client_version || cfg.version);
+    }
     const warn = document.getElementById("key-warning");
     if (warn) warn.hidden = !!cfg.api_key_required;
   } catch { /* server too old / unreachable: keep banner state unset */ }
@@ -194,6 +197,107 @@ function restorePrevKey() {
 }
 
 /* ============================================================
+   Version & Update Checking
+   ============================================================ */
+let currentVersion = "0.4.1";
+let latestUpdateInfo = null;
+
+function updateVersionTags(ver) {
+  currentVersion = (ver || currentVersion).replace(/^v/, "");
+  const tagEl = document.getElementById("version-tag");
+  if (tagEl) tagEl.textContent = `v${currentVersion}`;
+  const footVer = document.getElementById("foot-version");
+  if (footVer) footVer.textContent = `v${currentVersion}`;
+}
+
+function compareSemver(v1, v2) {
+  const p1 = (v1 || "").replace(/^v/, "").split(".").map((n) => parseInt(n, 10) || 0);
+  const p2 = (v2 || "").replace(/^v/, "").split(".").map((n) => parseInt(n, 10) || 0);
+  const len = Math.max(p1.length, p2.length, 3);
+  for (let i = 0; i < len; i++) {
+    const n1 = p1[i] || 0;
+    const n2 = p2[i] || 0;
+    if (n1 > n2) return 1;
+    if (n1 < n2) return -1;
+  }
+  return 0;
+}
+
+async function checkUpdates(manual = false) {
+  const dot = document.getElementById("version-dot");
+  const refreshBtn = document.getElementById("version-refresh-btn");
+  const refreshIcon = refreshBtn?.querySelector("svg, i");
+  if (refreshIcon) refreshIcon.classList.add("spin");
+
+  try {
+    const info = await api.checkUpdates();
+    if (!info || !info.latest) {
+      if (manual) toast("Could not fetch latest release info.", "warn");
+      return;
+    }
+    latestUpdateInfo = info;
+    const isNewer = compareSemver(info.latest, currentVersion) > 0;
+    if (dot) {
+      dot.className = `version-dot ${isNewer ? "update" : "ok"}`;
+      dot.title = isNewer ? `Update available: v${info.latest}` : `Up to date: v${currentVersion}`;
+    }
+
+    if (isNewer) {
+      if (manual) openUpdateModal(info);
+      else toast(`New version available: v${info.latest}! Click to view.`, "info", "sparkles", 8000, () => openUpdateModal(info));
+    } else if (manual) {
+      toast(`You're up to date! maily v${currentVersion} is the latest version.`, "ok", "check-circle-2");
+    }
+  } catch (err) {
+    if (manual) toast("Could not check updates: " + (err.message || "network error"), "err");
+  } finally {
+    if (refreshIcon) refreshIcon.classList.remove("spin");
+  }
+}
+
+function openUpdateModal(info) {
+  const wrap = h("div", { class: "update-modal-body" },
+    h("div", { class: "update-version-card" },
+      h("div", { class: "update-badge-row" },
+        h("span", { class: "pill pill--ok" }, `Latest: v${info.latest}`),
+        h("span", { class: "pill pill--muted" }, `Installed: v${currentVersion}`)),
+      info.name && info.name !== `v${info.latest}` ? h("h4", { style: "margin-top:var(--s-2);font-weight:700" }, info.name) : null,
+      info.notes ? h("p", { class: "small muted", style: "margin-top:var(--s-2);white-space:pre-wrap;max-height:120px;overflow:auto" }, info.notes.slice(0, 300) + (info.notes.length > 300 ? "…" : "")) : null),
+    h("div", { class: "update-instructions mt-4" },
+      h("label", { style: "font-weight:600;font-size:var(--fs-13);display:block;margin-bottom:var(--s-2)" }, "How to upgrade:"),
+      h("div", { class: "field", style: "margin-bottom:var(--s-2)" },
+        h("span", { class: "small muted" }, "Docker compose:"),
+        h("div", { class: "pass-wrap" },
+          h("input", { readonly: true, value: "docker compose pull && docker compose up -d", style: "font-family:var(--font-mono);font-size:var(--fs-12)" }))),
+      h("div", { class: "field", style: "margin-bottom:var(--s-2)" },
+        h("span", { class: "small muted" }, "Standalone Python Client:"),
+        h("div", { class: "pass-wrap" },
+          h("input", { readonly: true, value: "maily-client update", style: "font-family:var(--font-mono);font-size:var(--fs-12)" }))),
+      h("div", { class: "field", style: "margin-bottom:0" },
+        h("span", { class: "small muted" }, "Git clone:"),
+        h("div", { class: "pass-wrap" },
+          h("input", { readonly: true, value: "git pull && uv sync", style: "font-family:var(--font-mono);font-size:var(--fs-12)" })))));
+
+  openModal({
+    title: "Software Update Available",
+    sub: `maily v${info.latest} is now available`,
+    body: wrap,
+    wide: true,
+    actions: [
+      { label: "Close" },
+      {
+        label: "View on GitHub",
+        kind: "btn-primary",
+        onClick: () => {
+          window.open(info.release_url || "https://github.com/stormsia/maily/releases", "_blank", "noopener");
+        },
+      },
+    ],
+  });
+  refreshIcons();
+}
+
+/* ============================================================
    Settings / API key modal
    ============================================================ */
 function openSettings() {
@@ -213,15 +317,52 @@ function openSettings() {
     },
   }, h("i", { "data-lucide": "eye" }));
 
+  const updateStatusText = h("span", { class: "small muted" },
+    latestUpdateInfo
+      ? (compareSemver(latestUpdateInfo.latest, currentVersion) > 0 ? `Update available: v${latestUpdateInfo.latest}` : "Up to date")
+      : "Not checked yet");
+
+  const checkBtn = h("button", {
+    class: "btn btn-ghost btn-sm", type: "button",
+    onclick: async () => {
+      checkBtn.disabled = true;
+      checkBtn.classList.add("is-loading");
+      await checkUpdates(true);
+      checkBtn.disabled = false;
+      checkBtn.classList.remove("is-loading");
+      if (latestUpdateInfo) {
+        updateStatusText.textContent = compareSemver(latestUpdateInfo.latest, currentVersion) > 0
+          ? `Update available: v${latestUpdateInfo.latest}`
+          : "Up to date";
+      }
+      refreshIcons();
+    },
+  }, h("i", { "data-lucide": "refresh-cw" }), h("span", {}, "Check now"));
+
+  const versionSection = h("div", { class: "settings-section mt-6", style: "border-top:1px solid var(--border);padding-top:var(--s-4)" },
+    h("div", { style: "display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--s-2)" },
+      h("label", { style: "font-weight:600;font-size:var(--fs-13)" }, "Version & Updates"),
+      checkBtn),
+    h("div", { style: "display:flex;align-items:center;gap:var(--s-3);margin-bottom:var(--s-3)" },
+      h("span", { class: "mono small" }, `Installed: v${currentVersion}`),
+      h("span", { class: "foot-sep" }, "·"),
+      updateStatusText),
+    h("div", { style: "display:flex;gap:var(--s-4);font-size:var(--fs-12)" },
+      h("a", { href: "https://github.com/stormsia/maily", target: "_blank", rel: "noopener", style: "display:inline-flex;align-items:center;gap:4px;color:var(--accent)" },
+        h("i", { "data-lucide": "github" }), "GitHub Repository"),
+      h("a", { href: "https://github.com/stormsia/maily/releases", target: "_blank", rel: "noopener", style: "display:inline-flex;align-items:center;gap:4px;color:var(--muted)" },
+        h("i", { "data-lucide": "history" }), "Releases & Changelog")));
+
   const wrap = h("div", {},
     h("div", { class: "field" },
       h("label", {}, "API key"),
       h("div", { class: "pass-wrap" }, input, toggle),
-      h("p", { class: "field-hint" }, "Required only if the server runs with MAILY_API_KEY set. Stored locally in your browser.")));
+      h("p", { class: "field-hint" }, "Required only if the server runs with MAILY_API_KEY set. Stored locally in your browser.")),
+    versionSection);
 
   openModal({
     title: "Settings",
-    sub: "Connection & authentication",
+    sub: "Connection, authentication & version",
     body: wrap,
     actions: [
       {
@@ -360,11 +501,18 @@ window.addEventListener("hashchange", route);
 document.getElementById("settings-btn")?.addEventListener("click", openSettings);
 document.getElementById("key-btn")?.addEventListener("click", openSettings);
 document.getElementById("prev-key-btn")?.addEventListener("click", restorePrevKey);
+document.getElementById("version-badge")?.addEventListener("click", () => checkUpdates(true));
+document.getElementById("version-refresh-btn")?.addEventListener("click", (e) => {
+  e.stopPropagation();
+  checkUpdates(true);
+});
+document.getElementById("foot-check-updates-btn")?.addEventListener("click", () => checkUpdates(true));
 syncPrevKeyButton();
 document.getElementById("quick-create-btn")?.addEventListener("click", () =>
   openCreateMailbox((mb) => { location.hash = `#/mailboxes/${mb.id}`; }));
 
 ping();
 setInterval(ping, 30000);
+setTimeout(() => checkUpdates(false), 1500);
 route();
 refreshIcons();

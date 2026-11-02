@@ -109,3 +109,4 @@ networks:
 
 volumes:
   maily_data:
+    name: maily_data

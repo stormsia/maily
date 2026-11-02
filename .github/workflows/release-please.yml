@@ -14,6 +14,8 @@ jobs:
   release-please:
     name: Release Please (PR & Tag)
     runs-on: ubuntu-latest
+    env:
+      RELEASE_PLEASE_TOKEN: ${{ secrets.RELEASE_PLEASE_TOKEN }}
     steps:
       - name: Run Release Please
         uses: googleapis/release-please-action@v4
@@ -24,7 +26,7 @@ jobs:
           token: ${{ secrets.RELEASE_PLEASE_TOKEN || secrets.GITHUB_TOKEN }}
 
       - name: Trigger CD Workflows on New Release
-        if: ${{ steps.release.outputs.releases_created == 'true' && !secrets.RELEASE_PLEASE_TOKEN }}
+        if: ${{ steps.release.outputs.releases_created == 'true' && env.RELEASE_PLEASE_TOKEN == '' }}
         run: |
           echo "Release created for tag: $TAG. Triggering CD publish pipelines via workflow_dispatch..."
           gh workflow run pypi-publish.yml --ref "$TAG"

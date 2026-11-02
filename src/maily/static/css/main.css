@@ -332,8 +332,23 @@ html { scrollbar-color: rgba(255, 255, 255, 0.16) transparent; scrollbar-width: 
 .btn-sm { padding: 7px 13px; font-size: var(--fs-13); border-radius: 10px; min-height: 36px; }
 .btn-sm .lucide { width: 15px; height: 15px; }
 .btn[disabled] { opacity: 0.55; cursor: not-allowed; transform: none; }
-.btn.is-loading { cursor: wait; }
-.btn.is-loading .lucide { animation: spin 0.9s linear infinite; }
+.btn.is-loading,
+.icon-btn.is-loading,
+.version-refresh-btn.is-loading,
+.foot-btn.is-loading {
+  cursor: wait;
+}
+.btn.is-loading .lucide,
+.btn.is-loading svg,
+.icon-btn.is-loading .lucide,
+.icon-btn.is-loading svg,
+.version-refresh-btn.is-loading .lucide,
+.version-refresh-btn.is-loading svg,
+.foot-btn.is-loading .lucide,
+.foot-btn.is-loading svg,
+.spin {
+  animation: spin 0.9s linear infinite;
+}
 .btn-block { width: 100%; }
 .icon-btn {
   display: inline-grid; place-items: center;
@@ -346,7 +361,6 @@ html { scrollbar-color: rgba(255, 255, 255, 0.16) transparent; scrollbar-width: 
 .icon-btn:hover { color: var(--text); background: rgba(255, 255, 255, 0.08); border-color: var(--border-strong); transform: translateY(-1px); }
 .icon-btn.danger:hover { color: #ffb3b3; border-color: rgba(255, 125, 125, 0.4); background: var(--danger-soft); }
 .icon-btn.warn:hover { color: #ffd48a; border-color: rgba(255, 190, 90, 0.4); background: var(--warn-soft); }
-.spin { animation: spin 0.9s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
 
 /* ---------- Badges / pills ---------- */

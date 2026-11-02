@@ -1,7 +1,16 @@
 /* maily admin — shared UI: DOM helpers, toasts, modals, formatting. */
 
-export function refreshIcons() {
-  if (window.lucide?.createIcons) window.lucide.createIcons();
+export function refreshIcons(root) {
+  if (!window.lucide?.createIcons) return;
+  try {
+    if (root) window.lucide.createIcons({ root });
+    else window.lucide.createIcons();
+  } catch {
+    window.lucide.createIcons();
+  }
+  document.querySelectorAll(".lucide.spin, svg.spin").forEach((el) => {
+    if (!el.closest(".is-loading")) el.classList.remove("spin");
+  });
 }
 
 /** Escape a string for safe HTML interpolation. */
@@ -82,7 +91,7 @@ export function toast(message, type = "info", icon) {
     h("i", { "data-lucide": icon || ICONS[type] || "info" }),
     h("span", {}, message));
   root.append(el);
-  refreshIcons();
+  refreshIcons(el);
   const dur = toastDuration(message);
   setTimeout(() => {
     el.classList.add("out");

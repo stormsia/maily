@@ -226,8 +226,10 @@ function compareSemver(v1, v2) {
 async function checkUpdates(manual = false) {
   const dot = document.getElementById("version-dot");
   const refreshBtn = document.getElementById("version-refresh-btn");
-  const refreshIcon = refreshBtn?.querySelector("svg, i");
-  if (refreshIcon) refreshIcon.classList.add("spin");
+  const footBtn = document.getElementById("foot-check-updates-btn");
+
+  refreshBtn?.classList.add("is-loading");
+  footBtn?.classList.add("is-loading");
 
   try {
     const info = await api.checkUpdates();
@@ -251,7 +253,11 @@ async function checkUpdates(manual = false) {
   } catch (err) {
     if (manual) toast("Could not check updates: " + (err.message || "network error"), "err");
   } finally {
-    if (refreshIcon) refreshIcon.classList.remove("spin");
+    refreshBtn?.classList.remove("is-loading");
+    footBtn?.classList.remove("is-loading");
+    document.querySelectorAll(".version-refresh-btn .spin, #foot-check-updates-btn .spin, #version-badge .spin").forEach((el) => {
+      el.classList.remove("spin");
+    });
   }
 }
 

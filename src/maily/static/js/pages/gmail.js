@@ -572,9 +572,8 @@ export async function render(root, me = null) {
 
   async function syncOne(e, a) {
     const btn = e.currentTarget;
-    const icon = btn.querySelector("svg, i");
     btn.disabled = true;
-    if (icon) icon.classList.add("spin");
+    btn.classList.add("is-loading");
     try {
       await api.gmailSync(a.id);
       toast(`Synced ${a.email}.`, "ok", "refresh-cw");
@@ -589,7 +588,8 @@ export async function render(root, me = null) {
       }
     } finally {
       btn.disabled = false;
-      if (icon) icon.classList.remove("spin");
+      btn.classList.remove("is-loading");
+      btn.querySelectorAll(".spin, svg, i").forEach((el) => el.classList.remove("spin"));
     }
   }
 

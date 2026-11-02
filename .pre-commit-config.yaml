@@ -29,3 +29,8 @@ repos:
         language: system
         files: ^(pyproject\.toml|uv\.lock)$
         pass_filenames: false
+      - id: conventional-commit-lint
+        name: check conventional commit message
+        entry: uv run python scripts/lint_pr_commits.py --commit-msg-file
+        language: system
+        stages: [commit-msg]

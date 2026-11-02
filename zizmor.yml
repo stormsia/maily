@@ -14,7 +14,7 @@ rules:
       - pip-audit.yml
       - pypi-publish.yml
       - pypi-publish-client.yml
-      - release-drafter.yml
+      - release-please.yml
       - semantic-pr.yml
       - stale.yml
       - trivy.yml
@@ -29,7 +29,6 @@ rules:
   dangerous-triggers:
     ignore:
       - semantic-pr.yml
-      - release-drafter.yml
       - dependabot-autofix.yml
       - labeler.yml
   bot-conditions:

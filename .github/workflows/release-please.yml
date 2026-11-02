@@ -1,0 +1,35 @@
+name: Release Please
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  release-please:
+    name: Release Please (PR & Tag)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Run Release Please
+        uses: googleapis/release-please-action@v4
+        id: release
+        with:
+          config-file: release-please-config.json
+          manifest-file: .release-please-manifest.json
+          token: ${{ secrets.RELEASE_PLEASE_TOKEN || secrets.GITHUB_TOKEN }}
+
+      - name: Trigger CD Workflows on New Release
+        if: ${{ steps.release.outputs.releases_created == 'true' && !secrets.RELEASE_PLEASE_TOKEN }}
+        run: |
+          echo "Release created for tag: $TAG. Triggering CD publish pipelines via workflow_dispatch..."
+          gh workflow run pypi-publish.yml --ref "$TAG"
+          gh workflow run pypi-publish-client.yml --ref "$TAG"
+          gh workflow run docker-publish.yml --ref "$TAG"
+        env:
+          TAG: ${{ steps.release.outputs.tag_name }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

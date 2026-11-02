@@ -1,0 +1,31 @@
+{
+  "$schema": "https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json",
+  "packages": {
+    ".": {
+      "release-type": "python",
+      "package-name": "maily",
+      "bump-minor-pre-major": false,
+      "bump-patch-for-minor-pre-major": false,
+      "include-component-in-tag": false,
+      "changelog-sections": [
+        {"type": "feat", "section": "Features"},
+        {"type": "fix", "section": "Bug Fixes"},
+        {"type": "perf", "section": "Performance Improvements"},
+        {"type": "deps", "section": "Dependencies"},
+        {"type": "revert", "section": "Reverts"},
+        {"type": "docs", "section": "Documentation"},
+        {"type": "refactor", "section": "Code Refactoring"},
+        {"type": "test", "section": "Tests", "hidden": true},
+        {"type": "ci", "section": "Continuous Integration", "hidden": true},
+        {"type": "chore", "section": "Maintenance", "hidden": true},
+        {"type": "style", "section": "Styles", "hidden": true}
+      ],
+      "extra-files": [
+        "src/maily/__init__.py",
+        "src/maily/standalone_client.py",
+        "client/client.py",
+        "client/pyproject.toml"
+      ]
+    }
+  }
+}

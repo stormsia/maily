@@ -42,7 +42,7 @@ def extract_version_from_file(path: Path) -> str:
 
 
 def extract_pyproject_version(path: Path) -> str:
-    """Extract project.version from pyproject.toml."""
+    """Extract project.version from a pyproject.toml file."""
     if not path.is_file():
         raise FileNotFoundError(f"File not found: {path}")
     with open(path, "rb") as f:
@@ -50,6 +50,19 @@ def extract_pyproject_version(path: Path) -> str:
     version = data.get("project", {}).get("version")
     if not version:
         raise ValueError(f"Could not find 'project.version' in {path}")
+    return str(version).strip()
+
+
+def extract_manifest_version(path: Path) -> str:
+    """Extract version from .release-please-manifest.json."""
+    import json
+
+    if not path.is_file():
+        raise FileNotFoundError(f"File not found: {path}")
+    data = json.loads(path.read_text(encoding="utf-8"))
+    version = data.get(".")
+    if not version:
+        raise ValueError(f"Could not find '.' key in {path}")
     return str(version).strip()
 
 
@@ -86,19 +99,29 @@ def main() -> int:
         )
         return 1
 
-    # 3. Read versions from package and client files
-    files_to_check = {
-        "src/maily/__init__.py": repo_root / "src" / "maily" / "__init__.py",
-        "src/maily/standalone_client.py": repo_root / "src" / "maily" / "standalone_client.py",
-        "client/client.py": repo_root / "client" / "client.py",
+    # 3. Read versions from package, client, and release manifest files
+    files_to_check: dict[str, tuple[Path, str]] = {
+        "src/maily/__init__.py": (repo_root / "src" / "maily" / "__init__.py", "python"),
+        "src/maily/standalone_client.py": (
+            repo_root / "src" / "maily" / "standalone_client.py",
+            "python",
+        ),
+        "client/client.py": (repo_root / "client" / "client.py", "python"),
+        "client/pyproject.toml": (repo_root / "client" / "pyproject.toml", "toml"),
+        ".release-please-manifest.json": (repo_root / ".release-please-manifest.json", "json"),
     }
 
     versions: dict[str, str] = {"pyproject.toml": pyproject_ver}
     errors: list[str] = []
 
-    for name, path in files_to_check.items():
+    for name, (path, kind) in files_to_check.items():
         try:
-            ver = extract_version_from_file(path)
+            if kind == "toml":
+                ver = extract_pyproject_version(path)
+            elif kind == "json":
+                ver = extract_manifest_version(path)
+            else:
+                ver = extract_version_from_file(path)
             versions[name] = ver
             if ver != pyproject_ver:
                 errors.append(

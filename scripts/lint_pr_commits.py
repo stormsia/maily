@@ -53,9 +53,50 @@ def main() -> int:
         with contextlib.suppress(Exception):
             sys.stderr.reconfigure(encoding="utf-8")
 
-    parser = argparse.ArgumentParser(description="Lint commit messages in a commit range.")
+    parser = argparse.ArgumentParser(
+        description="Lint commit messages against Conventional Commits."
+    )
     parser.add_argument("range", nargs="?", help="Git commit range (e.g. origin/main..HEAD)")
+    parser.add_argument(
+        "--commit-msg-file", help="Path to commit message file for git commit-msg hook"
+    )
     args = parser.parse_args()
+
+    # Mode 1: Validate a single commit message file (for pre-commit commit-msg hook)
+    if args.commit_msg_file:
+        from pathlib import Path
+
+        msg_path = Path(args.commit_msg_file)
+        if not msg_path.is_file():
+            print(f"Error: Commit message file not found: {msg_path}", file=sys.stderr)
+            return 1
+        raw_text = msg_path.read_text(encoding="utf-8", errors="replace")
+        lines = [line.strip() for line in raw_text.splitlines()]
+        non_comment_lines = [item for item in lines if item and not item.startswith("#")]
+        if not non_comment_lines:
+            print("Error: Empty commit message.", file=sys.stderr)
+            return 1
+        subject = non_comment_lines[0]
+        # Ignore automatic merge/fixup commits
+        if subject.startswith(("Merge ", "fixup! ", "squash! ", "rebase! ")):
+            return 0
+        match = CONVENTIONAL_REGEX.match(subject)
+        if not match:
+            print(
+                f'\n❌ Invalid commit message: "{subject}"\n'
+                f"   Conventional Commits required: <type>[(<scope>)][!]: <description>\n"
+                f"   Allowed types: {', '.join(ALLOWED_TYPES)}\n"
+                f"   Examples:\n"
+                f"     feat(api): add mailbox expiry webhook\n"
+                f"     fix(client): handle 429 rate limit retry\n"
+                f"     docs: update installation guide\n",
+                file=sys.stderr,
+            )
+            return 1
+        print(f'✅ Commit message follows Conventional Commits: "{subject}"')
+        return 0
+
+    # Mode 2: Validate a commit range (for PR CI checks)
 
     commit_range = args.range
     if not commit_range:

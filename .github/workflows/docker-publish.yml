@@ -48,6 +48,19 @@ jobs:
           REF_TYPE: ${{ github.ref_type }}
           REF_NAME: ${{ github.ref_name }}
 
+      - name: Verify CI Status on Commit
+        if: startsWith(github.ref, 'refs/tags/')
+        run: |
+          echo "Checking CI status for commit $GITHUB_SHA..."
+          CONCLUSION=$(gh run list --commit "$GITHUB_SHA" --workflow ci.yml --json conclusion,status --jq '.[] | select(.status == "completed") | .conclusion' | head -n 1)
+          if [ -n "$CONCLUSION" ] && [ "$CONCLUSION" != "success" ]; then
+            echo "::error::CI check failed with conclusion: $CONCLUSION. Aborting publication."
+            exit 1
+          fi
+          echo "CI check status: ${CONCLUSION:-no completed CI run found (proceeding)}"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Build standalone client and distributions
         run: |
           uv sync --frozen
@@ -112,12 +125,34 @@ jobs:
           subject-digest: ${{ steps.docker_build.outputs.digest }}
           push-to-registry: true
 
+      - name: Install Cosign
+        uses: sigstore/cosign-installer@v3
+        if: startsWith(github.ref, 'refs/tags/')
+
+      - name: Sign container image with Cosign (Keyless)
+        if: startsWith(github.ref, 'refs/tags/')
+        run: |
+          cosign sign --yes "${IMAGE_NAME}@${IMAGE_DIGEST}"
+        env:
+          IMAGE_DIGEST: ${{ steps.docker_build.outputs.digest }}
+          COSIGN_YES: "true"
+
+      - name: Generate Checksums (SHA-256)
+        if: startsWith(github.ref, 'refs/tags/')
+        run: |
+          sha256sum dist/* client/dist/* maily-standalone-client.py > SHA256SUMS.txt
+          if [ -f maily-container-spdx.json ]; then
+            sha256sum maily-container-spdx.json >> SHA256SUMS.txt
+          fi
+
       - name: Upload SBOM, Packages, and Client to GitHub Release
         uses: softprops/action-gh-release@v3
         if: startsWith(github.ref, 'refs/tags/')
         with:
+          generate_release_notes: true
           fail_on_unmatched_files: false
           files: |
+            SHA256SUMS.txt
             maily-container-spdx.json
             maily-standalone-client.py
             dist/*.whl

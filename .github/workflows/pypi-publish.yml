@@ -5,6 +5,14 @@ on:
     tags:
       - "v*.*.*"
   workflow_dispatch:
+    inputs:
+      target:
+        description: "Target PyPI environment"
+        type: choice
+        options:
+          - pypi
+          - testpypi
+        default: pypi
 
 permissions:
   contents: read
@@ -34,16 +42,43 @@ jobs:
         with:
           python-version: "3.15"
 
-      - name: Verify SemVer and Git Tag Consistency
-        run: python3 scripts/check_version_consistency.py --tag "$REF_NAME"
+      - name: Verify SemVer and Package Consistency
+        run: |
+          if [ "$REF_TYPE" = "tag" ]; then
+            python3 scripts/check_version_consistency.py --tag "$REF_NAME"
+          else
+            python3 scripts/check_version_consistency.py
+          fi
         env:
+          REF_TYPE: ${{ github.ref_type }}
           REF_NAME: ${{ github.ref_name }}
+
+      - name: Verify CI Status on Commit
+        if: startsWith(github.ref, 'refs/tags/')
+        run: |
+          echo "Checking CI status for commit $GITHUB_SHA..."
+          CONCLUSION=$(gh run list --commit "$GITHUB_SHA" --workflow ci.yml --json conclusion,status --jq '.[] | select(.status == "completed") | .conclusion' | head -n 1)
+          if [ -n "$CONCLUSION" ] && [ "$CONCLUSION" != "success" ]; then
+            echo "::error::CI check failed with conclusion: $CONCLUSION. Aborting publication."
+            exit 1
+          fi
+          echo "CI check status: ${CONCLUSION:-no completed CI run found (proceeding)}"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build sdist and wheel
         run: uv build
 
       - name: Validate distribution metadata
         run: uvx twine check --strict dist/*
+
+      - name: Smoke Test Built Wheel
+        run: |
+          uv venv .smoke_venv
+          uv pip install --python .smoke_venv dist/*.whl
+          .smoke_venv/bin/python3 -c "import maily; print('Imported maily version:', maily.__version__)"
+          .smoke_venv/bin/python3 -c "from maily.app.main import create_app; app = create_app(); print('App created successfully')"
+          rm -rf .smoke_venv
 
       - name: Generate build provenance attestations
         uses: actions/attest-build-provenance@v4
@@ -60,4 +95,6 @@ jobs:
 
       - name: Publish package distributions to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
-        if: startsWith(github.ref, 'refs/tags/')
+        if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch'
+        with:
+          repository-url: ${{ inputs.target == 'testpypi' && 'https://test.pypi.org/legacy/' || 'https://upload.pypi.org/legacy/' }}

@@ -84,17 +84,13 @@ def _run_migrations(url: str) -> None:
     from alembic.config import Config
 
     cfg = Config()
-    root = Path(__file__).resolve().parents[3]
-    alembic_dir = root / "alembic"
-    if not alembic_dir.is_dir():
-        cwd_alembic = Path.cwd() / "alembic"
-        if cwd_alembic.is_dir():
-            alembic_dir = cwd_alembic
-        else:
-            for parent in Path(__file__).resolve().parents:
-                if (parent / "alembic").is_dir():
-                    alembic_dir = parent / "alembic"
-                    break
+    alembic_dir = Path(__file__).resolve().parents[1] / "alembic"
+    if not alembic_dir.is_dir() or not (alembic_dir / "env.py").is_file():
+        for parent in Path(__file__).resolve().parents:
+            candidate = parent / "alembic"
+            if candidate.is_dir() and (candidate / "env.py").is_file():
+                alembic_dir = candidate
+                break
     cfg.set_main_option("script_location", str(alembic_dir))
     cfg.set_main_option("sqlalchemy.url", url.replace("sqlite+aiosqlite", "sqlite"))
     command.upgrade(cfg, "head")

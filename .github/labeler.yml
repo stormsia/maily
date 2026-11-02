@@ -4,7 +4,7 @@ area:core:
 
 area:db:
   - changed-files:
-      - any-glob-to-any-file: ['src/maily/db/**', 'alembic/**']
+      - any-glob-to-any-file: ['src/maily/db/**', 'src/maily/alembic/**']
 
 area:providers:
   - changed-files:

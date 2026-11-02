@@ -146,7 +146,6 @@ def patch_pyproject_toml(mutate_paths: list[str], test_paths: list[str]) -> Path
     new_section = f"""[tool.mutmut]
 source_paths = ["src"]
 also_copy = [
-    "alembic",
     "alembic.ini",
 ]
 only_mutate = [

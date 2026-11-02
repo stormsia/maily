@@ -24,7 +24,6 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 # 2. Source code: copy components needed for package build and migrations
 COPY README.md pyproject.toml alembic.ini ./
 COPY src/ ./src/
-COPY alembic/ ./alembic/
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --frozen --no-dev
 
@@ -56,7 +55,6 @@ RUN groupadd -g 1000 maily && \
 # 2. Copy compiled venv, code, and Alembic configuration
 COPY --from=builder --chown=maily:maily /venv /venv
 COPY --from=builder --chown=maily:maily /app/src /app/src
-COPY --from=builder --chown=maily:maily /app/alembic /app/alembic
 COPY --from=builder --chown=maily:maily /app/alembic.ini /app/alembic.ini
 
 # 3. Entrypoint to auto-fix permissions on mounted /data volume (SQLite WAL) and drop privileges to maily

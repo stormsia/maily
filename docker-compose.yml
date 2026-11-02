@@ -1,5 +1,6 @@
 # ==============================================================================
-# Production Docker Compose for maily
+# Production Docker Compose for maily (Build from Source)
+# For production pre-built images without cloning, see docker-compose.prod.yml
 # ==============================================================================
 # Start:
 #   docker compose up -d --build

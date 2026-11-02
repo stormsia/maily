@@ -71,8 +71,8 @@ def main() -> int:
             print(f"Error: Commit message file not found: {msg_path}", file=sys.stderr)
             return 1
         raw_text = msg_path.read_text(encoding="utf-8", errors="replace")
-        lines = [line.strip() for line in raw_text.splitlines()]
-        non_comment_lines = [item for item in lines if item and not item.startswith("#")]
+        raw_lines = [line.strip() for line in raw_text.splitlines()]
+        non_comment_lines = [item for item in raw_lines if item and not item.startswith("#")]
         if not non_comment_lines:
             print("Error: Empty commit message.", file=sys.stderr)
             return 1

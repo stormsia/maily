@@ -1,20 +1,20 @@
 <p align="center">
-  <img src="docs/assets/hero_banner.webp" alt="maily - The Universal Temporary Email Gateway & Management Platform" width="100%" />
+  <img src="https://raw.githubusercontent.com/stormsia/maily/main/docs/assets/hero_banner.webp" alt="maily - The Universal Temporary Email Gateway & Management Platform" width="100%" />
 </p>
 
 <div align="center">
 
 # ✉️ maily
 
-### The Universal Temporary Email Gateway & Management Platform
+### The Universal Temporary Email Gateway & REST API Platform
 
-**Taming the disposable email zoo under a single high-performance REST API, modern async Python SDK, and dark-mode web console.**
+**Taming the disposable email zoo (Mail.tm, TempMail, 1secmail alternatives) under a single high-performance REST API, modern async Python SDK, and dark-mode web console.**
 
 <br>
 
-> ⚡ **One API to Rule the Disposable Email Zoo:** Stop wrestling with 8 incompatible temp-mail APIs, daily domain blacklists, and fragile regexes. Maily aggregates Mail.tm, TempMail, and 6+ providers into one resilient REST gateway with 1-line automatic OTP verification code extraction for Playwright, Pytest, and QA bots.
+> ⚡ **Universal Temp Mail API to Rule the Disposable Email Zoo:** Stop wrestling with 8 incompatible temp-mail APIs, daily domain blacklists, and fragile regexes. Maily acts as a resilient, drop-in 1secmail alternative aggregating Mail.tm, Tempmail Plus, Temp-Mail.io, and 5+ disposable email providers into one unified REST gateway with 1-line automatic OTP verification code extraction for Playwright, Pytest, and QA bots.
 >
-> 🇷🇺 **Единый шлюз временной почты:** объединяем зоопарк temp-mail сервисов в одном быстром REST API с удобным тёмным веб-интерфейсом и мгновенным извлечением проверочных кодов.
+> 🇷🇺 **Универсальный шлюз и REST API временной почты:** объединяем зоопарк temp-mail сервисов (надёжная замена 1secmail, Mail.tm, TempMail) в едином быстром REST API с удобным тёмным веб-интерфейсом и мгновенным извлечением проверочных OTP кодов.
 
 <br>
 
@@ -69,7 +69,7 @@ Integrating disposable email into automated tests, QA pipelines, or bots usually
 ## 🏗️ Architecture & Data Flow
 
 <p align="center">
-  <img src="docs/assets/infographic_zoo.webp" alt="Maily Architecture & Data Flow Infographic" width="100%" />
+  <img src="https://raw.githubusercontent.com/stormsia/maily/main/docs/assets/infographic_zoo.webp" alt="Maily Architecture & Data Flow Infographic" width="100%" />
 </p>
 
 ```mermaid
@@ -177,7 +177,7 @@ Maily includes a high-performance dark-mode web console served directly at `http
 
 <p align="center">
   <a href="#workstation-gallery">
-    <img src="docs/assets/dashboard_carousel.webp" alt="Maily Interactive Web Console - Animated Tour Carousel" width="100%" />
+    <img src="https://raw.githubusercontent.com/stormsia/maily/main/docs/assets/dashboard_carousel.webp" alt="Maily Interactive Web Console - Animated Tour Carousel" width="100%" />
   </a>
   <br>
   <sub><b>🎬 Live Dashboard Walkthrough:</b> Auto-playing carousel cycling through all 6 admin console workstations (346 KB payload). Click to expand high-resolution inspection below.</sub>
@@ -195,16 +195,16 @@ Maily includes a high-performance dark-mode web console served directly at `http
 <table width="100%">
   <tr>
     <td width="50%" align="center" valign="top">
-      <a href="docs/screenshots/01_overview.webp">
-        <img src="docs/screenshots/01_overview.webp" alt="Maily Live Overview Dashboard - Real-time metrics and provider traffic distribution" width="100%" />
+      <a href="https://raw.githubusercontent.com/stormsia/maily/main/docs/screenshots/01_overview.webp">
+        <img src="https://raw.githubusercontent.com/stormsia/maily/main/docs/screenshots/01_overview.webp" alt="Maily Live Overview Dashboard - Real-time metrics and provider traffic distribution" width="100%" />
       </a>
       <br>
       <b>📊 1. Live Telemetry & Traffic Dynamics</b>
       <p align="left"><sub>Real-time active inboxes, message rates, 10-day activity trends, and provider distribution donut charts.</sub></p>
     </td>
     <td width="50%" align="center" valign="top">
-      <a href="docs/screenshots/02_mailboxes.webp">
-        <img src="docs/screenshots/02_mailboxes.webp" alt="Maily Mailboxes Fleet - Search, filter, and manage disposable inboxes" width="100%" />
+      <a href="https://raw.githubusercontent.com/stormsia/maily/main/docs/screenshots/02_mailboxes.webp">
+        <img src="https://raw.githubusercontent.com/stormsia/maily/main/docs/screenshots/02_mailboxes.webp" alt="Maily Mailboxes Fleet - Search, filter, and manage disposable inboxes" width="100%" />
       </a>
       <br>
       <b>📬 2. Multi-Provider Mailbox Fleet</b>
@@ -213,16 +213,16 @@ Maily includes a high-performance dark-mode web console served directly at `http
   </tr>
   <tr>
     <td width="50%" align="center" valign="top">
-      <a href="docs/screenshots/03_mailbox_detail_email.webp">
-        <img src="docs/screenshots/03_mailbox_detail_email.webp" alt="Maily Mailbox Detail and Quick Extract OTP Inspector" width="100%" />
+      <a href="https://raw.githubusercontent.com/stormsia/maily/main/docs/screenshots/03_mailbox_detail_email.webp">
+        <img src="https://raw.githubusercontent.com/stormsia/maily/main/docs/screenshots/03_mailbox_detail_email.webp" alt="Maily Mailbox Detail and Quick Extract OTP Inspector" width="100%" />
       </a>
       <br>
       <b>⚡ 3. Magic Verification & OTP Inspector</b>
       <p align="left"><sub>Automated Quick Extract card isolating 4–8 digit OTP codes, activation links, HTML previews, and MIME source.</sub></p>
     </td>
     <td width="50%" align="center" valign="top">
-      <a href="docs/screenshots/05_domain_cache.webp">
-        <img src="docs/screenshots/05_domain_cache.webp" alt="Maily Provider Domain Cache - 40+ Rotating Disposable Email Domains Across 8 Services" width="100%" />
+      <a href="https://raw.githubusercontent.com/stormsia/maily/main/docs/screenshots/05_domain_cache.webp">
+        <img src="https://raw.githubusercontent.com/stormsia/maily/main/docs/screenshots/05_domain_cache.webp" alt="Maily Provider Domain Cache - 40+ Rotating Disposable Email Domains Across 8 Services" width="100%" />
       </a>
       <br>
       <b>🌐 4. 40+ Rotating Domains & Health Cache</b>
@@ -231,16 +231,16 @@ Maily includes a high-performance dark-mode web console served directly at `http
   </tr>
   <tr>
     <td width="50%" align="center" valign="top">
-      <a href="docs/screenshots/04_retention.webp">
-        <img src="docs/screenshots/04_retention.webp" alt="Maily Retention Sweeper and SQLite Database Maintenance" width="100%" />
+      <a href="https://raw.githubusercontent.com/stormsia/maily/main/docs/screenshots/04_retention.webp">
+        <img src="https://raw.githubusercontent.com/stormsia/maily/main/docs/screenshots/04_retention.webp" alt="Maily Retention Sweeper and SQLite Database Maintenance" width="100%" />
       </a>
       <br>
       <b>🧹 5. Automated Retention Sweeper & SQLite Defrag</b>
       <p align="left"><sub>Granular TTL policies per provider, background expiration sweeps, and zero-downtime SQLite WAL defragmentation.</sub></p>
     </td>
     <td width="50%" align="center" valign="top">
-      <a href="docs/screenshots/06_api_keys.webp">
-        <img src="docs/screenshots/06_api_keys.webp" alt="Maily Scoped Multi-Tenant API Keys and Permission Management" width="100%" />
+      <a href="https://raw.githubusercontent.com/stormsia/maily/main/docs/screenshots/06_api_keys.webp">
+        <img src="https://raw.githubusercontent.com/stormsia/maily/main/docs/screenshots/06_api_keys.webp" alt="Maily Scoped Multi-Tenant API Keys and Permission Management" width="100%" />
       </a>
       <br>
       <b>🔐 6. Multi-Tenant Scoped API Keys</b>

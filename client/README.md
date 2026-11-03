@@ -6,15 +6,15 @@
 
 # ✉️ maily-client
 
-### The Unified Disposable Email SDK for Python (Async & Sync)
+### The Unified Disposable Email SDK & Temp Mail API for Python (Async & Sync)
 
 **Control the zoo of temporary email providers (Mail.tm, TempMail, 1secmail alternatives) with 1-line automatic OTP code extraction for Playwright & Pytest.**
 
 <br>
 
-> ⚡ **Unite the disposable email zoo in Python:** Stop juggling multiple brittle temp-mail client libraries. `maily-client` gives you 1-line temporary mailbox creation, 40+ rotating domains across 8 provider fleets, and automatic OTP code extraction (`await api.wait_for_code(box)`).
+> ⚡ **Unite the disposable email zoo in Python:** Stop juggling multiple brittle temp-mail client libraries. `maily-client` provides a high-level Python temp mail API with 1-line mailbox creation, 40+ rotating domains across 8 provider fleets, and automatic OTP code extraction (`await api.wait_for_code(box)`).
 >
-> 🇷🇺 **Асинхронный Python SDK для временной почты:** единый клиент для десятка temp-mail сервисов с автоматическим извлечением 6-значных OTP кодов и ссылок активации в тестах Playwright и Pytest.
+> 🇷🇺 **Асинхронный Python SDK и Temp Mail API для временной почты:** единый клиент для десятка temp-mail сервисов (надёжная замена 1secmail, Mail.tm, TempMail) с автоматическим извлечением 6-значных OTP кодов и ссылок активации в тестах Playwright и Pytest.
 
 <br>
 
@@ -24,12 +24,14 @@
 [![CI Pipeline](https://github.com/stormsia/maily/actions/workflows/ci.yml/badge.svg)](https://github.com/stormsia/maily/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Typing: Typed](https://img.shields.io/badge/typing-typed-blue.svg)](https://peps.python.org/pep-0561/)
+[![Docker GHCR](https://img.shields.io/badge/Docker-ghcr.io-blue?logo=docker&logoColor=white)](https://github.com/stormsia/maily/pkgs/container/maily)
 [![maily-server](https://img.shields.io/pypi/v/maily-server.svg?label=maily-server)](https://pypi.org/project/maily-server/)
 [![API Docs](https://img.shields.io/badge/Docs-GitHub%20Pages-success?logo=github)](https://stormsia.github.io/maily/)
 
 [📖 Documentation & Guides](https://stormsia.github.io/maily/) •
 [🚀 Server Package (PyPI)](https://pypi.org/project/maily-server/) •
 [📦 Client Package (PyPI)](https://pypi.org/project/maily-client/) •
+[🐳 Docker GHCR](https://github.com/stormsia/maily/pkgs/container/maily) •
 [🐙 GitHub Repository](https://github.com/stormsia/maily) •
 [⚡ Quickstart](#-quickstart)
 

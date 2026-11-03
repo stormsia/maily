@@ -30,6 +30,17 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 # ---------- Stage 2: Minimal Runtime ----------
 FROM python:3.15-slim-bookworm AS runner
 
+# OCI Standard Image Metadata Labels for GHCR Package Cards
+LABEL org.opencontainers.image.title="maily" \
+      org.opencontainers.image.description="The Universal Temporary Email Gateway: aggregate 8+ disposable mail providers under one REST API & dark-mode dashboard with instant OTP verification code extraction" \
+      org.opencontainers.image.url="https://github.com/stormsia/maily" \
+      org.opencontainers.image.source="https://github.com/stormsia/maily" \
+      org.opencontainers.image.documentation="https://stormsia.github.io/maily/" \
+      org.opencontainers.image.licenses="MIT" \
+      org.opencontainers.image.vendor="stormsia" \
+      org.opencontainers.image.authors="stormsia" \
+      org.opencontainers.image.base.name="docker.io/library/python:3.15-slim-bookworm"
+
 WORKDIR /app
 
 # Python and glibc memory allocator optimizations (minimal RAM fragmentation for asyncio + SQLite WAL)

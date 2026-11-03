@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "maily-server"
 version = "0.6.0"
-description = "The Universal Temporary Email Gateway: aggregate 8+ disposable mail providers under one REST API & dark-mode dashboard with instant OTP verification code extraction"
+description = "Universal Temporary Email Gateway & REST API: aggregate 8+ disposable mail providers (Mail.tm, TempMail, 1secmail alternative) with instant OTP code extraction & dark-mode dashboard"
 readme = "README.md"
 license = "MIT"
 license-files = ["LICENSE"]
@@ -24,14 +24,22 @@ keywords = [
     "temp-mail-api",
     "disposable-email-api",
     "temporary-mailbox",
+    "disposable-mailbox",
     "mailtm",
+    "mail-tm",
     "tempmail",
+    "tempmail-plus",
+    "temp-mail-io",
     "1secmail",
+    "1secmail-alternative",
     "fake-email",
     "burner-email",
     "mail-server",
+    "temporary-email-gateway",
+    "temp-mail-gateway",
     "fastapi",
     "automation",
+    "email-automation",
     "testing",
     "qa",
     "e2e-testing",
@@ -41,9 +49,12 @@ keywords = [
     "playwright-email",
     "pytest",
     "pytest-email",
+    "selenium",
+    "cypress",
     "otp",
+    "otp-verification",
+    "otp-extraction",
     "verification-code",
-    "disposable-mailbox",
     "rest-api",
     "sqlite",
     "multi-provider",
@@ -54,20 +65,26 @@ classifiers = [
     "Framework :: FastAPI",
     "Framework :: AsyncIO",
     "Framework :: Pydantic",
+    "Framework :: Pydantic :: 2",
+    "Framework :: Pytest",
     "Intended Audience :: Developers",
     "Intended Audience :: Information Technology",
     "Intended Audience :: System Administrators",
     "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
     "Programming Language :: Python :: 3.13",
     "Programming Language :: Python :: 3.14",
     "Programming Language :: Python :: 3.15",
     "Topic :: Communications :: Email",
+    "Topic :: Communications :: Email :: Filters",
     "Topic :: Communications :: Email :: Mail Transport Agents",
     "Topic :: Internet :: WWW/HTTP :: HTTP Servers",
     "Topic :: Software Development :: Build Tools",
     "Topic :: Software Development :: Quality Assurance",
     "Topic :: Software Development :: Testing",
+    "Topic :: Software Development :: Testing :: Acceptance",
+    "Topic :: Software Development :: Testing :: Mocking",
     "Topic :: Software Development :: Libraries :: Python Modules",
     "Typing :: Typed",
 ]
@@ -108,7 +125,7 @@ Documentation = "https://stormsia.github.io/maily/"
 Repository = "https://github.com/stormsia/maily"
 Issues = "https://github.com/stormsia/maily/issues"
 Changelog = "https://github.com/stormsia/maily/blob/main/CHANGELOG.md"
-Docker = "https://github.com/stormsia/maily/pkgs/container/maily"
+"Docker Container" = "https://github.com/stormsia/maily/pkgs/container/maily"
 "Client SDK" = "https://pypi.org/project/maily-client/"
 
 [tool.hatch.build.targets.wheel]

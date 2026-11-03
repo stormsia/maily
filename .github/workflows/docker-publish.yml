@@ -96,6 +96,16 @@ jobs:
             type=raw,value=latest,enable=${{ startsWith(github.ref, 'refs/tags/v') }}
             type=ref,event=branch
             type=sha
+          labels: |
+            org.opencontainers.image.title=maily
+            org.opencontainers.image.description=The Universal Temporary Email Gateway: aggregate 8+ disposable mail providers under one REST API & dark-mode dashboard with instant OTP verification code extraction
+            org.opencontainers.image.url=https://github.com/stormsia/maily
+            org.opencontainers.image.source=https://github.com/stormsia/maily
+            org.opencontainers.image.documentation=https://stormsia.github.io/maily/
+            org.opencontainers.image.licenses=MIT
+            org.opencontainers.image.vendor=stormsia
+            org.opencontainers.image.authors=stormsia
+            org.opencontainers.image.base.name=docker.io/library/python:3.15-slim-bookworm
 
       - name: Build and push multi-architecture image
         id: docker_build
@@ -128,6 +138,8 @@ jobs:
       - name: Install Cosign
         uses: sigstore/cosign-installer@v3
         if: startsWith(github.ref, 'refs/tags/')
+        with:
+          cosign-release: "v2.4.1"
 
       - name: Sign container image with Cosign (Keyless)
         if: startsWith(github.ref, 'refs/tags/')
@@ -149,7 +161,33 @@ jobs:
         uses: softprops/action-gh-release@v3
         if: startsWith(github.ref, 'refs/tags/')
         with:
-          generate_release_notes: true
+          generate_release_notes: false
+          append_body: true
+          body: |
+            ---
+            ### 🚀 Quick Install & Upgrade
+
+            **Python Client SDK (Async & Sync, Python 3.10+):**
+            ```bash
+            pip install -U maily-client
+            ```
+
+            **Python Server Package (Python 3.13+):**
+            ```bash
+            pip install -U maily-server
+            ```
+
+            **Docker Multi-Arch Container (GHCR):**
+            ```bash
+            docker pull ghcr.io/stormsia/maily:latest
+            # Or pinned release tag:
+            docker pull ghcr.io/stormsia/maily:${{ github.ref_name }}
+            # One-line instant run:
+            docker run -d --name maily -p 8477:8477 -e MAILY_API_KEY=your_secret_api_key -v maily_data:/data --restart unless-stopped ghcr.io/stormsia/maily:latest
+            ```
+
+            **Standalone Single-File Client:**
+            Download `maily-standalone-client.py` directly from release assets below (zero internal dependencies, only `httpx`, `loguru`, `pydantic`).
           fail_on_unmatched_files: false
           files: |
             SHA256SUMS.txt

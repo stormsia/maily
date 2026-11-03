@@ -1,5 +1,12 @@
 # Changelog
 
+All notable changes to the **Maily** ecosystem ([`maily-server`](https://pypi.org/project/maily-server/), [`maily-client`](https://pypi.org/project/maily-client/), and [Docker container](https://github.com/stormsia/maily/pkgs/container/maily)) are documented in this file using [Conventional Commits](https://www.conventionalcommits.org/).
+
+> 🚀 **Quick Upgrade Commands:**
+> - **Python Client SDK (PyPI):** `pip install -U maily-client`
+> - **Python Server Package (PyPI):** `pip install -U maily-server`
+> - **Docker Container (GHCR):** `docker pull ghcr.io/stormsia/maily:latest`
+
 ## [0.6.0](https://github.com/stormsia/maily/compare/v0.5.0...v0.6.0) (2026-11-02)
 
 

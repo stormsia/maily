@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "maily-server"
-version = "0.6.0"
+version = "0.7.0"
 description = "Universal Temporary Email Gateway & REST API: aggregate 8+ disposable mail providers (Mail.tm, TempMail, 1secmail alternative) with instant OTP code extraction & dark-mode dashboard"
 readme = "README.md"
 license = "MIT"

@@ -6,6 +6,7 @@ import json
 from pathlib import Path
 
 from build_pages_site import (
+    calculate_provider_sla,
     copy_static_assets,
     extract_benchmarks,
     generate_analytics_dashboard,
@@ -89,9 +90,9 @@ def test_build_pages_site_artifacts(tmp_path: Path):
     assert 'id="tab-curl"' in index_html
     assert 'id="tab-recipes"' in index_html
     assert 'id="tab-architecture"' in index_html
-    assert "simCreateMailbox" in index_html
-    assert "simExtractOtp" in index_html
-    assert "simExtractLink" in index_html
+    assert "simCreateMailbox" not in index_html
+    assert "simExtractOtp" not in index_html
+    assert "Interactive Inbound Email & OTP Simulator" not in index_html
     assert "wait_for_code" in index_html
     assert "wait_for_link" in index_html
     assert "create_temp_mailbox" in index_html
@@ -126,6 +127,9 @@ def test_build_pages_site_artifacts(tmp_path: Path):
     generate_redoc_ui(tmp_path)
     redoc_html = (tmp_path / "redoc.html").read_text(encoding="utf-8")
     assert "redoc" in redoc_html
+    assert 'id="redoc-container"' in redoc_html
+    assert "Redoc.init" in redoc_html
+    assert "redoc.standalone.js" in redoc_html
     assert "portal-nav" in redoc_html
     assert "embedded-view" in redoc_html
     assert '"primary": {"main": "#7c6cff"}' in redoc_html
@@ -135,16 +139,26 @@ def test_build_pages_site_artifacts(tmp_path: Path):
     analytics_html = (tmp_path / "analytics.html").read_text(encoding="utf-8")
     assert "Security, Quality & Operational Observability" in analytics_html
     assert "provider-card" in analytics_html
+    assert "health-bar-container" in analytics_html
+    assert "Gateway SLA" in analytics_html
+    assert "How SLA & High-Availability are Measured" in analytics_html
+    assert "168 hourly probes" in analytics_html
     assert "Gitleaks" in analytics_html
     assert "Trivy" in analytics_html
     assert "CodeQL" in analytics_html
     assert "portal-footer" in analytics_html
 
-    # 9. Benchmarks extraction and fallback
+    # 9. Benchmarks extraction and dashboard
     extract_benchmarks(tmp_path)
     assert (tmp_path / "dev" / "bench" / "index.html").is_file()
+    assert (tmp_path / "dev" / "bench" / "data.js").is_file()
     bench_html = (tmp_path / "dev" / "bench" / "index.html").read_text(encoding="utf-8")
     assert "portal-nav" in bench_html
+    assert "benchmark-chart" in bench_html
+    assert "Visual Latency Spectrum" in bench_html
+    assert "Production Interpretation" in bench_html
+    assert "BENCHMARK_METADATA" in bench_html
+    assert "Percentiles (p50 · p95 · p99)" in bench_html
 
 
 def test_load_provider_health():
@@ -152,3 +166,29 @@ def test_load_provider_health():
     assert isinstance(providers, dict)
     assert len(providers) > 0
     assert "dispoemail.org" in providers or "mail.tm" in providers
+
+
+def test_calculate_provider_sla():
+    # Operational with 0 failures
+    uptime, text, color, icon = calculate_provider_sla("operational", 0)
+    assert uptime == 99.95
+    assert "Operational" in text
+    assert icon == "🟢"
+
+    # Degraded with 1 failure (168 hourly checks per week)
+    uptime_deg, text_deg, color_deg, icon_deg = calculate_provider_sla("degraded", 1)
+    assert 99.0 <= uptime_deg <= 99.8
+    assert "Degraded (1 fail)" in text_deg
+    assert icon_deg == "🟡"
+
+    # Outage with 3 failures
+    uptime_out, text_out, color_out, icon_out = calculate_provider_sla("outage", 3)
+    assert 95.0 <= uptime_out <= 99.0
+    assert "Outage" in text_out
+    assert icon_out == "🔴"
+
+    # Stage-specific outage status string (e.g. delivery_outage)
+    uptime_deliv, text_deliv, color_deliv, icon_deliv = calculate_provider_sla("delivery_outage", 3)
+    assert 95.0 <= uptime_deliv <= 99.0
+    assert "Delivery Outage" in text_deliv
+    assert icon_deliv == "🔴"

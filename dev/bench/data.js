@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1793664570420,
+  "lastUpdate": 1793665905120,
   "repoUrl": "https://github.com/stormsia/maily",
   "entries": {
     "Benchmark": [
@@ -8316,6 +8316,135 @@ window.BENCHMARK_DATA = {
             "unit": "iter/sec",
             "range": "stddev: 0.00012284827927603923",
             "extra": "mean: 5.098290737142739 msec\nrounds: 175"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "sf_root@outlook.com",
+            "name": "stormsia",
+            "username": "stormsia"
+          },
+          "committer": {
+            "email": "sf_root@outlook.com",
+            "name": "stormsia",
+            "username": "stormsia"
+          },
+          "distinct": true,
+          "id": "b76655ef6e5c948f48662f89fc7ab8e3b67eef4f",
+          "message": "fix(docs): synchronize hero action buttons with portal tabs and harden router accessibility",
+          "timestamp": "2026-11-03T03:31:01+03:00",
+          "tree_id": "dc0010b56b120bb0fa7747df9ede7df4a2f75e42",
+          "url": "https://github.com/stormsia/maily/commit/b76655ef6e5c948f48662f89fc7ab8e3b67eef4f"
+        },
+        "date": 1793665904765,
+        "tool": "pytest",
+        "benches": [
+          {
+            "name": "tests/test_benchmarks.py::test_benchmark_crypto_encrypt_1kb",
+            "value": 64119.312195940074,
+            "unit": "iter/sec",
+            "range": "stddev: 0.0000034544623071068556",
+            "extra": "mean: 15.595925248607367 usec\nrounds: 602"
+          },
+          {
+            "name": "tests/test_benchmarks.py::test_benchmark_crypto_decrypt_1kb",
+            "value": 60628.32432235282,
+            "unit": "iter/sec",
+            "range": "stddev: 0.0000030460208320925277",
+            "extra": "mean: 16.49394092904715 usec\nrounds: 16878"
+          },
+          {
+            "name": "tests/test_benchmarks.py::test_benchmark_random_string",
+            "value": 73706.58272165948,
+            "unit": "iter/sec",
+            "range": "stddev: 0.000002432571618164888",
+            "extra": "mean: 13.567309229032254 usec\nrounds: 28584"
+          },
+          {
+            "name": "tests/test_benchmarks.py::test_benchmark_random_password",
+            "value": 49096.212390243374,
+            "unit": "iter/sec",
+            "range": "stddev: 0.000002852283157055933",
+            "extra": "mean: 20.3681699934703 usec\nrounds: 31260"
+          },
+          {
+            "name": "tests/test_benchmarks.py::test_benchmark_pydantic_message_detail_parse",
+            "value": 459640.7613962873,
+            "unit": "iter/sec",
+            "range": "stddev: 6.051718614639687e-7",
+            "extra": "mean: 2.175612095329014 usec\nrounds: 25117"
+          },
+          {
+            "name": "tests/test_benchmarks.py::test_benchmark_pydantic_batch_messages_serialize",
+            "value": 4799.946639942776,
+            "unit": "iter/sec",
+            "range": "stddev: 0.000007784083623662955",
+            "extra": "mean: 208.3356493337855 usec\nrounds: 3000"
+          },
+          {
+            "name": "tests/test_benchmarks.py::test_benchmark_extract_verification_code",
+            "value": 96801.29762374159,
+            "unit": "iter/sec",
+            "range": "stddev: 0.000001124748121756541",
+            "extra": "mean: 10.330440030741272 usec\nrounds: 50951"
+          },
+          {
+            "name": "tests/test_benchmarks.py::test_benchmark_extract_confirmation_url",
+            "value": 102588.08604957662,
+            "unit": "iter/sec",
+            "range": "stddev: 0.0000013091246622429093",
+            "extra": "mean: 9.747720602924018 usec\nrounds: 50158"
+          },
+          {
+            "name": "tests/test_benchmarks.py::test_benchmark_authz_parse_scope",
+            "value": 214375.12406103348,
+            "unit": "iter/sec",
+            "range": "stddev: 9.897422456306148e-7",
+            "extra": "mean: 4.664720332547987 usec\nrounds: 25137"
+          },
+          {
+            "name": "tests/test_benchmarks.py::test_benchmark_authz_secret_sha256",
+            "value": 1162823.8018573537,
+            "unit": "iter/sec",
+            "range": "stddev: 3.9335734356467014e-7",
+            "extra": "mean: 859.9755168433268 nsec\nrounds: 37781"
+          },
+          {
+            "name": "tests/test_benchmarks.py::test_benchmark_health_endpoint",
+            "value": 300.4101821489843,
+            "unit": "iter/sec",
+            "range": "stddev: 0.0004079302606789288",
+            "extra": "mean: 3.328781976850784 msec\nrounds: 216"
+          },
+          {
+            "name": "tests/test_benchmarks.py::test_benchmark_domain_cache_settings",
+            "value": 202.94559729662416,
+            "unit": "iter/sec",
+            "range": "stddev: 0.0006190398268569905",
+            "extra": "mean: 4.927428893854768 msec\nrounds: 179"
+          },
+          {
+            "name": "tests/test_benchmarks.py::test_benchmark_mailboxes_list",
+            "value": 267.4335330568592,
+            "unit": "iter/sec",
+            "range": "stddev: 0.0005401158986561456",
+            "extra": "mean: 3.739246864705592 msec\nrounds: 170"
+          },
+          {
+            "name": "tests/test_benchmarks.py::test_benchmark_admin_keys_list",
+            "value": 252.7106412930612,
+            "unit": "iter/sec",
+            "range": "stddev: 0.0001876507897826489",
+            "extra": "mean: 3.9570949402179263 msec\nrounds: 184"
+          },
+          {
+            "name": "tests/test_benchmarks.py::test_benchmark_client_init",
+            "value": 195.19043059127367,
+            "unit": "iter/sec",
+            "range": "stddev: 0.00007546824012951514",
+            "extra": "mean: 5.123201977529255 msec\nrounds: 178"
           }
         ]
       }

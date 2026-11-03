@@ -7,6 +7,13 @@ All notable changes to the **Maily** ecosystem ([`maily-server`](https://pypi.or
 > - **Python Server Package (PyPI):** `pip install -U maily-server`
 > - **Docker Container (GHCR):** `docker pull ghcr.io/stormsia/maily:latest`
 
+## [0.8.0](https://github.com/stormsia/maily/compare/v0.7.0...v0.8.0) (2026-11-03)
+
+
+### Features
+
+* **version:** update version handling in build_pages_site.py and related tests ([c3fc7d5](https://github.com/stormsia/maily/commit/c3fc7d5ef27512ceaadf9d7709a8fd9229a78882))
+
 ## [0.7.0](https://github.com/stormsia/maily/compare/v0.6.0...v0.7.0) (2026-11-03)
 
 

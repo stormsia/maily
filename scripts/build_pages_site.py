@@ -1595,6 +1595,33 @@ def generate_index_portal(public_dir: Path) -> None:
       background: var(--panel-hover);
       color: #38bdf8;
     }}
+    .hero-tab-btn {{
+      transition: all 0.2s ease;
+    }}
+    .hero-tab-btn.active,
+    .hero-tab-btn.btn-primary {{
+      background: linear-gradient(135deg, #7c6cff, #2cc6e0) !important;
+      color: #fff !important;
+      border-color: transparent !important;
+      box-shadow: 0 4px 16px rgba(124, 108, 255, 0.4);
+    }}
+    .hero-tab-btn.active:hover,
+    .hero-tab-btn.btn-primary:hover {{
+      transform: translateY(-1px);
+      box-shadow: 0 6px 20px rgba(124, 108, 255, 0.6);
+    }}
+    .hero-tab-btn:not(.active) {{
+      background: var(--panel);
+      border-color: var(--border);
+      color: #f1f5f9;
+      box-shadow: none;
+    }}
+    .hero-tab-btn:not(.active):hover {{
+      border-color: #38bdf8;
+      background: var(--panel-hover);
+      color: #38bdf8;
+      transform: translateY(-1px);
+    }}
 
     /* Hero Banner Graphic Card */
     .hero-banner-container {{
@@ -1715,6 +1742,12 @@ def generate_index_portal(public_dir: Path) -> None:
       background: rgba(11, 14, 20, 0.95);
       border-bottom: 1px solid var(--border);
       backdrop-filter: blur(12px);
+      scroll-margin-top: 65px;
+    }}
+    @media (max-width: 900px) {{
+      .portal-tabs-wrap {{
+        top: 96px;
+      }}
     }}
     .portal-tabs {{
       max-width: 1280px;
@@ -1723,6 +1756,7 @@ def generate_index_portal(public_dir: Path) -> None:
       gap: 4px;
       padding: 8px 24px;
       overflow-x: auto;
+      scrollbar-width: thin;
     }}
     .p-tab {{
       background: transparent;
@@ -1756,11 +1790,17 @@ def generate_index_portal(public_dir: Path) -> None:
       margin: 0 auto;
       padding: 32px 24px 80px;
     }}
-    .tab-pane {{ display: none; }}
-    .tab-pane.active {{ display: block; animation: fadeIn 0.2s ease; }}
+    .tab-pane {{
+      display: none;
+      scroll-margin-top: 120px;
+    }}
+    .tab-pane.active {{
+      display: block;
+      animation: fadeIn 0.2s ease;
+    }}
     @keyframes fadeIn {{ from {{ opacity: 0; transform: translateY(4px); }} to {{ opacity: 1; transform: translateY(0); }} }}
 
-    .sim-sub-btn {{
+    .card-action-btn {{
       background: var(--panel-alt);
       border: 1px solid var(--border);
       color: #cbd5e1;
@@ -1775,9 +1815,23 @@ def generate_index_portal(public_dir: Path) -> None:
       gap: 6px;
       transition: all 0.15s ease;
     }}
-    .sim-sub-btn:hover {{
+    .card-action-btn:hover {{
       border-color: #38bdf8;
       color: #fff;
+    }}
+    .search-input {{
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: #f8fafc;
+      font-family: inherit;
+      font-size: 14px;
+      outline: none;
+      transition: all 0.15s ease;
+    }}
+    .search-input:focus {{
+      border-color: var(--accent);
+      box-shadow: 0 0 0 2px rgba(124, 108, 255, 0.25);
     }}
 
     /* Screenshot Carousel */
@@ -2090,10 +2144,11 @@ def generate_index_portal(public_dir: Path) -> None:
       Maily aggregates Mail.tm, TempMail, and 6+ providers into one resilient REST gateway with 1-line automatic OTP code extraction for Playwright, Pytest, and QA bots.
     </p>
 
-    <div class="hero-actions">
-      <button class="btn btn-primary" onclick="switchPortalTab('overview')">🚀 Live Interactive Demo</button>
-      <button class="btn btn-secondary" onclick="switchPortalTab('explorer')">⚡ API Explorer (Scalar & Swagger)</button>
-      <button class="btn btn-secondary" onclick="switchPortalTab('python')">🐍 Python SDK Guide</button>
+    <div class="hero-actions" role="group" aria-label="Quick Actions">
+      <button class="btn btn-primary hero-tab-btn active" data-tab="overview" onclick="switchPortalTab('overview', true)" role="tab" aria-selected="true" aria-controls="tab-overview" aria-pressed="true">🚀 Quick Start &amp; Tour</button>
+      <button class="btn btn-secondary hero-tab-btn" data-tab="explorer" onclick="switchPortalTab('explorer', true)" role="tab" aria-selected="false" aria-controls="tab-explorer" aria-pressed="false">⚡ API Explorer (Scalar &amp; Swagger)</button>
+      <button class="btn btn-secondary hero-tab-btn" data-tab="docker" onclick="switchPortalTab('docker', true)" role="tab" aria-selected="false" aria-controls="tab-docker" aria-pressed="false">🐳 Docker &amp; Setup</button>
+      <button class="btn btn-secondary hero-tab-btn" data-tab="python" onclick="switchPortalTab('python', true)" role="tab" aria-selected="false" aria-controls="tab-python" aria-pressed="false">🐍 Python SDK Guide</button>
       <a href="https://github.com/stormsia/maily" target="_blank" rel="noopener noreferrer" class="btn btn-secondary">⭐ Star on GitHub</a>
     </div>
 
@@ -2143,15 +2198,15 @@ def generate_index_portal(public_dir: Path) -> None:
 
   <!-- Navigation Tabs Strip -->
   <div class="portal-tabs-wrap">
-    <div class="portal-tabs" role="tablist">
-      <button class="p-tab active" data-tab="overview"><span>🌟</span> Overview</button>
-      <button class="p-tab" data-tab="explorer"><span>⚡</span> API Explorer</button>
-      <button class="p-tab" data-tab="docker"><span>🐳</span> Docker & Setup</button>
-      <button class="p-tab" data-tab="python"><span>🐍</span> Python Async SDK</button>
-      <button class="p-tab" data-tab="providers"><span>🌐</span> Providers Matrix</button>
-      <button class="p-tab" data-tab="curl"><span>💻</span> cURL & Auth</button>
-      <button class="p-tab" data-tab="recipes"><span>🧪</span> Test Recipes</button>
-      <button class="p-tab" data-tab="architecture"><span>🏗️</span> Architecture & Security</button>
+    <div class="portal-tabs" role="tablist" aria-label="Portal documentation sections">
+      <button class="p-tab active" id="ptab-overview" data-tab="overview" role="tab" aria-selected="true" aria-controls="tab-overview" tabindex="0"><span>🌟</span> Overview</button>
+      <button class="p-tab" id="ptab-explorer" data-tab="explorer" role="tab" aria-selected="false" aria-controls="tab-explorer" tabindex="-1"><span>⚡</span> API Explorer</button>
+      <button class="p-tab" id="ptab-docker" data-tab="docker" role="tab" aria-selected="false" aria-controls="tab-docker" tabindex="-1"><span>🐳</span> Docker &amp; Setup</button>
+      <button class="p-tab" id="ptab-python" data-tab="python" role="tab" aria-selected="false" aria-controls="tab-python" tabindex="-1"><span>🐍</span> Python Async SDK</button>
+      <button class="p-tab" id="ptab-providers" data-tab="providers" role="tab" aria-selected="false" aria-controls="tab-providers" tabindex="-1"><span>🌐</span> Providers Matrix</button>
+      <button class="p-tab" id="ptab-curl" data-tab="curl" role="tab" aria-selected="false" aria-controls="tab-curl" tabindex="-1"><span>💻</span> cURL &amp; Auth</button>
+      <button class="p-tab" id="ptab-recipes" data-tab="recipes" role="tab" aria-selected="false" aria-controls="tab-recipes" tabindex="-1"><span>🧪</span> Test Recipes</button>
+      <button class="p-tab" id="ptab-architecture" data-tab="architecture" role="tab" aria-selected="false" aria-controls="tab-architecture" tabindex="-1"><span>🏗️</span> Architecture &amp; Security</button>
     </div>
   </div>
 
@@ -2159,7 +2214,7 @@ def generate_index_portal(public_dir: Path) -> None:
   <main class="content-area">
 
     <!-- TAB 1: OVERVIEW -->
-    <div class="tab-pane active" id="tab-overview">
+    <div class="tab-pane active" id="tab-overview" role="tabpanel" aria-labelledby="ptab-overview">
       <!-- Feature Comparison Grid -->
       <h2 style="font-family: var(--heading); font-size: 24px; font-weight: 800; margin: 40px 0 16px;">
         Why Maily? Taming the Disposable Email Zoo
@@ -2217,7 +2272,7 @@ def generate_index_portal(public_dir: Path) -> None:
               In addition to the REST API and Python SDK, Maily includes a built-in dark cyberpunk web console for inspecting mailboxes, live message telemetry, domain cache health, and scoped API key minting.
             </p>
           </div>
-          <a href="https://github.com/stormsia/maily" target="_blank" rel="noopener noreferrer" class="sim-sub-btn">Explore Source Code ↗</a>
+          <a href="https://github.com/stormsia/maily" target="_blank" rel="noopener noreferrer" class="card-action-btn">Explore Source Code ↗</a>
         </div>
 
         <div class="carousel-tabs" role="tablist">
@@ -2239,7 +2294,7 @@ def generate_index_portal(public_dir: Path) -> None:
     </div>
 
     <!-- TAB 2: API EXPLORER (DUAL SCALAR + SWAGGER) -->
-    <div class="tab-pane" id="tab-explorer">
+    <div class="tab-pane" id="tab-explorer" role="tabpanel" aria-labelledby="ptab-explorer" hidden>
       <div class="explorer-bar">
         <div class="explorer-toggle">
           <button class="exp-btn active" id="btn-toggle-scalar" onclick="setExplorerMode('scalar')">Scalar Modern UI ⚡</button>
@@ -2267,30 +2322,30 @@ def generate_index_portal(public_dir: Path) -> None:
     </div>
 
     <!-- TAB 3: DOCKER & SETUP -->
-    <div class="tab-pane" id="tab-docker">
+    <div class="tab-pane" id="tab-docker" role="tabpanel" aria-labelledby="ptab-docker" hidden>
       {docker_html}
     </div>
 
     <!-- TAB 4: PYTHON SDK -->
-    <div class="tab-pane" id="tab-python">
+    <div class="tab-pane" id="tab-python" role="tabpanel" aria-labelledby="ptab-python" hidden>
       {python_html}
     </div>
 
     <!-- TAB 5: PROVIDERS MATRIX -->
-    <div class="tab-pane" id="tab-providers">
+    <div class="tab-pane" id="tab-providers" role="tabpanel" aria-labelledby="ptab-providers" hidden>
       <div style="margin-bottom: 20px;">
-        <input type="text" id="provider-search" placeholder="🔍 Search providers by name, domain, custom prefix..." class="sim-input" style="width: 100%; max-width: 480px; padding: 10px 14px;" onkeyup="filterProviders()" />
+        <input type="text" id="provider-search" placeholder="🔍 Search providers by name, domain, custom prefix..." class="search-input" style="width: 100%; max-width: 480px; padding: 10px 14px;" onkeyup="filterProviders()" />
       </div>
       {providers_html}
     </div>
 
     <!-- TAB 6: CURL & AUTH -->
-    <div class="tab-pane" id="tab-curl">
+    <div class="tab-pane" id="tab-curl" role="tabpanel" aria-labelledby="ptab-curl" hidden>
       {curl_html}
     </div>
 
     <!-- TAB 7: TEST RECIPES -->
-    <div class="tab-pane" id="tab-recipes">
+    <div class="tab-pane" id="tab-recipes" role="tabpanel" aria-labelledby="ptab-recipes" hidden>
       <h2 class="section-title">Automated Testing & Integration Recipes</h2>
       <p class="section-desc">Production-grade recipes for Playwright, Pytest, multi-provider failover, and real-time streaming using official `maily-client` methods.</p>
 
@@ -2422,7 +2477,7 @@ def test_sync_verification_flow(sync_temp_inbox: Mailbox):
     </div>
 
     <!-- TAB 8: ARCHITECTURE & SECURITY -->
-    <div class="tab-pane" id="tab-architecture">
+    <div class="tab-pane" id="tab-architecture" role="tabpanel" aria-labelledby="ptab-architecture" hidden>
       <h2 class="section-title">Architecture, Threat Model & Security Controls</h2>
       <p class="section-desc">Designed from first principles for hermetic execution, zero spam relay risks, and strict cryptographic isolation.</p>
 
@@ -2569,34 +2624,115 @@ def test_sync_verification_flow(sync_temp_inbox: Mailbox):
     }}
 
     // Portal Tab Switcher & Hash Routing
-    function switchPortalTab(tabId) {{
+    function switchPortalTab(tabId, shouldScroll = false, updateUrl = true) {{
+      if (!tabId) return;
+
+      // 1. Sync Portal Tabs (.p-tab)
       document.querySelectorAll(".p-tab").forEach(t => {{
-        t.classList.toggle("active", t.dataset.tab === tabId);
+        const isActive = t.dataset.tab === tabId;
+        t.classList.toggle("active", isActive);
+        t.setAttribute("aria-selected", isActive ? "true" : "false");
+        t.setAttribute("tabindex", isActive ? "0" : "-1");
       }});
+
+      // 2. Sync Hero Action CTA Buttons (.hero-tab-btn)
+      document.querySelectorAll(".hero-actions [data-tab]").forEach(btn => {{
+        const isActive = btn.dataset.tab === tabId;
+        btn.classList.toggle("active", isActive);
+        btn.classList.toggle("btn-primary", isActive);
+        btn.classList.toggle("btn-secondary", !isActive);
+        btn.setAttribute("aria-selected", isActive ? "true" : "false");
+        btn.setAttribute("aria-pressed", isActive ? "true" : "false");
+      }});
+
+      // 3. Sync Tab Panes (.tab-pane)
       document.querySelectorAll(".tab-pane").forEach(pane => {{
-        pane.classList.toggle("active", pane.id === "tab-" + tabId);
+        const isActive = pane.id === "tab-" + tabId;
+        pane.classList.toggle("active", isActive);
+        pane.hidden = !isActive;
       }});
-      if (history.pushState) {{
-        history.pushState(null, null, "#" + tabId);
-      }} else {{
-        location.hash = "#" + tabId;
+
+      // 4. Update browser URL hash routing
+      if (updateUrl) {{
+        const targetHash = "#" + tabId;
+        if (window.location.hash !== targetHash) {{
+          if (history.pushState) {{
+            history.pushState(null, null, targetHash);
+          }} else {{
+            location.hash = targetHash;
+          }}
+        }}
       }}
+
+      // 5. Lazy-init embedded swagger safely when explorer tab is visited
       if (tabId === "explorer" && !window.embeddedSwaggerInitialized) {{
-        initEmbeddedSwagger();
+        try {{
+          initEmbeddedSwagger();
+        }} catch (e) {{
+          console.warn("Embedded Swagger init deferred:", e);
+        }}
+      }}
+
+      // 6. Smooth scroll to tabs section if triggered by hero button or deep link
+      if (shouldScroll) {{
+        const tabsWrap = document.querySelector(".portal-tabs-wrap");
+        if (tabsWrap) {{
+          const nav = document.querySelector(".portal-nav");
+          const navHeight = nav ? nav.offsetHeight : 61;
+          const targetY = window.scrollY + tabsWrap.getBoundingClientRect().top - navHeight;
+          if (typeof window.scrollTo === "function") {{
+            window.scrollTo({{
+              top: Math.max(0, Math.round(targetY)),
+              behavior: "smooth"
+            }});
+          }} else if (typeof tabsWrap.scrollIntoView === "function") {{
+            tabsWrap.scrollIntoView({{ behavior: "smooth", block: "start" }});
+          }}
+        }}
       }}
     }}
 
-    document.querySelectorAll(".p-tab").forEach(btn => {{
-      btn.addEventListener("click", () => switchPortalTab(btn.dataset.tab));
+    // Attach click and keyboard listeners to portal tab buttons
+    const portalTabBtns = Array.from(document.querySelectorAll(".p-tab"));
+    portalTabBtns.forEach((btn, index) => {{
+      btn.addEventListener("click", () => {{
+        const tabsWrap = document.querySelector(".portal-tabs-wrap");
+        const nav = document.querySelector(".portal-nav");
+        const navHeight = nav ? nav.offsetHeight : 61;
+        const rectTop = tabsWrap ? tabsWrap.getBoundingClientRect().top : 0;
+        const needsScroll = rectTop < (navHeight - 5) || rectTop > (window.innerHeight - 80);
+        switchPortalTab(btn.dataset.tab, needsScroll, true);
+      }});
+
+      btn.addEventListener("keydown", (e) => {{
+        let newIndex = null;
+        if (e.key === "ArrowRight") {{
+          newIndex = (index + 1) % portalTabBtns.length;
+        }} else if (e.key === "ArrowLeft") {{
+          newIndex = (index - 1 + portalTabBtns.length) % portalTabBtns.length;
+        }} else if (e.key === "Home") {{
+          newIndex = 0;
+        }} else if (e.key === "End") {{
+          newIndex = portalTabBtns.length - 1;
+        }}
+        if (newIndex !== null) {{
+          e.preventDefault();
+          portalTabBtns[newIndex].focus();
+          switchPortalTab(portalTabBtns[newIndex].dataset.tab, false, true);
+        }}
+      }});
     }});
 
-    // Listen to hash changes
-    window.addEventListener("hashchange", () => {{
-      const hash = location.hash.replace("#", "").replace("tab-", "");
-      if (hash && document.getElementById("tab-" + hash)) {{
-        switchPortalTab(hash);
+    // Hash change & history back/forward routing
+    function handleHashRoute() {{
+      const rawHash = location.hash.replace("#", "");
+      const hash = rawHash.replace("tab-", "") || "overview";
+      if (document.getElementById("tab-" + hash)) {{
+        switchPortalTab(hash, false, false);
       }}
-    }});
+    }}
+    window.addEventListener("hashchange", handleHashRoute);
+    window.addEventListener("popstate", handleHashRoute);
 
     // API Explorer Sub-view Toggle
     function setExplorerMode(mode) {{
@@ -2610,26 +2746,34 @@ def test_sync_verification_flow(sync_temp_inbox: Mailbox):
     }}
 
     function initEmbeddedSwagger() {{
+      if (typeof SwaggerUIBundle === "undefined") {{
+        return;
+      }}
       window.embeddedSwaggerInitialized = true;
-      const key = document.getElementById("cfg-key").value.trim() || "";
-      const ui = SwaggerUIBundle({{
-        url: 'openapi.json',
-        dom_id: '#embedded-swagger-ui',
-        deepLinking: false,
-        displayRequestDuration: true,
-        filter: true,
-        persistAuthorization: true,
-        docExpansion: 'none',
-        tryItOutEnabled: true,
-        presets: [SwaggerUIBundle.presets.apis, SwaggerUIStandalonePreset],
-        onComplete: () => {{
-          if (key && key !== "YOUR_API_KEY") {{
-            try {{
-              ui.preauthorizeApiKey("ApiKeyAuth", key);
-            }} catch (e) {{}}
+      const keyElem = document.getElementById("cfg-key");
+      const key = keyElem ? keyElem.value.trim() : "";
+      try {{
+        const ui = SwaggerUIBundle({{
+          url: 'openapi.json',
+          dom_id: '#embedded-swagger-ui',
+          deepLinking: false,
+          displayRequestDuration: true,
+          filter: true,
+          persistAuthorization: true,
+          docExpansion: 'none',
+          tryItOutEnabled: true,
+          presets: [SwaggerUIBundle.presets.apis, SwaggerUIStandalonePreset],
+          onComplete: () => {{
+            if (key && key !== "YOUR_API_KEY") {{
+              try {{
+                ui.preauthorizeApiKey("ApiKeyAuth", key);
+              }} catch (e) {{}}
+            }}
           }}
-        }}
-      }});
+        }});
+      }} catch (e) {{
+        console.warn("Failed to initialize Swagger UI bundle:", e);
+      }}
     }}
 
     // Dynamic Host and Key Replacement across all code blocks
@@ -2705,9 +2849,26 @@ def test_sync_verification_flow(sync_temp_inbox: Mailbox):
         if (savedKey) document.getElementById("cfg-key").value = savedKey;
       }} catch (e) {{}}
 
-      const hash = location.hash.replace("#", "").replace("tab-", "");
+      const rawHash = location.hash.replace("#", "");
+      const hash = rawHash.replace("tab-", "");
       if (hash && document.getElementById("tab-" + hash)) {{
-        switchPortalTab(hash);
+        switchPortalTab(hash, false, false);
+        setTimeout(() => {{
+          const tabsWrap = document.querySelector(".portal-tabs-wrap");
+          if (tabsWrap) {{
+            const nav = document.querySelector(".portal-nav");
+            const navHeight = nav ? nav.offsetHeight : 61;
+            const targetY = window.scrollY + tabsWrap.getBoundingClientRect().top - navHeight;
+            if (typeof window.scrollTo === "function") {{
+              window.scrollTo({{
+                top: Math.max(0, Math.round(targetY)),
+                behavior: "smooth"
+              }});
+            }} else if (typeof tabsWrap.scrollIntoView === "function") {{
+              tabsWrap.scrollIntoView({{ behavior: "smooth", block: "start" }});
+            }}
+          }}
+        }}, 120);
       }}
       updateInterpolatedSnippets();
     }});

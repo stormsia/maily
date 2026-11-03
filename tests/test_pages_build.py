@@ -93,6 +93,26 @@ def test_build_pages_site_artifacts(tmp_path: Path):
     assert "simCreateMailbox" not in index_html
     assert "simExtractOtp" not in index_html
     assert "Interactive Inbound Email & OTP Simulator" not in index_html
+    assert "Live Interactive Demo" not in index_html
+    assert "sim-sub-btn" not in index_html
+    assert "sim-input" not in index_html
+    assert "hero-tab-btn" in index_html
+    assert 'data-tab="overview"' in index_html
+    assert 'data-tab="explorer"' in index_html
+    assert 'data-tab="docker"' in index_html
+    assert 'data-tab="python"' in index_html
+    assert 'id="ptab-overview"' in index_html
+    assert 'id="ptab-explorer"' in index_html
+    assert 'aria-labelledby="ptab-overview"' in index_html
+    assert 'aria-controls="tab-overview"' in index_html
+    assert "scrollIntoView" in index_html
+    assert "switchPortalTab" in index_html
+    assert "handleHashRoute" in index_html
+    assert "history.pushState" in index_html
+    assert "popstate" in index_html
+    assert 'role="tablist"' in index_html
+    assert 'role="tab"' in index_html
+    assert 'role="tabpanel"' in index_html
     assert "wait_for_code" in index_html
     assert "wait_for_link" in index_html
     assert "create_temp_mailbox" in index_html

@@ -64,7 +64,7 @@ import httpx
 from loguru import logger
 from pydantic import BaseModel, ConfigDict, Field
 
-__version__ = "0.6.0"  # x-release-please-version
+__version__ = "0.7.0"  # x-release-please-version
 
 # Where the client fetches itself for self-updates (override with env var).
 CLIENT_SOURCE = os.environ.get(

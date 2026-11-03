@@ -7,6 +7,25 @@ All notable changes to the **Maily** ecosystem ([`maily-server`](https://pypi.or
 > - **Python Server Package (PyPI):** `pip install -U maily-server`
 > - **Docker Container (GHCR):** `docker pull ghcr.io/stormsia/maily:latest`
 
+## [0.7.0](https://github.com/stormsia/maily/compare/v0.6.0...v0.7.0) (2026-11-03)
+
+
+### Features
+
+* **docs:** upgrade GitHub Pages documentation portal with dark UI, live simulator, and SEO ([2b0d335](https://github.com/stormsia/maily/commit/2b0d3355895751050b3b27e2683b971925d1763e))
+
+
+### Bug Fixes
+
+* **docs:** remove simulator widget, fix ReDoc CDN loading, and overhaul benchmark visual analytics ([5400e76](https://github.com/stormsia/maily/commit/5400e7603b4f52f5423c445252fa9d163ef0eee0))
+* **docs:** synchronize hero action buttons with portal tabs and harden router accessibility ([b76655e](https://github.com/stormsia/maily/commit/b76655ef6e5c948f48662f89fc7ab8e3b67eef4f))
+
+
+### Documentation
+
+* redesign README with animated carousel, WebP/AVIF assets, infographics, and SEO optimizations ([1943092](https://github.com/stormsia/maily/commit/1943092833bd4807284e924dd18f935a3853bb12))
+* remove workstation guide section from README ([8be7725](https://github.com/stormsia/maily/commit/8be77255dcded7743b87e6d5c13ce558079aacae))
+
 ## [0.6.0](https://github.com/stormsia/maily/compare/v0.5.0...v0.6.0) (2026-11-02)
 
 

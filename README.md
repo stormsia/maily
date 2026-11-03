@@ -183,17 +183,7 @@ Maily includes a high-performance dark-mode web console served directly at `http
   <sub><b>🎬 Live Dashboard Walkthrough:</b> Auto-playing carousel cycling through all 6 admin console workstations (346 KB payload). Click to expand high-resolution inspection below.</sub>
 </p>
 
-<div align="center">
 
-**Workstation Guide:**
-[📊 1. Telemetry](#1-live-telemetry--provider-distribution) •
-[📬 2. Fleet](#2-multi-provider-mailbox-fleet) •
-[⚡ 3. OTP Inspector](#3-magic-verification-inspector--quick-extract) •
-[🌐 4. Domain Cache](#4-provider-domain-cache--40-rotating-domains) •
-[🧹 5. Retention Sweeper](#5-automated-retention-sweeper--sqlite-defrag) •
-[🔐 6. Scoped API Keys](#6-multi-tenant-scoped-api-keys)
-
-</div>
 
 <br>
 

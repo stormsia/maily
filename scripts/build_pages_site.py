@@ -30,6 +30,21 @@ from build_docs import (
 
 ROOT = Path(__file__).resolve().parents[1]
 
+__version__ = "0.7.0"  # x-release-please-version
+
+try:
+    import sys
+
+    _src_dir = str(ROOT / "src")
+    if _src_dir not in sys.path:
+        sys.path.insert(0, _src_dir)
+    from maily import __version__ as _pkg_version
+
+    if _pkg_version:
+        __version__ = _pkg_version
+except Exception:
+    pass
+
 # Shared Obsidian Cyberpunk Swagger UI CSS (used in standalone swagger.html and embedded in index.html)
 SWAGGER_DARK_CSS = """
     .swagger-ui { background: transparent; color: #e6e9f2; }
@@ -113,7 +128,7 @@ def get_nav_html(active: str, base_path: str = "") -> str:
           <div class="brand-details">
             <div class="brand-line">
               <span class="brand-title">maily</span>
-              <span class="brand-badge">v0.6.0</span>
+              <span class="brand-badge">v{__version__}</span>
             </div>
             <span class="brand-sub">Universal Temp-Mail Gateway</span>
           </div>

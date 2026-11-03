@@ -64,6 +64,7 @@
         "client/pyproject.toml",
         "src/maily/static/index.html",
         "src/maily/static/js/app.js",
+        "scripts/build_pages_site.py",
         "uv.lock"
       ]
     }

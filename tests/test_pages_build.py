@@ -6,6 +6,7 @@ import json
 from pathlib import Path
 
 from build_pages_site import (
+    __version__,
     calculate_provider_sla,
     copy_static_assets,
     extract_benchmarks,
@@ -34,6 +35,7 @@ def test_nav_html_generation():
     assert 'href="analytics.html"' in root_nav
     assert 'href="openapi.json"' in root_nav
     assert "portal-nav" in root_nav
+    assert f'<span class="brand-badge">v{__version__}</span>' in root_nav
 
     sub_nav = get_nav_html("benchmarks", base_path="../../")
     assert 'href="../../index.html"' in sub_nav

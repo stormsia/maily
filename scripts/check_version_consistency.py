@@ -108,6 +108,7 @@ def main() -> int:
         ),
         "client/maily_client.py": (repo_root / "client" / "maily_client.py", "python"),
         "client/pyproject.toml": (repo_root / "client" / "pyproject.toml", "toml"),
+        "scripts/build_pages_site.py": (repo_root / "scripts" / "build_pages_site.py", "python"),
         ".release-please-manifest.json": (repo_root / ".release-please-manifest.json", "json"),
     }
 

@@ -1,7 +1,7 @@
 {
   "providers": {
     "anonymmail.net": {
-      "consecutive_failures": 3,
+      "consecutive_failures": 4,
       "issue_number": 35,
       "last_status": "error_outage"
     },
@@ -26,7 +26,7 @@
       "last_status": "operational"
     },
     "temp.tf": {
-      "consecutive_failures": 1,
+      "consecutive_failures": 2,
       "issue_number": null,
       "last_status": "degraded"
     },

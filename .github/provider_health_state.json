@@ -1,7 +1,7 @@
 {
   "providers": {
     "anonymmail.net": {
-      "consecutive_failures": 1,
+      "consecutive_failures": 2,
       "issue_number": null,
       "last_status": "degraded"
     },
@@ -11,9 +11,9 @@
       "last_status": "operational"
     },
     "mail.tm": {
-      "consecutive_failures": 0,
+      "consecutive_failures": 1,
       "issue_number": null,
-      "last_status": "operational"
+      "last_status": "degraded"
     },
     "noopmail.org": {
       "consecutive_failures": 0,

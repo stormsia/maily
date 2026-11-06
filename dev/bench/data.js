@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1793955867182,
+  "lastUpdate": 1793959075000,
   "repoUrl": "https://github.com/stormsia/maily",
   "entries": {
     "Benchmark": [
@@ -9469,6 +9469,135 @@ window.BENCHMARK_DATA = {
             "unit": "iter/sec",
             "range": "stddev: 0.00026170159918780374",
             "extra": "mean: 4.865896299465176 msec\nrounds: 187"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "sf_root@outlook.com",
+            "name": "stormsia",
+            "username": "stormsia"
+          },
+          "committer": {
+            "email": "sf_root@outlook.com",
+            "name": "stormsia",
+            "username": "stormsia"
+          },
+          "distinct": true,
+          "id": "d729c4a2574d34d7d29382e07b6ab8a6f87a882a",
+          "message": "feat(seo): implement Phase 1 & 2 SEO and GEO architecture modernization\n\n- Site Architecture: consolidate API views in navigation, eliminate cyclic backtracking, implement progressive enhancement for tabs, and generate standalone /docs/ Hub-and-Spoke pages\n- On-Page & Technical SEO: add unified get_head_meta() with canonical, OpenGraph, Twitter Cards, physical favicons, CWV image dimensions/picture tags, and updated sitemap.xml/robots.txt\n- GEO & Agent Readiness: eliminate CSR blind spots on API pages with static semantic endpoints, generate llms.txt, llms-full.txt, SKILL.md, ai-catalog.json, add Definition Blocks and visible FAQ\n- Structured Data: build unified Schema.org JSON-LD @graph on all pages with WebSite, SoftwareApplication, SoftwareSourceCode, WebAPI, FAQPage, BreadcrumbList, and Dataset\n- Artifact: add SEO_GEO_MASTER_AUDIT.md with complete audit documentation",
+          "timestamp": "2026-11-06T12:57:05+03:00",
+          "tree_id": "0fd44959e8718e66a8bb4255778846c18cb41323",
+          "url": "https://github.com/stormsia/maily/commit/d729c4a2574d34d7d29382e07b6ab8a6f87a882a"
+        },
+        "date": 1793959074079,
+        "tool": "pytest",
+        "benches": [
+          {
+            "name": "tests/test_benchmarks.py::test_benchmark_crypto_encrypt_1kb",
+            "value": 66265.99111207125,
+            "unit": "iter/sec",
+            "range": "stddev: 0.0000022144589246356565",
+            "extra": "mean: 15.090697101455355 usec\nrounds: 690"
+          },
+          {
+            "name": "tests/test_benchmarks.py::test_benchmark_crypto_decrypt_1kb",
+            "value": 63764.772960957926,
+            "unit": "iter/sec",
+            "range": "stddev: 0.0000013877796281520148",
+            "extra": "mean: 15.682640328889477 usec\nrounds: 15934"
+          },
+          {
+            "name": "tests/test_benchmarks.py::test_benchmark_random_string",
+            "value": 66519.49017021648,
+            "unit": "iter/sec",
+            "range": "stddev: 0.0000023208124359081783",
+            "extra": "mean: 15.033187979058525 usec\nrounds: 24657"
+          },
+          {
+            "name": "tests/test_benchmarks.py::test_benchmark_random_password",
+            "value": 44119.03504331264,
+            "unit": "iter/sec",
+            "range": "stddev: 0.0000029874268985993532",
+            "extra": "mean: 22.665953573514873 usec\nrounds: 30586"
+          },
+          {
+            "name": "tests/test_benchmarks.py::test_benchmark_pydantic_message_detail_parse",
+            "value": 491262.65617626556,
+            "unit": "iter/sec",
+            "range": "stddev: 4.1271566346227437e-7",
+            "extra": "mean: 2.0355709668296034 usec\nrounds: 31867"
+          },
+          {
+            "name": "tests/test_benchmarks.py::test_benchmark_pydantic_batch_messages_serialize",
+            "value": 4873.87607421397,
+            "unit": "iter/sec",
+            "range": "stddev: 0.000026098313190361486",
+            "extra": "mean: 205.1755081116366 usec\nrounds: 1541"
+          },
+          {
+            "name": "tests/test_benchmarks.py::test_benchmark_extract_verification_code",
+            "value": 96089.18626867315,
+            "unit": "iter/sec",
+            "range": "stddev: 0.0000011807602925989829",
+            "extra": "mean: 10.406998319289738 usec\nrounds: 52359"
+          },
+          {
+            "name": "tests/test_benchmarks.py::test_benchmark_extract_confirmation_url",
+            "value": 106889.15324548385,
+            "unit": "iter/sec",
+            "range": "stddev: 0.000001363541202559602",
+            "extra": "mean: 9.355486217608808 usec\nrounds: 46944"
+          },
+          {
+            "name": "tests/test_benchmarks.py::test_benchmark_authz_parse_scope",
+            "value": 222284.20406065087,
+            "unit": "iter/sec",
+            "range": "stddev: 7.306353072241953e-7",
+            "extra": "mean: 4.498745217753517 usec\nrounds: 24727"
+          },
+          {
+            "name": "tests/test_benchmarks.py::test_benchmark_authz_secret_sha256",
+            "value": 1238970.8787858437,
+            "unit": "iter/sec",
+            "range": "stddev: 3.715661691318096e-7",
+            "extra": "mean: 807.1214724433004 nsec\nrounds: 38412"
+          },
+          {
+            "name": "tests/test_benchmarks.py::test_benchmark_health_endpoint",
+            "value": 348.5784305247411,
+            "unit": "iter/sec",
+            "range": "stddev: 0.000437333641917543",
+            "extra": "mean: 2.8687948318965844 msec\nrounds: 232"
+          },
+          {
+            "name": "tests/test_benchmarks.py::test_benchmark_domain_cache_settings",
+            "value": 217.84085775203016,
+            "unit": "iter/sec",
+            "range": "stddev: 0.0004310373832713264",
+            "extra": "mean: 4.59050708080808 msec\nrounds: 198"
+          },
+          {
+            "name": "tests/test_benchmarks.py::test_benchmark_mailboxes_list",
+            "value": 300.66916412676693,
+            "unit": "iter/sec",
+            "range": "stddev: 0.0004627210482277929",
+            "extra": "mean: 3.3259147239268745 msec\nrounds: 163"
+          },
+          {
+            "name": "tests/test_benchmarks.py::test_benchmark_admin_keys_list",
+            "value": 253.99692739918538,
+            "unit": "iter/sec",
+            "range": "stddev: 0.00040354195035677347",
+            "extra": "mean: 3.93705549999975 msec\nrounds: 194"
+          },
+          {
+            "name": "tests/test_benchmarks.py::test_benchmark_client_init",
+            "value": 193.3718461858134,
+            "unit": "iter/sec",
+            "range": "stddev: 0.00046057467561888614",
+            "extra": "mean: 5.171383630681622 msec\nrounds: 176"
           }
         ]
       }

@@ -7,6 +7,15 @@ All notable changes to the **Maily** ecosystem ([`maily-server`](https://pypi.or
 > - **Python Server Package (PyPI):** `pip install -U maily-server`
 > - **Docker Container (GHCR):** `docker pull ghcr.io/stormsia/maily:latest`
 
+## [0.9.0](https://github.com/stormsia/maily/compare/v0.8.0...v0.9.0) (2026-11-06)
+
+
+### Features
+
+* **seo:** add clarity tracking, harden schema entity graph, and unify agent discovery ([8bcd916](https://github.com/stormsia/maily/commit/8bcd916e35ab9ce9b3177c4b77d8a58fa8159c67))
+* **seo:** implement comprehensive technical SEO & GEO optimizations and resolve mypy CI ([502dc1f](https://github.com/stormsia/maily/commit/502dc1f566284a612e4b79bcb8305ccd32425374))
+* **seo:** implement Phase 1 & 2 SEO and GEO architecture modernization ([d729c4a](https://github.com/stormsia/maily/commit/d729c4a2574d34d7d29382e07b6ab8a6f87a882a))
+
 ## [0.8.0](https://github.com/stormsia/maily/compare/v0.7.0...v0.8.0) (2026-11-03)
 
 

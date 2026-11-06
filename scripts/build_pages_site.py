@@ -107,42 +107,62 @@ def get_head_meta(
     og_type: str = "website",
     base_path: str = "",
     noindex: bool = False,
+    markdown_alternate: str = "",
 ) -> str:
     """Return unified meta, SEO, OpenGraph, Twitter, canonical, and favicon tags."""
-    if not og_image:
-        og_image = "https://stormsia.github.io/maily/assets/hero_banner.webp"
+    if not og_image or og_image.endswith("hero_banner.webp"):
+        og_image = "https://stormsia.github.io/maily/assets/hero_banner.png"
 
     robots_line = '  <meta name="robots" content="noindex, follow" />\n' if noindex else ""
+    canonical_line = f'  <link rel="canonical" href="{canonical_url}" />\n' if canonical_url else ""
+    og_url_line = (
+        f'  <meta property="og:url" content="{canonical_url}" />\n' if canonical_url else ""
+    )
+
+    # Clean unescaped ampersands for social crawlers (Telegram, Twitter, LinkedIn)
+    social_title = title.replace("&amp;", "&").replace('"', "&quot;")
+    md_href = markdown_alternate if markdown_alternate else f"{base_path}index.md"
 
     return f"""  <title>{html.escape(title)}</title>
   <meta name="description" content="{html.escape(description)}" />
-{robots_line}  <link rel="canonical" href="{canonical_url}" />
+{robots_line}{canonical_line}  <!-- Microsoft Clarity Analytics -->
+  <script type="text/javascript">
+      (function(c,l,a,r,i,t,y){{
+          c[a]=c[a]||function(){{(c[a].q=c[a].q||[]).push(arguments)}};
+          t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
+          y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
+      }})(window, document, "clarity", "script", "z9cx94bnqx");
+  </script>
 
   <!-- OpenGraph Metadata -->
-  <meta property="og:title" content="{html.escape(title)}" />
+  <meta property="og:title" content="{social_title}" />
   <meta property="og:description" content="{html.escape(description)}" />
-  <meta property="og:url" content="{canonical_url}" />
-  <meta property="og:image" content="{og_image}" />
+{og_url_line}  <meta property="og:image" content="{og_image}" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
   <meta property="og:type" content="{og_type}" />
   <meta property="og:site_name" content="Maily" />
 
   <!-- Twitter Card Metadata -->
   <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content="{html.escape(title)}" />
+  <meta name="twitter:title" content="{social_title}" />
   <meta name="twitter:description" content="{html.escape(description)}" />
   <meta name="twitter:image" content="{og_image}" />
 
   <!-- Favicon & Mobile Icons -->
+  <link rel="icon" type="image/png" sizes="48x48" href="{base_path}assets/favicon-48x48.png" />
   <link rel="icon" type="image/svg+xml" href="{base_path}assets/favicon.svg" />
   <link rel="alternate icon" type="image/x-icon" href="{base_path}favicon.ico" />
   <link rel="apple-touch-icon" sizes="180x180" href="{base_path}assets/apple-touch-icon.png" />
 
   <!-- Machine-Readable Agent Discovery & API Descriptors (AgentReady Standards) -->
-  <link rel="alternate" type="text/markdown" href="{base_path}index.md" />
+  <link rel="alternate" type="text/markdown" href="{md_href}" />
   <link rel="service-desc" type="application/vnd.oai.openapi+json" href="{base_path}openapi.json" />
   <link rel="ai-catalog" type="application/json" href="{base_path}.well-known/ai-catalog.json" />
   <link rel="alternate" type="text/plain" href="{base_path}llms.txt" title="LLMs.txt" />
-  <link rel="alternate" type="text/plain" href="{base_path}llms-full.txt" title="LLMs-full.txt" />"""
+  <link rel="alternate" type="text/plain" href="{base_path}llms-full.txt" title="LLMs-full.txt" />
+  <link rel="help" type="text/markdown" href="{base_path}SKILL.md" title="Agent Testing Skill" />
+  <link rel="alternate" type="text/markdown" href="{base_path}SKILL.md" title="Agent Skill (SKILL.md)" />"""
 
 
 def get_json_ld_for_page(
@@ -153,12 +173,21 @@ def get_json_ld_for_page(
     canonical_url: str = "",
 ) -> str:
     """Return schema.org JSON-LD @graph string for different portal page types."""
+    now_iso = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+
     author_node = {
         "@type": "Person",
         "@id": "https://stormsia.github.io/maily/#author",
         "name": "stormsia",
         "url": "https://github.com/stormsia",
         "sameAs": ["https://github.com/stormsia"],
+    }
+    organization_node = {
+        "@type": "Organization",
+        "@id": "https://stormsia.github.io/maily/#organization",
+        "name": "Maily Project",
+        "url": "https://stormsia.github.io/maily/",
+        "logo": "https://stormsia.github.io/maily/assets/logo.png",
     }
     website_node = {
         "@type": "WebSite",
@@ -168,12 +197,41 @@ def get_json_ld_for_page(
         "alternateName": "Maily Temp-Mail Gateway Portal",
         "description": "Developer Portal and Documentation Hub for Maily: Universal Temporary Email Gateway & Async Python SDK",
         "inLanguage": "en",
-        "publisher": {"@id": "https://stormsia.github.io/maily/#author"},
+        "publisher": {"@id": "https://stormsia.github.io/maily/#organization"},
+    }
+    software_stub_node = {
+        "@type": "SoftwareApplication",
+        "@id": "https://stormsia.github.io/maily/#software",
+        "name": "Maily",
+        "url": "https://stormsia.github.io/maily/",
+        "releaseNotes": "https://github.com/stormsia/maily/releases",
+        "softwareHelp": "https://stormsia.github.io/maily/docs/",
+        "sourceCode": {
+            "@type": "SoftwareSourceCode",
+            "codeRepository": "https://github.com/stormsia/maily",
+        },
+    }
+    webapi_node = {
+        "@type": "WebAPI",
+        "@id": "https://stormsia.github.io/maily/#webapi",
+        "name": "Maily Gateway REST API",
+        "description": "Normalized REST API aggregating multiple disposable email providers with mailbox lifecycle management and OTP polling.",
+        "documentation": "https://stormsia.github.io/maily/scalar.html",
+        "serviceUrl": "http://127.0.0.1:8477",
+        "termsOfService": "https://github.com/stormsia/maily/blob/main/LICENSE",
+        "provider": {"@id": "https://stormsia.github.io/maily/#organization"},
+        "hasPart": {
+            "@type": "CreativeWork",
+            "name": "OpenAPI Specification",
+            "url": "https://stormsia.github.io/maily/openapi.json",
+            "encodingFormat": "application/json",
+        },
     }
 
     if page_type == "index":
         graph = [
             website_node,
+            organization_node,
             author_node,
             {
                 "@type": "WebPage",
@@ -182,20 +240,7 @@ def get_json_ld_for_page(
                 "name": "Maily · Universal Temporary Email Gateway & Developer Hub",
                 "isPartOf": {"@id": "https://stormsia.github.io/maily/#website"},
                 "about": {"@id": "https://stormsia.github.io/maily/#software"},
-                "breadcrumb": {"@id": "https://stormsia.github.io/maily/#breadcrumb"},
                 "inLanguage": "en",
-            },
-            {
-                "@type": "BreadcrumbList",
-                "@id": "https://stormsia.github.io/maily/#breadcrumb",
-                "itemListElement": [
-                    {
-                        "@type": "ListItem",
-                        "position": 1,
-                        "name": "Home",
-                        "item": "https://stormsia.github.io/maily/",
-                    }
-                ],
             },
             {
                 "@type": "SoftwareApplication",
@@ -214,8 +259,14 @@ def get_json_ld_for_page(
                 "operatingSystem": "Docker, Linux, macOS, Windows, Python 3.10+",
                 "softwareVersion": __version__,
                 "license": "https://opensource.org/licenses/MIT",
-                "image": "https://stormsia.github.io/maily/assets/hero_banner.webp",
+                "image": "https://stormsia.github.io/maily/assets/hero_banner.png",
                 "screenshot": "https://stormsia.github.io/maily/screenshots/01_overview.webp",
+                "releaseNotes": "https://github.com/stormsia/maily/releases",
+                "softwareHelp": "https://stormsia.github.io/maily/docs/",
+                "sourceCode": {
+                    "@type": "SoftwareSourceCode",
+                    "codeRepository": "https://github.com/stormsia/maily",
+                },
                 "sameAs": [
                     "https://github.com/stormsia/maily",
                     "https://pypi.org/project/maily/",
@@ -238,7 +289,7 @@ def get_json_ld_for_page(
                     "Hermetic self-hosted Docker container (ghcr.io/stormsia/maily)",
                 ],
                 "author": {"@id": "https://stormsia.github.io/maily/#author"},
-                "publisher": {"@id": "https://stormsia.github.io/maily/#author"},
+                "publisher": {"@id": "https://stormsia.github.io/maily/#organization"},
                 "downloadUrl": "https://pypi.org/project/maily-client/",
                 "installUrl": "https://github.com/stormsia/maily#quick-start",
             },
@@ -257,17 +308,9 @@ def get_json_ld_for_page(
                 "version": __version__,
                 "targetProduct": {"@id": "https://stormsia.github.io/maily/#software"},
                 "author": {"@id": "https://stormsia.github.io/maily/#author"},
+                "publisher": {"@id": "https://stormsia.github.io/maily/#organization"},
             },
-            {
-                "@type": "WebAPI",
-                "@id": "https://stormsia.github.io/maily/#webapi",
-                "name": "Maily Gateway REST API",
-                "description": "Normalized REST API aggregating multiple disposable email providers with mailbox lifecycle management and OTP polling.",
-                "documentation": "https://stormsia.github.io/maily/scalar.html",
-                "serviceUrl": "http://127.0.0.1:8477",
-                "termsOfService": "https://github.com/stormsia/maily/blob/main/LICENSE",
-                "provider": {"@id": "https://stormsia.github.io/maily/#author"},
-            },
+            webapi_node,
             {
                 "@type": "FAQPage",
                 "@id": "https://stormsia.github.io/maily/#faq",
@@ -334,7 +377,9 @@ def get_json_ld_for_page(
     elif page_type == "scalar":
         graph = [
             website_node,
+            organization_node,
             author_node,
+            software_stub_node,
             {
                 "@type": "WebPage",
                 "@id": "https://stormsia.github.io/maily/scalar.html#webpage",
@@ -374,21 +419,16 @@ def get_json_ld_for_page(
                 "targetPlatform": "WebAPI",
                 "about": {"@id": "https://stormsia.github.io/maily/#software"},
                 "author": {"@id": "https://stormsia.github.io/maily/#author"},
+                "publisher": {"@id": "https://stormsia.github.io/maily/#organization"},
             },
-            {
-                "@type": "WebAPI",
-                "@id": "https://stormsia.github.io/maily/#webapi",
-                "name": "Maily Gateway REST API",
-                "documentation": "https://stormsia.github.io/maily/scalar.html",
-                "serviceUrl": "http://127.0.0.1:8477",
-                "termsOfService": "https://github.com/stormsia/maily/blob/main/LICENSE",
-                "provider": {"@id": "https://stormsia.github.io/maily/#author"},
-            },
+            webapi_node,
         ]
     elif page_type == "swagger":
         graph = [
             website_node,
+            organization_node,
             author_node,
+            software_stub_node,
             {
                 "@type": "WebPage",
                 "@id": "https://stormsia.github.io/maily/swagger.html#webpage",
@@ -428,21 +468,16 @@ def get_json_ld_for_page(
                 "targetPlatform": "WebAPI",
                 "about": {"@id": "https://stormsia.github.io/maily/#software"},
                 "author": {"@id": "https://stormsia.github.io/maily/#author"},
+                "publisher": {"@id": "https://stormsia.github.io/maily/#organization"},
             },
-            {
-                "@type": "WebAPI",
-                "@id": "https://stormsia.github.io/maily/#webapi",
-                "name": "Maily Gateway REST API",
-                "documentation": "https://stormsia.github.io/maily/scalar.html",
-                "serviceUrl": "http://127.0.0.1:8477",
-                "termsOfService": "https://github.com/stormsia/maily/blob/main/LICENSE",
-                "provider": {"@id": "https://stormsia.github.io/maily/#author"},
-            },
+            webapi_node,
         ]
     elif page_type == "redoc":
         graph = [
             website_node,
+            organization_node,
             author_node,
+            software_stub_node,
             {
                 "@type": "WebPage",
                 "@id": "https://stormsia.github.io/maily/redoc.html#webpage",
@@ -482,21 +517,16 @@ def get_json_ld_for_page(
                 "targetPlatform": "WebAPI",
                 "about": {"@id": "https://stormsia.github.io/maily/#software"},
                 "author": {"@id": "https://stormsia.github.io/maily/#author"},
+                "publisher": {"@id": "https://stormsia.github.io/maily/#organization"},
             },
-            {
-                "@type": "WebAPI",
-                "@id": "https://stormsia.github.io/maily/#webapi",
-                "name": "Maily Gateway REST API",
-                "documentation": "https://stormsia.github.io/maily/scalar.html",
-                "serviceUrl": "http://127.0.0.1:8477",
-                "termsOfService": "https://github.com/stormsia/maily/blob/main/LICENSE",
-                "provider": {"@id": "https://stormsia.github.io/maily/#author"},
-            },
+            webapi_node,
         ]
     elif page_type == "analytics":
         graph = [
             website_node,
+            organization_node,
             author_node,
+            software_stub_node,
             {
                 "@type": "WebPage",
                 "@id": "https://stormsia.github.io/maily/analytics.html#webpage",
@@ -514,6 +544,11 @@ def get_json_ld_for_page(
                 "headline": "Maily Provider Fleet Operational Health & Security Dashboard",
                 "description": "Live uptime monitoring, failure telemetry, and automated security verification gates across 8+ temporary email provider adapters.",
                 "url": "https://stormsia.github.io/maily/analytics.html",
+                "image": "https://stormsia.github.io/maily/assets/hero_banner.png",
+                "datePublished": "2024-10-01T00:00:00Z",
+                "dateModified": now_iso,
+                "publisher": {"@id": "https://stormsia.github.io/maily/#organization"},
+                "inLanguage": "en",
                 "about": {"@id": "https://stormsia.github.io/maily/#software"},
                 "author": {"@id": "https://stormsia.github.io/maily/#author"},
             },
@@ -523,6 +558,9 @@ def get_json_ld_for_page(
                 "name": "Maily Provider Fleet Operational Health & SLA Metrics",
                 "description": "Continuous availability, latency, and SLA dataset for aggregated disposable email providers with synthetic health status 99.99% composite SLA and sub-millisecond SQLite WAL operational metrics (< 2.5 ms).",
                 "url": "https://stormsia.github.io/maily/analytics.html",
+                "creator": {"@id": "https://stormsia.github.io/maily/#organization"},
+                "license": "https://opensource.org/licenses/MIT",
+                "isAccessibleForFree": True,
                 "distribution": [
                     {
                         "@type": "DataDownload",
@@ -553,7 +591,9 @@ def get_json_ld_for_page(
     elif page_type == "benchmarks":
         graph = [
             website_node,
+            organization_node,
             author_node,
+            software_stub_node,
             {
                 "@type": "WebPage",
                 "@id": "https://stormsia.github.io/maily/dev/bench/index.html#webpage",
@@ -573,6 +613,11 @@ def get_json_ld_for_page(
                 "headline": "Maily Engine Latency & Cryptographic Performance Benchmarks",
                 "description": "Continuous performance benchmarking for SQLite WAL transactions (< 2.5 ms latency), token cryptography, and endpoint throughput.",
                 "url": "https://stormsia.github.io/maily/dev/bench/index.html",
+                "image": "https://stormsia.github.io/maily/assets/hero_banner.png",
+                "datePublished": "2024-10-01T00:00:00Z",
+                "dateModified": now_iso,
+                "publisher": {"@id": "https://stormsia.github.io/maily/#organization"},
+                "inLanguage": "en",
                 "about": {"@id": "https://stormsia.github.io/maily/#software"},
                 "author": {"@id": "https://stormsia.github.io/maily/#author"},
             },
@@ -582,6 +627,9 @@ def get_json_ld_for_page(
                 "name": "Maily Microbenchmark Latencies & Engine Performance Metrics",
                 "description": "High-precision microbenchmark telemetry across Maily SQLite WAL (< 2.5 ms write latencies), cryptographic modules, and synthetic health status 99.99% composite SLA.",
                 "url": "https://stormsia.github.io/maily/dev/bench/index.html",
+                "creator": {"@id": "https://stormsia.github.io/maily/#organization"},
+                "license": "https://opensource.org/licenses/MIT",
+                "isAccessibleForFree": True,
                 "distribution": [
                     {
                         "@type": "DataDownload",
@@ -612,9 +660,50 @@ def get_json_ld_for_page(
     else:  # docs
         clean_title = title or "Documentation"
         clean_url = canonical_url or "https://stormsia.github.io/maily/docs/"
+        is_hub_index = clean_url.rstrip("/") == "https://stormsia.github.io/maily/docs"
+
+        if is_hub_index:
+            breadcrumb_items = [
+                {
+                    "@type": "ListItem",
+                    "position": 1,
+                    "name": "Home",
+                    "item": "https://stormsia.github.io/maily/",
+                },
+                {
+                    "@type": "ListItem",
+                    "position": 2,
+                    "name": "Documentation",
+                    "item": "https://stormsia.github.io/maily/docs/",
+                },
+            ]
+        else:
+            breadcrumb_items = [
+                {
+                    "@type": "ListItem",
+                    "position": 1,
+                    "name": "Home",
+                    "item": "https://stormsia.github.io/maily/",
+                },
+                {
+                    "@type": "ListItem",
+                    "position": 2,
+                    "name": "Documentation",
+                    "item": "https://stormsia.github.io/maily/docs/",
+                },
+                {
+                    "@type": "ListItem",
+                    "position": 3,
+                    "name": clean_title.split("|")[0].strip(),
+                    "item": clean_url,
+                },
+            ]
+
         graph = [
             website_node,
+            organization_node,
             author_node,
+            software_stub_node,
             {
                 "@type": "WebPage",
                 "@id": f"{clean_url}#webpage",
@@ -632,26 +721,18 @@ def get_json_ld_for_page(
                 "headline": clean_title,
                 "description": description,
                 "url": clean_url,
+                "image": "https://stormsia.github.io/maily/assets/hero_banner.png",
+                "datePublished": "2024-10-01T00:00:00Z",
+                "dateModified": now_iso,
+                "publisher": {"@id": "https://stormsia.github.io/maily/#organization"},
+                "inLanguage": "en",
                 "about": {"@id": "https://stormsia.github.io/maily/#software"},
                 "author": {"@id": "https://stormsia.github.io/maily/#author"},
             },
             {
                 "@type": "BreadcrumbList",
                 "@id": f"{clean_url}#breadcrumb",
-                "itemListElement": [
-                    {
-                        "@type": "ListItem",
-                        "position": 1,
-                        "name": "Home",
-                        "item": "https://stormsia.github.io/maily/",
-                    },
-                    {
-                        "@type": "ListItem",
-                        "position": 2,
-                        "name": clean_title.split("|")[0].strip(),
-                        "item": clean_url,
-                    },
-                ],
+                "itemListElement": breadcrumb_items,
             },
         ]
 
@@ -834,6 +915,7 @@ def get_nav_html(active: str, base_path: str = "") -> str:
 def get_footer_html(base_path: str = "", active: str = "") -> str:
     """Return unified portal footer HTML with cyclic backtracking protection."""
     home_url = base_path or "./"
+    docs_hub_url = f"{base_path}docs/"
     is_bench_current = active == "benchmarks" or base_path.startswith("../../")
     bench_url = "./" if is_bench_current else f"{base_path}dev/bench/index.html"
     scalar_url = "./" if active == "scalar" else f"{base_path}scalar.html"
@@ -856,16 +938,35 @@ def get_footer_html(base_path: str = "", active: str = "") -> str:
         <div class="footer-links">
           <div class="footer-group">
             <span class="group-title">Portal</span>
-            <a href="{home_url}">Documentation Hub</a>
+            <a href="{home_url}">Portal Home</a>
+            <a href="{docs_hub_url}">Documentation Hub</a>
             <a href="{scalar_url}">Scalar API Reference</a>
             <a href="{swagger_url}">Swagger UI Dark</a>
             <a href="{redoc_url}">ReDoc Specification</a>
           </div>
           <div class="footer-group">
+            <span class="group-title">Documentation</span>
+            <a href="{base_path}docs/recipes.html">Playwright &amp; Pytest Recipes</a>
+            <a href="{base_path}docs/python.html">Python Async SDK</a>
+            <a href="{base_path}docs/docker.html">Self-Hosted Docker</a>
+            <a href="{base_path}docs/providers.html">Providers Matrix</a>
+            <a href="{base_path}docs/curl.html">cURL &amp; Auth Reference</a>
+            <a href="{base_path}docs/architecture.html">Security &amp; Architecture</a>
+            <a href="{base_path}docs/adding-providers.html">Adding Custom Providers</a>
+          </div>
+          <div class="footer-group">
+            <span class="group-title">Agent Discovery &amp; AI</span>
+            <a href="{base_path}llms.txt" target="_blank" rel="noopener noreferrer">llms.txt (Agent Index)</a>
+            <a href="{base_path}llms-full.txt" target="_blank" rel="noopener noreferrer">llms-full.txt (Full Context)</a>
+            <a href="{base_path}SKILL.md" target="_blank" rel="noopener noreferrer">SKILL.md (Claude / Cursor)</a>
+            <a href="{base_path}openapi.json" target="_blank" download="openapi.json">OpenAPI 3.1 Spec (JSON)</a>
+            <a href="{base_path}.well-known/ai-catalog.json" target="_blank" rel="noopener noreferrer">AI Catalog (.well-known)</a>
+            <a href="{base_path}pricing.md" target="_blank" rel="noopener noreferrer">pricing.md (FOSS Declaration)</a>
+          </div>
+          <div class="footer-group">
             <span class="group-title">Observability</span>
             <a href="{bench_url}">Benchmark History ⚡</a>
             <a href="{analytics_url}">Security &amp; Quality 🛡️</a>
-            <a href="{base_path}openapi.json" target="_blank" download="openapi.json">OpenAPI Spec (JSON)</a>
           </div>
           <div class="footer-group">
             <span class="group-title">Ecosystem</span>
@@ -893,16 +994,16 @@ def get_footer_html(base_path: str = "", active: str = "") -> str:
         margin-top: 60px;
       }}
       .footer-inner {{
-        max-width: 1280px;
+        max-width: 1320px;
         margin: 0 auto;
         display: flex;
         justify-content: space-between;
         align-items: flex-start;
         flex-wrap: wrap;
-        gap: 36px;
+        gap: 32px;
       }}
       .footer-brand {{
-        max-width: 380px;
+        max-width: 300px;
       }}
       .footer-brand-title {{
         display: flex;
@@ -1008,9 +1109,9 @@ def copy_static_assets(public_dir: Path) -> None:
     if docs_assets.is_dir():
         (docs_assets / "favicon.svg").write_text(favicon_svg_content, encoding="utf-8")
 
-    # Generate physical Apple Touch Icon (180x180) and multi-resolution favicon.ico via PIL
+    # Generate physical Apple Touch Icon (180x180), favicon-48x48.png, and multi-resolution favicon.ico via PIL
     try:
-        from PIL import Image, ImageDraw
+        from PIL import Image, ImageDraw, ImageOps
 
         img = Image.new("RGBA", (180, 180), (0, 0, 0, 0))
         draw = ImageDraw.Draw(img)
@@ -1029,6 +1130,14 @@ def copy_static_assets(public_dir: Path) -> None:
         if docs_assets.is_dir():
             shutil.copyfile(apple_touch_icon_dest, docs_assets / "apple-touch-icon.png")
 
+        # Generate raster favicon-48x48.png for Google SERP
+        fav_48 = img.resize((48, 48), Image.Resampling.LANCZOS)
+        fav_48_dest = dest_assets / "favicon-48x48.png"
+        fav_48.save(fav_48_dest, format="PNG")
+        shutil.copyfile(fav_48_dest, public_dir / "favicon-48x48.png")
+        if docs_assets.is_dir():
+            shutil.copyfile(fav_48_dest, docs_assets / "favicon-48x48.png")
+
         # Save favicon.ico (16x16, 32x32, 48x48)
         ico_img = img.resize((32, 32), Image.Resampling.LANCZOS)
         ico_dest = public_dir / "favicon.ico"
@@ -1036,9 +1145,59 @@ def copy_static_assets(public_dir: Path) -> None:
         shutil.copyfile(ico_dest, dest_assets / "favicon.ico")
         if docs_assets.is_dir():
             shutil.copyfile(ico_dest, docs_assets / "favicon.ico")
-        print("Generated physical favicon.svg, favicon.ico, and apple-touch-icon.png")
+
+        # Generate raster hero_banner.png (1200x630) for OpenGraph & Twitter previews
+        hero_webp = dest_assets / "hero_banner.webp"
+        if not hero_webp.is_file() and docs_assets.is_dir():
+            hero_webp = docs_assets / "hero_banner.webp"
+
+        hero_png_dest = dest_assets / "hero_banner.png"
+        if hero_webp and hero_webp.is_file():
+            with Image.open(hero_webp) as h_im:
+                rgb_h = h_im.convert("RGB")
+                fitted_hero = ImageOps.fit(rgb_h, (1200, 630), Image.Resampling.LANCZOS)
+                fitted_hero.save(hero_png_dest, format="PNG", optimize=True)
+                if docs_assets.is_dir():
+                    shutil.copyfile(hero_png_dest, docs_assets / "hero_banner.png")
+                shutil.copyfile(hero_png_dest, public_dir / "hero_banner.png")
+        elif (dest_assets / "logo.png").is_file():
+            shutil.copyfile(dest_assets / "logo.png", hero_png_dest)
+            if docs_assets.is_dir():
+                shutil.copyfile(dest_assets / "logo.png", docs_assets / "hero_banner.png")
+            shutil.copyfile(dest_assets / "logo.png", public_dir / "hero_banner.png")
+
+        # Ensure physical logo.png exists in dest_assets (public/assets/logo.png) and public/logo.png
+        logo_dest = dest_assets / "logo.png"
+        if (
+            not logo_dest.is_file()
+            and docs_assets.is_dir()
+            and (docs_assets / "logo.png").is_file()
+        ):
+            shutil.copyfile(docs_assets / "logo.png", logo_dest)
+
+        if not logo_dest.is_file():
+            # Generate 512x512 logo.png
+            logo_img = Image.new("RGBA", (512, 512), (0, 0, 0, 0))
+            draw_logo = ImageDraw.Draw(logo_img)
+            draw_logo.rounded_rectangle([0, 0, 511, 511], radius=114, fill=(124, 108, 255, 255))
+            draw_logo.rounded_rectangle(
+                [110, 160, 402, 370], radius=40, outline=(255, 255, 255, 255), width=40
+            )
+            draw_logo.line(
+                [(128, 194), (256, 290), (384, 194)], fill=(255, 255, 255, 255), width=40
+            )
+            logo_img.save(logo_dest, format="PNG")
+            if docs_assets.is_dir():
+                shutil.copyfile(logo_dest, docs_assets / "logo.png")
+            shutil.copyfile(logo_dest, public_dir / "logo.png")
+        else:
+            shutil.copyfile(logo_dest, public_dir / "logo.png")
+
+        print(
+            "Generated physical favicon.svg, favicon.ico, favicon-48x48.png, apple-touch-icon.png, hero_banner.png, and logo.png"
+        )
     except Exception as e:
-        print(f"Warning: could not generate PNG/ICO favicons via PIL: {e}")
+        print(f"Warning: could not generate PNG/ICO favicons or hero_banner.png via PIL: {e}")
 
     # GitHub Pages Jekyll bypass
     (public_dir / ".nojekyll").touch()
@@ -1049,13 +1208,16 @@ def generate_seo_files(public_dir: Path) -> None:
     robots_txt = """User-agent: *
 Allow: /
 
-# Agent & AI Discovery (AgentReady Standards)
+# Sitemap Index
 Sitemap: https://stormsia.github.io/maily/sitemap.xml
-Content-Usage: Allow=training,citing,indexing
-Link: <https://stormsia.github.io/maily/llms.txt>; rel="llms-txt"
-Link: <https://stormsia.github.io/maily/llms-full.txt>; rel="llms-full-txt"
-Link: <https://stormsia.github.io/maily/openapi.json>; rel="service-desc"
-Link: <https://stormsia.github.io/maily/SKILL.md>; rel="agent-skill"
+
+# Machine Discovery & AI Endpoints:
+# - llms.txt: https://stormsia.github.io/maily/llms.txt
+# - llms-full.txt: https://stormsia.github.io/maily/llms-full.txt
+# - openapi.json: https://stormsia.github.io/maily/openapi.json
+# - SKILL.md: https://stormsia.github.io/maily/SKILL.md
+# - ai-catalog.json: https://stormsia.github.io/maily/.well-known/ai-catalog.json
+# - pricing.md: https://stormsia.github.io/maily/pricing.md
 
 # AI Search Crawlers & RAG Bots
 User-agent: GPTBot
@@ -1075,6 +1237,12 @@ Allow: /
 
 User-agent: Google-Extended
 Allow: /
+
+User-agent: BraveBot
+Allow: /
+
+User-agent: Amazonbot
+Allow: /
 """
     (public_dir / "robots.txt").write_text(robots_txt, encoding="utf-8")
 
@@ -1087,6 +1255,12 @@ Allow: /
     <lastmod>{today}</lastmod>
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
+  </url>
+  <url>
+    <loc>https://stormsia.github.io/maily/docs/</loc>
+    <lastmod>{today}</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
   </url>
   <url>
     <loc>https://stormsia.github.io/maily/docs/recipes.html</loc>
@@ -1119,6 +1293,12 @@ Allow: /
     <priority>0.8</priority>
   </url>
   <url>
+    <loc>https://stormsia.github.io/maily/docs/curl.html</loc>
+    <lastmod>{today}</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
     <loc>https://stormsia.github.io/maily/docs/architecture.html</loc>
     <lastmod>{today}</lastmod>
     <changefreq>weekly</changefreq>
@@ -1141,6 +1321,18 @@ Allow: /
     <lastmod>{today}</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://stormsia.github.io/maily/pricing.md</loc>
+    <lastmod>{today}</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://stormsia.github.io/maily/llms.txt</loc>
+    <lastmod>{today}</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
   </url>
 </urlset>
 """
@@ -1179,7 +1371,7 @@ def generate_static_endpoints_html(openapi_data: dict) -> str:
     out: list[str] = [
         '<div class="agent-api-summary-content">',
         '  <header class="agent-api-header">',
-        "    <h1>Maily REST API — Complete Static Specification</h1>",
+        "    <h2>Maily REST API — Complete Static Specification</h2>",
         '    <p class="api-lead">Complete machine-readable static reference of all Maily endpoints for AI agents (Claude, Perplexity, GPTBot, Cursor), non-JS crawlers, and screen readers. Complies with AgentReady standard <strong>AR-READ-01</strong>.</p>',
         '    <div class="api-meta-strip">',
         "      <span>Base Server: <code>http://127.0.0.1:8477</code></span> · ",
@@ -1192,7 +1384,7 @@ def generate_static_endpoints_html(openapi_data: dict) -> str:
     for tag, ops in groups.items():
         tag_slug = tag.lower().replace(" ", "-")
         out.append(f'  <section class="api-tag-section" id="tag-{tag_slug}">')
-        out.append(f'    <h2 class="tag-title">{html.escape(tag)} Endpoints ({len(ops)})</h2>')
+        out.append(f'    <h3 class="tag-title">{html.escape(tag)} Endpoints ({len(ops)})</h3>')
         for path, method, op in ops:
             summary = op.get("summary", "")
             desc = op.get("description", "")
@@ -1259,9 +1451,11 @@ def generate_agent_discovery_files(public_dir: Path) -> None:
     Generates:
       - public/llms.txt (llmstxt.org specification)
       - public/llms-full.txt (1-request consolidated documentation)
+      - public/pricing.md (FOSS & self-hosted pricing declaration)
       - public/SKILL.md (Claude Code / Cursor testing skill manifest)
       - public/.well-known/ai-catalog.json (AgentReady AI catalog)
       - public/index.md (Markdown mirror of portal)
+      - public/docs/RECIPES.md & public/docs/ARCHITECTURE.md
       - Copies docs/*.md and README.md into public/docs/
     """
     public_dir.mkdir(parents=True, exist_ok=True)
@@ -1270,10 +1464,42 @@ def generate_agent_discovery_files(public_dir: Path) -> None:
     public_docs_dir = public_dir / "docs"
     public_docs_dir.mkdir(parents=True, exist_ok=True)
 
-    # 1. public/llms.txt
+    # 1. public/pricing.md (FOSS & Self-Hosted Pricing Declaration)
+    pricing_md = """# Pricing & Licensing — Maily Universal Temporary Email Gateway
+
+## Pricing & Licensing
+- **Cost**: $0 / 100% Free Open Source Software (FOSS).
+- **License**: MIT License (Commercial & Private use allowed).
+- **Limits**: Unlimited mailboxes, unlimited OTP extractions, zero API rate tiers on self-hosted instances.
+- **No Credit Card / No Vendor Lock-in**: Run locally via single Docker container.
+
+## Self-Hosted Open Source (FOSS)
+- Price: $0/month (Free forever)
+- Limits: Unlimited mailboxes, unlimited OTP extractions, zero API rate limits
+- Features: All 8+ disposable mail providers, SQLite WAL engine, REST API, async Python SDK, Swagger & Scalar UI
+
+## Enterprise Self-Hosting & CI/CD
+- Price: $0 (MIT License)
+- Limits: Unlimited CI/CD workers, unlimited concurrent Playwright/Pytest runners
+- Deployment: Single Docker container (`ghcr.io/stormsia/maily:latest`)
+- Commercial Use: Fully allowed under the permissive MIT License
+
+## Commercial & Private Usage
+Maily is 100% free open-source software under the permissive MIT License. There are no hosted subscription tiers, no usage meters, no credit card requirements, and no vendor lock-in. You have complete ownership and control over your deployment and test data.
+"""
+    (public_dir / "pricing.md").write_text(pricing_md, encoding="utf-8")
+
+    # 2. public/llms.txt
     llms_txt = """# Maily — Universal Temporary Email Gateway
 
 > Maily is a self-hosted universal temporary email gateway aggregating 8+ disposable mail providers into one unified REST API and async Python SDK (maily-client). It eliminates flaky verification regexes with sub-second, 1-line OTP code extraction for Playwright, Pytest, and QA bots.
+
+## Pricing & Licensing
+- **Cost**: $0 / 100% Free Open Source Software (FOSS).
+- **License**: MIT License (Commercial & Private use allowed).
+- **Limits**: Unlimited mailboxes, unlimited OTP extractions, zero API rate tiers on self-hosted instances.
+- **No Credit Card / No Vendor Lock-in**: Run locally via single Docker container.
+- See [Complete Pricing & Licensing Declaration](https://stormsia.github.io/maily/pricing.md).
 
 ## Key Capabilities & Architecture
 - **8+ Aggregated Providers**: Mail.tm, TempMail.Plus, NoopMail, GuerrillaMail, 1secmail, DispoEmail, AnonymMail, and Gmail OAuth2 (alias routing).
@@ -1308,6 +1534,8 @@ asyncio.run(main())
 
 ## Documentation & Machine Endpoints
 - [Complete Markdown Documentation](https://stormsia.github.io/maily/llms-full.txt): Full guide, architecture, and Docker compose examples.
+- [FOSS Pricing & Licensing Declaration](https://stormsia.github.io/maily/pricing.md): $0 / 100% Free Open Source Software (FOSS) MIT declaration and self-hosted unlimited usage policy.
+- [Documentation Hub](https://stormsia.github.io/maily/docs/): Overview of all 7 guide sections and developer documentation.
 - [OpenAPI 3.1 Specification](https://stormsia.github.io/maily/openapi.json): Full machine-readable REST API schema.
 - [Interactive Scalar API Reference](https://stormsia.github.io/maily/scalar.html): Web-based interactive documentation.
 - [Live Security & Health Dashboard](https://stormsia.github.io/maily/analytics.html): Upstream provider SLAs and security gates.
@@ -1316,16 +1544,18 @@ asyncio.run(main())
 - [GitHub Repository](https://github.com/stormsia/maily): Source code, issues, and discussions.
 
 ## Optional
-- [Playwright & Pytest Recipes](https://stormsia.github.io/maily/docs/recipes.html): Standalone integration recipes with copyable fixtures.
-- [Python Async SDK Reference](https://stormsia.github.io/maily/docs/python.html): Pydantic schemas, client models, and exception hierarchy.
-- [Self-Hosted Docker Guide](https://stormsia.github.io/maily/docs/docker.html): Production compose files and configuration.
-- [Providers Matrix](https://stormsia.github.io/maily/docs/providers.html): Fleet metrics, features, and domain pools.
-- [Adding Custom Providers](https://stormsia.github.io/maily/docs/adding-providers.html): Extensibility guide for custom provider adapters.
-- [Architecture & Threat Model](https://stormsia.github.io/maily/docs/architecture.html): Security analysis, Fernet token cryptography, and SQLite WAL design.
+- [Documentation Hub Index](https://stormsia.github.io/maily/docs/): Catalog of all developer guides and testing resources.
+- [Playwright & Pytest Recipes (Markdown)](https://stormsia.github.io/maily/docs/RECIPES.md): Standalone integration recipes with copyable fixtures.
+- [Python Async SDK Reference (Markdown)](https://stormsia.github.io/maily/docs/CLIENT_GUIDE.md): Pydantic schemas, client models, and exception hierarchy.
+- [Self-Hosted Docker Guide (Markdown)](https://stormsia.github.io/maily/docs/DOCKER.md): Production compose files and configuration.
+- [Providers Matrix (Markdown)](https://stormsia.github.io/maily/docs/PROVIDERS.md): Fleet metrics, features, and domain pools.
+- [Adding Custom Providers (Markdown)](https://stormsia.github.io/maily/docs/ADDING_PROVIDERS.md): Extensibility guide for custom provider adapters.
+- [cURL & Auth Cheat Sheet (Markdown)](https://stormsia.github.io/maily/docs/CURL_GUIDE.md): REST API authentication and CLI testing snippets.
+- [Architecture & Threat Model (Markdown)](https://stormsia.github.io/maily/docs/ARCHITECTURE.md): Security analysis, Fernet token cryptography, and SQLite WAL design.
 """
     (public_dir / "llms.txt").write_text(llms_txt, encoding="utf-8")
 
-    # 2. public/SKILL.md
+    # 3. public/SKILL.md
     skill_md = """---
 name: maily-testing
 description: "Integrate Maily universal temporary email gateway for E2E signup testing, OTP extraction, and automated email verification in Playwright and Pytest."
@@ -1384,7 +1614,7 @@ async def test_user_signup_with_otp(page):
 """
     (public_dir / "SKILL.md").write_text(skill_md, encoding="utf-8")
 
-    # 3. public/.well-known/ai-catalog.json
+    # 4. public/.well-known/ai-catalog.json
     ai_catalog = {
         "name": "Maily",
         "version": __version__,
@@ -1405,6 +1635,12 @@ async def test_user_signup_with_otp(page):
                 "description": "Complete consolidated documentation for single-request ingestion and LLM grounding",
             },
             {
+                "name": "Pricing & Licensing Declaration",
+                "type": "pricing-manifest",
+                "url": "https://stormsia.github.io/maily/pricing.md",
+                "description": "$0 FOSS MIT license declaration and unlimited self-hosted usage limits",
+            },
+            {
                 "name": "OpenAPI Specification",
                 "type": "openapi-spec",
                 "url": "https://stormsia.github.io/maily/openapi.json",
@@ -1415,6 +1651,18 @@ async def test_user_signup_with_otp(page):
                 "type": "agent-skill",
                 "url": "https://stormsia.github.io/maily/SKILL.md",
                 "description": "Agent skill for automated Playwright and Pytest OTP verification with Maily",
+            },
+            {
+                "name": "Playwright & Pytest Recipes (Markdown)",
+                "type": "documentation-markdown",
+                "url": "https://stormsia.github.io/maily/docs/RECIPES.md",
+                "description": "Complete Playwright and Pytest automation fixtures and code recipes",
+            },
+            {
+                "name": "Security Architecture & Threat Model (Markdown)",
+                "type": "documentation-markdown",
+                "url": "https://stormsia.github.io/maily/docs/ARCHITECTURE.md",
+                "description": "Inbound-only architecture, Fernet-256 token cryptography, and SQLite WAL design",
             },
             {
                 "name": "Scalar API Reference",
@@ -1440,7 +1688,7 @@ async def test_user_signup_with_otp(page):
         json.dumps(ai_catalog, indent=2), encoding="utf-8"
     )
 
-    # 4. Copy docs/*.md and README.md into public/docs/ and create public/index.md
+    # 5. Copy docs/*.md and README.md into public/docs/ and create public/index.md
     readme_path = ROOT / "README.md"
     readme_content = readme_path.read_text(encoding="utf-8") if readme_path.is_file() else "# Maily"
 
@@ -1451,7 +1699,139 @@ async def test_user_signup_with_otp(page):
     for md_file in docs_source.glob("*.md"):
         shutil.copyfile(md_file, public_docs_dir / md_file.name)
 
-    # 5. public/llms-full.txt
+    # 6. Generate physical RECIPES.md and ARCHITECTURE.md in public/docs/
+    recipes_text = """# Automated Testing Recipes (Playwright & Pytest)
+
+> Maily eliminates flaky E2E signup tests by providing native 1-line verification code extraction via `await api.wait_for_code(box)`. Instead of writing custom regexes or polling fragile third-party mailboxes, test runners receive 4–8 digit OTP codes and magic activation links with sub-second upstream detection and automated background mailbox teardown fixtures.
+
+## Recipe 1 — Playwright E2E User Signup & Email OTP Verification
+
+```python
+import pytest
+from playwright.async_api import async_playwright
+from maily_client import Maily
+
+@pytest.mark.asyncio
+async def test_user_signup_and_email_verification():
+    async with Maily("http://127.0.0.1:8477", api_key="YOUR_API_KEY") as api, async_playwright() as p:
+        # 1. Create an isolated ephemeral mailbox
+        mailbox = await api.create_temp_mailbox(provider="dispoemail.org")
+        print(f"Generated test address: {mailbox.address}")
+
+        # 2. Open browser, fill registration form
+        browser = await p.chromium.launch()
+        page = await browser.new_page()
+        await page.goto("https://app.example.com/signup")
+        await page.fill('input[name="email"]', mailbox.address)
+        await page.fill('input[name="password"]', "SecureP@ssw0rd123!")
+        await page.click('button[type="submit"]')
+
+        # 3. Wait for inbound verification email and extract 6-digit OTP code in 1 line
+        otp_code = await api.wait_for_code(mailbox, pattern=r"\\b(\\d{6})\\b", timeout=30.0)
+        assert otp_code is not None, "Failed to extract OTP from email body"
+
+        # 4. Fill OTP and confirm verification success
+        await page.fill('input[name="otp"]', otp_code)
+        await page.click('button[id="verify-btn"]')
+        await page.wait_for_selector(".dashboard-welcome")
+        await browser.close()
+```
+
+## Recipe 2 — Hermetic Pytest Async Fixture with Auto-Cleanup
+
+```python
+import pytest_asyncio
+import pytest
+from maily_client import Maily, Mailbox
+
+@pytest_asyncio.fixture
+async def temp_email():
+    '''Yield a disposable mailbox and automatically delete it after test completion.'''
+    async with Maily("http://127.0.0.1:8477") as client:
+        box = await client.create_temp_mailbox()
+        try:
+            yield box, client
+        finally:
+            await client.delete_mailbox(box)
+
+@pytest.mark.asyncio
+async def test_password_reset_flow(temp_email):
+    box, client = temp_email
+    # Trigger password reset in test application...
+    reset_link = await client.wait_for_link(box, timeout=25.0)
+    assert "reset-token" in reset_link
+```
+
+## Recipe 3 — Multi-Provider Failover & Domain Rotation
+
+```python
+import pytest
+from maily_client import Maily, UpstreamProviderError
+
+@pytest.mark.asyncio
+async def test_resilient_mailbox_creation():
+    providers = ["tempmailplus", "mail.tm", "guerrillamail", "1secmail"]
+    async with Maily("http://127.0.0.1:8477") as client:
+        box = None
+        for prov in providers:
+            try:
+                box = await client.create_temp_mailbox(provider=prov)
+                break
+            except UpstreamProviderError:
+                continue
+        assert box is not None, "All providers temporarily unavailable"
+```
+
+## Recipe 4 — Server-Sent Events (SSE) Live Email Streaming
+
+```python
+import pytest
+from maily_client import Maily
+
+@pytest.mark.asyncio
+async def test_live_streaming_messages():
+    async with Maily("http://127.0.0.1:8477") as client:
+        box = await client.create_temp_mailbox()
+        async for message in client.stream_messages(box, timeout=30.0):
+            if "Welcome" in message.subject:
+                print(f"Received welcome email from {message.from_address}")
+                break
+```
+"""
+    (public_docs_dir / "RECIPES.md").write_text(recipes_text, encoding="utf-8")
+
+    architecture_text = """# Security Architecture, Threat Model & Hermetic Storage
+
+> Maily is engineered from first principles for zero spam relay risks, strict cryptographic isolation, sub-millisecond SQLite WAL persistence, and non-root execution.
+
+## Core Architectural Pillars
+
+- **Fernet-256 Symmetric Encryption**: Private credentials (such as Gmail OAuth refresh tokens and client secrets) are encrypted with Fernet AES-128-CBC + HMAC-SHA256 before persisting to disk. Tokens never leak in plaintext.
+- **Fine-Grained Scoped API Keys**: Mint scoped API keys restricted to specific providers (e.g. only `mail.tm`) or specific actions (read-only, write-only, admin). Multi-tenant worker isolation out of the box.
+- **Zero Outbound Spam Relays**: Maily is strictly an inbound email gateway. The engine contains zero SMTP relaying code, completely preventing abuse by malicious actors attempting to send spam from your servers.
+- **OriginGuard Protection**: Built-in ASGI middleware blocks cross-site request forgery and DNS rebinding attacks by validating the `Origin` and `Host` HTTP headers on all mutating endpoints.
+- **Hardened Non-Root Container**: The official Docker image runs as unprivileged user `65534:65534` (nobody/nogroup) with read-only root filesystems and minimal attack surface.
+- **6 Automated Security Gates**: Every commit is verified against Gitleaks secret detection, Aquasecurity Trivy container scanning, Pip-Audit vulnerability checks, CodeQL SAST, and Zizmor workflow checks.
+- **Sub-Millisecond SQLite WAL Engine**: Persistence is powered by SQLite in Write-Ahead Logging (WAL) mode with asynchronous checkpoints, benchmarking at < 2.5 ms latency under concurrent load without Redis or Postgres dependencies.
+
+## Threat Model & Mitigations Matrix
+
+| Threat Vector | Risk Level | Maily Mitigation Architecture |
+|---|---|---|
+| **Outbound Spam Abuse** | Critical | **Zero Outbound SMTP** — The gateway has no outbound mail transmission code. |
+| **Credential Leakage** | High | **Fernet-256 Vault** — Sensitive tokens and OAuth credentials are encrypted at rest. |
+| **DNS Rebinding / CSRF** | High | **OriginGuard Middleware** — Enforces strict Origin and Host validation on mutating routes. |
+| **Upstream Downtime** | Medium | **Multi-Provider Failover** — Automatic circuit breaker and domain fallback across 8+ fleets. |
+| **State Corruption under Load** | Medium | **SQLite WAL Mode** — Concurrent reads with serialized atomic writes prevent race conditions. |
+
+## Sizing & Performance Model
+- Baseline 1 vCPU / 512MB RAM node sustains > 2,500 webhook deliveries/sec and > 420 concurrent SQLite mailbox polling queries.
+- Microsecond cryptography and regex parsing execute in under 15 µs, keeping CPU utilization < 10% under moderate loads.
+- SQLite WAL mode ensures zero read/write lock contention without external database infrastructure.
+"""
+    (public_docs_dir / "ARCHITECTURE.md").write_text(architecture_text, encoding="utf-8")
+
+    # 7. public/llms-full.txt (1-request consolidated technical documentation)
     docker_content = (
         (ROOT / "docs" / "DOCKER.md").read_text(encoding="utf-8")
         if (ROOT / "docs" / "DOCKER.md").is_file()
@@ -1478,63 +1858,40 @@ async def test_user_signup_with_otp(page):
         else ""
     )
 
-    recipes_text = """# Automated Testing Recipes (Playwright & Pytest)
-
-```python
-import pytest
-from playwright.async_api import async_playwright
-from maily_client import Maily
-
-@pytest.mark.asyncio
-async def test_user_signup_and_email_verification():
-    async with Maily("http://127.0.0.1:8477", api_key="YOUR_API_KEY") as api, async_playwright() as p:
-        mailbox = await api.create_temp_mailbox(provider="dispoemail.org")
-        browser = await p.chromium.launch()
-        page = await browser.new_page()
-        await page.goto("https://app.example.com/signup")
-        await page.fill('input[name="email"]', mailbox.address)
-        await page.fill('input[name="password"]', "SecureP@ssw0rd123!")
-        await page.click('button[type="submit"]')
-
-        otp_code = await api.wait_for_code(mailbox, pattern=r"\\b(\\d{6})\\b", timeout=30.0)
-        assert otp_code is not None, "Failed to extract OTP from email body"
-
-        await page.fill('input[name="otp"]', otp_code)
-        await page.click('button[id="verify-btn"]')
-        await page.wait_for_selector(".dashboard-welcome")
-        await browser.close()
-```
-"""
-
     llms_full_parts = [
         f"# Maily — Complete Consolidated Technical Documentation (llms-full.txt)\n\n"
-        f"> This file consolidates the complete architecture, guides, API usage, and test recipes for Maily "
+        f"> This file consolidates the complete architecture, guides, API usage, test recipes, and FOSS pricing for Maily "
         f"into a single document for AI assistants, agents, and RAG pipelines in 1 HTTP request.\n\n"
         f"Version: {__version__}\n"
         f"Canonical URL: https://stormsia.github.io/maily/llms-full.txt\n"
         f"OpenAPI Schema: https://stormsia.github.io/maily/openapi.json\n"
-        f"Skill Manifest: https://stormsia.github.io/maily/SKILL.md\n\n"
+        f"Skill Manifest: https://stormsia.github.io/maily/SKILL.md\n"
+        f"Pricing Declaration: https://stormsia.github.io/maily/pricing.md\n\n"
         f"---\n\n"
         f"## Table of Contents\n"
         f"1. [Overview & README](#1-overview--readme)\n"
-        f"2. [Self-Hosted Docker Deployment Guide](#2-self-hosted-docker-deployment-guide)\n"
-        f"3. [Python Client SDK Guide](#3-python-client-sdk-guide)\n"
-        f"4. [Disposable Email Providers & Domain Pool Matrix](#4-disposable-email-providers--domain-pool-matrix)\n"
-        f"5. [Custom Provider Extension Guide](#5-custom-provider-extension-guide)\n"
-        f"6. [cURL & Authentication Cheat Sheet](#6-curl--authentication-cheat-sheet)\n"
-        f"7. [Automated Testing & E2E Verification Recipes](#7-automated-testing--e2e-verification-recipes)\n\n"
+        f"2. [Pricing & Licensing (FOSS)](#2-pricing--licensing-foss)\n"
+        f"3. [Self-Hosted Docker Deployment Guide](#3-self-hosted-docker-deployment-guide)\n"
+        f"4. [Python Client SDK Guide](#4-python-client-sdk-guide)\n"
+        f"5. [Disposable Email Providers & Domain Pool Matrix](#5-disposable-email-providers--domain-pool-matrix)\n"
+        f"6. [Custom Provider Extension Guide](#6-custom-provider-extension-guide)\n"
+        f"7. [cURL & Authentication Cheat Sheet](#7-curl--authentication-cheat-sheet)\n"
+        f"8. [Automated Testing & E2E Verification Recipes](#8-automated-testing--e2e-verification-recipes)\n"
+        f"9. [Security Architecture & Threat Model](#9-security-architecture--threat-model)\n\n"
         f"---\n\n",
         f"## 1. Overview & README\n\n{readme_content}\n\n---\n\n",
-        f"## 2. Self-Hosted Docker Deployment Guide\n\n{docker_content}\n\n---\n\n",
-        f"## 3. Python Client SDK Guide\n\n{client_content}\n\n---\n\n",
-        f"## 4. Disposable Email Providers & Domain Pool Matrix\n\n{providers_content}\n\n---\n\n",
-        f"## 5. Custom Provider Extension Guide\n\n{adding_content}\n\n---\n\n",
-        f"## 6. cURL & Authentication Cheat Sheet\n\n{curl_content}\n\n---\n\n",
-        f"## 7. Automated Testing & E2E Verification Recipes\n\n{recipes_text}\n",
+        f"## 2. Pricing & Licensing (FOSS)\n\n{pricing_md}\n\n---\n\n",
+        f"## 3. Self-Hosted Docker Deployment Guide\n\n{docker_content}\n\n---\n\n",
+        f"## 4. Python Client SDK Guide\n\n{client_content}\n\n---\n\n",
+        f"## 5. Disposable Email Providers & Domain Pool Matrix\n\n{providers_content}\n\n---\n\n",
+        f"## 6. Custom Provider Extension Guide\n\n{adding_content}\n\n---\n\n",
+        f"## 7. cURL & Authentication Cheat Sheet\n\n{curl_content}\n\n---\n\n",
+        f"## 8. Automated Testing & E2E Verification Recipes\n\n{recipes_text}\n\n---\n\n",
+        f"## 9. Security Architecture & Threat Model\n\n{architecture_text}\n",
     ]
     (public_dir / "llms-full.txt").write_text("".join(llms_full_parts), encoding="utf-8")
     print(
-        "Generated standardized agent discovery files: llms.txt, llms-full.txt, SKILL.md, ai-catalog.json, index.md, and public/docs/*.md"
+        "Generated standardized agent discovery files: llms.txt, llms-full.txt, pricing.md, SKILL.md, ai-catalog.json, index.md, and public/docs/*.md"
     )
 
 
@@ -1550,9 +1907,9 @@ def generate_scalar_ui(public_dir: Path, schema: dict | None = None) -> None:
     nav = get_nav_html("scalar")
     head_meta = get_head_meta(
         title="Maily · Scalar Interactive API Reference",
-        description="State-of-the-art interactive REST API documentation and client code generator for Maily",
+        description="Interactive OpenAPI 3.1 REST API specification & testing sandbox for Maily. Explore temporary email endpoints, OTP code polling, and generate client code.",
         canonical_url="https://stormsia.github.io/maily/scalar.html",
-        og_image="https://stormsia.github.io/maily/assets/hero_banner.webp",
+        og_image="https://stormsia.github.io/maily/assets/hero_banner.png",
         og_type="article",
         base_path="",
         noindex=False,
@@ -1613,7 +1970,7 @@ def generate_scalar_ui(public_dir: Path, schema: dict | None = None) -> None:
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     }}
     .agent-api-header {{ margin-bottom: 32px; border-bottom: 1px solid #1e2638; padding-bottom: 24px; }}
-    .agent-api-header h1 {{ font-family: "Sora", sans-serif; font-size: 28px; color: #fff; margin: 0 0 12px; }}
+    .agent-api-header h1, .agent-api-header h2 {{ font-family: "Sora", sans-serif; font-size: 28px; color: #fff; margin: 0 0 12px; }}
     .api-lead {{ font-size: 15px; color: #94a3b8; max-width: 860px; line-height: 1.6; }}
     .api-meta-strip {{ display: flex; gap: 12px; font-size: 13px; color: #64748b; margin-top: 14px; flex-wrap: wrap; }}
     .api-tag-section {{ margin-bottom: 40px; }}
@@ -1677,12 +2034,12 @@ def generate_swagger_ui(public_dir: Path, schema: dict | None = None) -> None:
     nav = get_nav_html("swagger")
     head_meta = get_head_meta(
         title="Maily · Swagger UI Interactive Explorer",
-        description="Interactive Swagger UI testing and exploration environment for Maily REST API",
+        description="Interactive Swagger UI testing sandbox for Maily temporary email REST API. Execute live requests, test disposable mailboxes, and inspect OTP response schemas.",
         canonical_url="https://stormsia.github.io/maily/scalar.html",
-        og_image="https://stormsia.github.io/maily/assets/hero_banner.webp",
+        og_image="https://stormsia.github.io/maily/assets/hero_banner.png",
         og_type="website",
         base_path="",
-        noindex=True,
+        noindex=False,
     )
     json_ld = get_json_ld_for_page("swagger")
     endpoints_html = generate_static_endpoints_html(schema)
@@ -1736,7 +2093,7 @@ def generate_swagger_ui(public_dir: Path, schema: dict | None = None) -> None:
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     }}
     .agent-api-header {{ margin-bottom: 32px; border-bottom: 1px solid #1e2638; padding-bottom: 24px; }}
-    .agent-api-header h1 {{ font-family: "Sora", sans-serif; font-size: 28px; color: #fff; margin: 0 0 12px; }}
+    .agent-api-header h1, .agent-api-header h2 {{ font-family: "Sora", sans-serif; font-size: 28px; color: #fff; margin: 0 0 12px; }}
     .api-lead {{ font-size: 15px; color: #94a3b8; max-width: 860px; line-height: 1.6; }}
     .api-meta-strip {{ display: flex; gap: 12px; font-size: 13px; color: #64748b; margin-top: 14px; flex-wrap: wrap; }}
     .api-tag-section {{ margin-bottom: 40px; }}
@@ -1824,12 +2181,12 @@ def generate_redoc_ui(public_dir: Path, schema: dict | None = None) -> None:
     nav = get_nav_html("redoc")
     head_meta = get_head_meta(
         title="Maily · ReDoc Documentation",
-        description="ReDoc three-column interactive API documentation for Maily",
+        description="Comprehensive ReDoc OpenAPI documentation for Maily REST API. Browse temporary mailbox endpoints, request schemas, error codes, and async Python integration.",
         canonical_url="https://stormsia.github.io/maily/scalar.html",
-        og_image="https://stormsia.github.io/maily/assets/hero_banner.webp",
+        og_image="https://stormsia.github.io/maily/assets/hero_banner.png",
         og_type="website",
         base_path="",
-        noindex=True,
+        noindex=False,
     )
     json_ld = get_json_ld_for_page("redoc")
     endpoints_html = generate_static_endpoints_html(schema)
@@ -1917,7 +2274,7 @@ def generate_redoc_ui(public_dir: Path, schema: dict | None = None) -> None:
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     }}
     .agent-api-header {{ margin-bottom: 32px; border-bottom: 1px solid #1e2638; padding-bottom: 24px; }}
-    .agent-api-header h1 {{ font-family: "Sora", sans-serif; font-size: 28px; color: #fff; margin: 0 0 12px; }}
+    .agent-api-header h1, .agent-api-header h2 {{ font-family: "Sora", sans-serif; font-size: 28px; color: #fff; margin: 0 0 12px; }}
     .api-lead {{ font-size: 15px; color: #94a3b8; max-width: 860px; line-height: 1.6; }}
     .api-meta-strip {{ display: flex; gap: 12px; font-size: 13px; color: #64748b; margin-top: 14px; flex-wrap: wrap; }}
     .api-tag-section {{ margin-bottom: 40px; }}
@@ -2198,9 +2555,9 @@ def generate_analytics_dashboard(public_dir: Path) -> None:
 
     head_meta = get_head_meta(
         title="Maily · Security, Quality & Operations Dashboard",
-        description="Live security verifications, provider operational health, and quality gates for Maily",
+        description="Real-time operational health, security audits, and SLA uptime telemetry across 8+ disposable email providers. Monitor composite reliability and system gates.",
         canonical_url="https://stormsia.github.io/maily/analytics.html",
-        og_image="https://stormsia.github.io/maily/assets/hero_banner.webp",
+        og_image="https://stormsia.github.io/maily/assets/hero_banner.png",
         og_type="website",
         base_path="",
         noindex=False,
@@ -2496,10 +2853,10 @@ def generate_analytics_dashboard(public_dir: Path) -> None:
     </div>
 
     <!-- Live Providers Health -->
-    <div class="section-title">
+    <h2 class="section-title">
       <span>📡 Live Disposable Email Provider Operational Status</span>
       <a href="https://github.com/stormsia/maily/blob/main/.github/provider_health_state.json" target="_blank" rel="noopener noreferrer">View Raw JSON ↗</a>
-    </div>
+    </h2>
     <div class="provider-grid">
       {providers_html}
     </div>
@@ -2532,10 +2889,10 @@ def generate_analytics_dashboard(public_dir: Path) -> None:
     </div>
 
     <!-- Security & Hardening Gates Table -->
-    <div class="section-title">
+    <h2 class="section-title">
       <span>🛡️ Automated Security & Hardening Gates</span>
       <a href="https://github.com/stormsia/maily/security" target="_blank" rel="noopener noreferrer">GitHub Security Tab ↗</a>
-    </div>
+    </h2>
     <div class="table-container">
       <table>
         <thead>
@@ -2588,10 +2945,10 @@ def generate_analytics_dashboard(public_dir: Path) -> None:
     </div>
 
     <!-- Quality & Architecture Gates Table -->
-    <div class="section-title">
+    <h2 class="section-title">
       <span>🧪 Code Quality, Architecture & Performance Gates</span>
       <a href="dev/bench/index.html">Open Interactive Benchmarks ⚡</a>
-    </div>
+    </h2>
     <div class="table-container">
       <table>
         <thead>
@@ -2646,7 +3003,7 @@ def generate_analytics_dashboard(public_dir: Path) -> None:
     <!-- Benchmark Callout Banner -->
     <div class="cta-banner">
       <div>
-        <h3 style="margin: 0 0 6px; color: #fff; font-family: 'Sora', sans-serif;">Explore Historical Performance Benchmarks</h3>
+        <h2 style="margin: 0 0 6px; color: #fff; font-family: 'Sora', sans-serif; font-size: 18px;">Explore Historical Performance Benchmarks</h2>
         <p style="margin: 0; color: #94a3b8; font-size: 14px;">Interactive Chart.js visualizations tracking operations/sec, mean latencies, and execution SLAs across releases.</p>
       </div>
       <a href="dev/bench/index.html" class="cta-button">Open Benchmark Charts ⚡</a>
@@ -2670,9 +3027,9 @@ def generate_index_portal(public_dir: Path) -> None:
 
     head_meta = get_head_meta(
         title="Maily · Self-Hosted Temporary Email Gateway & Developer Hub",
-        description="100% self-hosted universal temporary email gateway aggregating 8+ disposable mail providers into one unified REST API and async Python SDK. Built for Playwright OTP verification, Pytest, and Docker.",
+        description="Self-hosted universal temporary email gateway aggregating 8+ disposable mail providers into one REST API & async Python SDK. Built for Playwright & Pytest OTP.",
         canonical_url="https://stormsia.github.io/maily/",
-        og_image="https://stormsia.github.io/maily/assets/hero_banner.webp",
+        og_image="https://stormsia.github.io/maily/assets/hero_banner.png",
         og_type="website",
         base_path="",
         noindex=False,
@@ -3641,7 +3998,7 @@ def generate_index_portal(public_dir: Path) -> None:
     <div class="tab-pane active" id="tab-overview" role="tabpanel" aria-labelledby="ptab-overview">
       <!-- GEO Definition Block 1: What is Maily? -->
       <div class="answer-block" id="what-is-maily">
-        <h3 class="answer-block-title">What is Maily?</h3>
+        <h2 class="answer-block-title">What is Maily?</h2>
         <p class="answer-block-content">
           <strong>Maily</strong> is a 100% self-hosted universal temporary email gateway and async Python SDK that aggregates 8+ disposable email providers (including Mail.tm, TempMail, and Gmail OAuth2) into a unified REST API. Deployable via a single Docker command with hermetic SQLite WAL storage, Maily delivers sub-millisecond latencies without external database dependencies.
         </p>
@@ -3690,6 +4047,11 @@ def generate_index_portal(public_dir: Path) -> None:
               <td><strong>Security &amp; Access</strong></td>
               <td><span class="badge badge--no">No authentication, shared public inboxes</span></td>
               <td><span class="badge badge--yes">Fernet encrypted secrets, scoped RBAC API keys, non-root Docker</span></td>
+            </tr>
+            <tr>
+              <td><strong>Best For</strong></td>
+              <td><span class="badge badge--no">One-off manual disposable scripts, non-critical ad-hoc tests</span></td>
+              <td><span class="badge badge--yes">Enterprise CI/CD pipelines, high-velocity Playwright/Pytest suites, multi-tenant QA bots</span></td>
             </tr>
           </tbody>
         </table>
@@ -3837,7 +4199,7 @@ def generate_index_portal(public_dir: Path) -> None:
       </div>
       <!-- GEO Definition Block 2: Domain Blacklisting Prevention -->
       <div class="answer-block" id="how-maily-prevents-blacklisting">
-        <h3 class="answer-block-title">How Maily prevents domain blacklisting via 40+ rotating domains</h3>
+        <h2 class="answer-block-title">How Maily prevents domain blacklisting via 40+ rotating domains</h2>
         <p class="answer-block-content">
           Most SaaS platforms aggressively blacklist single-provider disposable email domains like <code>@mailtm.com</code>. Maily prevents signup blocks by maintaining an active multi-network pool of 40+ rotating domains across 8 independent provider fleets, alongside support for obscure custom domains and infinite, undetectable Gmail alias addresses (<code>username+alias@gmail.com</code>) via Google OAuth2.
         </p>
@@ -3850,6 +4212,10 @@ def generate_index_portal(public_dir: Path) -> None:
 
     <!-- TAB 6: CURL & AUTH -->
     <div class="tab-pane" id="tab-curl" role="tabpanel" aria-labelledby="ptab-curl">
+      <div class="doc-spoke-banner">
+        <span class="spoke-icon">💻</span>
+        <div>Looking for standalone cURL cheat sheets &amp; REST examples? View the standalone <a href="docs/curl.html">cURL &amp; REST Authentication Cheat Sheet ↗</a></div>
+      </div>
       {curl_html}
     </div>
 
@@ -3861,7 +4227,7 @@ def generate_index_portal(public_dir: Path) -> None:
       </div>
       <!-- GEO Definition Block 3: Best Temp Mail API for Playwright & Pytest -->
       <div class="answer-block" id="why-maily-playwright-pytest">
-        <h3 class="answer-block-title">Why Maily is the best Temp Mail API for Playwright and Pytest</h3>
+        <h2 class="answer-block-title">Why Maily is the best Temp Mail API for Playwright and Pytest</h2>
         <p class="answer-block-content">
           Maily eliminates flaky E2E signup tests by providing native 1-line verification code extraction via <code>await api.wait_for_code(box)</code>. Instead of writing custom regexes or polling fragile third-party mailboxes, test runners receive 4–8 digit OTP codes and magic activation links with sub-second upstream detection and automated background mailbox teardown fixtures.
         </p>
@@ -4416,23 +4782,30 @@ def render_docs_shell(
     lead: str,
     body_html: str,
     keywords: str = "temporary email, disposable email, maily documentation, temp mail api",
+    breadcrumb_label: str = "",
 ) -> str:
     """Return unified layout shell for standalone /docs/ documentation pages."""
     nav = get_nav_html("docs", base_path="../")
     footer = get_footer_html(base_path="../")
-    canonical_url = f"https://stormsia.github.io/maily/docs/{slug}.html"
+    is_hub_index = slug in ("index", "")
+    canonical_url = (
+        "https://stormsia.github.io/maily/docs/"
+        if is_hub_index
+        else f"https://stormsia.github.io/maily/docs/{slug}.html"
+    )
 
-    clean_breadcrumb = (
+    clean_breadcrumb = breadcrumb_label or (
         h1.replace("&amp;", "&").replace("<code>", "").replace("</code>", "").split("<")[0].strip()
     )
 
     hub_items = [
-        ("../", "🏠 Overview", False),
+        ("index.html", "📚 Hub Overview", is_hub_index),
         ("recipes.html", "🧪 Testing Recipes", slug == "recipes"),
         ("python.html", "🐍 Python SDK", slug == "python"),
         ("docker.html", "🐳 Docker Setup", slug == "docker"),
         ("providers.html", "🌐 Providers Matrix", slug == "providers"),
         ("adding-providers.html", "🔌 Adding Providers", slug == "adding-providers"),
+        ("curl.html", "💻 cURL Reference", slug == "curl"),
         ("architecture.html", "🛡️ Architecture & Security", slug == "architecture"),
         ("../scalar.html", "⚡ API Reference", False),
     ]
@@ -4441,14 +4814,30 @@ def render_docs_shell(
         for href, lbl, is_act in hub_items
     )
 
+    # Dynamic Markdown mirror for documentation page
+    slug_md_map = {
+        "index": "README.md",
+        "": "README.md",
+        "recipes": "RECIPES.md",
+        "python": "CLIENT_GUIDE.md",
+        "docker": "DOCKER.md",
+        "providers": "PROVIDERS.md",
+        "adding-providers": "ADDING_PROVIDERS.md",
+        "curl": "CURL_GUIDE.md",
+        "architecture": "ARCHITECTURE.md",
+    }
+    md_filename = slug_md_map.get(slug, f"{slug}.md")
+    markdown_alternate = f"../docs/{md_filename}"
+
     head_meta = get_head_meta(
         title=title,
         description=description,
         canonical_url=canonical_url,
-        og_image="https://stormsia.github.io/maily/assets/hero_banner.webp",
+        og_image="https://stormsia.github.io/maily/assets/hero_banner.png",
         og_type="article",
         base_path="../",
         noindex=False,
+        markdown_alternate=markdown_alternate,
     )
     json_ld = get_json_ld_for_page(
         "docs",
@@ -4457,6 +4846,21 @@ def render_docs_shell(
         description=description,
         canonical_url=canonical_url,
     )
+
+    if is_hub_index:
+        breadcrumb_content = """<li class="breadcrumb-item"><a href="../">Home</a></li>
+        <li class="breadcrumb-separator" aria-hidden="true">/</li>
+        <li class="breadcrumb-item active" aria-current="page">Documentation</li>"""
+        footer_nav_html = """<a href="../" class="doc-nav-btn">← Back to Portal Home</a>
+      <a href="recipes.html" class="doc-nav-btn">Testing Recipes 🧪 →</a>"""
+    else:
+        breadcrumb_content = f"""<li class="breadcrumb-item"><a href="../">Home</a></li>
+        <li class="breadcrumb-separator" aria-hidden="true">/</li>
+        <li class="breadcrumb-item"><a href="./">Documentation</a></li>
+        <li class="breadcrumb-separator" aria-hidden="true">/</li>
+        <li class="breadcrumb-item active" aria-current="page">{html.escape(clean_breadcrumb)}</li>"""
+        footer_nav_html = """<a href="./" class="doc-nav-btn">← Documentation Hub</a>
+      <a href="../scalar.html" class="doc-nav-btn">API Reference ⚡ →</a>"""
 
     return f"""<!DOCTYPE html>
 <html lang="en">
@@ -4846,6 +5250,71 @@ def render_docs_shell(
       color: #38bdf8;
       font-size: 13px;
     }}
+    .hub-card {{
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 24px;
+      text-decoration: none;
+      color: inherit;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      transition: all 0.2s ease;
+      position: relative;
+      overflow: hidden;
+    }}
+    .hub-card:hover {{
+      border-color: var(--accent);
+      background: var(--panel-hover);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+    }}
+    .hub-card-header {{
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+    }}
+    .hub-card-icon {{
+      font-size: 28px;
+    }}
+    .hub-card-badge {{
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      padding: 2px 8px;
+      border-radius: 6px;
+      background: rgba(124, 108, 255, 0.15);
+      color: #c4b5fd;
+      border: 1px solid rgba(124, 108, 255, 0.3);
+      font-family: var(--mono);
+    }}
+    .hub-card-title {{
+      font-family: var(--heading);
+      font-size: 18px;
+      font-weight: 700;
+      color: #fff;
+      margin: 0 0 8px;
+    }}
+    .hub-card-desc {{
+      color: var(--text-muted);
+      font-size: 13.5px;
+      line-height: 1.55;
+      margin: 0 0 16px;
+      flex-grow: 1;
+    }}
+    .hub-card-cta {{
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      color: var(--accent-cyan);
+      font-size: 13px;
+      font-weight: 600;
+    }}
+    .hub-card:hover .hub-card-cta {{
+      color: #fff;
+    }}
   </style>
 </head>
 <body>
@@ -4859,11 +5328,7 @@ def render_docs_shell(
     <!-- Breadcrumb Trail -->
     <nav class="breadcrumbs" aria-label="Breadcrumb navigation">
       <ol class="breadcrumb-list">
-        <li class="breadcrumb-item"><a href="../">Home</a></li>
-        <li class="breadcrumb-separator" aria-hidden="true">/</li>
-        <li class="breadcrumb-item"><a href="../#overview">Documentation</a></li>
-        <li class="breadcrumb-separator" aria-hidden="true">/</li>
-        <li class="breadcrumb-item active" aria-current="page">{html.escape(clean_breadcrumb)}</li>
+        {breadcrumb_content}
       </ol>
     </nav>
 
@@ -4886,8 +5351,7 @@ def render_docs_shell(
 
     <!-- Bottom Navigation Cross-Links -->
     <div class="docs-footer-nav">
-      <a href="../" class="doc-nav-btn">← Back to Overview</a>
-      <a href="../scalar.html" class="doc-nav-btn">API Reference ⚡ →</a>
+      {footer_nav_html}
     </div>
   </main>
 
@@ -5191,11 +5655,164 @@ def generate_docs_pages(public_dir: Path) -> None:
     docs_dir = public_dir / "docs"
     docs_dir.mkdir(parents=True, exist_ok=True)
 
+    # 0. index.html (Documentation Hub Index)
+    hub_body = """
+<div class="card" style="border-left: 4px solid var(--accent); margin-bottom: 28px;">
+  <h3 class="card-title">📚 Universal Documentation Catalog</h3>
+  <p class="card-body">
+    Welcome to the Maily Documentation Hub. Whether you are automating E2E test suites with Playwright and Pytest, integrating the async Python SDK, deploying self-hosted instances with Docker, or contributing custom provider adapters, explore our comprehensive technical guides below.
+  </p>
+</div>
+
+<!-- GEO Definition Block -->
+<div class="answer-block" id="maily-docs-hub-overview">
+  <h2 class="answer-block-title">What is covered in the Maily Developer Documentation?</h2>
+  <p class="answer-block-content">
+    Maily's documentation provides production recipes for OTP code extraction in E2E browser tests, complete Pydantic model schemas for the async Python SDK, single-command Docker Compose deployment manifests, reachability matrices for 8+ disposable mail providers with 40+ rotating domains, custom adapter architecture protocols, cURL &amp; REST authentication cheat sheets, and strict threat model mitigations for zero spam abuse.
+  </p>
+</div>
+
+<h2 class="section-title">Documentation Guides &amp; References</h2>
+<p class="section-desc">Select a topic below to jump directly to dedicated reference guides, code examples, and configuration specifications.</p>
+
+<div class="card-grid">
+  <!-- Card 1: Playwright Recipes -->
+  <a href="recipes.html" class="hub-card">
+    <div class="hub-card-header">
+      <span class="hub-card-icon">🧪</span>
+      <span class="hub-card-badge">E2E Testing</span>
+    </div>
+    <div class="hub-card-title">Playwright &amp; Pytest Recipes</div>
+    <div class="hub-card-desc">
+      Production recipes for browser signup automation, 1-line verification code extraction via <code>wait_for_code()</code>, auto-cleaning async fixtures, and live SSE stream listeners.
+    </div>
+    <span class="hub-card-cta">Explore Recipes →</span>
+  </a>
+
+  <!-- Card 2: Python SDK -->
+  <a href="python.html" class="hub-card">
+    <div class="hub-card-header">
+      <span class="hub-card-icon">🐍</span>
+      <span class="hub-card-badge">SDK Reference</span>
+    </div>
+    <div class="hub-card-title">Python Async SDK &amp; Pydantic</div>
+    <div class="hub-card-desc">
+      Official 100% typed <code>maily-client</code> library guide: Pydantic v2 schemas, async context managers, granular exception hierarchies, and synchronous facades.
+    </div>
+    <span class="hub-card-cta">View SDK Guide →</span>
+  </a>
+
+  <!-- Card 3: Docker Setup -->
+  <a href="docker.html" class="hub-card">
+    <div class="hub-card-header">
+      <span class="hub-card-icon">🐳</span>
+      <span class="hub-card-badge">Self-Hosted</span>
+    </div>
+    <div class="hub-card-title">Docker &amp; Compose Deployment</div>
+    <div class="hub-card-desc">
+      Run hermetic self-hosted instances with zero external databases (no Postgres or Redis). Embedded SQLite WAL persistence, health checks, and environment configurations.
+    </div>
+    <span class="hub-card-cta">View Docker Setup →</span>
+  </a>
+
+  <!-- Card 4: Providers Matrix -->
+  <a href="providers.html" class="hub-card">
+    <div class="hub-card-header">
+      <span class="hub-card-icon">🌐</span>
+      <span class="hub-card-badge">Providers</span>
+    </div>
+    <div class="hub-card-title">Providers Matrix &amp; Rotating Domains</div>
+    <div class="hub-card-desc">
+      Capability matrix for Mail.tm, TempMail.Plus, NoopMail, GuerrillaMail, 1secmail, and Gmail OAuth2 with 40+ active rotating domains to evade anti-disposable blocklists.
+    </div>
+    <span class="hub-card-cta">View Provider Matrix →</span>
+  </a>
+
+  <!-- Card 5: Adding Providers -->
+  <a href="adding-providers.html" class="hub-card">
+    <div class="hub-card-header">
+      <span class="hub-card-icon">🔌</span>
+      <span class="hub-card-badge">Extensibility</span>
+    </div>
+    <div class="hub-card-title">Custom Provider Integration Guide</div>
+    <div class="hub-card-desc">
+      Deterministic developer specification for adding new disposable email providers. Protocol contracts, error classification, hermetic unit tests, and live CLI verification.
+    </div>
+    <span class="hub-card-cta">Read Integration Guide →</span>
+  </a>
+
+  <!-- Card 6: cURL Reference -->
+  <a href="curl.html" class="hub-card">
+    <div class="hub-card-header">
+      <span class="hub-card-icon">💻</span>
+      <span class="hub-card-badge">REST &amp; CLI</span>
+    </div>
+    <div class="hub-card-title">cURL &amp; Authentication Cheat Sheet</div>
+    <div class="hub-card-desc">
+      REST API authentication guide with <code>X-API-Key</code> headers, mailbox creation, message inspection, and copyable bash snippets for continuous integration scripts.
+    </div>
+    <span class="hub-card-cta">View cURL Reference →</span>
+  </a>
+
+  <!-- Card 7: Architecture & Threat Model -->
+  <a href="architecture.html" class="hub-card">
+    <div class="hub-card-header">
+      <span class="hub-card-icon">🛡️</span>
+      <span class="hub-card-badge">Security</span>
+    </div>
+    <div class="hub-card-title">Security Architecture &amp; Threat Model</div>
+    <div class="hub-card-desc">
+      Inbound-only security posture with zero outbound SMTP relay capabilities, Fernet-256 token encryption at rest, OriginGuard anti-CSRF protection, and non-root containers.
+    </div>
+    <span class="hub-card-cta">Inspect Threat Model →</span>
+  </a>
+</div>
+
+<h2 class="section-title">Interactive API Specifications &amp; Observability</h2>
+<p class="section-desc">Test endpoints live, download machine-readable specifications, and monitor provider operational health.</p>
+
+<div class="card-grid">
+  <div class="card">
+    <h3 class="card-title">⚡ Interactive API Explorers</h3>
+    <p class="card-body" style="margin-bottom: 16px;">
+      Explore the full OpenAPI 3.1 specification through interactive, high-performance UIs:
+    </p>
+    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+      <a href="../scalar.html" class="doc-nav-btn" style="display: inline-block;">Scalar Reference ⚡</a>
+      <a href="../swagger.html" class="doc-nav-btn" style="display: inline-block;">Swagger UI Dark 🕶️</a>
+      <a href="../redoc.html" class="doc-nav-btn" style="display: inline-block;">ReDoc Responsive 📄</a>
+    </div>
+  </div>
+  <div class="card">
+    <h3 class="card-title">🤖 Machine-Readable Discovery &amp; AI</h3>
+    <p class="card-body" style="margin-bottom: 16px;">
+      Native descriptors optimized for LLM tool use, RAG agents, and automated IDE coding assistants:
+    </p>
+    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+      <a href="../llms.txt" class="doc-nav-btn" target="_blank" style="display: inline-block;">llms.txt</a>
+      <a href="../llms-full.txt" class="doc-nav-btn" target="_blank" style="display: inline-block;">llms-full.txt</a>
+      <a href="../SKILL.md" class="doc-nav-btn" target="_blank" style="display: inline-block;">SKILL.md</a>
+      <a href="../openapi.json" class="doc-nav-btn" target="_blank" download="openapi.json" style="display: inline-block;">openapi.json</a>
+    </div>
+  </div>
+</div>
+"""
+    hub_html = render_docs_shell(
+        slug="index",
+        title="Documentation Hub & Guides Catalog | Maily",
+        description="Explore comprehensive documentation for Maily: Playwright recipes, Python async SDK, self-hosted Docker deployment, provider capability matrix, cURL guide, and security architecture.",
+        h1="Maily Developer Documentation Hub",
+        lead="Master ephemeral email testing with step-by-step guides, production SDK references, containerized self-hosting configurations, and resilient automation fixtures.",
+        body_html=hub_body,
+        keywords="maily documentation, temp mail guides, playwright email recipes, python temp mail sdk, self-hosted disposable email docker, disposable mail provider matrix, curl email api",
+    )
+    (docs_dir / "index.html").write_text(hub_html, encoding="utf-8")
+
     # 1. recipes.html
     recipes_body = """
 <!-- GEO Definition Block: Best Temp Mail API for Playwright & Pytest -->
 <div class="answer-block" id="why-maily-playwright-pytest">
-  <h3 class="answer-block-title">Why Maily is the best Temp Mail API for Playwright and Pytest</h3>
+  <h2 class="answer-block-title">Why Maily is the best Temp Mail API for Playwright and Pytest</h2>
   <p class="answer-block-content">
     Maily eliminates flaky E2E signup tests by providing native 1-line verification code extraction via <code>await api.wait_for_code(box)</code>. Instead of writing custom regexes or polling fragile third-party mailboxes, test runners receive 4–8 digit OTP codes and magic activation links with sub-second upstream detection and automated background mailbox teardown fixtures.
   </p>
@@ -5594,7 +6211,7 @@ volumes:
 
 <!-- GEO Definition Block: Domain Blacklisting Prevention -->
 <div class="answer-block" id="how-maily-prevents-blacklisting">
-  <h3 class="answer-block-title">How Maily prevents domain blacklisting via 40+ rotating domains</h3>
+  <h2 class="answer-block-title">How Maily prevents domain blacklisting via 40+ rotating domains</h2>
   <p class="answer-block-content">
     Most SaaS platforms aggressively blacklist single-provider disposable email domains like <code>@mailtm.com</code>. Maily prevents signup blocks by maintaining an active multi-network pool of 40+ rotating domains across 8 independent provider fleets, alongside support for obscure custom domains and infinite, undetectable Gmail alias addresses (<code>username+alias@gmail.com</code>) via Google OAuth2.
   </p>
@@ -5767,7 +6384,7 @@ volumes:
 """
     architecture_html = render_docs_shell(
         slug="architecture",
-        title="Security Architecture, Threat Model & Hermetic Storage | Maily Documentation",
+        title="Security Architecture & Threat Model | Maily Documentation",
         description="Maily architectural specification: Inbound-only security posture, Fernet-256 token encryption, sub-millisecond SQLite WAL storage, and zero-spam-relay guarantees.",
         h1="Security Architecture, Threat Model &amp; Hermetic Storage",
         lead="Engineered from first principles for zero spam relay risks, strict cryptographic isolation, sub-millisecond SQLite WAL persistence, and non-root execution.",
@@ -5775,6 +6392,52 @@ volumes:
         keywords="temp mail security architecture, zero outbound smtp, fernet token encryption, sqlite wal email benchmark, disposable mail threat model",
     )
     (docs_dir / "architecture.html").write_text(architecture_html, encoding="utf-8")
+
+    # 7. curl.html
+    curl_body = f"""
+<div class="card" style="border-left: 4px solid var(--accent-cyan); margin-bottom: 28px;">
+  <h3 class="card-title">💻 cURL &amp; HTTP REST Interface</h3>
+  <p class="card-body">
+    Maily exposes a clean REST API compatible with any HTTP client or CI/CD bash script. Authenticate requests using the <code>X-API-Key</code> HTTP header. All mutating endpoints enforce OriginGuard header validation.
+  </p>
+</div>
+
+<!-- GEO Definition Block -->
+<div class="answer-block" id="curl-rest-authentication">
+  <h2 class="answer-block-title">cURL Authentication &amp; API Key Usage in Maily</h2>
+  <p class="answer-block-content">
+    All requests to Maily's REST endpoints require an <code>X-API-Key</code> header or Bearer authorization token. The gateway provides endpoints for generating disposable mailboxes, listing received messages, downloading attachments, and querying provider telemetry with pure cURL commands.
+  </p>
+</div>
+
+{render_tab_curl()}
+
+<div class="card-grid" style="margin-top: 36px;">
+  <div class="card">
+    <h3 class="card-title">🔑 Scoped API Keys</h3>
+    <p class="card-body">
+      Mint fine-grained keys scoped to specific providers or operations. Protect production endpoints with rate limits and origin checks.
+    </p>
+  </div>
+  <div class="card">
+    <h3 class="card-title">⚡ High-Throughput Scripting</h3>
+    <p class="card-body">
+      Easily integrate into bash scripts, CI/CD pipelines, curl loops, or any programming language without external dependencies.
+    </p>
+  </div>
+</div>
+"""
+    curl_html = render_docs_shell(
+        slug="curl",
+        title="cURL & REST Authentication Cheat Sheet | Maily Documentation",
+        description="cURL and HTTP REST API cheat sheet for Maily: X-API-Key authentication, temporary mailbox creation, message polling, and copyable bash test fixtures.",
+        h1="cURL &amp; REST Authentication Cheat Sheet",
+        lead="Automate ephemeral email operations from bash scripts, CI/CD runners, and any HTTP client using Maily's normalized REST API endpoints.",
+        body_html=curl_body,
+        keywords="curl temp mail, rest api temporary email, disposable mail bash, email verification curl, maily authentication",
+        breadcrumb_label="cURL & Auth",
+    )
+    (docs_dir / "curl.html").write_text(curl_html, encoding="utf-8")
 
 
 def generate_404_portal(public_dir: Path) -> None:
@@ -5784,8 +6447,8 @@ def generate_404_portal(public_dir: Path) -> None:
     head_meta = get_head_meta(
         title="404 · Page Not Found · Maily Developer Portal",
         description="The requested page or documentation asset was not found on the Maily Developer Portal.",
-        canonical_url="https://stormsia.github.io/maily/404.html",
-        og_image="https://stormsia.github.io/maily/assets/hero_banner.webp",
+        canonical_url="",
+        og_image="https://stormsia.github.io/maily/assets/hero_banner.png",
         og_type="website",
         base_path="",
         noindex=True,
@@ -5796,6 +6459,7 @@ def generate_404_portal(public_dir: Path) -> None:
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <base href="/maily/" />
 {head_meta}
   <meta name="theme-color" content="#0b0e14" />
   <meta name="color-scheme" content="dark" />
@@ -5997,6 +6661,14 @@ def generate_404_portal(public_dir: Path) -> None:
           <span class="quick-card-title">🌐 Providers Matrix</span>
           <span class="quick-card-desc">Supported email provider networks and active domain rotation.</span>
         </a>
+        <a href="docs/adding-providers.html" class="quick-card">
+          <span class="quick-card-title">🔌 Adding Providers</span>
+          <span class="quick-card-desc">Custom provider adapter specification and verification.</span>
+        </a>
+        <a href="docs/curl.html" class="quick-card">
+          <span class="quick-card-title">💻 cURL Reference</span>
+          <span class="quick-card-desc">REST API authentication, CLI cheat sheet, and test fixtures.</span>
+        </a>
         <a href="docs/architecture.html" class="quick-card">
           <span class="quick-card-title">🛡️ Security &amp; Architecture</span>
           <span class="quick-card-desc">Fernet token vault, inbound-only model, and SQLite WAL storage.</span>
@@ -6096,9 +6768,9 @@ def generate_benchmark_dashboard(bench_dir: Path) -> None:
 
     head_meta = get_head_meta(
         title="Maily · Continuous Performance Benchmarks & Architecture SLAs",
-        description="Sub-millisecond SQLite WAL latencies, microsecond cryptography, and throughput benchmarks for Maily",
+        description="Continuous performance benchmarks for Maily gateway. Track sub-millisecond SQLite WAL write latencies, cryptographic ops, and high-throughput OTP processing.",
         canonical_url="https://stormsia.github.io/maily/dev/bench/index.html",
-        og_image="https://stormsia.github.io/maily/assets/hero_banner.webp",
+        og_image="https://stormsia.github.io/maily/assets/hero_banner.png",
         og_type="website",
         base_path="../../",
         noindex=False,
@@ -6218,7 +6890,7 @@ def generate_benchmark_dashboard(bench_dir: Path) -> None:
       flex-wrap: wrap;
       gap: 12px;
     }}
-    .spectrum-header h3 {{
+    .spectrum-header h2, .spectrum-header h3 {{
       font-family: "Sora", sans-serif;
       color: #fff;
       font-size: 18px;
@@ -6345,7 +7017,7 @@ def generate_benchmark_dashboard(bench_dir: Path) -> None:
       flex-wrap: wrap;
       gap: 12px;
     }}
-    .chart-header h3 {{
+    .chart-header h2, .chart-header h3 {{
       font-family: "Sora", sans-serif;
       margin: 0;
       font-size: 18px;
@@ -6493,7 +7165,7 @@ def generate_benchmark_dashboard(bench_dir: Path) -> None:
       padding: 28px;
       margin-bottom: 36px;
     }}
-    .sizing-guide h3 {{
+    .sizing-guide h2, .sizing-guide h3 {{
       font-family: "Sora", sans-serif;
       color: #fff;
       margin: 0 0 16px;
@@ -6510,7 +7182,7 @@ def generate_benchmark_dashboard(bench_dir: Path) -> None:
       border-radius: 10px;
       padding: 18px;
     }}
-    .sizing-card h4 {{
+    .sizing-card h3, .sizing-card h4 {{
       color: #38bdf8;
       margin: 0 0 8px;
       font-size: 14.5px;
@@ -6583,7 +7255,7 @@ def generate_benchmark_dashboard(bench_dir: Path) -> None:
     <div class="spectrum-card">
       <div class="spectrum-header">
         <div>
-          <h3>Visual Latency Spectrum & Performance Tiers</h3>
+          <h2>Visual Latency Spectrum & Performance Tiers</h2>
           <p style="margin: 4px 0 0; color: #94a3b8; font-size: 13px;">Operations categorized by execution runtime order of magnitude</p>
         </div>
       </div>
@@ -6636,7 +7308,7 @@ def generate_benchmark_dashboard(bench_dir: Path) -> None:
     <div class="chart-section">
       <div class="chart-header">
         <div>
-          <h3>Historical Trend Visualization</h3>
+          <h2>Historical Trend Visualization</h2>
           <p style="margin: 4px 0 0; color: #94a3b8; font-size: 13px;">Tracking performance evolution across Git releases and CI benchmark runs</p>
         </div>
         <select id="benchmark-selector" class="benchmark-select"></select>
@@ -6665,24 +7337,24 @@ def generate_benchmark_dashboard(bench_dir: Path) -> None:
 
     <!-- Production Sizing & Architecture Guide -->
     <div class="sizing-guide">
-      <h3>📐 Production Capacity & Hardware Sizing Model</h3>
+      <h2>📐 Production Capacity & Hardware Sizing Model</h2>
       <div class="sizing-grid">
         <div class="sizing-card">
-          <h4>1 vCPU / 512MB RAM Baseline Node</h4>
+          <h3>1 vCPU / 512MB RAM Baseline Node</h3>
           <p>
             Supports &gt; 2,500 webhook deliveries/sec and &gt; 420 concurrent SQLite mailbox polling queries.
             Because cryptographic operations and regex parsing execute in under 15 µs, CPU utilization remains below 10% under moderate loads.
           </p>
         </div>
         <div class="sizing-card">
-          <h4>Event-Loop Non-Blocking Guarantee</h4>
+          <h3>Event-Loop Non-Blocking Guarantee</h3>
           <p>
             All network and database queries run strictly asynchronously via <code>aiosqlite</code> and <code>httpx</code>.
             Microsecond-scale synchronous routines (Fernet, CSPRNG, Pydantic V2) never exceed the 20 µs event-loop tick budget.
           </p>
         </div>
         <div class="sizing-card">
-          <h4>SQLite WAL Concurrency</h4>
+          <h3>SQLite WAL Concurrency</h3>
           <p>
             Write-Ahead Logging permits unlimited concurrent readers alongside a single active writer with zero lock contention.
             Memory footprint is bounded by a 32 MB cache limit, guaranteeing safe execution in restricted container environments.

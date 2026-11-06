@@ -102,9 +102,9 @@ def render_tab_docker() -> str:
     blocks = parse_code_blocks(text)
     boxes_html = render_html_code_boxes(blocks, is_curl=False)
 
-    return f"""<h2 class="section-title">Docker & Installation Guide</h2>
+    return f"""<h2 class="section-title">Self-Hosted Docker &amp; Deployment Guide</h2>
 <p class="section-desc">
-  Run Maily via official pre-built Docker containers, Docker Compose, or develop locally from source.
+  Deploy a 100% self-hosted temporary email server via official pre-built Docker containers, Docker Compose, or develop locally from source.
 </p>
 
 {boxes_html}"""

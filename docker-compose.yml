@@ -19,7 +19,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    image: maily:latest
+    image: maily:${MAILY_VERSION:-latest}
     container_name: maily
     restart: unless-stopped
     init: true

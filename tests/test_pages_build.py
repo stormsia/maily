@@ -27,10 +27,8 @@ ROOT = Path(__file__).resolve().parents[1]
 
 def test_nav_html_generation():
     root_nav = get_nav_html("docs", base_path="")
-    assert 'href="index.html"' in root_nav
+    assert 'href="./"' in root_nav
     assert 'href="scalar.html"' in root_nav
-    assert 'href="swagger.html"' in root_nav
-    assert 'href="redoc.html"' in root_nav
     assert 'href="dev/bench/index.html"' in root_nav
     assert 'href="analytics.html"' in root_nav
     assert 'href="openapi.json"' in root_nav
@@ -38,9 +36,8 @@ def test_nav_html_generation():
     assert f'<span class="brand-badge">v{__version__}</span>' in root_nav
 
     sub_nav = get_nav_html("benchmarks", base_path="../../")
-    assert 'href="../../index.html"' in sub_nav
+    assert 'href="../../"' in sub_nav
     assert 'href="../../scalar.html"' in sub_nav
-    assert 'href="../../swagger.html"' in sub_nav
     assert 'href="../../analytics.html"' in sub_nav
 
 

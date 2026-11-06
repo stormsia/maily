@@ -74,3 +74,4 @@ scratch/
 .playwright-mcp/
 .DS_Store
 Thumbs.db
+no_git_plans/*

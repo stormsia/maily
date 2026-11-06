@@ -226,7 +226,7 @@ def render_tab_providers() -> str:
 </div>
 
 <div class="card">
-  <h3 class="card-title">Adding a New Provider?</h3>
+  <h2 class="card-title">Adding a New Provider?</h2>
   <p class="card-body">
     See the developer guide in <code>docs/ADDING_PROVIDERS.md</code> for a complete step-by-step
     walkthrough and copy-pasteable boilerplate for adding any new email service with hermetic unit tests.

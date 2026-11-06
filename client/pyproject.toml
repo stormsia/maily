@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "maily-client"
-version = "0.8.0"  # x-release-please-version
+version = "0.9.0"  # x-release-please-version
 description = "Fast async & sync Python SDK uniting the zoo of disposable email providers (Mail.tm, TempMail, 1secmail alternatives) with 1-line OTP code extraction for Playwright & Pytest"
 readme = "README.md"
 license = "MIT"

@@ -7,6 +7,20 @@ All notable changes to the **Maily** ecosystem ([`maily-server`](https://pypi.or
 > - **Python Server Package (PyPI):** `pip install -U maily-server`
 > - **Docker Container (GHCR):** `docker pull ghcr.io/stormsia/maily:latest`
 
+## [0.9.1](https://github.com/stormsia/maily/compare/v0.9.0...v0.9.1) (2026-11-13)
+
+
+### Documentation
+
+* update README files with translations and enhance prerequisites section ([82692ca](https://github.com/stormsia/maily/commit/82692caeb87281938bfb1bf472aed3643e183d80))
+
+
+### Code Refactoring
+
+* **logging:** replace logging with loguru for enhanced logging capabilities ([d192db4](https://github.com/stormsia/maily/commit/d192db4f745ab3763615f03b1c2636cf55e8dc1c))
+* **logging:** use f-strings for improved readability in log messages ([bbce28b](https://github.com/stormsia/maily/commit/bbce28b195ad14f3dc1c92bfefdcf202e3fa229c))
+* **telemetry:** enhance telemetry data handling and improve cleanup logic ([e58a1d3](https://github.com/stormsia/maily/commit/e58a1d333cacb34856a864f4859b1147b6aa22bc))
+
 ## [0.9.0](https://github.com/stormsia/maily/compare/v0.8.0...v0.9.0) (2026-11-13)
 
 

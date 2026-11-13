@@ -152,17 +152,17 @@ flowchart LR
 <!-- provider-status:start -->
 ### 🌐 Live Provider Operational Status
 
-> **Last Verified:** `2026-11-12 20:38 UTC` | **Overall Health:** 🟡 **Degraded Performance**
+> **Last Verified:** `2026-11-13 01:40 UTC` | **Overall Health:** 🟡 **Degraded Performance**
 
 | Provider | Slug | Targets | API Health | E2E Delivery | Latency | Status |
 | :--- | :--- | :---: | :---: | :---: | :---: | :---: |
-| [Mail.tm](https://mail.tm) | `mail.tm` | 1 | 🟢 PASS | 🟢 `4.9s` | `1.09s` | 🟢 Operational |
-| [TempMail Plus](https://tempmail.plus) | `tempmail.plus` | 8 | 🟢 PASS | 🟢 `3.8s` | `0.87s` | 🟢 Operational |
-| [TempMail.io](https://temp-mail.io) | `temp-mail.io` | 7 | 🟢 PASS | 🟢 `3.4s` | `0.95s` | 🟢 Operational |
-| [Temp.tf](https://temp.tf) | `temp.tf` | 4 | 🟢 PASS | 🔴 Failed | `0.56s` | 🔴 Delivery Outage |
-| [AnonymMail.net](https://anonymmail.net) | `anonymmail.net` | 6 | 🟢 PASS | 🟢 `3.9s` | `1.08s` | 🟢 Operational |
-| [DispoEmail.org](https://dispoemail.org) | `dispoemail.org` | 4 | 🟢 PASS | 🟢 `3.7s` | `0.44s` | 🟢 Operational |
-| [NoopMail.org](https://noopmail.org) | `noopmail.org` | 14 | 🟢 PASS | 🟢 `3.7s` | `18.40s` | 🟢 Operational |
+| [Mail.tm](https://mail.tm) | `mail.tm` | 1 | 🟢 PASS | 🔴 Failed | `1.64s` | 🔴 Delivery Outage |
+| [TempMail Plus](https://tempmail.plus) | `tempmail.plus` | 8 | 🟢 PASS | 🔴 Failed | `1.00s` | 🔴 Delivery Outage |
+| [TempMail.io](https://temp-mail.io) | `temp-mail.io` | 7 | 🟢 PASS | 🔴 Failed | `0.93s` | 🔴 Delivery Outage |
+| [Temp.tf](https://temp.tf) | `temp.tf` | 4 | 🟢 PASS | 🔴 Failed | `0.61s` | 🔴 Delivery Outage |
+| [AnonymMail.net](https://anonymmail.net) | `anonymmail.net` | 6 | 🟢 PASS | 🔴 Failed | `1.09s` | 🔴 Delivery Outage |
+| [DispoEmail.org](https://dispoemail.org) | `dispoemail.org` | 4 | 🟢 PASS | 🔴 Failed | `0.72s` | 🔴 Delivery Outage |
+| [NoopMail.org](https://noopmail.org) | `noopmail.org` | 14 | 🟢 PASS | 🔴 Failed | `10.99s` | 🔴 Delivery Outage |
 
 *Automated health checks run hourly via GitHub Actions.*
 <!-- provider-status:end -->

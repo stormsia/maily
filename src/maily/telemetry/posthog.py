@@ -7,7 +7,6 @@ ingest token (``phc_...``), never a personal API key.
 from __future__ import annotations
 
 import json
-import logging
 from collections.abc import Sequence
 from typing import Any
 
@@ -17,8 +16,6 @@ from .. import __version__
 from .models import TelemetryEvent
 from .ports import SinkResult, TelemetrySink
 from .privacy import truncate_error, utc_timestamp
-
-logger = logging.getLogger("maily.telemetry.posthog")
 
 _MAX_BODY_BYTES = 20 * 1024 * 1024
 _LONG_BACKOFF_SECONDS = 6 * 60 * 60

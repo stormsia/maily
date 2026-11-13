@@ -1,9 +1,10 @@
 from __future__ import annotations
 
-import logging
 import re
 from typing import Any
 from urllib.parse import quote
+
+from loguru import logger
 
 from ...exceptions import MailAPIError, MailValidationError
 from ...utils.misc import random_password, random_string
@@ -22,8 +23,6 @@ from ..base import (
     TargetKind,
     parse_iso,
 )
-
-logger = logging.getLogger(__name__)
 
 _CACHE_TTL = 300.0
 
@@ -180,7 +179,8 @@ class MailTM(HttpProvider):
     ) -> None:
         if not account_id:
             logger.warning(
-                "mail.tm: account created for %s but id is missing; cannot delete", address
+                "mail.tm: account created for %s but id is missing; cannot delete",
+                address,
             )
             return
         body = failure.response_data if failure is not None else {}
@@ -241,7 +241,10 @@ class MailTM(HttpProvider):
         data = (
             await self._http.patch(
                 f"{self.API_URL}/messages/{_qid(message_id)}",
-                headers={**self._auth(mailbox), "Content-Type": "application/merge-patch+json"},
+                headers={
+                    **self._auth(mailbox),
+                    "Content-Type": "application/merge-patch+json",
+                },
                 json={"seen": True},
             )
         ).json()

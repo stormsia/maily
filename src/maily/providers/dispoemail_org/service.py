@@ -1,11 +1,15 @@
 from __future__ import annotations
 
-import logging
 import re
 from typing import Any
 from urllib.parse import quote
 
-from ...exceptions import MailAPIError, MailAuthError, MailNotFoundError, MailValidationError
+from ...exceptions import (
+    MailAPIError,
+    MailAuthError,
+    MailNotFoundError,
+    MailValidationError,
+)
 from ...http import HttpClient
 from ...utils.retry import async_retry
 from ..base import (
@@ -22,8 +26,6 @@ from ..base import (
     parse_from_value,
     parse_iso,
 )
-
-logger = logging.getLogger(__name__)
 
 _CACHE_TTL = 600.0
 _BASE_URL = "https://dispoemail.org"
@@ -198,7 +200,8 @@ class DispoEmailOrg(HttpProvider):
         tokens = result.get("tokens") or {}
         if not tokens:
             raise MailValidationError(
-                "dispoemail.org: failed to create mailbox (no tokens returned)", status_code=400
+                "dispoemail.org: failed to create mailbox (no tokens returned)",
+                status_code=400,
             )
 
         # Get generated/created address and token
@@ -348,7 +351,7 @@ class DispoEmailOrg(HttpProvider):
             intro=summary.intro,
             seen=summary.seen,
             has_attachments=summary.has_attachments,
-            size=len(body_text) + len(body_html) if (body_text or body_html) else summary.size,
+            size=(len(body_text) + len(body_html) if (body_text or body_html) else summary.size),
             received_at=summary.received_at,
             text=body_text,
             html=[body_html] if body_html else [],

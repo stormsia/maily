@@ -3,12 +3,13 @@
 from __future__ import annotations
 
 import asyncio
-import logging
 import random
 import uuid
 from collections.abc import Mapping, Sequence
 from datetime import date, datetime, timedelta
 from typing import Any
+
+from loguru import logger
 
 from .. import __version__
 from ..providers.registry import ProviderRegistry
@@ -22,7 +23,14 @@ from .models import (
     TelemetryState,
     TelemetryStatus,
 )
-from .ports import Clock, GeoResolver, SinkResult, SystemClock, TelemetryRepository, TelemetrySink
+from .ports import (
+    Clock,
+    GeoResolver,
+    SinkResult,
+    SystemClock,
+    TelemetryRepository,
+    TelemetrySink,
+)
 from .posthog import PostHogSink
 from .privacy import (
     installation_properties,
@@ -33,8 +41,6 @@ from .privacy import (
 from .repository import SqlTelemetryRepository
 from .snapshot import SnapshotBuilder
 from .worker import TelemetryWorker
-
-logger = logging.getLogger("maily.telemetry")
 
 _GEO_TTL = timedelta(hours=24)
 _CATCH_UP_DAYS = 7
@@ -263,7 +269,10 @@ class TelemetryService:
 
         event_uuid = (
             str(
-                uuid.uuid5(uuid.NAMESPACE_URL, f"{state.installation_id}:{event_name}:{dedupe_key}")
+                uuid.uuid5(
+                    uuid.NAMESPACE_URL,
+                    f"{state.installation_id}:{event_name}:{dedupe_key}",
+                )
             )
             if dedupe_key
             else str(uuid.uuid4())

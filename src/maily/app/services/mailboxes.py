@@ -1,9 +1,9 @@
 from __future__ import annotations
 
-import logging
 import random
 from datetime import date, datetime, timedelta, timezone
 
+from loguru import logger
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -21,8 +21,6 @@ from .stats_history import (
     extract_domain,
     record,
 )
-
-logger = logging.getLogger("maily.mailboxes")
 
 
 async def _undo_provider_create(prov, info: MailboxInfo) -> None:

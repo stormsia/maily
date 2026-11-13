@@ -1,10 +1,11 @@
 from __future__ import annotations
 
-import logging
 import re
 from datetime import datetime
 from typing import Any
 from urllib.parse import quote
+
+from loguru import logger
 
 from ...exceptions import MailAPIError, MailNotFoundError, MailValidationError
 from ...http import HttpClient
@@ -23,8 +24,6 @@ from ..base import (
     Target,
     TargetKind,
 )
-
-logger = logging.getLogger(__name__)
 
 _CACHE_TTL = 600.0
 _HEADERS = {
@@ -76,7 +75,10 @@ def _summary(raw: dict[str, Any], address: str) -> MessageSummary:
     return MessageSummary(
         id=str(raw.get("mail_id") or ""),
         subject=str(raw.get("subject") or ""),
-        from_=Party(name=str(raw.get("from_name") or ""), address=str(raw.get("from_mail") or "")),
+        from_=Party(
+            name=str(raw.get("from_name") or ""),
+            address=str(raw.get("from_mail") or ""),
+        ),
         to=[Party(address=address)],
         intro="",
         seen=not raw.get("is_new", True),

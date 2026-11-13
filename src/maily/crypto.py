@@ -2,11 +2,9 @@ from __future__ import annotations
 
 import base64
 import hashlib
-import logging
 
 from cryptography.fernet import Fernet, InvalidToken
-
-logger = logging.getLogger("maily.crypto")
+from loguru import logger
 
 
 def is_fernet_key(secret: str) -> bool:

@@ -1,12 +1,12 @@
 from __future__ import annotations
 
 import asyncio
-import logging
 import time
 from contextlib import suppress
 from datetime import datetime, timezone
 from typing import Any
 
+from loguru import logger
 from sqlalchemy import text
 from sqlalchemy.exc import OperationalError
 from sqlalchemy.ext.asyncio import (
@@ -17,8 +17,6 @@ from sqlalchemy.ext.asyncio import (
 
 from ..settings import Settings
 from .models import AppSetting
-
-logger = logging.getLogger("maily.db.maintenance")
 
 SETTING_KEY_LAST_MAINTENANCE = "db_maintenance.last_run_at"
 
@@ -74,7 +72,11 @@ async def record_maintenance_at(
                 row.value = at.isoformat()
             await session.commit()
     except Exception as exc:
-        logger.debug("could not persist %s in app_settings: %s", SETTING_KEY_LAST_MAINTENANCE, exc)
+        logger.debug(
+            "could not persist %s in app_settings: %s",
+            SETTING_KEY_LAST_MAINTENANCE,
+            exc,
+        )
 
 
 async def is_maintenance_due(
@@ -161,7 +163,8 @@ async def maintain_database(
                     check_rows = [r[0] for r in check_cursor.fetchall()]
                     if check_rows != ["ok"]:
                         logger.warning(
-                            "db maintenance: PRAGMA quick_check warnings: %s", check_rows
+                            "db maintenance: PRAGMA quick_check warnings: %s",
+                            check_rows,
                         )
 
                 elif dialect == "postgresql":
@@ -172,7 +175,11 @@ async def maintain_database(
                         await conn.execute(text("ANALYZE"))
 
             duration = time.monotonic() - start_time
-            logger.info("db maintenance: completed successfully in %.3fs (%s)", duration, dialect)
+            logger.info(
+                "db maintenance: completed successfully in %.3fs (%s)",
+                duration,
+                dialect,
+            )
             return {
                 "status": "completed",
                 "dialect": dialect,

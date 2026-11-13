@@ -1,17 +1,15 @@
 from __future__ import annotations
 
 import json
-import logging
 import os
 from functools import lru_cache
 from pathlib import Path
 from typing import Any
 
 from cryptography.fernet import Fernet
+from loguru import logger
 from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
-
-logger = logging.getLogger("maily.settings")
 
 #: Public PostHog project token of the "Maily" project (US region). It is an
 #: ingest token (``phc_...``), not a personal API key, so it ships with the

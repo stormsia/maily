@@ -1,10 +1,9 @@
 from __future__ import annotations
 
-import logging
-
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
+from loguru import logger
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from ..exceptions import (
@@ -15,8 +14,6 @@ from ..exceptions import (
     MailRateLimitError,
     MailValidationError,
 )
-
-logger = logging.getLogger("maily.errors")
 
 
 def _json(

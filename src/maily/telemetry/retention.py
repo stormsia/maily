@@ -2,15 +2,13 @@
 
 from __future__ import annotations
 
-import logging
 from datetime import datetime, timedelta, timezone
 
+from loguru import logger
 from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..db.models import TelemetryEvent, TelemetryReport
-
-logger = logging.getLogger("maily.telemetry.retention")
 
 _BATCH = 1000
 

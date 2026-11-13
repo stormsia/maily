@@ -2,15 +2,13 @@
 
 from __future__ import annotations
 
-import logging
 from typing import Any
 
 import httpx
+from loguru import logger
 
 from .models import GeoInfo
 from .ports import GeoResolver
-
-logger = logging.getLogger("maily.telemetry.geo")
 
 
 class IpWhoIsGeoResolver(GeoResolver):

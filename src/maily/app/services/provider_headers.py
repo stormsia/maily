@@ -2,9 +2,9 @@ from __future__ import annotations
 
 import asyncio
 import json
-import logging
 from datetime import datetime, timedelta, timezone
 
+from loguru import logger
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.ext.asyncio import async_sessionmaker as AsyncSessionFactory
 
@@ -14,8 +14,6 @@ from ...http import HttpClient
 from ...providers.registry import ProviderRegistry
 from ...providers.tempmail_io.headers import build_headers, fetch_cors_header
 from ...settings import Settings
-
-logger = logging.getLogger("maily.provider_headers")
 
 SLUG = "temp-mail.io"
 

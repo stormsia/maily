@@ -2,10 +2,11 @@ from __future__ import annotations
 
 import asyncio
 import functools
-import logging
 import random
 from collections.abc import Callable
 from typing import Any, TypeVar
+
+from loguru import logger
 
 from ..exceptions import (
     MailAPIError,
@@ -16,7 +17,6 @@ from ..exceptions import (
     MailValidationError,
 )
 
-logger = logging.getLogger(__name__)
 F = TypeVar("F", bound=Callable[..., Any])
 _NO_RETRY = (MailAuthError, MailNotFoundError, MailValidationError, MailConflictError)
 

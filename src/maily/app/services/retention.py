@@ -1,10 +1,10 @@
 from __future__ import annotations
 
 import asyncio
-import logging
 from collections.abc import Awaitable, Callable
 from datetime import datetime, timedelta, timezone
 
+from loguru import logger
 from sqlalchemy import delete, or_, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.ext.asyncio import async_sessionmaker as AsyncSessionFactory
@@ -25,8 +25,6 @@ from ..services.stats_history import (
     prune,
     record,
 )
-
-logger = logging.getLogger("maily.retention")
 
 
 def utcnow_naive() -> datetime:

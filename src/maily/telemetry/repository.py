@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import json
-import logging
 import uuid
 from collections import defaultdict
 from collections.abc import Sequence
@@ -25,8 +24,6 @@ from .models import (
     TelemetryState,
 )
 from .ports import Clock, TelemetryRepository
-
-logger = logging.getLogger("maily.telemetry.repository")
 
 _SENDING_LEASE_SECONDS = 300
 

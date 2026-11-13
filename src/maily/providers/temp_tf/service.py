@@ -1,10 +1,11 @@
 from __future__ import annotations
 
 import html as html_lib
-import logging
 import re
 from typing import Any
 from urllib.parse import urlencode
+
+from loguru import logger
 
 from ...exceptions import (
     MailAPIError,
@@ -30,8 +31,6 @@ from ..base import (
     parse_iso,
     split_address,
 )
-
-logger = logging.getLogger(__name__)
 
 _CACHE_TTL = 600.0
 _BASE_URL = "https://temp.tf"

@@ -1,12 +1,18 @@
 from __future__ import annotations
 
 import asyncio
-import logging
 import time
 import urllib.parse
 from contextlib import suppress
 
-from maily.exceptions import MailAPIError, MailAuthError, MailNotFoundError, MailValidationError
+from loguru import logger
+
+from maily.exceptions import (
+    MailAPIError,
+    MailAuthError,
+    MailNotFoundError,
+    MailValidationError,
+)
 from maily.http import HttpClient
 from maily.providers.base import (
     MailboxInfo,
@@ -32,8 +38,6 @@ from .parse import (
     strip_plus,
 )
 from .store import GmailParent, GmailParentStore
-
-logger = logging.getLogger(__name__)
 
 _API_BASE = "https://gmail.googleapis.com/gmail/v1/users/me"
 

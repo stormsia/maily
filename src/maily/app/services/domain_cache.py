@@ -2,11 +2,11 @@ from __future__ import annotations
 
 import asyncio
 import json
-import logging
 import time
 from contextlib import suppress
 from datetime import datetime, timedelta, timezone
 
+from loguru import logger
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.ext.asyncio import async_sessionmaker as AsyncSessionFactory
@@ -17,8 +17,6 @@ from ...exceptions import MailValidationError
 from ...providers.base import Target
 from ...providers.registry import ProviderRegistry
 from ...settings import Settings
-
-logger = logging.getLogger("maily.domain_cache")
 
 _KEY_ENABLED = "domain_cache.enabled"
 _KEY_INTERVAL = "domain_cache.interval_seconds"

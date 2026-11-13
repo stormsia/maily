@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import base64
-import logging
 from typing import Any
 from urllib.parse import quote
 
@@ -22,8 +21,6 @@ from ..base import (
     parse_from_value,
     parse_iso,
 )
-
-logger = logging.getLogger(__name__)
 
 _CACHE_TTL = 600.0
 _RD_MAX_ITERATIONS = 100  # upper limit of attempts to collect all domains

@@ -3,15 +3,14 @@
 from __future__ import annotations
 
 import asyncio
-import logging
 from collections.abc import Awaitable, Callable
 from contextlib import suppress
 from typing import Any
 
+from loguru import logger
+
 from .models import TelemetryEvent
 from .ports import Clock, TelemetryRepository
-
-logger = logging.getLogger("maily.telemetry.worker")
 
 _TICK_SECONDS = 30.0
 _DISPATCH_BATCH = 50

@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import json
-import logging
 import uuid
 from collections import defaultdict
 from datetime import date, datetime, time, timedelta
@@ -42,8 +41,6 @@ from .privacy import (
     runtime_properties,
     sanitize_properties,
 )
-
-logger = logging.getLogger("maily.telemetry.snapshot")
 
 _DELTA_KEYS = {
     EVENT_MAILBOX_CREATED: "period_mailboxes_created",
@@ -148,7 +145,9 @@ class SnapshotBuilder:
                 "provider_count": len(providers),
             }
             base["$set_once"] = {
-                "installation_created_at": state.created_at.isoformat() if state.created_at else "",
+                "installation_created_at": (
+                    state.created_at.isoformat() if state.created_at else ""
+                ),
                 "first_version": state.first_version,
             }
 
@@ -160,7 +159,8 @@ class SnapshotBuilder:
         global_event = TelemetryEvent(
             event_uuid=str(
                 uuid.uuid5(
-                    namespace, f"{state.installation_id}:maily_daily_snapshot:{day.isoformat()}"
+                    namespace,
+                    f"{state.installation_id}:maily_daily_snapshot:{day.isoformat()}",
                 )
             ),
             event_name="maily_daily_snapshot",

@@ -83,7 +83,7 @@ Below is the standard, production-tested template for a domain-based provider:
 ```python
 from __future__ import annotations
 
-import logging
+from loguru import logger
 from typing import Any
 from urllib.parse import quote
 
@@ -108,7 +108,6 @@ from ..base import (
     split_address,
 )
 
-logger = logging.getLogger(__name__)
 
 _CACHE_TTL = 300.0
 _BASE_URL = "https://api.myprovider.com"

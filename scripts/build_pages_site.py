@@ -1240,7 +1240,9 @@ def copy_static_assets(public_dir: Path) -> None:
                 [110, 160, 402, 370], radius=40, outline=(255, 255, 255, 255), width=40
             )
             draw_logo.line(
-                [(128, 194), (256, 290), (384, 194)], fill=(255, 255, 255, 255), width=40
+                [(128, 194), (256, 290), (384, 194)],
+                fill=(255, 255, 255, 255),
+                width=40,
             )
             logo_img.save(logo_dest, format="PNG")
             if docs_assets.is_dir():
@@ -2523,7 +2525,11 @@ def load_provider_health() -> dict[str, dict]:
             "issue_number": None,
             "last_status": "operational",
         },
-        "mail.tm": {"consecutive_failures": 1, "issue_number": None, "last_status": "degraded"},
+        "mail.tm": {
+            "consecutive_failures": 1,
+            "issue_number": None,
+            "last_status": "degraded",
+        },
         "noopmail.org": {
             "consecutive_failures": 0,
             "issue_number": None,
@@ -2534,7 +2540,11 @@ def load_provider_health() -> dict[str, dict]:
             "issue_number": None,
             "last_status": "operational",
         },
-        "temp.tf": {"consecutive_failures": 0, "issue_number": None, "last_status": "operational"},
+        "temp.tf": {
+            "consecutive_failures": 0,
+            "issue_number": None,
+            "last_status": "operational",
+        },
         "tempmail.plus": {
             "consecutive_failures": 0,
             "issue_number": None,
@@ -2584,9 +2594,11 @@ def generate_analytics_dashboard(public_dir: Path) -> None:
 
         fails_cnt = max(
             failures,
-            1
-            if "degraded" in status_text.lower()
-            else (3 if "outage" in status_text.lower() else 0),
+            (
+                1
+                if "degraded" in status_text.lower()
+                else (3 if "outage" in status_text.lower() else 0)
+            ),
         )
         uptime_24h = max(0.0, round((24 - fails_cnt) / 24.0 * 100.0, 1)) if fails_cnt > 0 else 99.9
 
@@ -5616,7 +5628,7 @@ __all__ = ["MyProvider"]</code></pre>
   <div class="code-box-header"><span>Step 4.2: src/maily/providers/my_provider/service.py</span><button class="copy-btn" onclick="copySnippet(this)">Copy</button></div>
   <pre class="code-content"><code class="language-python">from __future__ import annotations
 
-import logging
+from loguru import logger
 from typing import Any
 from urllib.parse import quote
 
@@ -5639,8 +5651,6 @@ from ..base import (
     parse_iso,
     split_address,
 )
-
-logger = logging.getLogger(__name__)
 
 class MyProvider(HttpProvider):
     slug = "myprovider.com"

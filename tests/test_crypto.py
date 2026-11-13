@@ -1,9 +1,8 @@
 from __future__ import annotations
 
-import logging
-
 import pytest
 from cryptography.fernet import Fernet, InvalidToken
+from loguru import logger as loguru_logger
 
 from maily.crypto import _fernet, decrypt, encrypt, is_fernet_key, logger
 
@@ -12,8 +11,9 @@ def _key() -> str:
     return Fernet.generate_key().decode()
 
 
-def test_logger_name():
-    assert logger.name == "maily.crypto"
+def test_logger_instance():
+    assert hasattr(logger, "warning")
+    assert hasattr(logger, "info")
 
 
 def test_roundtrip_with_fernet_key():
@@ -29,12 +29,15 @@ def test_simple_secret_is_reusable():
 
 
 def test_simple_secret_emits_warning(caplog):
-    with caplog.at_level(logging.WARNING, logger="maily.crypto"):
+    handler_id = loguru_logger.add(caplog.handler, format="{message}")
+    try:
         encrypt("not-a-fernet-key", "sample")
-    assert (
-        "secret is not a valid Fernet key; deriving a key via sha256(secret). "
-        "This is deterministic, but prefer a Fernet key (cryptography.fernet.Fernet.generate_key())."
-    ) in caplog.text
+        assert (
+            "secret is not a valid Fernet key; deriving a key via sha256(secret). "
+            "This is deterministic, but prefer a Fernet key (cryptography.fernet.Fernet.generate_key())."
+        ) in caplog.text
+    finally:
+        loguru_logger.remove(handler_id)
 
 
 def test_wrong_secret_raises_valueerror():

@@ -482,7 +482,9 @@ class SqlTelemetryRepository(TelemetryRepository):
 
     async def reset_stale_sending(self, older_than_seconds: int) -> None:
         now = self._clock.now_utc()
-        cutoff = now - timedelta(seconds=older_than_seconds)
+        # When claimed, next_attempt_at is set to now + _SENDING_LEASE_SECONDS.
+        # A lease has truly expired when next_attempt_at < now, or with an older_than buffer:
+        cutoff = now + timedelta(seconds=_SENDING_LEASE_SECONDS - older_than_seconds)
 
         async def _op(session: Any) -> None:
             await session.execute(

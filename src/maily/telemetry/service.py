@@ -420,9 +420,14 @@ class TelemetryService:
             return (len(report.events), 0)
         if result.too_large and len(report.events) > 1:
             middle = len(report.events) // 2
-            left = await self._send_report_chunk(report, report.events[:middle])
-            right = await self._send_report_chunk(report, report.events[middle:])
-            return (left[0] + right[0], left[1] + right[1])
+            left_ok, left_err = await self._send_report_chunk(report, report.events[:middle])
+            right_ok, right_err = await self._send_report_chunk(report, report.events[middle:])
+            if right_err == 0 and left_err == 0:
+                await self._repository.mark_report_sent(
+                    report.id, [event.row_id for event in report.events if event.row_id]
+                )
+                await self._repository.update_state(last_flush_at=self._clock.now_utc())
+            return (left_ok + right_ok, left_err + right_err)
         await self._handle_report_failure(report, result)
         return (0, len(report.events))
 
@@ -462,6 +467,16 @@ class TelemetryService:
             )
             await self._repository.update_state(last_flush_at=self._clock.now_utc())
             return (len(events), 0)
+        if result.sent_count > 0:
+            # Partial success: mark successfully sent events first to avoid duplicates on retry
+            sent_slice = events[: result.sent_count]
+            unsent_slice = events[result.sent_count :]
+            await self._repository.mark_events_sent(
+                [event.row_id for event in sent_slice if event.row_id]
+            )
+            await self._repository.update_state(last_flush_at=self._clock.now_utc())
+            failed_sent, failed_err = await self._send_events(unsent_slice)
+            return (result.sent_count + failed_sent, failed_err)
         if result.too_large and len(events) > 1:
             middle = len(events) // 2
             left = await self._send_events(events[:middle])

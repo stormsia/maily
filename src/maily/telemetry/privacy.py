@@ -17,10 +17,10 @@ from typing import Any
 
 from .models import TelemetryState
 
-# Keys whose names suggest personal or secret material. We intentionally use
-# word matching so operational flags such as ``api_key_required`` survive.
+# Keys whose names suggest personal or secret material. We match both snake_case
+# and camelCase variants (e.g. email, userEmail, token, accessToken).
 _SENSITIVE_KEY_RE = re.compile(
-    r"(^|_)(address|email|subject|body|token|secret|password|refresh)(_|$)|(^|_)api_key$",
+    r"(^|[a-z0-9]_|(?<=[a-z]))(address|email|subject|body|token|secret|password|refresh)(_|[A-Z]|$)|(^|_)api_key$|apiKey$",
     re.IGNORECASE,
 )
 _MAX_STRING = 512

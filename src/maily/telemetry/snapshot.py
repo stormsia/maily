@@ -414,11 +414,21 @@ class SnapshotBuilder:
                 .group_by(StatsEvent.provider)
             )
         ).all()
-        global_owners = 0
         for provider, owners in owner_rows:
             value = int(owners or 0)
-            global_owners += value
             provider_counts[provider]["period_active_owners"] = value
+
+        global_owners = int(
+            (
+                await session.scalar(
+                    select(func.count(func.distinct(StatsEvent.owner_key_id))).where(
+                        StatsEvent.day == day,
+                        StatsEvent.owner_key_id != 0,
+                    )
+                )
+            )
+            or 0
+        )
 
         distinct_domains = int(
             (
@@ -480,11 +490,18 @@ class SnapshotBuilder:
 
     async def _db_size(self, session: Any) -> int | None:
         bind = session.get_bind()
-        if bind is None or bind.dialect.name != "sqlite":
+        if bind is None:
             return None
-        page_count = (await session.execute(text("PRAGMA page_count"))).scalar()
-        page_size = (await session.execute(text("PRAGMA page_size"))).scalar()
-        return int(page_count or 0) * int(page_size or 0)
+        if bind.dialect.name == "sqlite":
+            page_count = (await session.execute(text("PRAGMA page_count"))).scalar()
+            page_size = (await session.execute(text("PRAGMA page_size"))).scalar()
+            return int(page_count or 0) * int(page_size or 0)
+        if bind.dialect.name == "postgresql":
+            size = (
+                await session.execute(text("SELECT pg_database_size(current_database())"))
+            ).scalar()
+            return int(size) if size is not None else None
+        return None
 
     @staticmethod
     def _dialect(session: Any) -> str:

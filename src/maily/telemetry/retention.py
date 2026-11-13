@@ -30,60 +30,80 @@ async def prune_telemetry(
     unsent_cutoff = moment - timedelta(days=unsent_days)
 
     reports_deleted = 0
-    sent_report_ids = (
-        select(TelemetryReport.id)
-        .where(
-            TelemetryReport.status == "sent",
-            TelemetryReport.sent_at.is_not(None),
-            TelemetryReport.sent_at < sent_cutoff,
+    while True:
+        sent_report_ids = (
+            select(TelemetryReport.id)
+            .where(
+                TelemetryReport.status == "sent",
+                TelemetryReport.sent_at.is_not(None),
+                TelemetryReport.sent_at < sent_cutoff,
+            )
+            .order_by(TelemetryReport.id)
+            .limit(_BATCH)
         )
-        .limit(_BATCH)
-    )
-    result = await session.execute(
-        delete(TelemetryReport).where(TelemetryReport.id.in_(sent_report_ids))
-    )
-    reports_deleted += int(getattr(result, "rowcount", 0) or 0)
+        result = await session.execute(
+            delete(TelemetryReport).where(TelemetryReport.id.in_(sent_report_ids))
+        )
+        count = int(getattr(result, "rowcount", 0) or 0)
+        reports_deleted += count
+        if count < _BATCH:
+            break
 
-    unsent_report_ids = (
-        select(TelemetryReport.id)
-        .where(
-            TelemetryReport.status != "sent",
-            TelemetryReport.created_at < unsent_cutoff,
+    while True:
+        unsent_report_ids = (
+            select(TelemetryReport.id)
+            .where(
+                TelemetryReport.status != "sent",
+                TelemetryReport.created_at < unsent_cutoff,
+            )
+            .order_by(TelemetryReport.id)
+            .limit(_BATCH)
         )
-        .limit(_BATCH)
-    )
-    result = await session.execute(
-        delete(TelemetryReport).where(TelemetryReport.id.in_(unsent_report_ids))
-    )
-    reports_deleted += int(getattr(result, "rowcount", 0) or 0)
+        result = await session.execute(
+            delete(TelemetryReport).where(TelemetryReport.id.in_(unsent_report_ids))
+        )
+        count = int(getattr(result, "rowcount", 0) or 0)
+        reports_deleted += count
+        if count < _BATCH:
+            break
 
     events_deleted = 0
-    sent_event_ids = (
-        select(TelemetryEvent.id)
-        .where(
-            TelemetryEvent.status == "sent",
-            TelemetryEvent.sent_at.is_not(None),
-            TelemetryEvent.sent_at < sent_cutoff,
+    while True:
+        sent_event_ids = (
+            select(TelemetryEvent.id)
+            .where(
+                TelemetryEvent.status == "sent",
+                TelemetryEvent.sent_at.is_not(None),
+                TelemetryEvent.sent_at < sent_cutoff,
+            )
+            .order_by(TelemetryEvent.id)
+            .limit(_BATCH)
         )
-        .limit(_BATCH)
-    )
-    result = await session.execute(
-        delete(TelemetryEvent).where(TelemetryEvent.id.in_(sent_event_ids))
-    )
-    events_deleted += int(getattr(result, "rowcount", 0) or 0)
+        result = await session.execute(
+            delete(TelemetryEvent).where(TelemetryEvent.id.in_(sent_event_ids))
+        )
+        count = int(getattr(result, "rowcount", 0) or 0)
+        events_deleted += count
+        if count < _BATCH:
+            break
 
-    unsent_event_ids = (
-        select(TelemetryEvent.id)
-        .where(
-            TelemetryEvent.status != "sent",
-            TelemetryEvent.created_at < unsent_cutoff,
+    while True:
+        unsent_event_ids = (
+            select(TelemetryEvent.id)
+            .where(
+                TelemetryEvent.status != "sent",
+                TelemetryEvent.created_at < unsent_cutoff,
+            )
+            .order_by(TelemetryEvent.id)
+            .limit(_BATCH)
         )
-        .limit(_BATCH)
-    )
-    result = await session.execute(
-        delete(TelemetryEvent).where(TelemetryEvent.id.in_(unsent_event_ids))
-    )
-    events_deleted += int(getattr(result, "rowcount", 0) or 0)
+        result = await session.execute(
+            delete(TelemetryEvent).where(TelemetryEvent.id.in_(unsent_event_ids))
+        )
+        count = int(getattr(result, "rowcount", 0) or 0)
+        events_deleted += count
+        if count < _BATCH:
+            break
 
     if reports_deleted or events_deleted:
         logger.info(

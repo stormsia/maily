@@ -53,11 +53,22 @@ class TelemetryWorker:
         self._tasks.add(asyncio.create_task(self._sender_loop()))
 
     async def stop(self) -> None:
-        # Persist anything still in memory before shutting the loops down.
+        self._stop.set()
+        self._wake.set()
+        for task in self._tasks:
+            task.cancel()
+        for task in self._tasks:
+            with suppress(asyncio.CancelledError):
+                await task
+        self._tasks.clear()
+
+        # Persist anything still in memory after loops are stopped.
         pending: list[TelemetryEvent] = []
         while True:
             try:
-                pending.append(self._queue.get_nowait())
+                item = self._queue.get_nowait()
+                pending.append(item)
+                self._queue.task_done()
             except asyncio.QueueEmpty:
                 break
         if pending:
@@ -69,15 +80,6 @@ class TelemetryWorker:
                     len(pending),
                 )
                 self.dropped += len(pending)
-
-        self._stop.set()
-        self._wake.set()
-        for task in self._tasks:
-            task.cancel()
-        for task in self._tasks:
-            with suppress(asyncio.CancelledError):
-                await task
-        self._tasks.clear()
 
     async def _dispatch_loop(self) -> None:
         while not self._stop.is_set():

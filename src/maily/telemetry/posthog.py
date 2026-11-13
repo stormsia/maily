@@ -72,31 +72,44 @@ class PostHogSink(TelemetrySink):
                     error=f"event {event.event_name} exceeds {self._max_event_bytes} bytes",
                 )
 
-        sent_any = False
+        sent_count = 0
         for chunk in self._chunks(events):
             payload = self._payload(chunk)
             try:
                 body_size = len(json.dumps(payload, separators=(",", ":")).encode("utf-8"))
             except (TypeError, ValueError) as exc:
-                return SinkResult(success=False, error=truncate_error(exc))
+                return SinkResult(success=False, error=truncate_error(exc), sent_count=sent_count)
             if body_size > _MAX_BODY_BYTES:
-                return SinkResult(success=False, too_large=True, error="batch body too large")
+                return SinkResult(
+                    success=False,
+                    too_large=True,
+                    error="batch body too large",
+                    sent_count=sent_count,
+                )
 
             try:
                 response = await self._client.post(self._endpoint, json=payload)
             except httpx.TimeoutException as exc:
-                return SinkResult(success=False, retryable=True, error=truncate_error(exc))
+                return SinkResult(
+                    success=False, retryable=True, error=truncate_error(exc), sent_count=sent_count
+                )
             except httpx.TransportError as exc:
-                return SinkResult(success=False, retryable=True, error=truncate_error(exc))
+                return SinkResult(
+                    success=False, retryable=True, error=truncate_error(exc), sent_count=sent_count
+                )
             except Exception as exc:  # noqa: BLE001 - never break the sender loop
-                return SinkResult(success=False, retryable=True, error=truncate_error(exc))
+                return SinkResult(
+                    success=False, retryable=True, error=truncate_error(exc), sent_count=sent_count
+                )
 
             code = response.status_code
             if code < 300:
-                sent_any = True
+                sent_count += len(chunk)
                 continue
             if code == 413:
-                return SinkResult(success=False, too_large=True, status_code=code)
+                return SinkResult(
+                    success=False, too_large=True, status_code=code, sent_count=sent_count
+                )
             if code == 429:
                 return SinkResult(
                     success=False,
@@ -104,6 +117,7 @@ class PostHogSink(TelemetrySink):
                     status_code=code,
                     retry_after=_retry_after(response),
                     error=truncate_error(response.text),
+                    sent_count=sent_count,
                 )
             if code in (401, 403):
                 return SinkResult(
@@ -112,6 +126,7 @@ class PostHogSink(TelemetrySink):
                     status_code=code,
                     retry_after=_LONG_BACKOFF_SECONDS,
                     error=truncate_error(response.text),
+                    sent_count=sent_count,
                 )
             if code == 408 or code >= 500:
                 return SinkResult(
@@ -119,15 +134,21 @@ class PostHogSink(TelemetrySink):
                     retryable=True,
                     status_code=code,
                     error=truncate_error(response.text),
+                    sent_count=sent_count,
                 )
             return SinkResult(
                 success=False,
                 retryable=False,
                 status_code=code,
                 error=truncate_error(response.text),
+                sent_count=sent_count,
             )
 
-        return SinkResult(success=True) if sent_any else SinkResult(success=False)
+        return (
+            SinkResult(success=True, sent_count=sent_count)
+            if sent_count == len(events)
+            else SinkResult(success=False, sent_count=sent_count)
+        )
 
     async def close(self) -> None:
         if self._owns_client:

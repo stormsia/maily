@@ -26,6 +26,7 @@ class SinkResult:
     retry_after: float | None = None
     error: str | None = None
     too_large: bool = False
+    sent_count: int = 0
 
 
 class TelemetrySink(ABC):

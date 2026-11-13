@@ -123,9 +123,7 @@ class TelemetryService:
                 baseline = await self._baseline_properties(state, today)
                 await self._track("maily_install_created", baseline, dedupe_key="install")
                 logger.info(
-                    "telemetry: install %s started (version %s)",
-                    state.installation_id,
-                    self._version,
+                    f"telemetry: install {state.installation_id} started (version {self._version})"
                 )
                 return
 
@@ -164,9 +162,7 @@ class TelemetryService:
                     },
                 )
             logger.info(
-                "telemetry: started host=%s install=%s",
-                self._settings.telemetry_posthog_host,
-                state.installation_id,
+                f"telemetry: started host={self._settings.telemetry_posthog_host} install={state.installation_id}"
             )
 
     async def stop(self) -> None:
@@ -376,12 +372,12 @@ class TelemetryService:
                     is_backfill=(candidate < today - timedelta(days=1)),
                 )
             except Exception:  # noqa: BLE001 - skip a bad day, keep the rest
-                logger.exception("telemetry: snapshot build failed for %s", candidate)
+                logger.exception(f"telemetry: snapshot build failed for {candidate}")
                 continue
             try:
                 await self._repository.create_report(candidate, events)
             except Exception:  # noqa: BLE001 - skip a bad day, keep the rest
-                logger.exception("telemetry: create_report failed for %s", candidate)
+                logger.exception(f"telemetry: create_report failed for {candidate}")
 
         await self._repository.update_state(last_snapshot_day=due_days[-1])
 
@@ -393,7 +389,7 @@ class TelemetryService:
             try:
                 report_sent, report_failed = await self._send_report(report)
             except Exception:  # noqa: BLE001 - keep sending other reports
-                logger.exception("telemetry: report %s send failed", report.id)
+                logger.exception(f"telemetry: report {report.id} send failed")
                 continue
             sent += report_sent
             failed += report_failed

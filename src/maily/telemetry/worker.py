@@ -43,9 +43,7 @@ class TelemetryWorker:
         except asyncio.QueueFull:
             self.dropped += 1
             logger.warning(
-                "telemetry: queue full, dropping event %s (dropped=%d)",
-                event.event_name,
-                self.dropped,
+                f"telemetry: queue full, dropping event {event.event_name} (dropped={self.dropped})"
             )
             return False
         return True

@@ -903,7 +903,7 @@ class MessagesAPI:
                 try:
                     detail = await self.get(mid, message_id)
                 except Exception:
-                    logger.exception("Failed to load message details for %s", message_id)
+                    logger.exception(f"Failed to load message details for {message_id}")
                     continue
 
                 examined.add(message_id)
@@ -930,9 +930,7 @@ class MessagesAPI:
                     continue
 
                 logger.info(
-                    "Confirmation email found from %s (subject: %s)",
-                    msg.from_address,
-                    msg.subject,
+                    f"Confirmation email found from {msg.from_address} (subject: {msg.subject})"
                 )
                 return ExtractedConfirmation(
                     message_id=message_id,

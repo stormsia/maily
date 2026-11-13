@@ -28,7 +28,7 @@ async def _undo_provider_create(prov, info: MailboxInfo) -> None:
     try:
         await prov.delete_mailbox(info)
     except Exception as exc:  # noqa: BLE001 - cleanup must not hide the original error
-        logger.warning("create_mailbox: provider cleanup failed for %s: %s", info.address, exc)
+        logger.warning(f"create_mailbox: provider cleanup failed for {info.address}: {exc}")
 
 
 def as_naive_utc(dt: datetime | None) -> datetime | None:

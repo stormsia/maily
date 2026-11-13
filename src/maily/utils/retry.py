@@ -52,12 +52,7 @@ def async_retry(
                     if jitter:
                         delay *= 0.5 + random.random() * 0.5
                     logger.warning(
-                        "%s attempt %d/%d failed (%s). Retrying in %.2fs",
-                        func.__qualname__,
-                        attempt,
-                        max_attempts,
-                        exc,
-                        delay,
+                        f"{func.__qualname__} attempt {attempt}/{max_attempts} failed ({exc}). Retrying in {delay:.2f}s"
                     )
                     await asyncio.sleep(delay)
             assert last_exc is not None

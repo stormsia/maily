@@ -211,9 +211,9 @@ class TempMailPlus(HttpProvider):
                     seen.add(msg_id)
                     await self.delete_message(mailbox, msg_id)
             else:
-                logger.warning("tempmail.plus: inbox clear hit page cap for %s", mailbox.address)
+                logger.warning(f"tempmail.plus: inbox clear hit page cap for {mailbox.address}")
         except Exception as exc:
-            logger.warning("tempmail.plus: failed to clear inbox on account deletion: %s", exc)
+            logger.warning(f"tempmail.plus: failed to clear inbox on account deletion: {exc}")
             return False
         return True
 

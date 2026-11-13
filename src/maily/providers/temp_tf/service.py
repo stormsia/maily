@@ -364,7 +364,7 @@ class TempTF(HttpProvider):
             resp = await self._http.get(f"{self.BASE_URL}/", headers=headers)
             domains = _extract_domains_from_html(resp.text)
         except Exception as exc:
-            logger.warning("temp.tf: failed to fetch targets HTML: %s; using defaults", exc)
+            logger.warning(f"temp.tf: failed to fetch targets HTML: {exc}; using defaults")
             domains = list(_DEFAULT_DOMAINS)
 
         if not domains:
@@ -423,7 +423,7 @@ class TempTF(HttpProvider):
         except MailNotFoundError:
             return []
         except MailAuthError as exc:
-            logger.warning("temp.tf: address %s rejected or unauthorized: %s", mailbox.address, exc)
+            logger.warning(f"temp.tf: address {mailbox.address} rejected or unauthorized: {exc}")
             return []
 
         raw_messages = (

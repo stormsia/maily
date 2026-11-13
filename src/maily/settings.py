@@ -107,12 +107,10 @@ class Settings(BaseSettings):
                 os.chmod(self.secret_key_path, 0o600)
             except OSError as exc:
                 logger.warning(
-                    "could not persist generated secret key to %s: %s", self.secret_key_path, exc
+                    f"could not persist generated secret key to {self.secret_key_path}: {exc}"
                 )
             logger.warning(
-                "generated a new encryption key at %s — keep this file safe and persisted "
-                "across restarts, otherwise stored credentials cannot be decrypted",
-                self.secret_key_path,
+                f"generated a new encryption key at {self.secret_key_path} — keep this file safe and persisted across restarts, otherwise stored credentials cannot be decrypted"
             )
         object.__setattr__(self, "_resolved_secret", key)
         return key

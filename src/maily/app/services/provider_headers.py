@@ -104,7 +104,7 @@ async def refresh(
     try:
         token = await fetch_cors_header(http, settings.tempmail_io_origin)
     except Exception as exc:  # noqa: BLE001 - keep last-known headers on network failure
-        logger.warning("provider_headers: fetch failed for %s: %s", provider, exc)
+        logger.warning(f"provider_headers: fetch failed for {provider}: {exc}")
         await _save_committed(factory, provider, stale, str(exc))
         return stale
     headers = build_headers(token)

@@ -112,24 +112,22 @@ class TestEmailSender:
 
         # Mode: Fallback only
         if mode in ("fallback", "fallback_only"):
-            logger.info("Sending test email to %s via fallback (xeramail)...", email)
+            logger.info(f"Sending test email to {email} via fallback (xeramail)...")
             return await self.fallback.send(email)
 
         # Mode: Primary only
         if mode in ("primary", "primary_only"):
-            logger.info("Sending test email to %s via primary (wesendtestmail)...", email)
+            logger.info(f"Sending test email to {email} via primary (wesendtestmail)...")
             return await self.primary.send(email)
 
         # Mode: Auto (Primary with Fallback)
-        logger.info("Sending test email to %s (attempting primary: wesendtestmail)...", email)
+        logger.info(f"Sending test email to {email} (attempting primary: wesendtestmail)...")
         try:
             res = await self.primary.send(email)
             return res
         except PrimaryProviderError as exc:
             logger.warning(
-                "Primary provider (wesendtestmail) failed for %s: %s. Switching to fallback...",
-                email,
-                exc,
+                f"Primary provider (wesendtestmail) failed for {email}: {exc}. Switching to fallback..."
             )
             # Record failed primary attempt
             attempts.append(
@@ -142,7 +140,7 @@ class TestEmailSender:
             )
 
         # Execute fallback
-        logger.info("Executing fallback provider (xeramail) for %s...", email)
+        logger.info(f"Executing fallback provider (xeramail) for {email}...")
         try:
             res = await self.fallback.send(email)
             # Combine primary attempt history with fallback result
@@ -158,7 +156,7 @@ class TestEmailSender:
                 attempts=combined_attempts,
             )
         except FallbackProviderError as exc:
-            logger.error("Fallback provider (xeramail) also failed for %s: %s", email, exc)
+            logger.error(f"Fallback provider (xeramail) also failed for {email}: {exc}")
             attempts.append(
                 AttemptInfo(
                     provider=self.fallback.provider_name,

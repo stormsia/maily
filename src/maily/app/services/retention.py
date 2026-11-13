@@ -201,22 +201,17 @@ async def _do_sweep(
                 ok = await prov.delete_mailbox(info)
                 if ok is False:
                     logger.warning(
-                        "retention: provider delete returned False for %s; marking as deleted locally",
-                        row.address,
+                        f"retention: provider delete returned False for {row.address}; marking as deleted locally"
                     )
                     failed_upstream = True
             except Exception as exc:  # noqa: BLE001 - best-effort sync with provider
                 if _is_already_gone(exc):
                     logger.info(
-                        "retention: provider mailbox %s already gone (%s), cleaning up locally",
-                        row.address,
-                        exc,
+                        f"retention: provider mailbox {row.address} already gone ({exc}), cleaning up locally"
                     )
                 else:
                     logger.warning(
-                        "retention: provider delete failed for %s: %s; marking as deleted locally",
-                        row.address,
-                        exc,
+                        f"retention: provider delete failed for {row.address}: {exc}; marking as deleted locally"
                     )
                     failed_upstream = True
 
@@ -245,7 +240,7 @@ async def _do_sweep(
             domain = extract_domain(row.address)
             box_key = (rule.provider, domain, row.owner_key_id)
             mailbox_deletes[box_key] = mailbox_deletes.get(box_key, 0) + 1
-            logger.info("retention: expired mailbox %s deleted", row.address)
+            logger.info(f"retention: expired mailbox {row.address} deleted")
 
     # expired messages — mailbox is joined in so we don't re-fetch it per row
     for rule in message_rules:
@@ -276,17 +271,11 @@ async def _do_sweep(
             except Exception as exc:  # noqa: BLE001 - best-effort sync with provider
                 if _is_already_gone(exc):
                     logger.info(
-                        "retention: provider message %s/%s already gone (%s), cleaning up locally",
-                        msg_id,
-                        msg.provider,
-                        exc,
+                        f"retention: provider message {msg_id}/{msg.provider} already gone ({exc}), cleaning up locally"
                     )
                 else:
                     logger.warning(
-                        "retention: provider message delete failed for %s/%s: %s",
-                        msg_id,
-                        msg.provider,
-                        exc,
+                        f"retention: provider message delete failed for {msg_id}/{msg.provider}: {exc}"
                     )
                     continue
 
@@ -298,7 +287,7 @@ async def _do_sweep(
             domain = extract_domain(mailbox_row.address)
             msg_key = (rule.provider, domain, mailbox_row.owner_key_id)
             message_deletes[msg_key] = message_deletes.get(msg_key, 0) + 1
-            logger.info("retention: expired message %s deleted", msg_id)
+            logger.info(f"retention: expired message {msg_id} deleted")
 
     async def _ledger(s: AsyncSession) -> None:
         for (prov_slug, domain, owner_id), n in mailbox_deletes.items():

@@ -87,7 +87,7 @@ class WeSendTestMailProvider:
             ):
                 return self._csrf_token
 
-            logger.debug("Fetching fresh CSRF token from %s", PAGE_URL)
+            logger.debug(f"Fetching fresh CSRF token from {PAGE_URL}")
             try:
                 resp = await self._client.get(
                     PAGE_URL,
@@ -122,7 +122,7 @@ class WeSendTestMailProvider:
             token = match.group(1).strip()
             self._csrf_token = token
             self._token_fetched_at = now
-            logger.debug("Obtained CSRF token: %s...", token[:8])
+            logger.debug(f"Obtained CSRF token: {token[:8]}...")
             return token
 
     async def send(self, email: str) -> EmailSendResult:

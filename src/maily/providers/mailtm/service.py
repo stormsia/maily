@@ -179,14 +179,13 @@ class MailTM(HttpProvider):
     ) -> None:
         if not account_id:
             logger.warning(
-                "mail.tm: account created for %s but id is missing; cannot delete",
-                address,
+                f"mail.tm: account created for {address} but id is missing; cannot delete"
             )
             return
         body = failure.response_data if failure is not None else {}
         raw = body.get("token") if isinstance(body, dict) else None
         if not raw:
-            logger.warning("mail.tm: orphaned account %s cannot be deleted (no token)", account_id)
+            logger.warning(f"mail.tm: orphaned account {account_id} cannot be deleted (no token)")
             return
         try:
             await self._http.delete(
@@ -194,7 +193,7 @@ class MailTM(HttpProvider):
                 headers={"Authorization": f"Bearer {raw}"},
             )
         except Exception as exc:
-            logger.warning("mail.tm: failed to delete orphaned account %s: %s", account_id, exc)
+            logger.warning(f"mail.tm: failed to delete orphaned account {account_id}: {exc}")
 
     @async_retry()
     async def delete_mailbox(self, mailbox: MailboxInfo) -> bool:

@@ -209,7 +209,7 @@ class GmailProvider:
                 if alias_addr.rsplit("@", 1)[-1].lower() == domain:
                     bases.append(alias_addr)
         except MailAPIError as exc:
-            logger.warning("gmail: could not list sendAs aliases (%s); using profile only", exc)
+            logger.warning(f"gmail: could not list sendAs aliases ({exc}); using profile only")
         seen: set[str] = set()
         deduped: list[str] = []
         for b in bases:

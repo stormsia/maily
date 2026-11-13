@@ -219,11 +219,11 @@ async def refresh_cache(
             refreshed.append(p.slug)
         except Exception as exc:  # noqa: BLE001 - keep old domains, report error
             failed.append(p.slug)
-            logger.warning("domain cache: refresh failed for %s: %s", p.slug, exc)
+            logger.warning(f"domain cache: refresh failed for {p.slug}: {exc}")
             try:
                 await _record_failure_committed(factory, p.slug, str(exc))
             except Exception:  # noqa: BLE001
-                logger.exception("domain cache: could not record failure for %s", p.slug)
+                logger.exception(f"domain cache: could not record failure for {p.slug}")
     return {"refreshed": refreshed, "failed": failed}
 
 

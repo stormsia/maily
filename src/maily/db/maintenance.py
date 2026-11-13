@@ -49,7 +49,7 @@ async def get_last_maintenance_at(
                 _last_maintenance_cache[ident] = dt
                 return dt
     except Exception as exc:
-        logger.debug("could not read %s from app_settings: %s", SETTING_KEY_LAST_MAINTENANCE, exc)
+        logger.debug(f"could not read {SETTING_KEY_LAST_MAINTENANCE} from app_settings: {exc}")
 
     return None
 
@@ -72,11 +72,7 @@ async def record_maintenance_at(
                 row.value = at.isoformat()
             await session.commit()
     except Exception as exc:
-        logger.debug(
-            "could not persist %s in app_settings: %s",
-            SETTING_KEY_LAST_MAINTENANCE,
-            exc,
-        )
+        logger.debug(f"could not persist {SETTING_KEY_LAST_MAINTENANCE} in app_settings: {exc}")
 
 
 async def is_maintenance_due(
@@ -119,7 +115,7 @@ async def maintain_database(
     """
     dialect = engine.dialect.name
     start_time = time.monotonic()
-    logger.info("db maintenance: starting thorough database maintenance for %s...", dialect)
+    logger.info(f"db maintenance: starting thorough database maintenance for {dialect}...")
 
     for attempt in range(max_retries):
         try:
@@ -135,8 +131,7 @@ async def maintain_database(
                         await conn.execute(text("PRAGMA wal_checkpoint(TRUNCATE)"))
                     except Exception as chk_exc:
                         logger.debug(
-                            "db maintenance: initial checkpoint contention (%s), using PASSIVE",
-                            chk_exc,
+                            f"db maintenance: initial checkpoint contention ({chk_exc}), using PASSIVE"
                         )
                         await conn.execute(text("PRAGMA wal_checkpoint(PASSIVE)"))
 
@@ -156,16 +151,13 @@ async def maintain_database(
                     try:
                         await conn.execute(text("PRAGMA wal_checkpoint(TRUNCATE)"))
                     except Exception as chk_exc:
-                        logger.debug("db maintenance: post-vacuum checkpoint: %s", chk_exc)
+                        logger.debug(f"db maintenance: post-vacuum checkpoint: {chk_exc}")
 
                     # 8. Integrity check
                     check_cursor = await conn.execute(text("PRAGMA quick_check"))
                     check_rows = [r[0] for r in check_cursor.fetchall()]
                     if check_rows != ["ok"]:
-                        logger.warning(
-                            "db maintenance: PRAGMA quick_check warnings: %s",
-                            check_rows,
-                        )
+                        logger.warning(f"db maintenance: PRAGMA quick_check warnings: {check_rows}")
 
                 elif dialect == "postgresql":
                     await conn.execute(text("VACUUM (ANALYZE)"))
@@ -175,11 +167,7 @@ async def maintain_database(
                         await conn.execute(text("ANALYZE"))
 
             duration = time.monotonic() - start_time
-            logger.info(
-                "db maintenance: completed successfully in %.3fs (%s)",
-                duration,
-                dialect,
-            )
+            logger.info(f"db maintenance: completed successfully in {duration:.3f}s ({dialect})")
             return {
                 "status": "completed",
                 "dialect": dialect,
@@ -191,22 +179,18 @@ async def maintain_database(
             is_lock = any(k in err for k in ("locked", "busy", "timeout"))
             if is_lock and attempt < max_retries - 1:
                 logger.debug(
-                    "db maintenance: transient lock on attempt %d/%d (%s), retrying in %.1fs...",
-                    attempt + 1,
-                    max_retries,
-                    exc,
-                    retry_delay * (attempt + 1),
+                    f"db maintenance: transient lock on attempt {attempt + 1}/{max_retries} ({exc}), retrying in {retry_delay * (attempt + 1):.1f}s..."
                 )
                 await asyncio.sleep(retry_delay * (attempt + 1))
                 continue
-            logger.warning("db maintenance: postponed or skipped due to lock contention: %s", exc)
+            logger.warning(f"db maintenance: postponed or skipped due to lock contention: {exc}")
             return {
                 "status": "skipped",
                 "reason": "locked",
                 "error": str(exc),
             }
         except Exception as exc:
-            logger.warning("db maintenance: maintenance failed: %s", exc)
+            logger.warning(f"db maintenance: maintenance failed: {exc}")
             return {
                 "status": "failed",
                 "error": str(exc),

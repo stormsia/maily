@@ -126,7 +126,7 @@ class GeoResolver(ABC):
     """Resolves the installation's public IP and geolocation."""
 
     @abstractmethod
-    async def resolve(self, previous: Any | None = None) -> Any | None:
+    async def resolve(self) -> Any | None:
         raise NotImplementedError
 
     @abstractmethod

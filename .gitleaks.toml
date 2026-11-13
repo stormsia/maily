@@ -15,4 +15,8 @@ regexes = [
   '''[0-9a-f]{32}''',
   '''dummy_.*''',
   '''ci-smoke-test-secret''',
+  # PostHog project tokens (phc_...) are public client-side ingest keys: they
+  # can only write events, not read data. The Maily release ships one so the
+  # anonymous telemetry works out of the box.
+  '''phc_[A-Za-z0-9]{40,}''',
 ]

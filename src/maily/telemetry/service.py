@@ -287,7 +287,7 @@ class TelemetryService:
             return state
         if state.geo_updated_at is not None and (now - state.geo_updated_at) < _GEO_TTL:
             return state
-        geo = await self._geo.resolve(None)
+        geo = await self._geo.resolve()
         if geo is None:
             return state
         await self._repository.update_state(geo_json=geo.to_json(), geo_updated_at=now)

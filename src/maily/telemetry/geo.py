@@ -33,7 +33,7 @@ class IpWhoIsGeoResolver(GeoResolver):
             )
         self._client = client
 
-    async def resolve(self, previous: Any | None = None) -> GeoInfo | None:
+    async def resolve(self) -> GeoInfo | None:
         try:
             response = await self._client.get(self._url)
             response.raise_for_status()

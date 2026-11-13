@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1794598264710,
+  "lastUpdate": 1794599092780,
   "repoUrl": "https://github.com/stormsia/maily",
   "entries": {
     "Benchmark": [
@@ -11261,6 +11261,135 @@ window.BENCHMARK_DATA = {
             "unit": "iter/sec",
             "range": "stddev: 0.00016194052637710766",
             "extra": "mean: 3.716862924048998 msec\nrounds: 237"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "sf_root@outlook.com",
+            "name": "stormsia",
+            "username": "stormsia"
+          },
+          "committer": {
+            "email": "sf_root@outlook.com",
+            "name": "stormsia",
+            "username": "stormsia"
+          },
+          "distinct": true,
+          "id": "2eb60537234347f4eac7e1e69a03177b3983a01c",
+          "message": "fix(telemetry): silence CI secret scan and dead code checks\n\n- allowlist PostHog phc_ project tokens in .gitleaks.toml: they are public\n  client-side ingest keys that can only write events\n- drop the unused `previous` argument from GeoResolver.resolve so Vulture\n  no longer reports dead code",
+          "timestamp": "2026-11-13T22:44:15+03:00",
+          "tree_id": "146950cfeccccb48301cc07382d25415e70f111d",
+          "url": "https://github.com/stormsia/maily/commit/2eb60537234347f4eac7e1e69a03177b3983a01c"
+        },
+        "date": 1794599092154,
+        "tool": "pytest",
+        "benches": [
+          {
+            "name": "tests/test_benchmarks.py::test_benchmark_crypto_encrypt_1kb",
+            "value": 126172.35718137522,
+            "unit": "iter/sec",
+            "range": "stddev: 0.0000013361778871890475",
+            "extra": "mean: 7.925666305516354 usec\nrounds: 923"
+          },
+          {
+            "name": "tests/test_benchmarks.py::test_benchmark_crypto_decrypt_1kb",
+            "value": 124129.62729742973,
+            "unit": "iter/sec",
+            "range": "stddev: 6.982693759759335e-7",
+            "extra": "mean: 8.056094437501839 usec\nrounds: 26409"
+          },
+          {
+            "name": "tests/test_benchmarks.py::test_benchmark_random_string",
+            "value": 141953.22006326643,
+            "unit": "iter/sec",
+            "range": "stddev: 0.0000011861832358473055",
+            "extra": "mean: 7.04457425871928 usec\nrounds: 30286"
+          },
+          {
+            "name": "tests/test_benchmarks.py::test_benchmark_random_password",
+            "value": 95372.69760412749,
+            "unit": "iter/sec",
+            "range": "stddev: 0.0000014438256311333896",
+            "extra": "mean: 10.485181033158932 usec\nrounds: 45511"
+          },
+          {
+            "name": "tests/test_benchmarks.py::test_benchmark_pydantic_message_detail_parse",
+            "value": 856044.3409537764,
+            "unit": "iter/sec",
+            "range": "stddev: 3.3060759987468894e-7",
+            "extra": "mean: 1.1681637879713485 usec\nrounds: 30222"
+          },
+          {
+            "name": "tests/test_benchmarks.py::test_benchmark_pydantic_batch_messages_serialize",
+            "value": 8967.033534641276,
+            "unit": "iter/sec",
+            "range": "stddev: 0.000010971394972507683",
+            "extra": "mean: 111.5196007840072 usec\nrounds: 4847"
+          },
+          {
+            "name": "tests/test_benchmarks.py::test_benchmark_extract_verification_code",
+            "value": 150636.22197458713,
+            "unit": "iter/sec",
+            "range": "stddev: 9.779634787878593e-7",
+            "extra": "mean: 6.638509562253252 usec\nrounds: 62799"
+          },
+          {
+            "name": "tests/test_benchmarks.py::test_benchmark_extract_confirmation_url",
+            "value": 201427.9838277076,
+            "unit": "iter/sec",
+            "range": "stddev: 8.708979255834827e-7",
+            "extra": "mean: 4.964553489525839 usec\nrounds: 68677"
+          },
+          {
+            "name": "tests/test_benchmarks.py::test_benchmark_authz_parse_scope",
+            "value": 401615.8480328642,
+            "unit": "iter/sec",
+            "range": "stddev: 4.65391377387468e-7",
+            "extra": "mean: 2.4899415819820185 usec\nrounds: 25095"
+          },
+          {
+            "name": "tests/test_benchmarks.py::test_benchmark_authz_secret_sha256",
+            "value": 2290290.40578197,
+            "unit": "iter/sec",
+            "range": "stddev: 0.000001177678976197621",
+            "extra": "mean: 436.6258521082927 nsec\nrounds: 30953"
+          },
+          {
+            "name": "tests/test_benchmarks.py::test_benchmark_health_endpoint",
+            "value": 635.2829571467512,
+            "unit": "iter/sec",
+            "range": "stddev: 0.0002704431813610022",
+            "extra": "mean: 1.574101727034051 msec\nrounds: 381"
+          },
+          {
+            "name": "tests/test_benchmarks.py::test_benchmark_domain_cache_settings",
+            "value": 428.25415999252016,
+            "unit": "iter/sec",
+            "range": "stddev: 0.00030913057841812526",
+            "extra": "mean: 2.335061964179089 msec\nrounds: 335"
+          },
+          {
+            "name": "tests/test_benchmarks.py::test_benchmark_mailboxes_list",
+            "value": 623.9845189396767,
+            "unit": "iter/sec",
+            "range": "stddev: 0.00018123214995066175",
+            "extra": "mean: 1.6026038621908092 msec\nrounds: 283"
+          },
+          {
+            "name": "tests/test_benchmarks.py::test_benchmark_admin_keys_list",
+            "value": 499.6227922936794,
+            "unit": "iter/sec",
+            "range": "stddev: 0.0002838581562127997",
+            "extra": "mean: 2.0015099699699004 msec\nrounds: 333"
+          },
+          {
+            "name": "tests/test_benchmarks.py::test_benchmark_client_init",
+            "value": 364.3333005760025,
+            "unit": "iter/sec",
+            "range": "stddev: 0.00016933172491416786",
+            "extra": "mean: 2.7447394965517105 msec\nrounds: 290"
           }
         ]
       }

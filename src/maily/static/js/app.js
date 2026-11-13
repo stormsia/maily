@@ -199,7 +199,7 @@ function restorePrevKey() {
 /* ============================================================
    Version & Update Checking
    ============================================================ */
-let currentVersion = "0.8.0"; // x-release-please-version
+let currentVersion = "0.9.0"; // x-release-please-version
 let latestUpdateInfo = null;
 
 function updateVersionTags(ver) {

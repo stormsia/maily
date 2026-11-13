@@ -32,7 +32,7 @@ from build_docs import (
 
 ROOT = Path(__file__).resolve().parents[1]
 
-__version__ = "0.8.0"  # x-release-please-version
+__version__ = "0.9.0"  # x-release-please-version
 
 try:
     import sys

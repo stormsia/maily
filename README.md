@@ -35,8 +35,12 @@
 [📦 Client SDK (PyPI)](https://pypi.org/project/maily-client/) •
 [🐳 Docker GHCR](https://github.com/stormsia/maily/pkgs/container/maily) •
 [🌐 Live Provider Health](#-live-provider-operational-status) •
-[⚡ Quick Start](#-quick-start) •
+[⚡ Quickstart](#-quickstart--getting-started) •
 [🧪 Test Automation Recipes](#-e2e-test-automation-recipes-pytest-playwright-selenium)
+
+<br>
+
+**Translations:** [English](README.md) • [Русский](README.ru.md) • [简体中文](README.zh-CN.md)
 
 </div>
 
@@ -291,7 +295,20 @@ Issue least-privilege API tokens restricted to specific providers, specific acti
 
 ---
 
-## 🚀 Quick Start
+## 📋 Prerequisites
+
+Ensure your host meets the minimum environment requirements before running Maily:
+
+| Component | Minimum Version | Recommended | Notes |
+|---|---|---|---|
+| **Docker Engine** | `>= 24.0` | Latest | For containerized deployment (`ghcr.io/stormsia/maily`) |
+| **Docker Compose** | `v2.20+` | Latest | Compose file format 3.8+ support |
+| **Python** (for source / SDK) | `>= 3.13` | `3.13` | Free-threaded & optimized asynchronous I/O |
+| **uv** (source development) | `>= 0.4.0` | Latest | High-performance Python package & project manager |
+
+---
+
+## 🚀 Quickstart & Getting Started
 
 <!-- doc-sync:docker:start -->
 Run Maily via official pre-built Docker containers, Docker Compose, or develop locally from source.
@@ -770,6 +787,24 @@ Yes! Maily supports Gmail via OAuth2 with infinite `username+alias@gmail.com` ad
 #### Как Maily объединяет зоопарк temp-mail сервисов?
 Каждый провайдер временной почты (Mail.tm, TempMail.Plus, NoopMail, DispoEmail и др.) имеет свои уникальные заголовки, форматы дат и ограничения. Maily нормализует ответы всех сервисов в единый формат `Mailbox` и `MessageDetail`, автоматически кэширует доступные домены и управляет жизненным циклом ящиков.
 </details>
+
+---
+
+## 🤝 Contributing
+
+Contributions are warmly welcome! Whether you are adding a new temporary email provider, fixing a bug, or polishing documentation, here is how you can help:
+
+1. **Check Issues & Roadmap:** Explore open [GitHub Issues](https://github.com/stormsia/maily/issues) or submit a new feature proposal.
+2. **Fork & Branch:** Create a dedicated branch (`git checkout -b feat/provider-xyz`).
+3. **Coding Standards:** We enforce strict formatting and static typing:
+   ```bash
+   uv run ruff check src client tests scripts
+   uv run mypy src client scripts
+   python -m pytest
+   ```
+4. **Submitting Changes:** Open a Pull Request referencing relevant issues. Please consult our complete [CONTRIBUTING.md](CONTRIBUTING.md) guide and adhere to our [Code of Conduct](CODE_OF_CONDUCT.md).
+
+For vulnerability disclosure, please refer to our [Security Policy](SECURITY.md).
 
 ---
 

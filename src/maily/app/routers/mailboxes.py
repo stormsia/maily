@@ -107,6 +107,7 @@ async def _gmail_parent_ok(session: SessionDep, principal: Principal, parent_id:
 
 @router.post("", response_model=MailboxOut)
 async def create(
+    request: Request,
     body: CreateMailboxIn,
     session: SessionDep,
     registry: RegistryDep,
@@ -145,6 +146,17 @@ async def create(
     )
     await session.commit()
     await session.refresh(row)
+    telemetry = getattr(request.app.state, "telemetry", None)
+    if telemetry is not None:
+        await telemetry.track_once(
+            "maily_first_mailbox_created",
+            provider=row.provider,
+            domain=extract_domain(row.address),
+            has_custom_address=bool(body.address),
+            has_custom_password=bool(body.password),
+            owner_is_root=principal.is_root,
+        )
+        await telemetry.mark_setup("first_mailbox", provider=row.provider)
     return row
 
 

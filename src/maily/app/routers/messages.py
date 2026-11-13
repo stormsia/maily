@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from contextlib import suppress
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from sqlalchemy import select
 
 from ...db.models import Mailbox, Message
@@ -38,6 +38,7 @@ async def _owned_mailbox(
 
 @router.get("", response_model=list[MessageOut])
 async def list_messages(
+    request: Request,
     mailbox_id: int,
     session: SessionDep,
     registry: RegistryDep,
@@ -54,6 +55,10 @@ async def list_messages(
     summaries = await prov.list_messages(info, page=page)
     cached = await svc.upsert_messages(session, row, summaries)
     await session.commit()
+    if cached:
+        telemetry = getattr(request.app.state, "telemetry", None)
+        if telemetry is not None:
+            await telemetry.track_once("maily_first_message_received", provider=row.provider)
 
     if row.provider == "anonymmail.net":
         stmt = (

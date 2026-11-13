@@ -13,6 +13,17 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 logger = logging.getLogger("maily.settings")
 
+#: Public PostHog project token of the "Maily" project (US region). It is an
+#: ingest token (``phc_...``), not a personal API key, so it ships with the
+#: release. Forks that point at their own project override the
+#: ``telemetry_posthog_api_key`` setting.
+POSTHOG_PROJECT_TOKEN = "phc_sr8WfrC9Bb75YodHpdDzK7DRwLAddWNcfNovGimMLoGC"
+
+#: Sentinel for forks that have no PostHog project yet. While it is
+#: configured the telemetry module stays inactive and never opens a network
+#: connection.
+POSTHOG_PLACEHOLDER_TOKEN = "phc_REPLACE_WITH_REAL_PROJECT_TOKEN"
+
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
@@ -27,8 +38,31 @@ class Settings(BaseSettings):
     host: str = "127.0.0.1"
     port: int = 8477
     proxy: str | None = None
+    telemetry_proxy: str | None = None
 
-    @field_validator("proxy", mode="before")
+    # Telemetry is opt-out via MAILY_TELEMETRY_ENABLED=false. The PostHog
+    # project token is baked into the settings above; the matching environment
+    # variable only exists to point a fork at a different project.
+    telemetry_enabled: bool = True
+    telemetry_posthog_api_key: str = POSTHOG_PROJECT_TOKEN
+    telemetry_posthog_host: str = "https://us.i.posthog.com"
+    telemetry_include_ip: bool = True
+    telemetry_geo_lookup_enabled: bool = True
+    telemetry_geo_lookup_url: str = "https://ipwho.is/"
+    telemetry_daily_hour_utc: int = 4
+    telemetry_daily_jitter_seconds: int = 900
+    telemetry_immediate_debounce_seconds: float = 2.0
+    telemetry_app_start_debounce_seconds: int = 300
+    telemetry_http_timeout_seconds: float = 10.0
+    telemetry_max_attempts: int = 8
+    telemetry_queue_maxsize: int = 512
+    telemetry_max_batch_events: int = 50
+    telemetry_max_event_bytes: int = 900_000
+    telemetry_sent_retention_days: int = 7
+    telemetry_unsent_retention_days: int = 30
+    telemetry_person_profiles: bool = True
+
+    @field_validator("proxy", "telemetry_proxy", mode="before")
     @classmethod
     def _sanitize_proxy(cls, v: Any) -> Any:
         if isinstance(v, str) and not v.strip():

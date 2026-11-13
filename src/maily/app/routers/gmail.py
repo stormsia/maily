@@ -110,6 +110,17 @@ def _store(request: Request) -> GmailParentStore:
     return request.app.state.gmail._store
 
 
+async def _track_gmail_connected(request: Request, source: str) -> None:
+    """Best-effort telemetry for the first connected Gmail account."""
+    telemetry = getattr(request.app.state, "telemetry", None)
+    if telemetry is None:
+        return
+    try:
+        await telemetry.track_once("maily_gmail_connected", source=source)
+    except Exception:  # noqa: BLE001 - telemetry must never break the request
+        return
+
+
 def _out(parent: GmailParent) -> GmailAccountOut:
     return GmailAccountOut(
         id=parent.id,
@@ -241,6 +252,7 @@ async def oauth_callback(request: Request, settings: SettingsDep, code: str = ""
         parent = await _upsert_parent(request, tokens, owner_key_id)
     except HTTPException as exc:
         return _err(str(exc.detail), status_code=exc.status_code)
+    await _track_gmail_connected(request, "oauth_callback")
     if wants_json:
         return JSONResponse({"ok": True, "email": parent.email, "id": parent.id})
     return HTMLResponse("ok, you can close this tab")
@@ -290,6 +302,7 @@ async def oauth_callback_post(
             raise
 
     parent = await _upsert_parent(request, tokens, owner_key_id)
+    await _track_gmail_connected(request, "oauth_exchange")
     return _out(parent)
 
 
@@ -312,6 +325,7 @@ async def import_account(
     else:
         raise MailValidationError("refresh_token or token_json required")
     parent = await _upsert_parent(request, tokens, _caller_key_id(principal))
+    await _track_gmail_connected(request, "import")
     return _out(parent)
 
 

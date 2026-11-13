@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 
-from fastapi import APIRouter, Depends, Response
+from fastapi import APIRouter, Depends, Request, Response
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -152,7 +152,7 @@ async def me(principal: PrincipalDep, session: SessionDep) -> RootMeOut | Issued
     description="Root only. Returns the new row plus the secret once.",
 )
 async def create_key(
-    body: KeyCreateIn, session: SessionDep, settings: SettingsDep
+    request: Request, body: KeyCreateIn, session: SessionDep, settings: SettingsDep
 ) -> CreatedKeyOut:
     """Mint a key, store optional retention, and return the plaintext secret once."""
     created = await create_key_row(
@@ -170,6 +170,14 @@ async def create_key(
         update={"key_retention": await _replace_retention(session, created.id, body.retention)}
     )
     await session.commit()
+    telemetry = getattr(request.app.state, "telemetry", None)
+    if telemetry is not None:
+        await telemetry.track_once(
+            "maily_first_api_key_created",
+            actions_count=len(body.scope.actions),
+            providers_count=len(body.scope.providers),
+            parent_ids_count=len(body.scope.parent_ids),
+        )
     return _with_secret(stored, created.secret)
 
 

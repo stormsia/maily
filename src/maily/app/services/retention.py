@@ -15,6 +15,7 @@ from ...db.models import KeyRetention, Mailbox, Message, Retention
 from ...exceptions import MailNotFoundError, MailValidationError
 from ...providers.registry import ProviderRegistry
 from ...settings import Settings
+from ...telemetry.retention import prune_telemetry
 from ..services import mailboxes as svc
 from ..services.retention_rules import load_sweep_rules, owner_clause
 from ..services.stats_history import (
@@ -323,6 +324,16 @@ async def _do_sweep(
         await prune(s)
 
     await _write(factory, _ledger)
+    if only_key_id is None:
+        # Telemetry is instance-wide, so only the root sweep prunes it.
+        async def _telemetry_prune(s: AsyncSession) -> None:
+            await prune_telemetry(
+                s,
+                sent_days=settings.telemetry_sent_retention_days,
+                unsent_days=settings.telemetry_unsent_retention_days,
+            )
+
+        await _write(factory, _telemetry_prune)
     if only_key_id is None:
         try:
             await maybe_run_maintenance(factory, settings, force=force_maintenance)

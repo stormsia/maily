@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from contextlib import suppress
 from datetime import timedelta
 
 from fastapi import APIRouter, Depends, HTTPException, Request
@@ -368,6 +369,10 @@ async def save_gmail_creds(
     await gcfg.save_creds(session, secret, cid, csec, body.redirect_uri)
     await session.commit()
     request.app.state.oauth.configure(cid, csec)
+    telemetry = getattr(request.app.state, "telemetry", None)
+    if telemetry is not None:
+        with suppress(Exception):
+            await telemetry.track_once("maily_gmail_connected", source="admin")
     return GmailCredsOut(
         configured=True,
         source="db",

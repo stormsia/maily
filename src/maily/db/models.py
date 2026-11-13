@@ -227,3 +227,78 @@ class ProviderHeaders(Base):
     updated_at: Mapped[datetime] = mapped_column(
         DateTime, server_default=func.now(), onupdate=func.now()
     )
+
+
+class TelemetryState(Base):
+    """Singleton installation identity and telemetry bookkeeping."""
+
+    __tablename__ = "telemetry_state"
+    __table_args__ = (Index("uq_telemetry_state_installation_id", "installation_id", unique=True),)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    installation_id: Mapped[str] = mapped_column(String(64))
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+    app_start_count: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
+    first_version: Mapped[str] = mapped_column(String(32), default="", server_default="")
+    last_version: Mapped[str] = mapped_column(String(32), default="", server_default="")
+    last_start_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    last_flush_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    last_snapshot_day: Mapped[date | None] = mapped_column(Date, nullable=True)
+    setup_completed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    geo_json: Mapped[str] = mapped_column(Text, default="{}", server_default="{}")
+    geo_updated_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    last_error: Mapped[str | None] = mapped_column(Text, nullable=True)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime, server_default=func.now(), onupdate=func.now()
+    )
+
+
+class TelemetryReport(Base):
+    """One daily PostHog batch (global snapshot + per-provider events)."""
+
+    __tablename__ = "telemetry_reports"
+    __table_args__ = (
+        Index("uq_telemetry_reports_report_day", "report_day", unique=True),
+        Index("ix_telemetry_reports_due", "status", "next_attempt_at"),
+        Index("ix_telemetry_reports_created_at", "created_at"),
+        Index("ix_telemetry_reports_sent_at", "sent_at"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    report_day: Mapped[date] = mapped_column(Date)
+    status: Mapped[str] = mapped_column(String(16), default="pending", server_default="pending")
+    attempts: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
+    next_attempt_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+    last_error: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+    sent_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+
+
+class TelemetryEvent(Base):
+    """Queued PostHog event. report_id NULL means an immediate event."""
+
+    __tablename__ = "telemetry_events"
+    __table_args__ = (
+        Index("uq_telemetry_events_event_uuid", "event_uuid", unique=True),
+        Index("ix_telemetry_events_due", "status", "next_attempt_at"),
+        Index("ix_telemetry_events_report_id", "report_id"),
+        Index("ix_telemetry_events_event_name", "event_name"),
+        Index("ix_telemetry_events_created_at", "created_at"),
+        Index("ix_telemetry_events_sent_at", "sent_at"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    report_id: Mapped[int | None] = mapped_column(
+        ForeignKey("telemetry_reports.id", ondelete="CASCADE"), nullable=True
+    )
+    event_uuid: Mapped[str] = mapped_column(String(36))
+    event_name: Mapped[str] = mapped_column(String(128))
+    distinct_id: Mapped[str] = mapped_column(String(64))
+    properties_json: Mapped[str] = mapped_column(Text)
+    occurred_at: Mapped[datetime] = mapped_column(DateTime)
+    status: Mapped[str] = mapped_column(String(16), default="pending", server_default="pending")
+    attempts: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
+    next_attempt_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+    last_error: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+    sent_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)

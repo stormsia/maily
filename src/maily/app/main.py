@@ -18,6 +18,7 @@ from ..providers.gmail.oauth import GmailOAuth
 from ..providers.gmail.service import GmailProvider
 from ..providers.registry import ProviderRegistry, create_public_providers
 from ..settings import Settings, get_settings
+from ..telemetry import TelemetryService, build_telemetry_service
 from .errors import register_errors
 from .middleware.origin import OriginGuard
 from .routers.admin import router as admin_router
@@ -158,6 +159,18 @@ async def lifespan(app: FastAPI):
     sweep_lock = asyncio.Lock()
     app.state.sweep_lock = sweep_lock
 
+    telemetry: TelemetryService | None = None
+    try:
+        telemetry = build_telemetry_service(factory, registry, settings)
+        await telemetry.start()
+    except Exception:  # noqa: BLE001 - telemetry must never block startup
+        logger.exception("telemetry: disabled after a startup failure")
+        if telemetry is not None:
+            await telemetry.deactivate()
+        else:
+            telemetry = build_telemetry_service(factory, registry, settings, force_disabled=True)
+    app.state.telemetry = telemetry
+
     sweep_task = asyncio.create_task(
         retention_worker(
             lambda: run_sweep(
@@ -181,6 +194,8 @@ async def lifespan(app: FastAPI):
             await cache_task
         with suppress(asyncio.CancelledError):
             await headers_task
+        if telemetry is not None:
+            await telemetry.stop()
         await registry.close()
         await http.close()
         await engine.dispose()

@@ -670,6 +670,7 @@ flowchart LR
 3. **Trivy Container Scanner** — Full CVE inspection of Debian Bookworm OS packages and Python wheels exported directly to the **GitHub Security tab (SARIF)**.
 4. **pip-audit** — Automated vulnerability audit against the PyPA Advisory Database.
 5. **Hermetic Test Suite** — 480+ tests passing hermetically with 80%+ code coverage across Python 3.13, 3.14, and 3.15.
+6. **Anonymous Usage Telemetry** — maily reports anonymous usage statistics (version, provider usage counts). No email addresses, message content, credentials or client IP addresses are collected. See [docs/TELEMETRY.md](https://github.com/stormsia/maily/blob/main/docs/TELEMETRY.md).
 
 ---
 

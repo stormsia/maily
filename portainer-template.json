@@ -25,6 +25,12 @@
       ],
       "env": [
         {
+          "name": "MAILY_API_KEY",
+          "label": "API Key",
+          "description": "Root master API key for authentication and dashboard access",
+          "default": "change_me_to_secure_key"
+        },
+        {
           "name": "MAILY_PORT",
           "label": "Port",
           "description": "Internal service listening port (default: 8477)",

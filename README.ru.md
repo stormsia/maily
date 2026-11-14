@@ -38,7 +38,7 @@
 
 <br>
 
-**Языки:** [English](README.md) • [Русский](README.ru.md) • [简体中文](README.zh-CN.md)
+**Языки:** [English](https://github.com/stormsia/maily/blob/main/README.md) • [Русский](https://github.com/stormsia/maily/blob/main/README.ru.md) • [简体中文](https://github.com/stormsia/maily/blob/main/README.zh-CN.md)
 
 </div>
 

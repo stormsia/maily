@@ -35,6 +35,10 @@
 [🐙 GitHub Repository](https://github.com/stormsia/maily) •
 [⚡ Quickstart](#-quickstart)
 
+<br>
+
+**Translations:** [English](https://github.com/stormsia/maily/blob/main/README.md) • [Русский](https://github.com/stormsia/maily/blob/main/README.ru.md) • [简体中文](https://github.com/stormsia/maily/blob/main/README.zh-CN.md)
+
 </div>
 
 ---

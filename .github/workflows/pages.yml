@@ -49,12 +49,14 @@ jobs:
         with:
           name: maily-portal
           path: public/
+          include-hidden-files: true
           retention-days: 14
 
       - name: Upload artifact for GitHub Pages
         uses: actions/upload-pages-artifact@v5
         with:
           path: public/
+          include-hidden-files: true
 
   deploy-docs:
     name: Deploy to GitHub Pages

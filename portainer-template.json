@@ -1,0 +1,43 @@
+{
+  "version": "3",
+  "templates": [
+    {
+      "type": 1,
+      "title": "Maily",
+      "name": "maily",
+      "description": "The Universal Temporary Email Gateway: aggregate 8+ disposable mail providers under one REST API & dark-mode dashboard with instant OTP verification code extraction. Source: https://github.com/stormsia/maily",
+      "categories": [
+        "Email",
+        "Productivity",
+        "Tools"
+      ],
+      "platform": "linux",
+      "logo": "https://raw.githubusercontent.com/stormsia/maily/main/docs/assets/logo.png",
+      "image": "ghcr.io/stormsia/maily:latest",
+      "restart_policy": "unless-stopped",
+      "ports": [
+        "8477:8477/tcp"
+      ],
+      "volumes": [
+        {
+          "container": "/data"
+        }
+      ],
+      "env": [
+        {
+          "name": "MAILY_PORT",
+          "label": "Port",
+          "description": "Internal service listening port (default: 8477)",
+          "default": "8477"
+        },
+        {
+          "name": "MAILY_HOST",
+          "label": "Host",
+          "description": "Binding host address (default: 0.0.0.0)",
+          "default": "0.0.0.0"
+        }
+      ],
+      "note": "Access the dark-mode dashboard and REST API at <code>http://&lt;your-host&gt;:8477</code>.<br>Interactive API documentation (Swagger UI) is available at <code>http://&lt;your-host&gt;:8477/docs</code>.<br>Persistent data (SQLite database and encryption key) is stored in <code>/data</code>."
+    }
+  ]
+}

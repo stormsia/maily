@@ -156,17 +156,17 @@ flowchart LR
 <!-- provider-status:start -->
 ### 🌐 Live Provider Operational Status
 
-> **Last Verified:** `2026-11-14 04:44 UTC` | **Overall Health:** 🟢 **All Systems Operational**
+> **Last Verified:** `2026-11-14 11:55 UTC` | **Overall Health:** 🟢 **All Systems Operational**
 
 | Provider | Slug | Targets | API Health | E2E Delivery | Latency | Status |
 | :--- | :--- | :---: | :---: | :---: | :---: | :---: |
-| [Mail.tm](https://mail.tm) | `mail.tm` | 1 | 🟢 PASS | 🟢 `5.5s` | `1.62s` | 🟢 Operational |
-| [TempMail Plus](https://tempmail.plus) | `tempmail.plus` | 8 | 🟢 PASS | 🟢 `5.7s` | `1.42s` | 🟢 Operational |
-| [TempMail.io](https://temp-mail.io) | `temp-mail.io` | 7 | 🟢 PASS | 🟢 `3.7s` | `0.90s` | 🟢 Operational |
-| [Temp.tf](https://temp.tf) | `temp.tf` | 4 | 🟢 PASS | 🟢 `14.0s` | `0.79s` | 🟢 Operational |
-| [AnonymMail.net](https://anonymmail.net) | `anonymmail.net` | 6 | 🟢 PASS | 🟢 `3.9s` | `1.20s` | 🟢 Operational |
-| [DispoEmail.org](https://dispoemail.org) | `dispoemail.org` | 4 | 🟢 PASS | 🟢 `3.5s` | `0.62s` | 🟢 Operational |
-| [NoopMail.org](https://noopmail.org) | `noopmail.org` | 13 | 🟢 PASS | 🟢 `3.5s` | `20.38s` | 🟢 Operational |
+| [Mail.tm](https://mail.tm) | `mail.tm` | 1 | 🟢 PASS | 🟢 `5.1s` | `1.23s` | 🟢 Operational |
+| [TempMail Plus](https://tempmail.plus) | `tempmail.plus` | 8 | 🟢 PASS | 🟢 `3.6s` | `0.73s` | 🟢 Operational |
+| [TempMail.io](https://temp-mail.io) | `temp-mail.io` | 7 | 🟢 PASS | 🟢 `3.6s` | `0.74s` | 🟢 Operational |
+| [Temp.tf](https://temp.tf) | `temp.tf` | 4 | 🟢 PASS | 🟢 `14.0s` | `0.65s` | 🟢 Operational |
+| [AnonymMail.net](https://anonymmail.net) | `anonymmail.net` | 6 | 🟢 PASS | 🟢 `3.8s` | `0.94s` | 🟢 Operational |
+| [DispoEmail.org](https://dispoemail.org) | `dispoemail.org` | 4 | 🟢 PASS | 🟢 `3.5s` | `0.57s` | 🟢 Operational |
+| [NoopMail.org](https://noopmail.org) | `noopmail.org` | 13 | 🟢 PASS | 🟢 `3.6s` | `13.81s` | 🟢 Operational |
 
 *Automated health checks run hourly via GitHub Actions.*
 <!-- provider-status:end -->

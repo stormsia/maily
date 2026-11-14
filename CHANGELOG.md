@@ -7,6 +7,19 @@ All notable changes to the **Maily** ecosystem ([`maily-server`](https://pypi.or
 > - **Python Server Package (PyPI):** `pip install -U maily-server`
 > - **Docker Container (GHCR):** `docker pull ghcr.io/stormsia/maily:latest`
 
+## [0.10.0](https://github.com/stormsia/maily/compare/v0.9.1...v0.10.0) (2026-11-14)
+
+
+### Features
+
+* **deploy:** add Portainer app template v3 schema ([ddf7f26](https://github.com/stormsia/maily/commit/ddf7f264bc5438fdecd69ce69fc89201c9beaf15))
+* **docs:** update translation links in README files and add documentation section ([cb7c593](https://github.com/stormsia/maily/commit/cb7c5939232a506e19ee3a9bd6b75fbe97f2b6c5))
+
+
+### Bug Fixes
+
+* **portainer:** set MAILY_API_KEY default env in template ([d22b7ec](https://github.com/stormsia/maily/commit/d22b7ec9b6988df07302f9f7019b1694af78ca96))
+
 ## [0.9.1](https://github.com/stormsia/maily/compare/v0.9.0...v0.9.1) (2026-11-13)
 
 

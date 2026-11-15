@@ -1,10 +1,12 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Maily · ReDoc Documentation</title>
-  <meta name="description" content="Comprehensive ReDoc OpenAPI documentation for Maily REST API. Browse temporary mailbox endpoints, request schemas, error codes, and async Python integration." />
+  <meta name="description"
+    content="Comprehensive ReDoc OpenAPI documentation for Maily REST API. Browse temporary mailbox endpoints, request schemas, error codes, and async Python integration." />
   <meta name="theme-color" content="#0b0e14" />
   <meta name="robots" content="noindex, follow" />
   <link rel="canonical" href="https://stormsia.github.io/maily/scalar.html" />
@@ -12,7 +14,8 @@
 
   <!-- OpenGraph Metadata -->
   <meta property="og:title" content="Maily · ReDoc Documentation" />
-  <meta property="og:description" content="Comprehensive ReDoc OpenAPI documentation for Maily REST API. Browse temporary mailbox endpoints, request schemas, error codes, and async Python integration." />
+  <meta property="og:description"
+    content="Comprehensive ReDoc OpenAPI documentation for Maily REST API. Browse temporary mailbox endpoints, request schemas, error codes, and async Python integration." />
   <meta property="og:locale" content="en_US" />
   <meta property="og:url" content="https://stormsia.github.io/maily/scalar.html" />
   <meta property="og:image" content="https://stormsia.github.io/maily/assets/hero_banner.png" />
@@ -24,7 +27,8 @@
   <!-- Twitter Card Metadata -->
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content="Maily · ReDoc Documentation" />
-  <meta name="twitter:description" content="Comprehensive ReDoc OpenAPI documentation for Maily REST API. Browse temporary mailbox endpoints, request schemas, error codes, and async Python integration." />
+  <meta name="twitter:description"
+    content="Comprehensive ReDoc OpenAPI documentation for Maily REST API. Browse temporary mailbox endpoints, request schemas, error codes, and async Python integration." />
   <meta name="twitter:image" content="https://stormsia.github.io/maily/assets/hero_banner.png" />
 
   <!-- Favicon & Mobile Icons -->
@@ -109,7 +113,7 @@
       },
       "sameAs": [
         "https://github.com/stormsia/maily",
-        "https://pypi.org/project/maily/",
+        "https://pypi.org/project/maily-server/",
         "https://pypi.org/project/maily-client/",
         "https://ghcr.io/stormsia/maily"
       ],
@@ -209,18 +213,21 @@
   </script>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=JetBrains+Mono:wght@400;500;600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=JetBrains+Mono:wght@400;500;600&family=Inter:wght@400;500;600;700&display=swap"
+    rel="stylesheet" />
   <style>
-body {
+    body {
       margin: 0;
       padding: 0;
       background: #0b0e14;
       color: #e2e8f0;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     }
+
     body.embedded-view
 
-/* --- Modern Portal Nav & Switcher Bar --- */
+    /* --- Modern Portal Nav & Switcher Bar --- */
     .portal-nav {
       display: flex;
       align-items: center;
@@ -236,10 +243,12 @@ body {
       top: 0;
       z-index: 100;
     }
+
     body.embedded-view .portal-nav,
     body.embedded-view .api-switcher-bar {
       display: none !important;
     }
+
     .brand-link {
       display: flex;
       align-items: center;
@@ -247,23 +256,27 @@ body {
       text-decoration: none;
       color: #fff;
     }
+
     .brand-logo-img {
       width: 36px;
       height: 36px;
       border-radius: 10px;
       object-fit: contain;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
     }
+
     .brand-details {
       display: flex;
       flex-direction: column;
       line-height: 1.2;
     }
+
     .brand-line {
       display: flex;
       align-items: center;
       gap: 8px;
     }
+
     .brand-title {
       font-family: "Sora", sans-serif;
       font-size: 18px;
@@ -271,6 +284,7 @@ body {
       letter-spacing: -0.02em;
       color: #fff;
     }
+
     .brand-badge {
       background: rgba(6, 182, 212, 0.1);
       border: 1px solid rgba(6, 182, 212, 0.3);
@@ -281,16 +295,19 @@ body {
       border-radius: 4px;
       font-family: "JetBrains Mono", monospace;
     }
+
     .brand-sub {
       font-size: 11px;
       color: #94a3b8;
       font-weight: 500;
     }
+
     .nav-links {
       display: flex;
       align-items: center;
       gap: 6px;
     }
+
     .nav-link {
       color: #cbd5e1;
       text-decoration: none;
@@ -300,15 +317,18 @@ body {
       border-radius: 8px;
       transition: all 0.15s ease;
     }
+
     .nav-link:hover {
       color: #fff;
       background: rgba(51, 65, 85, 0.4);
     }
+
     .nav-link.active {
       color: #22d3ee;
       background: rgba(6, 182, 212, 0.1);
       font-weight: 600;
     }
+
     .github-btn {
       display: inline-flex;
       align-items: center;
@@ -321,19 +341,22 @@ body {
       padding: 6px 14px;
       border-radius: 10px;
       margin-left: 8px;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
     }
+
     .github-btn:hover {
       background: #1e293b;
       border-color: #06b6d4;
       color: #38bdf8;
     }
+
     .api-switcher-bar {
       background: #0b0f19;
       border-bottom: 1px solid rgba(51, 65, 85, 0.4);
       padding: 8px 28px;
       font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     }
+
     .api-switcher-inner {
       display: flex;
       align-items: center;
@@ -343,12 +366,14 @@ body {
       max-width: 1600px;
       margin: 0 auto;
     }
+
     .switcher-left {
       display: flex;
       align-items: center;
       gap: 10px;
       flex-wrap: wrap;
     }
+
     .switcher-label {
       font-size: 12px;
       font-weight: 600;
@@ -356,11 +381,13 @@ body {
       text-transform: uppercase;
       letter-spacing: 0.05em;
     }
+
     .switcher-buttons {
       display: flex;
       align-items: center;
       gap: 6px;
     }
+
     .switcher-btn {
       text-decoration: none;
       font-size: 12px;
@@ -372,22 +399,26 @@ body {
       color: #cbd5e1;
       transition: all 0.15s ease;
     }
+
     .switcher-btn:hover {
       color: #fff;
       border-color: #38bdf8;
       background: #1e293b;
     }
+
     .switcher-btn.active {
       background: rgba(6, 182, 212, 0.15);
       border-color: #06b6d4;
       color: #22d3ee;
       font-weight: 600;
     }
+
     .switcher-meta {
       display: flex;
       align-items: center;
       gap: 8px;
     }
+
     .meta-pill {
       font-size: 11px;
       font-family: "JetBrains Mono", monospace;
@@ -397,10 +428,25 @@ body {
       border-radius: 4px;
       border: 1px solid #1f2937;
     }
+
     @media (max-width: 860px) {
-      .portal-nav { flex-direction: column; gap: 12px; align-items: flex-start; padding: 12px 16px; }
-      .nav-links { width: 100%; overflow-x: auto; padding-bottom: 4px; }
-      .api-switcher-inner { flex-direction: column; align-items: flex-start; }
+      .portal-nav {
+        flex-direction: column;
+        gap: 12px;
+        align-items: flex-start;
+        padding: 12px 16px;
+      }
+
+      .nav-links {
+        width: 100%;
+        overflow-x: auto;
+        padding-bottom: 4px;
+      }
+
+      .api-switcher-inner {
+        flex-direction: column;
+        align-items: flex-start;
+      }
     }
 
     /* --- Unified Modern Portal Footer --- */
@@ -413,6 +459,7 @@ body {
       font-size: 13px;
       margin-top: 64px;
     }
+
     .footer-inner {
       max-width: 1400px;
       margin: 0 auto;
@@ -420,20 +467,24 @@ body {
       grid-template-columns: 1fr 2fr;
       gap: 48px;
     }
+
     .footer-brand {
       display: flex;
       flex-direction: column;
       gap: 12px;
     }
+
     .footer-brand-header {
       display: flex;
       align-items: center;
       gap: 10px;
     }
+
     .footer-logo-img {
       border-radius: 8px;
       box-shadow: 0 2px 8px rgba(6, 182, 212, 0.25);
     }
+
     .footer-brand-title {
       font-family: "Sora", sans-serif;
       font-size: 18px;
@@ -441,6 +492,7 @@ body {
       color: #fff;
       letter-spacing: -0.02em;
     }
+
     .footer-tagline {
       margin: 0;
       font-size: 12.5px;
@@ -448,6 +500,7 @@ body {
       color: #94a3b8;
       max-width: 340px;
     }
+
     .footer-status-pill {
       display: inline-flex;
       align-items: center;
@@ -462,6 +515,7 @@ body {
       width: fit-content;
       margin-top: 6px;
     }
+
     .status-pulse-dot {
       width: 7px;
       height: 7px;
@@ -469,11 +523,13 @@ body {
       background: #10b981;
       box-shadow: 0 0 8px #10b981;
     }
+
     .footer-links-grid {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
       gap: 32px;
     }
+
     .footer-col-title {
       font-family: "JetBrains Mono", monospace;
       font-size: 11px;
@@ -483,6 +539,7 @@ body {
       color: #cbd5e1;
       margin: 0 0 14px;
     }
+
     .footer-nav-list {
       list-style: none;
       padding: 0;
@@ -491,15 +548,18 @@ body {
       flex-direction: column;
       gap: 9px;
     }
+
     .footer-nav-list a {
       color: #94a3b8;
       text-decoration: none;
       font-size: 12.5px;
       transition: color 0.15s ease;
     }
+
     .footer-nav-list a:hover {
       color: #22d3ee;
     }
+
     .github-footer-item a {
       display: inline-flex;
       align-items: center;
@@ -507,9 +567,11 @@ body {
       color: #cbd5e1;
       font-weight: 500;
     }
+
     .github-footer-item a:hover {
       color: #fff;
     }
+
     .footer-bottom-bar {
       max-width: 1400px;
       margin: 40px auto 0;
@@ -523,74 +585,83 @@ body {
       font-size: 12px;
       color: #64748b;
     }
+
     .footer-bottom-links {
       display: flex;
       align-items: center;
       gap: 12px;
     }
+
     .footer-bottom-links a {
       color: #94a3b8;
       text-decoration: none;
       transition: color 0.15s ease;
     }
+
     .footer-bottom-links a:hover {
       color: #cbd5e1;
     }
+
     @media (max-width: 860px) {
       .footer-inner {
         grid-template-columns: 1fr;
         gap: 32px;
       }
+
       .footer-links-grid {
         grid-template-columns: 1fr;
         gap: 24px;
       }
+
       .footer-bottom-bar {
         flex-direction: column;
         align-items: flex-start;
       }
     }
-
   </style>
   <!-- Microsoft Clarity Analytics -->
   <script type="text/javascript">
-    (function(c,l,a,r,i,t,y){
-        c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
-        t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
-        y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
+    (function (c, l, a, r, i, t, y) {
+      c[a] = c[a] || function () { (c[a].q = c[a].q || []).push(arguments) };
+      t = l.createElement(r); t.async = 1; t.src = "https://www.clarity.ms/tag/" + i;
+      y = l.getElementsByTagName(r)[0]; y.parentNode.insertBefore(t, y);
     })(window, document, "clarity", "script", "z9cx94bnqx");
   </script>
 </head>
+
 <body>
 
-    <nav class="portal-nav" aria-label="Portal navigation">
-      <div class="nav-brand">
-        <a href="./" class="brand-link">
-          <img src="assets/logo.png" alt="Maily Logo" width="36" height="36" class="brand-logo-img" />
-          <div class="brand-details">
-            <div class="brand-line">
-              <span class="brand-title">Maily</span>
-              <span class="brand-badge">v0.9.1</span>
-            </div>
-            <span class="brand-sub">Universal Temp-Mail Gateway</span>
+  <nav class="portal-nav" aria-label="Portal navigation">
+    <div class="nav-brand">
+      <a href="./" class="brand-link">
+        <img src="assets/logo.png" alt="Maily Logo" width="36" height="36" class="brand-logo-img" />
+        <div class="brand-details">
+          <div class="brand-line">
+            <span class="brand-title">Maily</span>
+            <span class="brand-badge">v0.9.1</span>
           </div>
-        </a>
-      </div>
-      <div class="nav-links">
-        <a href="./" class="nav-link">Overview</a>
-        <a href="docs" class="nav-link">Docs</a>
-        <a href="docs/providers" class="nav-link">Providers</a>
-        <a href="analytics" class="nav-link">Health &amp; Telemetry</a>
-        <a href="scalar.html" class="nav-link active">API Specs</a>
-        <a href="dev/bench/" class="nav-link">Benchmarks</a>
-        <a href="https://github.com/stormsia/maily" target="_blank" rel="noopener noreferrer" class="nav-link github-btn">
-          <svg class="github-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path>
-          </svg>
-          <span>Star on GitHub</span>
-        </a>
-      </div>
-    </nav>
+          <span class="brand-sub">Universal Temp-Mail Gateway</span>
+        </div>
+      </a>
+    </div>
+    <div class="nav-links">
+      <a href="./" class="nav-link">Overview</a>
+      <a href="docs" class="nav-link">Docs</a>
+      <a href="docs/providers" class="nav-link">Providers</a>
+      <a href="analytics" class="nav-link">Health &amp; Telemetry</a>
+      <a href="scalar.html" class="nav-link active">API Specs</a>
+      <a href="dev/bench/" class="nav-link">Benchmarks</a>
+      <a href="https://github.com/stormsia/maily" target="_blank" rel="noopener noreferrer" class="nav-link github-btn">
+        <svg class="github-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+          stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path
+            d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22">
+          </path>
+        </svg>
+        <span>Star on GitHub</span>
+      </a>
+    </div>
+  </nav>
   <div class="api-switcher-bar">
     <div class="api-switcher-inner">
       <div class="switcher-left">
@@ -608,1001 +679,1093 @@ body {
       </div>
     </div>
   </div>
-    <script>
-      if (window.self !== window.top || window.location.search.includes("embed=true")) {
-        document.body.classList.add("embedded-view");
-      }
-    </script>
+  <script>
+    if (window.self !== window.top || window.location.search.includes("embed=true")) {
+      document.body.classList.add("embedded-view");
+    }
+  </script>
 
-<!-- Fallback & Accessibility for Non-JS Clients, Screen Readers, and AI Search Crawlers (AgentReady AR-READ-01) -->
+  <!-- Fallback & Accessibility for Non-JS Clients, Screen Readers, and AI Search Crawlers (AgentReady AR-READ-01) -->
   <noscript>
     <div class="agent-api-noscript-container">
       <div class="agent-api-summary-content">
-  <header class="agent-api-header">
-    <h1 class="agent-api-title">Maily REST API — OpenAPI 3.1 Specification</h1>
-    <p class="api-lead">Complete machine-readable static reference of all Maily endpoints for AI agents (Claude, Perplexity, GPTBot, Cursor), non-JS crawlers, and screen readers. Complies with AgentReady standard <strong>AR-READ-01</strong>.</p>
-    <div class="api-meta-strip">
-      <span>Base Server: <code>http://127.0.0.1:8477</code></span> ·
-      <span>API Version: <code>v1</code></span> ·
-      <span>Total Endpoints: <strong>43</strong></span>
-    </div>
-  </header>
-  <section class="api-tag-section" id="tag-system">
-    <h2 class="tag-title">System Endpoints (3)</h2>
-    <article class="endpoint-card method-get">
-      <div class="endpoint-line">
-        <span class="badge-method badge-get">GET</span>
-        <code class="endpoint-path">/health</code>
-        <span class="endpoint-auth-pill">🔓 Public / No Auth</span>
+        <header class="agent-api-header">
+          <h1 class="agent-api-title">Maily REST API — OpenAPI 3.1 Specification</h1>
+          <p class="api-lead">Complete machine-readable static reference of all Maily endpoints for AI agents (Claude,
+            Perplexity, GPTBot, Cursor), non-JS crawlers, and screen readers. Complies with AgentReady standard
+            <strong>AR-READ-01</strong>.</p>
+          <div class="api-meta-strip">
+            <span>Base Server: <code>http://127.0.0.1:8477</code></span> ·
+            <span>API Version: <code>v1</code></span> ·
+            <span>Total Endpoints: <strong>43</strong></span>
+          </div>
+        </header>
+        <section class="api-tag-section" id="tag-system">
+          <h2 class="tag-title">System Endpoints (3)</h2>
+          <article class="endpoint-card method-get">
+            <div class="endpoint-line">
+              <span class="badge-method badge-get">GET</span>
+              <code class="endpoint-path">/health</code>
+              <span class="endpoint-auth-pill">🔓 Public / No Auth</span>
+            </div>
+            <div class="endpoint-summary"><strong>Health</strong></div>
+            <div class="endpoint-description">
+              <p>Brief liveness + degradation view for monitoring.<br /><br />`status` mirrors the previous shape;
+                `domain_cache` reports per-provider last refresh time, cached domain count and the latest refresh error.
+              </p>
+            </div>
+            <div class="endpoint-details-block">
+              <span class="block-title">Responses:</span>
+              <ul class="endpoint-responses-list">
+                <li><strong>200</strong>: Successful Response</li>
+              </ul>
+            </div>
+          </article>
+          <article class="endpoint-card method-get">
+            <div class="endpoint-line">
+              <span class="badge-method badge-get">GET</span>
+              <code class="endpoint-path">/v1/config</code>
+              <span class="endpoint-auth-pill">🔓 Public / No Auth</span>
+            </div>
+            <div class="endpoint-summary"><strong>Config</strong></div>
+            <div class="endpoint-description">
+              <p>Non-secret server facts for the dashboard and the standalone client.<br /><br />This router is
+                auth-free: `client_version` lets a pip-installed client detect it should run `python -m client update`.
+              </p>
+            </div>
+            <div class="endpoint-details-block">
+              <span class="block-title">Responses:</span>
+              <ul class="endpoint-responses-list">
+                <li><strong>200</strong>: Successful Response</li>
+              </ul>
+            </div>
+          </article>
+          <article class="endpoint-card method-get">
+            <div class="endpoint-line">
+              <span class="badge-method badge-get">GET</span>
+              <code class="endpoint-path">/v1/updates/check</code>
+              <span class="endpoint-auth-pill">🔓 Public / No Auth</span>
+            </div>
+            <div class="endpoint-summary"><strong>Check Updates</strong></div>
+            <div class="endpoint-description">
+              <p>Check if a new version is available on GitHub.</p>
+            </div>
+            <div class="endpoint-details-block">
+              <span class="block-title">Responses:</span>
+              <ul class="endpoint-responses-list">
+                <li><strong>200</strong>: Successful Response</li>
+              </ul>
+            </div>
+          </article>
+        </section>
+        <section class="api-tag-section" id="tag-gmail">
+          <h2 class="tag-title">Gmail Endpoints (8)</h2>
+          <article class="endpoint-card method-get">
+            <div class="endpoint-line">
+              <span class="badge-method badge-get">GET</span>
+              <code class="endpoint-path">/v1/gmail/oauth/callback</code>
+              <span class="endpoint-auth-pill">🔓 Public / No Auth</span>
+            </div>
+            <div class="endpoint-summary"><strong>Oauth Callback</strong></div>
+            <div class="endpoint-description">
+              <p>OAuth redirect target (browser flow). Not for direct use.</p>
+            </div>
+            <div class="endpoint-details-block">
+              <span class="block-title">Parameters:</span>
+              <ul class="endpoint-params-list">
+                <li><code>code</code> <em>(query, string, optional)</em></li>
+                <li><code>state</code> <em>(query, string, optional)</em></li>
+              </ul>
+            </div>
+            <div class="endpoint-details-block">
+              <span class="block-title">Responses:</span>
+              <ul class="endpoint-responses-list">
+                <li><strong>200</strong>: Successful Response</li>
+                <li><strong>422</strong>: Validation Error</li>
+              </ul>
+            </div>
+          </article>
+          <article class="endpoint-card method-post">
+            <div class="endpoint-line">
+              <span class="badge-method badge-post">POST</span>
+              <code class="endpoint-path">/v1/gmail/oauth/callback</code>
+              <span class="endpoint-auth-pill">🔒 Requires X-API-Key</span>
+            </div>
+            <div class="endpoint-summary"><strong>Oauth Callback Post</strong></div>
+            <div class="endpoint-description">
+              <p>Manually complete OAuth when browser callback is unreachable (e.g. behind proxy).</p>
+            </div>
+            <div class="endpoint-details-block">
+              <span class="block-title">Parameters:</span>
+              <ul class="endpoint-params-list">
+                <li><code>authorization</code> <em>(header, string, optional)</em></li>
+              </ul>
+            </div>
+            <div class="endpoint-details-block">
+              <span class="block-title">Responses:</span>
+              <ul class="endpoint-responses-list">
+                <li><strong>200</strong>: Successful Response</li>
+                <li><strong>422</strong>: Validation Error</li>
+              </ul>
+            </div>
+          </article>
+          <article class="endpoint-card method-post">
+            <div class="endpoint-line">
+              <span class="badge-method badge-post">POST</span>
+              <code class="endpoint-path">/v1/gmail/oauth/start</code>
+              <span class="endpoint-auth-pill">🔒 Requires X-API-Key</span>
+            </div>
+            <div class="endpoint-summary"><strong>Oauth Start</strong></div>
+            <div class="endpoint-details-block">
+              <span class="block-title">Parameters:</span>
+              <ul class="endpoint-params-list">
+                <li><code>authorization</code> <em>(header, string, optional)</em></li>
+              </ul>
+            </div>
+            <div class="endpoint-details-block">
+              <span class="block-title">Responses:</span>
+              <ul class="endpoint-responses-list">
+                <li><strong>200</strong>: Successful Response</li>
+                <li><strong>422</strong>: Validation Error</li>
+              </ul>
+            </div>
+          </article>
+          <article class="endpoint-card method-post">
+            <div class="endpoint-line">
+              <span class="badge-method badge-post">POST</span>
+              <code class="endpoint-path">/v1/gmail/oauth/exchange</code>
+              <span class="endpoint-auth-pill">🔒 Requires X-API-Key</span>
+            </div>
+            <div class="endpoint-summary"><strong>Oauth Callback Post</strong></div>
+            <div class="endpoint-description">
+              <p>Manually complete OAuth when browser callback is unreachable (e.g. behind proxy).</p>
+            </div>
+            <div class="endpoint-details-block">
+              <span class="block-title">Parameters:</span>
+              <ul class="endpoint-params-list">
+                <li><code>authorization</code> <em>(header, string, optional)</em></li>
+              </ul>
+            </div>
+            <div class="endpoint-details-block">
+              <span class="block-title">Responses:</span>
+              <ul class="endpoint-responses-list">
+                <li><strong>200</strong>: Successful Response</li>
+                <li><strong>422</strong>: Validation Error</li>
+              </ul>
+            </div>
+          </article>
+          <article class="endpoint-card method-post">
+            <div class="endpoint-line">
+              <span class="badge-method badge-post">POST</span>
+              <code class="endpoint-path">/v1/gmail/accounts/import</code>
+              <span class="endpoint-auth-pill">🔒 Requires X-API-Key</span>
+            </div>
+            <div class="endpoint-summary"><strong>Import Account</strong></div>
+            <div class="endpoint-details-block">
+              <span class="block-title">Parameters:</span>
+              <ul class="endpoint-params-list">
+                <li><code>authorization</code> <em>(header, string, optional)</em></li>
+              </ul>
+            </div>
+            <div class="endpoint-details-block">
+              <span class="block-title">Responses:</span>
+              <ul class="endpoint-responses-list">
+                <li><strong>200</strong>: Successful Response</li>
+                <li><strong>422</strong>: Validation Error</li>
+              </ul>
+            </div>
+          </article>
+          <article class="endpoint-card method-get">
+            <div class="endpoint-line">
+              <span class="badge-method badge-get">GET</span>
+              <code class="endpoint-path">/v1/gmail/accounts</code>
+              <span class="endpoint-auth-pill">🔒 Requires X-API-Key</span>
+            </div>
+            <div class="endpoint-summary"><strong>List Accounts</strong></div>
+            <div class="endpoint-description">
+              <p>List connected Gmail accounts (expired ones included for reconnection).</p>
+            </div>
+            <div class="endpoint-details-block">
+              <span class="block-title">Parameters:</span>
+              <ul class="endpoint-params-list">
+                <li><code>authorization</code> <em>(header, string, optional)</em></li>
+              </ul>
+            </div>
+            <div class="endpoint-details-block">
+              <span class="block-title">Responses:</span>
+              <ul class="endpoint-responses-list">
+                <li><strong>200</strong>: Successful Response</li>
+                <li><strong>422</strong>: Validation Error</li>
+              </ul>
+            </div>
+          </article>
+          <article class="endpoint-card method-delete">
+            <div class="endpoint-line">
+              <span class="badge-method badge-delete">DELETE</span>
+              <code class="endpoint-path">/v1/gmail/accounts/{parent_id}</code>
+              <span class="endpoint-auth-pill">🔒 Requires X-API-Key</span>
+            </div>
+            <div class="endpoint-summary"><strong>Delete Account</strong></div>
+            <div class="endpoint-description">
+              <p>Disconnect a linked Gmail account the caller owns.</p>
+            </div>
+            <div class="endpoint-details-block">
+              <span class="block-title">Parameters:</span>
+              <ul class="endpoint-params-list">
+                <li><code>parent_id</code> <em>(path, integer, required)</em></li>
+                <li><code>authorization</code> <em>(header, string, optional)</em></li>
+              </ul>
+            </div>
+            <div class="endpoint-details-block">
+              <span class="block-title">Responses:</span>
+              <ul class="endpoint-responses-list">
+                <li><strong>204</strong>: Successful Response</li>
+                <li><strong>422</strong>: Validation Error</li>
+              </ul>
+            </div>
+          </article>
+          <article class="endpoint-card method-post">
+            <div class="endpoint-line">
+              <span class="badge-method badge-post">POST</span>
+              <code class="endpoint-path">/v1/gmail/accounts/{parent_id}/sync</code>
+              <span class="endpoint-auth-pill">🔒 Requires X-API-Key</span>
+            </div>
+            <div class="endpoint-summary"><strong>Sync Account</strong></div>
+            <div class="endpoint-description">
+              <p>Refresh profile/token state for a linked Gmail account the caller owns.</p>
+            </div>
+            <div class="endpoint-details-block">
+              <span class="block-title">Parameters:</span>
+              <ul class="endpoint-params-list">
+                <li><code>parent_id</code> <em>(path, integer, required)</em></li>
+                <li><code>authorization</code> <em>(header, string, optional)</em></li>
+              </ul>
+            </div>
+            <div class="endpoint-details-block">
+              <span class="block-title">Responses:</span>
+              <ul class="endpoint-responses-list">
+                <li><strong>200</strong>: Successful Response</li>
+                <li><strong>422</strong>: Validation Error</li>
+              </ul>
+            </div>
+          </article>
+        </section>
+        <section class="api-tag-section" id="tag-providers">
+          <h2 class="tag-title">Providers Endpoints (2)</h2>
+          <article class="endpoint-card method-get">
+            <div class="endpoint-line">
+              <span class="badge-method badge-get">GET</span>
+              <code class="endpoint-path">/v1/providers</code>
+              <span class="endpoint-auth-pill">🔒 Requires X-API-Key</span>
+            </div>
+            <div class="endpoint-summary"><strong>List Providers</strong></div>
+            <div class="endpoint-description">
+              <p>List enabled providers and their kind (api/token or domain-based).</p>
+            </div>
+            <div class="endpoint-details-block">
+              <span class="block-title">Parameters:</span>
+              <ul class="endpoint-params-list">
+                <li><code>authorization</code> <em>(header, string, optional)</em></li>
+              </ul>
+            </div>
+            <div class="endpoint-details-block">
+              <span class="block-title">Responses:</span>
+              <ul class="endpoint-responses-list">
+                <li><strong>200</strong>: Successful Response</li>
+                <li><strong>422</strong>: Validation Error</li>
+              </ul>
+            </div>
+          </article>
+          <article class="endpoint-card method-get">
+            <div class="endpoint-line">
+              <span class="badge-method badge-get">GET</span>
+              <code class="endpoint-path">/v1/targets</code>
+              <span class="endpoint-auth-pill">🔒 Requires X-API-Key</span>
+            </div>
+            <div class="endpoint-summary"><strong>List Targets</strong></div>
+            <div class="endpoint-description">
+              <p>List usable posting targets, optionally filtered by provider slug.</p>
+            </div>
+            <div class="endpoint-details-block">
+              <span class="block-title">Parameters:</span>
+              <ul class="endpoint-params-list">
+                <li><code>provider</code> <em>(query, string, optional)</em></li>
+                <li><code>authorization</code> <em>(header, string, optional)</em></li>
+              </ul>
+            </div>
+            <div class="endpoint-details-block">
+              <span class="block-title">Responses:</span>
+              <ul class="endpoint-responses-list">
+                <li><strong>200</strong>: Successful Response</li>
+                <li><strong>422</strong>: Validation Error</li>
+              </ul>
+            </div>
+          </article>
+        </section>
+        <section class="api-tag-section" id="tag-mailboxes">
+          <h2 class="tag-title">Mailboxes Endpoints (5)</h2>
+          <article class="endpoint-card method-post">
+            <div class="endpoint-line">
+              <span class="badge-method badge-post">POST</span>
+              <code class="endpoint-path">/v1/mailboxes</code>
+              <span class="endpoint-auth-pill">🔒 Requires X-API-Key</span>
+            </div>
+            <div class="endpoint-summary"><strong>Create</strong></div>
+            <div class="endpoint-description">
+              <p>Create a disposable mailbox on a provider (optionally with a specific address/password).</p>
+            </div>
+            <div class="endpoint-details-block">
+              <span class="block-title">Parameters:</span>
+              <ul class="endpoint-params-list">
+                <li><code>authorization</code> <em>(header, string, optional)</em></li>
+              </ul>
+            </div>
+            <div class="endpoint-details-block">
+              <span class="block-title">Responses:</span>
+              <ul class="endpoint-responses-list">
+                <li><strong>200</strong>: Successful Response</li>
+                <li><strong>422</strong>: Validation Error</li>
+              </ul>
+            </div>
+          </article>
+          <article class="endpoint-card method-get">
+            <div class="endpoint-line">
+              <span class="badge-method badge-get">GET</span>
+              <code class="endpoint-path">/v1/mailboxes</code>
+              <span class="endpoint-auth-pill">🔒 Requires X-API-Key</span>
+            </div>
+            <div class="endpoint-summary"><strong>List Mailboxes</strong></div>
+            <div class="endpoint-description">
+              <p>List mailboxes with optional provider/status filtering, address search and pagination.</p>
+            </div>
+            <div class="endpoint-details-block">
+              <span class="block-title">Parameters:</span>
+              <ul class="endpoint-params-list">
+                <li><code>provider</code> <em>(query, string, optional)</em></li>
+                <li><code>active</code> <em>(query, boolean, optional)</em></li>
+                <li><code>q</code> <em>(query, string, optional)</em> — Substring filter on the full address</li>
+                <li><code>limit</code> <em>(query, string, optional)</em> — Max rows to return (default 500)</li>
+                <li><code>offset</code> <em>(query, string, optional)</em> — Row offset</li>
+                <li><code>authorization</code> <em>(header, string, optional)</em></li>
+              </ul>
+            </div>
+            <div class="endpoint-details-block">
+              <span class="block-title">Responses:</span>
+              <ul class="endpoint-responses-list">
+                <li><strong>200</strong>: Successful Response</li>
+                <li><strong>422</strong>: Validation Error</li>
+              </ul>
+            </div>
+          </article>
+          <article class="endpoint-card method-get">
+            <div class="endpoint-line">
+              <span class="badge-method badge-get">GET</span>
+              <code class="endpoint-path">/v1/mailboxes/by-address/{email}</code>
+              <span class="endpoint-auth-pill">🔒 Requires X-API-Key</span>
+            </div>
+            <div class="endpoint-summary"><strong>By Address</strong></div>
+            <div class="endpoint-description">
+              <p>Look up a mailbox by its full email address.</p>
+            </div>
+            <div class="endpoint-details-block">
+              <span class="block-title">Parameters:</span>
+              <ul class="endpoint-params-list">
+                <li><code>email</code> <em>(path, string, required)</em></li>
+                <li><code>authorization</code> <em>(header, string, optional)</em></li>
+              </ul>
+            </div>
+            <div class="endpoint-details-block">
+              <span class="block-title">Responses:</span>
+              <ul class="endpoint-responses-list">
+                <li><strong>200</strong>: Successful Response</li>
+                <li><strong>422</strong>: Validation Error</li>
+              </ul>
+            </div>
+          </article>
+          <article class="endpoint-card method-get">
+            <div class="endpoint-line">
+              <span class="badge-method badge-get">GET</span>
+              <code class="endpoint-path">/v1/mailboxes/{mailbox_id}</code>
+              <span class="endpoint-auth-pill">🔒 Requires X-API-Key</span>
+            </div>
+            <div class="endpoint-summary"><strong>Get One</strong></div>
+            <div class="endpoint-description">
+              <p>Fetch a single mailbox by id.</p>
+            </div>
+            <div class="endpoint-details-block">
+              <span class="block-title">Parameters:</span>
+              <ul class="endpoint-params-list">
+                <li><code>mailbox_id</code> <em>(path, integer, required)</em></li>
+                <li><code>authorization</code> <em>(header, string, optional)</em></li>
+              </ul>
+            </div>
+            <div class="endpoint-details-block">
+              <span class="block-title">Responses:</span>
+              <ul class="endpoint-responses-list">
+                <li><strong>200</strong>: Successful Response</li>
+                <li><strong>422</strong>: Validation Error</li>
+              </ul>
+            </div>
+          </article>
+          <article class="endpoint-card method-delete">
+            <div class="endpoint-line">
+              <span class="badge-method badge-delete">DELETE</span>
+              <code class="endpoint-path">/v1/mailboxes/{mailbox_id}</code>
+              <span class="endpoint-auth-pill">🔒 Requires X-API-Key</span>
+            </div>
+            <div class="endpoint-summary"><strong>Delete One</strong></div>
+            <div class="endpoint-description">
+              <p>Deactivate and mark a mailbox deleted (also deletes it upstream).</p>
+            </div>
+            <div class="endpoint-details-block">
+              <span class="block-title">Parameters:</span>
+              <ul class="endpoint-params-list">
+                <li><code>mailbox_id</code> <em>(path, integer, required)</em></li>
+                <li><code>authorization</code> <em>(header, string, optional)</em></li>
+              </ul>
+            </div>
+            <div class="endpoint-details-block">
+              <span class="block-title">Responses:</span>
+              <ul class="endpoint-responses-list">
+                <li><strong>204</strong>: Successful Response</li>
+                <li><strong>422</strong>: Validation Error</li>
+              </ul>
+            </div>
+          </article>
+        </section>
+        <section class="api-tag-section" id="tag-messages">
+          <h2 class="tag-title">Messages Endpoints (5)</h2>
+          <article class="endpoint-card method-get">
+            <div class="endpoint-line">
+              <span class="badge-method badge-get">GET</span>
+              <code class="endpoint-path">/v1/mailboxes/{mailbox_id}/messages</code>
+              <span class="endpoint-auth-pill">🔒 Requires X-API-Key</span>
+            </div>
+            <div class="endpoint-summary"><strong>List Messages</strong></div>
+            <div class="endpoint-description">
+              <p>List a mailbox&#x27;s messages (fetches one page from the provider and caches it).</p>
+            </div>
+            <div class="endpoint-details-block">
+              <span class="block-title">Parameters:</span>
+              <ul class="endpoint-params-list">
+                <li><code>mailbox_id</code> <em>(path, integer, required)</em></li>
+                <li><code>page</code> <em>(query, integer, optional)</em></li>
+                <li><code>authorization</code> <em>(header, string, optional)</em></li>
+              </ul>
+            </div>
+            <div class="endpoint-details-block">
+              <span class="block-title">Responses:</span>
+              <ul class="endpoint-responses-list">
+                <li><strong>200</strong>: Successful Response</li>
+                <li><strong>422</strong>: Validation Error</li>
+              </ul>
+            </div>
+          </article>
+          <article class="endpoint-card method-get">
+            <div class="endpoint-line">
+              <span class="badge-method badge-get">GET</span>
+              <code class="endpoint-path">/v1/mailboxes/{mailbox_id}/messages/{msg_id}</code>
+              <span class="endpoint-auth-pill">🔒 Requires X-API-Key</span>
+            </div>
+            <div class="endpoint-summary"><strong>Get Message</strong></div>
+            <div class="endpoint-description">
+              <p>Fetch a single message with its full text and HTML bodies.</p>
+            </div>
+            <div class="endpoint-details-block">
+              <span class="block-title">Parameters:</span>
+              <ul class="endpoint-params-list">
+                <li><code>mailbox_id</code> <em>(path, integer, required)</em></li>
+                <li><code>msg_id</code> <em>(path, string, required)</em></li>
+                <li><code>authorization</code> <em>(header, string, optional)</em></li>
+              </ul>
+            </div>
+            <div class="endpoint-details-block">
+              <span class="block-title">Responses:</span>
+              <ul class="endpoint-responses-list">
+                <li><strong>200</strong>: Successful Response</li>
+                <li><strong>422</strong>: Validation Error</li>
+              </ul>
+            </div>
+          </article>
+          <article class="endpoint-card method-delete">
+            <div class="endpoint-line">
+              <span class="badge-method badge-delete">DELETE</span>
+              <code class="endpoint-path">/v1/mailboxes/{mailbox_id}/messages/{msg_id}</code>
+              <span class="endpoint-auth-pill">🔒 Requires X-API-Key</span>
+            </div>
+            <div class="endpoint-summary"><strong>Delete Message</strong></div>
+            <div class="endpoint-description">
+              <p>Delete a message (upstream and local cache).</p>
+            </div>
+            <div class="endpoint-details-block">
+              <span class="block-title">Parameters:</span>
+              <ul class="endpoint-params-list">
+                <li><code>mailbox_id</code> <em>(path, integer, required)</em></li>
+                <li><code>msg_id</code> <em>(path, string, required)</em></li>
+                <li><code>authorization</code> <em>(header, string, optional)</em></li>
+              </ul>
+            </div>
+            <div class="endpoint-details-block">
+              <span class="block-title">Responses:</span>
+              <ul class="endpoint-responses-list">
+                <li><strong>204</strong>: Successful Response</li>
+                <li><strong>422</strong>: Validation Error</li>
+              </ul>
+            </div>
+          </article>
+          <article class="endpoint-card method-post">
+            <div class="endpoint-line">
+              <span class="badge-method badge-post">POST</span>
+              <code class="endpoint-path">/v1/mailboxes/{mailbox_id}/messages/{msg_id}/read</code>
+              <span class="endpoint-auth-pill">🔒 Requires X-API-Key</span>
+            </div>
+            <div class="endpoint-summary"><strong>Mark Read</strong></div>
+            <div class="endpoint-description">
+              <p>Mark a message as read (both upstream and locally).</p>
+            </div>
+            <div class="endpoint-details-block">
+              <span class="block-title">Parameters:</span>
+              <ul class="endpoint-params-list">
+                <li><code>mailbox_id</code> <em>(path, integer, required)</em></li>
+                <li><code>msg_id</code> <em>(path, string, required)</em></li>
+                <li><code>authorization</code> <em>(header, string, optional)</em></li>
+              </ul>
+            </div>
+            <div class="endpoint-details-block">
+              <span class="block-title">Responses:</span>
+              <ul class="endpoint-responses-list">
+                <li><strong>200</strong>: Successful Response</li>
+                <li><strong>422</strong>: Validation Error</li>
+              </ul>
+            </div>
+          </article>
+          <article class="endpoint-card method-get">
+            <div class="endpoint-line">
+              <span class="badge-method badge-get">GET</span>
+              <code class="endpoint-path">/v1/mailboxes/{mailbox_id}/messages/{msg_id}/source</code>
+              <span class="endpoint-auth-pill">🔒 Requires X-API-Key</span>
+            </div>
+            <div class="endpoint-summary"><strong>Get Source</strong></div>
+            <div class="endpoint-description">
+              <p>Download the raw message source (.eml payload).</p>
+            </div>
+            <div class="endpoint-details-block">
+              <span class="block-title">Parameters:</span>
+              <ul class="endpoint-params-list">
+                <li><code>mailbox_id</code> <em>(path, integer, required)</em></li>
+                <li><code>msg_id</code> <em>(path, string, required)</em></li>
+                <li><code>authorization</code> <em>(header, string, optional)</em></li>
+              </ul>
+            </div>
+            <div class="endpoint-details-block">
+              <span class="block-title">Responses:</span>
+              <ul class="endpoint-responses-list">
+                <li><strong>200</strong>: Successful Response</li>
+                <li><strong>422</strong>: Validation Error</li>
+              </ul>
+            </div>
+          </article>
+        </section>
+        <section class="api-tag-section" id="tag-admin">
+          <h2 class="tag-title">Admin Endpoints (11)</h2>
+          <article class="endpoint-card method-get">
+            <div class="endpoint-line">
+              <span class="badge-method badge-get">GET</span>
+              <code class="endpoint-path">/v1/admin/stats</code>
+              <span class="endpoint-auth-pill">🔒 Requires X-API-Key</span>
+            </div>
+            <div class="endpoint-summary"><strong>Stats</strong></div>
+            <div class="endpoint-description">
+              <p>Dashboard stats: mailbox/message totals, provider split, 7-day trend, and a 10-day activity history
+                that also covers retention-deleted items.</p>
+            </div>
+            <div class="endpoint-details-block">
+              <span class="block-title">Parameters:</span>
+              <ul class="endpoint-params-list">
+                <li><code>authorization</code> <em>(header, string, optional)</em></li>
+              </ul>
+            </div>
+            <div class="endpoint-details-block">
+              <span class="block-title">Responses:</span>
+              <ul class="endpoint-responses-list">
+                <li><strong>200</strong>: Successful Response</li>
+                <li><strong>422</strong>: Validation Error</li>
+              </ul>
+            </div>
+          </article>
+          <article class="endpoint-card method-get">
+            <div class="endpoint-line">
+              <span class="badge-method badge-get">GET</span>
+              <code class="endpoint-path">/v1/admin/retention</code>
+              <span class="endpoint-auth-pill">🔒 Requires X-API-Key</span>
+            </div>
+            <div class="endpoint-summary"><strong>List Retention</strong></div>
+            <div class="endpoint-description">
+              <p>List active TTL retention rules. Root reads the global table.</p>
+            </div>
+            <div class="endpoint-details-block">
+              <span class="block-title">Parameters:</span>
+              <ul class="endpoint-params-list">
+                <li><code>authorization</code> <em>(header, string, optional)</em></li>
+              </ul>
+            </div>
+            <div class="endpoint-details-block">
+              <span class="block-title">Responses:</span>
+              <ul class="endpoint-responses-list">
+                <li><strong>200</strong>: Successful Response</li>
+                <li><strong>422</strong>: Validation Error</li>
+              </ul>
+            </div>
+          </article>
+          <article class="endpoint-card method-put">
+            <div class="endpoint-line">
+              <span class="badge-method badge-put">PUT</span>
+              <code class="endpoint-path">/v1/admin/retention/{provider}</code>
+              <span class="endpoint-auth-pill">🔒 Requires X-API-Key</span>
+            </div>
+            <div class="endpoint-summary"><strong>Set Retention</strong></div>
+            <div class="endpoint-description">
+              <p>Create or update TTL retention for a provider (at least one TTL required).</p>
+            </div>
+            <div class="endpoint-details-block">
+              <span class="block-title">Parameters:</span>
+              <ul class="endpoint-params-list">
+                <li><code>provider</code> <em>(path, string, required)</em></li>
+                <li><code>authorization</code> <em>(header, string, optional)</em></li>
+              </ul>
+            </div>
+            <div class="endpoint-details-block">
+              <span class="block-title">Responses:</span>
+              <ul class="endpoint-responses-list">
+                <li><strong>200</strong>: Successful Response</li>
+                <li><strong>422</strong>: Validation Error</li>
+              </ul>
+            </div>
+          </article>
+          <article class="endpoint-card method-delete">
+            <div class="endpoint-line">
+              <span class="badge-method badge-delete">DELETE</span>
+              <code class="endpoint-path">/v1/admin/retention/{provider}</code>
+              <span class="endpoint-auth-pill">🔒 Requires X-API-Key</span>
+            </div>
+            <div class="endpoint-summary"><strong>Remove Retention</strong></div>
+            <div class="endpoint-description">
+              <p>Disable retention rules for a provider.</p>
+            </div>
+            <div class="endpoint-details-block">
+              <span class="block-title">Parameters:</span>
+              <ul class="endpoint-params-list">
+                <li><code>provider</code> <em>(path, string, required)</em></li>
+                <li><code>authorization</code> <em>(header, string, optional)</em></li>
+              </ul>
+            </div>
+            <div class="endpoint-details-block">
+              <span class="block-title">Responses:</span>
+              <ul class="endpoint-responses-list">
+                <li><strong>204</strong>: Successful Response</li>
+                <li><strong>422</strong>: Validation Error</li>
+              </ul>
+            </div>
+          </article>
+          <article class="endpoint-card method-post">
+            <div class="endpoint-line">
+              <span class="badge-method badge-post">POST</span>
+              <code class="endpoint-path">/v1/admin/retention/run</code>
+              <span class="endpoint-auth-pill">🔒 Requires X-API-Key</span>
+            </div>
+            <div class="endpoint-summary"><strong>Run Retention Sweep</strong></div>
+            <div class="endpoint-description">
+              <p>Run the retention cleanup sweep right now. A key sweeps only its mailboxes.<br /><br />Pass
+                `force_maintenance=true` to force full database maintenance (VACUUM, REINDEX, ANALYZE, WAL checkpoints,
+                quick_check) immediately regardless of the configured throttling interval.</p>
+            </div>
+            <div class="endpoint-details-block">
+              <span class="block-title">Parameters:</span>
+              <ul class="endpoint-params-list">
+                <li><code>force_maintenance</code> <em>(query, boolean, optional)</em></li>
+                <li><code>authorization</code> <em>(header, string, optional)</em></li>
+              </ul>
+            </div>
+            <div class="endpoint-details-block">
+              <span class="block-title">Responses:</span>
+              <ul class="endpoint-responses-list">
+                <li><strong>200</strong>: Successful Response</li>
+                <li><strong>422</strong>: Validation Error</li>
+              </ul>
+            </div>
+          </article>
+          <article class="endpoint-card method-get">
+            <div class="endpoint-line">
+              <span class="badge-method badge-get">GET</span>
+              <code class="endpoint-path">/v1/admin/domain-cache</code>
+              <span class="endpoint-auth-pill">🔒 Requires X-API-Key</span>
+            </div>
+            <div class="endpoint-summary"><strong>Get Domain Cache</strong></div>
+            <div class="endpoint-description">
+              <p>Domain cache settings and per-provider state.</p>
+            </div>
+            <div class="endpoint-details-block">
+              <span class="block-title">Parameters:</span>
+              <ul class="endpoint-params-list">
+                <li><code>authorization</code> <em>(header, string, optional)</em></li>
+              </ul>
+            </div>
+            <div class="endpoint-details-block">
+              <span class="block-title">Responses:</span>
+              <ul class="endpoint-responses-list">
+                <li><strong>200</strong>: Successful Response</li>
+                <li><strong>422</strong>: Validation Error</li>
+              </ul>
+            </div>
+          </article>
+          <article class="endpoint-card method-put">
+            <div class="endpoint-line">
+              <span class="badge-method badge-put">PUT</span>
+              <code class="endpoint-path">/v1/admin/domain-cache</code>
+              <span class="endpoint-auth-pill">🔒 Requires X-API-Key</span>
+            </div>
+            <div class="endpoint-summary"><strong>Set Domain Cache</strong></div>
+            <div class="endpoint-description">
+              <p>Update domain cache settings (enabled / interval).</p>
+            </div>
+            <div class="endpoint-details-block">
+              <span class="block-title">Parameters:</span>
+              <ul class="endpoint-params-list">
+                <li><code>authorization</code> <em>(header, string, optional)</em></li>
+              </ul>
+            </div>
+            <div class="endpoint-details-block">
+              <span class="block-title">Responses:</span>
+              <ul class="endpoint-responses-list">
+                <li><strong>200</strong>: Successful Response</li>
+                <li><strong>422</strong>: Validation Error</li>
+              </ul>
+            </div>
+          </article>
+          <article class="endpoint-card method-post">
+            <div class="endpoint-line">
+              <span class="badge-method badge-post">POST</span>
+              <code class="endpoint-path">/v1/admin/domain-cache/run</code>
+              <span class="endpoint-auth-pill">🔒 Requires X-API-Key</span>
+            </div>
+            <div class="endpoint-summary"><strong>Run Domain Cache</strong></div>
+            <div class="endpoint-description">
+              <p>Force a domain cache refresh; 502 with a failed list when a provider errors.</p>
+            </div>
+            <div class="endpoint-details-block">
+              <span class="block-title">Parameters:</span>
+              <ul class="endpoint-params-list">
+                <li><code>authorization</code> <em>(header, string, optional)</em></li>
+              </ul>
+            </div>
+            <div class="endpoint-details-block">
+              <span class="block-title">Responses:</span>
+              <ul class="endpoint-responses-list">
+                <li><strong>200</strong>: Successful Response</li>
+                <li><strong>422</strong>: Validation Error</li>
+              </ul>
+            </div>
+          </article>
+          <article class="endpoint-card method-get">
+            <div class="endpoint-line">
+              <span class="badge-method badge-get">GET</span>
+              <code class="endpoint-path">/v1/admin/gmail/creds</code>
+              <span class="endpoint-auth-pill">🔒 Requires X-API-Key</span>
+            </div>
+            <div class="endpoint-summary"><strong>Get Gmail Creds</strong></div>
+            <div class="endpoint-description">
+              <p>Current Gmail OAuth credentials (env or the encrypted store).</p>
+            </div>
+            <div class="endpoint-details-block">
+              <span class="block-title">Parameters:</span>
+              <ul class="endpoint-params-list">
+                <li><code>authorization</code> <em>(header, string, optional)</em></li>
+              </ul>
+            </div>
+            <div class="endpoint-details-block">
+              <span class="block-title">Responses:</span>
+              <ul class="endpoint-responses-list">
+                <li><strong>200</strong>: Successful Response</li>
+                <li><strong>422</strong>: Validation Error</li>
+              </ul>
+            </div>
+          </article>
+          <article class="endpoint-card method-put">
+            <div class="endpoint-line">
+              <span class="badge-method badge-put">PUT</span>
+              <code class="endpoint-path">/v1/admin/gmail/creds</code>
+              <span class="endpoint-auth-pill">🔒 Requires X-API-Key</span>
+            </div>
+            <div class="endpoint-summary"><strong>Save Gmail Creds</strong></div>
+            <div class="endpoint-description">
+              <p>Save Gmail OAuth credentials to the encrypted store.</p>
+            </div>
+            <div class="endpoint-details-block">
+              <span class="block-title">Parameters:</span>
+              <ul class="endpoint-params-list">
+                <li><code>authorization</code> <em>(header, string, optional)</em></li>
+              </ul>
+            </div>
+            <div class="endpoint-details-block">
+              <span class="block-title">Responses:</span>
+              <ul class="endpoint-responses-list">
+                <li><strong>200</strong>: Successful Response</li>
+                <li><strong>422</strong>: Validation Error</li>
+              </ul>
+            </div>
+          </article>
+          <article class="endpoint-card method-delete">
+            <div class="endpoint-line">
+              <span class="badge-method badge-delete">DELETE</span>
+              <code class="endpoint-path">/v1/admin/gmail/creds</code>
+              <span class="endpoint-auth-pill">🔒 Requires X-API-Key</span>
+            </div>
+            <div class="endpoint-summary"><strong>Clear Gmail Creds</strong></div>
+            <div class="endpoint-description">
+              <p>Clear stored Gmail OAuth credentials.</p>
+            </div>
+            <div class="endpoint-details-block">
+              <span class="block-title">Parameters:</span>
+              <ul class="endpoint-params-list">
+                <li><code>authorization</code> <em>(header, string, optional)</em></li>
+              </ul>
+            </div>
+            <div class="endpoint-details-block">
+              <span class="block-title">Responses:</span>
+              <ul class="endpoint-responses-list">
+                <li><strong>204</strong>: Successful Response</li>
+                <li><strong>422</strong>: Validation Error</li>
+              </ul>
+            </div>
+          </article>
+        </section>
+        <section class="api-tag-section" id="tag-keys">
+          <h2 class="tag-title">Keys Endpoints (9)</h2>
+          <article class="endpoint-card method-get">
+            <div class="endpoint-line">
+              <span class="badge-method badge-get">GET</span>
+              <code class="endpoint-path">/v1/admin/keys/me</code>
+              <span class="endpoint-auth-pill">🔒 Requires X-API-Key</span>
+            </div>
+            <div class="endpoint-summary"><strong>Current principal</strong></div>
+            <div class="endpoint-description">
+              <p>Any authenticated principal. Root is {is_root: true}; an issued key gets its own row without a secret.
+              </p>
+            </div>
+            <div class="endpoint-details-block">
+              <span class="block-title">Parameters:</span>
+              <ul class="endpoint-params-list">
+                <li><code>authorization</code> <em>(header, string, optional)</em></li>
+              </ul>
+            </div>
+            <div class="endpoint-details-block">
+              <span class="block-title">Responses:</span>
+              <ul class="endpoint-responses-list">
+                <li><strong>200</strong>: Successful Response</li>
+                <li><strong>422</strong>: Validation Error</li>
+              </ul>
+            </div>
+          </article>
+          <article class="endpoint-card method-post">
+            <div class="endpoint-line">
+              <span class="badge-method badge-post">POST</span>
+              <code class="endpoint-path">/v1/admin/keys</code>
+              <span class="endpoint-auth-pill">🔒 Requires X-API-Key</span>
+            </div>
+            <div class="endpoint-summary"><strong>Create key</strong></div>
+            <div class="endpoint-description">
+              <p>Root only. Returns the new row plus the secret once.</p>
+            </div>
+            <div class="endpoint-details-block">
+              <span class="block-title">Parameters:</span>
+              <ul class="endpoint-params-list">
+                <li><code>authorization</code> <em>(header, string, optional)</em></li>
+              </ul>
+            </div>
+            <div class="endpoint-details-block">
+              <span class="block-title">Responses:</span>
+              <ul class="endpoint-responses-list">
+                <li><strong>200</strong>: Successful Response</li>
+                <li><strong>422</strong>: Validation Error</li>
+              </ul>
+            </div>
+          </article>
+          <article class="endpoint-card method-get">
+            <div class="endpoint-line">
+              <span class="badge-method badge-get">GET</span>
+              <code class="endpoint-path">/v1/admin/keys</code>
+              <span class="endpoint-auth-pill">🔒 Requires X-API-Key</span>
+            </div>
+            <div class="endpoint-summary"><strong>List keys</strong></div>
+            <div class="endpoint-description">
+              <p>Root only. Lists every key without secret material.</p>
+            </div>
+            <div class="endpoint-details-block">
+              <span class="block-title">Parameters:</span>
+              <ul class="endpoint-params-list">
+                <li><code>authorization</code> <em>(header, string, optional)</em></li>
+              </ul>
+            </div>
+            <div class="endpoint-details-block">
+              <span class="block-title">Responses:</span>
+              <ul class="endpoint-responses-list">
+                <li><strong>200</strong>: Successful Response</li>
+                <li><strong>422</strong>: Validation Error</li>
+              </ul>
+            </div>
+          </article>
+          <article class="endpoint-card method-get">
+            <div class="endpoint-line">
+              <span class="badge-method badge-get">GET</span>
+              <code class="endpoint-path">/v1/admin/keys/{key_id}</code>
+              <span class="endpoint-auth-pill">🔒 Requires X-API-Key</span>
+            </div>
+            <div class="endpoint-summary"><strong>Get key</strong></div>
+            <div class="endpoint-description">
+              <p>Root only. Returns one key without secret material.</p>
+            </div>
+            <div class="endpoint-details-block">
+              <span class="block-title">Parameters:</span>
+              <ul class="endpoint-params-list">
+                <li><code>key_id</code> <em>(path, integer, required)</em></li>
+                <li><code>authorization</code> <em>(header, string, optional)</em></li>
+              </ul>
+            </div>
+            <div class="endpoint-details-block">
+              <span class="block-title">Responses:</span>
+              <ul class="endpoint-responses-list">
+                <li><strong>200</strong>: Successful Response</li>
+                <li><strong>422</strong>: Validation Error</li>
+              </ul>
+            </div>
+          </article>
+          <article class="endpoint-card method-patch">
+            <div class="endpoint-line">
+              <span class="badge-method badge-patch">PATCH</span>
+              <code class="endpoint-path">/v1/admin/keys/{key_id}</code>
+              <span class="endpoint-auth-pill">🔒 Requires X-API-Key</span>
+            </div>
+            <div class="endpoint-summary"><strong>Update key</strong></div>
+            <div class="endpoint-description">
+              <p>Root only. Updates name, expires_at, and scope. Does not change the secret.</p>
+            </div>
+            <div class="endpoint-details-block">
+              <span class="block-title">Parameters:</span>
+              <ul class="endpoint-params-list">
+                <li><code>key_id</code> <em>(path, integer, required)</em></li>
+                <li><code>authorization</code> <em>(header, string, optional)</em></li>
+              </ul>
+            </div>
+            <div class="endpoint-details-block">
+              <span class="block-title">Responses:</span>
+              <ul class="endpoint-responses-list">
+                <li><strong>200</strong>: Successful Response</li>
+                <li><strong>422</strong>: Validation Error</li>
+              </ul>
+            </div>
+          </article>
+          <article class="endpoint-card method-delete">
+            <div class="endpoint-line">
+              <span class="badge-method badge-delete">DELETE</span>
+              <code class="endpoint-path">/v1/admin/keys/{key_id}</code>
+              <span class="endpoint-auth-pill">🔒 Requires X-API-Key</span>
+            </div>
+            <div class="endpoint-summary"><strong>Delete key</strong></div>
+            <div class="endpoint-description">
+              <p>Root only. 204, or 409 when the key still owns a live mailbox or gmail account.</p>
+            </div>
+            <div class="endpoint-details-block">
+              <span class="block-title">Parameters:</span>
+              <ul class="endpoint-params-list">
+                <li><code>key_id</code> <em>(path, integer, required)</em></li>
+                <li><code>authorization</code> <em>(header, string, optional)</em></li>
+              </ul>
+            </div>
+            <div class="endpoint-details-block">
+              <span class="block-title">Responses:</span>
+              <ul class="endpoint-responses-list">
+                <li><strong>204</strong>: Successful Response</li>
+                <li><strong>422</strong>: Validation Error</li>
+              </ul>
+            </div>
+          </article>
+          <article class="endpoint-card method-get">
+            <div class="endpoint-line">
+              <span class="badge-method badge-get">GET</span>
+              <code class="endpoint-path">/v1/admin/keys/{key_id}/secret</code>
+              <span class="endpoint-auth-pill">🔒 Requires X-API-Key</span>
+            </div>
+            <div class="endpoint-summary"><strong>Reveal secret</strong></div>
+            <div class="endpoint-description">
+              <p>Root only. Decrypts the stored secret. Repeat calls return the same plaintext.</p>
+            </div>
+            <div class="endpoint-details-block">
+              <span class="block-title">Parameters:</span>
+              <ul class="endpoint-params-list">
+                <li><code>key_id</code> <em>(path, integer, required)</em></li>
+                <li><code>authorization</code> <em>(header, string, optional)</em></li>
+              </ul>
+            </div>
+            <div class="endpoint-details-block">
+              <span class="block-title">Responses:</span>
+              <ul class="endpoint-responses-list">
+                <li><strong>200</strong>: Successful Response</li>
+                <li><strong>422</strong>: Validation Error</li>
+              </ul>
+            </div>
+          </article>
+          <article class="endpoint-card method-put">
+            <div class="endpoint-line">
+              <span class="badge-method badge-put">PUT</span>
+              <code class="endpoint-path">/v1/admin/keys/{key_id}/retention</code>
+              <span class="endpoint-auth-pill">🔒 Requires X-API-Key</span>
+            </div>
+            <div class="endpoint-summary"><strong>Replace retention</strong></div>
+            <div class="endpoint-description">
+              <p>Root only. Replaces that key&#x27;s key_retention rows.</p>
+            </div>
+            <div class="endpoint-details-block">
+              <span class="block-title">Parameters:</span>
+              <ul class="endpoint-params-list">
+                <li><code>key_id</code> <em>(path, integer, required)</em></li>
+                <li><code>authorization</code> <em>(header, string, optional)</em></li>
+              </ul>
+            </div>
+            <div class="endpoint-details-block">
+              <span class="block-title">Responses:</span>
+              <ul class="endpoint-responses-list">
+                <li><strong>200</strong>: Successful Response</li>
+                <li><strong>422</strong>: Validation Error</li>
+              </ul>
+            </div>
+          </article>
+          <article class="endpoint-card method-post">
+            <div class="endpoint-line">
+              <span class="badge-method badge-post">POST</span>
+              <code class="endpoint-path">/v1/admin/keys/{key_id}/rotate</code>
+              <span class="endpoint-auth-pill">🔒 Requires X-API-Key</span>
+            </div>
+            <div class="endpoint-summary"><strong>Rotate secret</strong></div>
+            <div class="endpoint-description">
+              <p>Root only. Returns a new secret once. The key id does not change.</p>
+            </div>
+            <div class="endpoint-details-block">
+              <span class="block-title">Parameters:</span>
+              <ul class="endpoint-params-list">
+                <li><code>key_id</code> <em>(path, integer, required)</em></li>
+                <li><code>authorization</code> <em>(header, string, optional)</em></li>
+              </ul>
+            </div>
+            <div class="endpoint-details-block">
+              <span class="block-title">Responses:</span>
+              <ul class="endpoint-responses-list">
+                <li><strong>200</strong>: Successful Response</li>
+                <li><strong>422</strong>: Validation Error</li>
+              </ul>
+            </div>
+          </article>
+        </section>
       </div>
-      <div class="endpoint-summary"><strong>Health</strong></div>
-      <div class="endpoint-description"><p>Brief liveness + degradation view for monitoring.<br/><br/>`status` mirrors the previous shape; `domain_cache` reports per-provider last refresh time, cached domain count and the latest refresh error.</p></div>
-      <div class="endpoint-details-block">
-        <span class="block-title">Responses:</span>
-        <ul class="endpoint-responses-list">
-          <li><strong>200</strong>: Successful Response</li>
-        </ul>
-      </div>
-    </article>
-    <article class="endpoint-card method-get">
-      <div class="endpoint-line">
-        <span class="badge-method badge-get">GET</span>
-        <code class="endpoint-path">/v1/config</code>
-        <span class="endpoint-auth-pill">🔓 Public / No Auth</span>
-      </div>
-      <div class="endpoint-summary"><strong>Config</strong></div>
-      <div class="endpoint-description"><p>Non-secret server facts for the dashboard and the standalone client.<br/><br/>This router is auth-free: `client_version` lets a pip-installed client detect it should run `python -m client update`.</p></div>
-      <div class="endpoint-details-block">
-        <span class="block-title">Responses:</span>
-        <ul class="endpoint-responses-list">
-          <li><strong>200</strong>: Successful Response</li>
-        </ul>
-      </div>
-    </article>
-    <article class="endpoint-card method-get">
-      <div class="endpoint-line">
-        <span class="badge-method badge-get">GET</span>
-        <code class="endpoint-path">/v1/updates/check</code>
-        <span class="endpoint-auth-pill">🔓 Public / No Auth</span>
-      </div>
-      <div class="endpoint-summary"><strong>Check Updates</strong></div>
-      <div class="endpoint-description"><p>Check if a new version is available on GitHub.</p></div>
-      <div class="endpoint-details-block">
-        <span class="block-title">Responses:</span>
-        <ul class="endpoint-responses-list">
-          <li><strong>200</strong>: Successful Response</li>
-        </ul>
-      </div>
-    </article>
-  </section>
-  <section class="api-tag-section" id="tag-gmail">
-    <h2 class="tag-title">Gmail Endpoints (8)</h2>
-    <article class="endpoint-card method-get">
-      <div class="endpoint-line">
-        <span class="badge-method badge-get">GET</span>
-        <code class="endpoint-path">/v1/gmail/oauth/callback</code>
-        <span class="endpoint-auth-pill">🔓 Public / No Auth</span>
-      </div>
-      <div class="endpoint-summary"><strong>Oauth Callback</strong></div>
-      <div class="endpoint-description"><p>OAuth redirect target (browser flow). Not for direct use.</p></div>
-      <div class="endpoint-details-block">
-        <span class="block-title">Parameters:</span>
-        <ul class="endpoint-params-list">
-          <li><code>code</code> <em>(query, string, optional)</em></li>
-          <li><code>state</code> <em>(query, string, optional)</em></li>
-        </ul>
-      </div>
-      <div class="endpoint-details-block">
-        <span class="block-title">Responses:</span>
-        <ul class="endpoint-responses-list">
-          <li><strong>200</strong>: Successful Response</li>
-          <li><strong>422</strong>: Validation Error</li>
-        </ul>
-      </div>
-    </article>
-    <article class="endpoint-card method-post">
-      <div class="endpoint-line">
-        <span class="badge-method badge-post">POST</span>
-        <code class="endpoint-path">/v1/gmail/oauth/callback</code>
-        <span class="endpoint-auth-pill">🔒 Requires X-API-Key</span>
-      </div>
-      <div class="endpoint-summary"><strong>Oauth Callback Post</strong></div>
-      <div class="endpoint-description"><p>Manually complete OAuth when browser callback is unreachable (e.g. behind proxy).</p></div>
-      <div class="endpoint-details-block">
-        <span class="block-title">Parameters:</span>
-        <ul class="endpoint-params-list">
-          <li><code>authorization</code> <em>(header, string, optional)</em></li>
-        </ul>
-      </div>
-      <div class="endpoint-details-block">
-        <span class="block-title">Responses:</span>
-        <ul class="endpoint-responses-list">
-          <li><strong>200</strong>: Successful Response</li>
-          <li><strong>422</strong>: Validation Error</li>
-        </ul>
-      </div>
-    </article>
-    <article class="endpoint-card method-post">
-      <div class="endpoint-line">
-        <span class="badge-method badge-post">POST</span>
-        <code class="endpoint-path">/v1/gmail/oauth/start</code>
-        <span class="endpoint-auth-pill">🔒 Requires X-API-Key</span>
-      </div>
-      <div class="endpoint-summary"><strong>Oauth Start</strong></div>
-      <div class="endpoint-details-block">
-        <span class="block-title">Parameters:</span>
-        <ul class="endpoint-params-list">
-          <li><code>authorization</code> <em>(header, string, optional)</em></li>
-        </ul>
-      </div>
-      <div class="endpoint-details-block">
-        <span class="block-title">Responses:</span>
-        <ul class="endpoint-responses-list">
-          <li><strong>200</strong>: Successful Response</li>
-          <li><strong>422</strong>: Validation Error</li>
-        </ul>
-      </div>
-    </article>
-    <article class="endpoint-card method-post">
-      <div class="endpoint-line">
-        <span class="badge-method badge-post">POST</span>
-        <code class="endpoint-path">/v1/gmail/oauth/exchange</code>
-        <span class="endpoint-auth-pill">🔒 Requires X-API-Key</span>
-      </div>
-      <div class="endpoint-summary"><strong>Oauth Callback Post</strong></div>
-      <div class="endpoint-description"><p>Manually complete OAuth when browser callback is unreachable (e.g. behind proxy).</p></div>
-      <div class="endpoint-details-block">
-        <span class="block-title">Parameters:</span>
-        <ul class="endpoint-params-list">
-          <li><code>authorization</code> <em>(header, string, optional)</em></li>
-        </ul>
-      </div>
-      <div class="endpoint-details-block">
-        <span class="block-title">Responses:</span>
-        <ul class="endpoint-responses-list">
-          <li><strong>200</strong>: Successful Response</li>
-          <li><strong>422</strong>: Validation Error</li>
-        </ul>
-      </div>
-    </article>
-    <article class="endpoint-card method-post">
-      <div class="endpoint-line">
-        <span class="badge-method badge-post">POST</span>
-        <code class="endpoint-path">/v1/gmail/accounts/import</code>
-        <span class="endpoint-auth-pill">🔒 Requires X-API-Key</span>
-      </div>
-      <div class="endpoint-summary"><strong>Import Account</strong></div>
-      <div class="endpoint-details-block">
-        <span class="block-title">Parameters:</span>
-        <ul class="endpoint-params-list">
-          <li><code>authorization</code> <em>(header, string, optional)</em></li>
-        </ul>
-      </div>
-      <div class="endpoint-details-block">
-        <span class="block-title">Responses:</span>
-        <ul class="endpoint-responses-list">
-          <li><strong>200</strong>: Successful Response</li>
-          <li><strong>422</strong>: Validation Error</li>
-        </ul>
-      </div>
-    </article>
-    <article class="endpoint-card method-get">
-      <div class="endpoint-line">
-        <span class="badge-method badge-get">GET</span>
-        <code class="endpoint-path">/v1/gmail/accounts</code>
-        <span class="endpoint-auth-pill">🔒 Requires X-API-Key</span>
-      </div>
-      <div class="endpoint-summary"><strong>List Accounts</strong></div>
-      <div class="endpoint-description"><p>List connected Gmail accounts (expired ones included for reconnection).</p></div>
-      <div class="endpoint-details-block">
-        <span class="block-title">Parameters:</span>
-        <ul class="endpoint-params-list">
-          <li><code>authorization</code> <em>(header, string, optional)</em></li>
-        </ul>
-      </div>
-      <div class="endpoint-details-block">
-        <span class="block-title">Responses:</span>
-        <ul class="endpoint-responses-list">
-          <li><strong>200</strong>: Successful Response</li>
-          <li><strong>422</strong>: Validation Error</li>
-        </ul>
-      </div>
-    </article>
-    <article class="endpoint-card method-delete">
-      <div class="endpoint-line">
-        <span class="badge-method badge-delete">DELETE</span>
-        <code class="endpoint-path">/v1/gmail/accounts/{parent_id}</code>
-        <span class="endpoint-auth-pill">🔒 Requires X-API-Key</span>
-      </div>
-      <div class="endpoint-summary"><strong>Delete Account</strong></div>
-      <div class="endpoint-description"><p>Disconnect a linked Gmail account the caller owns.</p></div>
-      <div class="endpoint-details-block">
-        <span class="block-title">Parameters:</span>
-        <ul class="endpoint-params-list">
-          <li><code>parent_id</code> <em>(path, integer, required)</em></li>
-          <li><code>authorization</code> <em>(header, string, optional)</em></li>
-        </ul>
-      </div>
-      <div class="endpoint-details-block">
-        <span class="block-title">Responses:</span>
-        <ul class="endpoint-responses-list">
-          <li><strong>204</strong>: Successful Response</li>
-          <li><strong>422</strong>: Validation Error</li>
-        </ul>
-      </div>
-    </article>
-    <article class="endpoint-card method-post">
-      <div class="endpoint-line">
-        <span class="badge-method badge-post">POST</span>
-        <code class="endpoint-path">/v1/gmail/accounts/{parent_id}/sync</code>
-        <span class="endpoint-auth-pill">🔒 Requires X-API-Key</span>
-      </div>
-      <div class="endpoint-summary"><strong>Sync Account</strong></div>
-      <div class="endpoint-description"><p>Refresh profile/token state for a linked Gmail account the caller owns.</p></div>
-      <div class="endpoint-details-block">
-        <span class="block-title">Parameters:</span>
-        <ul class="endpoint-params-list">
-          <li><code>parent_id</code> <em>(path, integer, required)</em></li>
-          <li><code>authorization</code> <em>(header, string, optional)</em></li>
-        </ul>
-      </div>
-      <div class="endpoint-details-block">
-        <span class="block-title">Responses:</span>
-        <ul class="endpoint-responses-list">
-          <li><strong>200</strong>: Successful Response</li>
-          <li><strong>422</strong>: Validation Error</li>
-        </ul>
-      </div>
-    </article>
-  </section>
-  <section class="api-tag-section" id="tag-providers">
-    <h2 class="tag-title">Providers Endpoints (2)</h2>
-    <article class="endpoint-card method-get">
-      <div class="endpoint-line">
-        <span class="badge-method badge-get">GET</span>
-        <code class="endpoint-path">/v1/providers</code>
-        <span class="endpoint-auth-pill">🔒 Requires X-API-Key</span>
-      </div>
-      <div class="endpoint-summary"><strong>List Providers</strong></div>
-      <div class="endpoint-description"><p>List enabled providers and their kind (api/token or domain-based).</p></div>
-      <div class="endpoint-details-block">
-        <span class="block-title">Parameters:</span>
-        <ul class="endpoint-params-list">
-          <li><code>authorization</code> <em>(header, string, optional)</em></li>
-        </ul>
-      </div>
-      <div class="endpoint-details-block">
-        <span class="block-title">Responses:</span>
-        <ul class="endpoint-responses-list">
-          <li><strong>200</strong>: Successful Response</li>
-          <li><strong>422</strong>: Validation Error</li>
-        </ul>
-      </div>
-    </article>
-    <article class="endpoint-card method-get">
-      <div class="endpoint-line">
-        <span class="badge-method badge-get">GET</span>
-        <code class="endpoint-path">/v1/targets</code>
-        <span class="endpoint-auth-pill">🔒 Requires X-API-Key</span>
-      </div>
-      <div class="endpoint-summary"><strong>List Targets</strong></div>
-      <div class="endpoint-description"><p>List usable posting targets, optionally filtered by provider slug.</p></div>
-      <div class="endpoint-details-block">
-        <span class="block-title">Parameters:</span>
-        <ul class="endpoint-params-list">
-          <li><code>provider</code> <em>(query, string, optional)</em></li>
-          <li><code>authorization</code> <em>(header, string, optional)</em></li>
-        </ul>
-      </div>
-      <div class="endpoint-details-block">
-        <span class="block-title">Responses:</span>
-        <ul class="endpoint-responses-list">
-          <li><strong>200</strong>: Successful Response</li>
-          <li><strong>422</strong>: Validation Error</li>
-        </ul>
-      </div>
-    </article>
-  </section>
-  <section class="api-tag-section" id="tag-mailboxes">
-    <h2 class="tag-title">Mailboxes Endpoints (5)</h2>
-    <article class="endpoint-card method-post">
-      <div class="endpoint-line">
-        <span class="badge-method badge-post">POST</span>
-        <code class="endpoint-path">/v1/mailboxes</code>
-        <span class="endpoint-auth-pill">🔒 Requires X-API-Key</span>
-      </div>
-      <div class="endpoint-summary"><strong>Create</strong></div>
-      <div class="endpoint-description"><p>Create a disposable mailbox on a provider (optionally with a specific address/password).</p></div>
-      <div class="endpoint-details-block">
-        <span class="block-title">Parameters:</span>
-        <ul class="endpoint-params-list">
-          <li><code>authorization</code> <em>(header, string, optional)</em></li>
-        </ul>
-      </div>
-      <div class="endpoint-details-block">
-        <span class="block-title">Responses:</span>
-        <ul class="endpoint-responses-list">
-          <li><strong>200</strong>: Successful Response</li>
-          <li><strong>422</strong>: Validation Error</li>
-        </ul>
-      </div>
-    </article>
-    <article class="endpoint-card method-get">
-      <div class="endpoint-line">
-        <span class="badge-method badge-get">GET</span>
-        <code class="endpoint-path">/v1/mailboxes</code>
-        <span class="endpoint-auth-pill">🔒 Requires X-API-Key</span>
-      </div>
-      <div class="endpoint-summary"><strong>List Mailboxes</strong></div>
-      <div class="endpoint-description"><p>List mailboxes with optional provider/status filtering, address search and pagination.</p></div>
-      <div class="endpoint-details-block">
-        <span class="block-title">Parameters:</span>
-        <ul class="endpoint-params-list">
-          <li><code>provider</code> <em>(query, string, optional)</em></li>
-          <li><code>active</code> <em>(query, boolean, optional)</em></li>
-          <li><code>q</code> <em>(query, string, optional)</em> — Substring filter on the full address</li>
-          <li><code>limit</code> <em>(query, string, optional)</em> — Max rows to return (default 500)</li>
-          <li><code>offset</code> <em>(query, string, optional)</em> — Row offset</li>
-          <li><code>authorization</code> <em>(header, string, optional)</em></li>
-        </ul>
-      </div>
-      <div class="endpoint-details-block">
-        <span class="block-title">Responses:</span>
-        <ul class="endpoint-responses-list">
-          <li><strong>200</strong>: Successful Response</li>
-          <li><strong>422</strong>: Validation Error</li>
-        </ul>
-      </div>
-    </article>
-    <article class="endpoint-card method-get">
-      <div class="endpoint-line">
-        <span class="badge-method badge-get">GET</span>
-        <code class="endpoint-path">/v1/mailboxes/by-address/{email}</code>
-        <span class="endpoint-auth-pill">🔒 Requires X-API-Key</span>
-      </div>
-      <div class="endpoint-summary"><strong>By Address</strong></div>
-      <div class="endpoint-description"><p>Look up a mailbox by its full email address.</p></div>
-      <div class="endpoint-details-block">
-        <span class="block-title">Parameters:</span>
-        <ul class="endpoint-params-list">
-          <li><code>email</code> <em>(path, string, required)</em></li>
-          <li><code>authorization</code> <em>(header, string, optional)</em></li>
-        </ul>
-      </div>
-      <div class="endpoint-details-block">
-        <span class="block-title">Responses:</span>
-        <ul class="endpoint-responses-list">
-          <li><strong>200</strong>: Successful Response</li>
-          <li><strong>422</strong>: Validation Error</li>
-        </ul>
-      </div>
-    </article>
-    <article class="endpoint-card method-get">
-      <div class="endpoint-line">
-        <span class="badge-method badge-get">GET</span>
-        <code class="endpoint-path">/v1/mailboxes/{mailbox_id}</code>
-        <span class="endpoint-auth-pill">🔒 Requires X-API-Key</span>
-      </div>
-      <div class="endpoint-summary"><strong>Get One</strong></div>
-      <div class="endpoint-description"><p>Fetch a single mailbox by id.</p></div>
-      <div class="endpoint-details-block">
-        <span class="block-title">Parameters:</span>
-        <ul class="endpoint-params-list">
-          <li><code>mailbox_id</code> <em>(path, integer, required)</em></li>
-          <li><code>authorization</code> <em>(header, string, optional)</em></li>
-        </ul>
-      </div>
-      <div class="endpoint-details-block">
-        <span class="block-title">Responses:</span>
-        <ul class="endpoint-responses-list">
-          <li><strong>200</strong>: Successful Response</li>
-          <li><strong>422</strong>: Validation Error</li>
-        </ul>
-      </div>
-    </article>
-    <article class="endpoint-card method-delete">
-      <div class="endpoint-line">
-        <span class="badge-method badge-delete">DELETE</span>
-        <code class="endpoint-path">/v1/mailboxes/{mailbox_id}</code>
-        <span class="endpoint-auth-pill">🔒 Requires X-API-Key</span>
-      </div>
-      <div class="endpoint-summary"><strong>Delete One</strong></div>
-      <div class="endpoint-description"><p>Deactivate and mark a mailbox deleted (also deletes it upstream).</p></div>
-      <div class="endpoint-details-block">
-        <span class="block-title">Parameters:</span>
-        <ul class="endpoint-params-list">
-          <li><code>mailbox_id</code> <em>(path, integer, required)</em></li>
-          <li><code>authorization</code> <em>(header, string, optional)</em></li>
-        </ul>
-      </div>
-      <div class="endpoint-details-block">
-        <span class="block-title">Responses:</span>
-        <ul class="endpoint-responses-list">
-          <li><strong>204</strong>: Successful Response</li>
-          <li><strong>422</strong>: Validation Error</li>
-        </ul>
-      </div>
-    </article>
-  </section>
-  <section class="api-tag-section" id="tag-messages">
-    <h2 class="tag-title">Messages Endpoints (5)</h2>
-    <article class="endpoint-card method-get">
-      <div class="endpoint-line">
-        <span class="badge-method badge-get">GET</span>
-        <code class="endpoint-path">/v1/mailboxes/{mailbox_id}/messages</code>
-        <span class="endpoint-auth-pill">🔒 Requires X-API-Key</span>
-      </div>
-      <div class="endpoint-summary"><strong>List Messages</strong></div>
-      <div class="endpoint-description"><p>List a mailbox&#x27;s messages (fetches one page from the provider and caches it).</p></div>
-      <div class="endpoint-details-block">
-        <span class="block-title">Parameters:</span>
-        <ul class="endpoint-params-list">
-          <li><code>mailbox_id</code> <em>(path, integer, required)</em></li>
-          <li><code>page</code> <em>(query, integer, optional)</em></li>
-          <li><code>authorization</code> <em>(header, string, optional)</em></li>
-        </ul>
-      </div>
-      <div class="endpoint-details-block">
-        <span class="block-title">Responses:</span>
-        <ul class="endpoint-responses-list">
-          <li><strong>200</strong>: Successful Response</li>
-          <li><strong>422</strong>: Validation Error</li>
-        </ul>
-      </div>
-    </article>
-    <article class="endpoint-card method-get">
-      <div class="endpoint-line">
-        <span class="badge-method badge-get">GET</span>
-        <code class="endpoint-path">/v1/mailboxes/{mailbox_id}/messages/{msg_id}</code>
-        <span class="endpoint-auth-pill">🔒 Requires X-API-Key</span>
-      </div>
-      <div class="endpoint-summary"><strong>Get Message</strong></div>
-      <div class="endpoint-description"><p>Fetch a single message with its full text and HTML bodies.</p></div>
-      <div class="endpoint-details-block">
-        <span class="block-title">Parameters:</span>
-        <ul class="endpoint-params-list">
-          <li><code>mailbox_id</code> <em>(path, integer, required)</em></li>
-          <li><code>msg_id</code> <em>(path, string, required)</em></li>
-          <li><code>authorization</code> <em>(header, string, optional)</em></li>
-        </ul>
-      </div>
-      <div class="endpoint-details-block">
-        <span class="block-title">Responses:</span>
-        <ul class="endpoint-responses-list">
-          <li><strong>200</strong>: Successful Response</li>
-          <li><strong>422</strong>: Validation Error</li>
-        </ul>
-      </div>
-    </article>
-    <article class="endpoint-card method-delete">
-      <div class="endpoint-line">
-        <span class="badge-method badge-delete">DELETE</span>
-        <code class="endpoint-path">/v1/mailboxes/{mailbox_id}/messages/{msg_id}</code>
-        <span class="endpoint-auth-pill">🔒 Requires X-API-Key</span>
-      </div>
-      <div class="endpoint-summary"><strong>Delete Message</strong></div>
-      <div class="endpoint-description"><p>Delete a message (upstream and local cache).</p></div>
-      <div class="endpoint-details-block">
-        <span class="block-title">Parameters:</span>
-        <ul class="endpoint-params-list">
-          <li><code>mailbox_id</code> <em>(path, integer, required)</em></li>
-          <li><code>msg_id</code> <em>(path, string, required)</em></li>
-          <li><code>authorization</code> <em>(header, string, optional)</em></li>
-        </ul>
-      </div>
-      <div class="endpoint-details-block">
-        <span class="block-title">Responses:</span>
-        <ul class="endpoint-responses-list">
-          <li><strong>204</strong>: Successful Response</li>
-          <li><strong>422</strong>: Validation Error</li>
-        </ul>
-      </div>
-    </article>
-    <article class="endpoint-card method-post">
-      <div class="endpoint-line">
-        <span class="badge-method badge-post">POST</span>
-        <code class="endpoint-path">/v1/mailboxes/{mailbox_id}/messages/{msg_id}/read</code>
-        <span class="endpoint-auth-pill">🔒 Requires X-API-Key</span>
-      </div>
-      <div class="endpoint-summary"><strong>Mark Read</strong></div>
-      <div class="endpoint-description"><p>Mark a message as read (both upstream and locally).</p></div>
-      <div class="endpoint-details-block">
-        <span class="block-title">Parameters:</span>
-        <ul class="endpoint-params-list">
-          <li><code>mailbox_id</code> <em>(path, integer, required)</em></li>
-          <li><code>msg_id</code> <em>(path, string, required)</em></li>
-          <li><code>authorization</code> <em>(header, string, optional)</em></li>
-        </ul>
-      </div>
-      <div class="endpoint-details-block">
-        <span class="block-title">Responses:</span>
-        <ul class="endpoint-responses-list">
-          <li><strong>200</strong>: Successful Response</li>
-          <li><strong>422</strong>: Validation Error</li>
-        </ul>
-      </div>
-    </article>
-    <article class="endpoint-card method-get">
-      <div class="endpoint-line">
-        <span class="badge-method badge-get">GET</span>
-        <code class="endpoint-path">/v1/mailboxes/{mailbox_id}/messages/{msg_id}/source</code>
-        <span class="endpoint-auth-pill">🔒 Requires X-API-Key</span>
-      </div>
-      <div class="endpoint-summary"><strong>Get Source</strong></div>
-      <div class="endpoint-description"><p>Download the raw message source (.eml payload).</p></div>
-      <div class="endpoint-details-block">
-        <span class="block-title">Parameters:</span>
-        <ul class="endpoint-params-list">
-          <li><code>mailbox_id</code> <em>(path, integer, required)</em></li>
-          <li><code>msg_id</code> <em>(path, string, required)</em></li>
-          <li><code>authorization</code> <em>(header, string, optional)</em></li>
-        </ul>
-      </div>
-      <div class="endpoint-details-block">
-        <span class="block-title">Responses:</span>
-        <ul class="endpoint-responses-list">
-          <li><strong>200</strong>: Successful Response</li>
-          <li><strong>422</strong>: Validation Error</li>
-        </ul>
-      </div>
-    </article>
-  </section>
-  <section class="api-tag-section" id="tag-admin">
-    <h2 class="tag-title">Admin Endpoints (11)</h2>
-    <article class="endpoint-card method-get">
-      <div class="endpoint-line">
-        <span class="badge-method badge-get">GET</span>
-        <code class="endpoint-path">/v1/admin/stats</code>
-        <span class="endpoint-auth-pill">🔒 Requires X-API-Key</span>
-      </div>
-      <div class="endpoint-summary"><strong>Stats</strong></div>
-      <div class="endpoint-description"><p>Dashboard stats: mailbox/message totals, provider split, 7-day trend, and a 10-day activity history that also covers retention-deleted items.</p></div>
-      <div class="endpoint-details-block">
-        <span class="block-title">Parameters:</span>
-        <ul class="endpoint-params-list">
-          <li><code>authorization</code> <em>(header, string, optional)</em></li>
-        </ul>
-      </div>
-      <div class="endpoint-details-block">
-        <span class="block-title">Responses:</span>
-        <ul class="endpoint-responses-list">
-          <li><strong>200</strong>: Successful Response</li>
-          <li><strong>422</strong>: Validation Error</li>
-        </ul>
-      </div>
-    </article>
-    <article class="endpoint-card method-get">
-      <div class="endpoint-line">
-        <span class="badge-method badge-get">GET</span>
-        <code class="endpoint-path">/v1/admin/retention</code>
-        <span class="endpoint-auth-pill">🔒 Requires X-API-Key</span>
-      </div>
-      <div class="endpoint-summary"><strong>List Retention</strong></div>
-      <div class="endpoint-description"><p>List active TTL retention rules. Root reads the global table.</p></div>
-      <div class="endpoint-details-block">
-        <span class="block-title">Parameters:</span>
-        <ul class="endpoint-params-list">
-          <li><code>authorization</code> <em>(header, string, optional)</em></li>
-        </ul>
-      </div>
-      <div class="endpoint-details-block">
-        <span class="block-title">Responses:</span>
-        <ul class="endpoint-responses-list">
-          <li><strong>200</strong>: Successful Response</li>
-          <li><strong>422</strong>: Validation Error</li>
-        </ul>
-      </div>
-    </article>
-    <article class="endpoint-card method-put">
-      <div class="endpoint-line">
-        <span class="badge-method badge-put">PUT</span>
-        <code class="endpoint-path">/v1/admin/retention/{provider}</code>
-        <span class="endpoint-auth-pill">🔒 Requires X-API-Key</span>
-      </div>
-      <div class="endpoint-summary"><strong>Set Retention</strong></div>
-      <div class="endpoint-description"><p>Create or update TTL retention for a provider (at least one TTL required).</p></div>
-      <div class="endpoint-details-block">
-        <span class="block-title">Parameters:</span>
-        <ul class="endpoint-params-list">
-          <li><code>provider</code> <em>(path, string, required)</em></li>
-          <li><code>authorization</code> <em>(header, string, optional)</em></li>
-        </ul>
-      </div>
-      <div class="endpoint-details-block">
-        <span class="block-title">Responses:</span>
-        <ul class="endpoint-responses-list">
-          <li><strong>200</strong>: Successful Response</li>
-          <li><strong>422</strong>: Validation Error</li>
-        </ul>
-      </div>
-    </article>
-    <article class="endpoint-card method-delete">
-      <div class="endpoint-line">
-        <span class="badge-method badge-delete">DELETE</span>
-        <code class="endpoint-path">/v1/admin/retention/{provider}</code>
-        <span class="endpoint-auth-pill">🔒 Requires X-API-Key</span>
-      </div>
-      <div class="endpoint-summary"><strong>Remove Retention</strong></div>
-      <div class="endpoint-description"><p>Disable retention rules for a provider.</p></div>
-      <div class="endpoint-details-block">
-        <span class="block-title">Parameters:</span>
-        <ul class="endpoint-params-list">
-          <li><code>provider</code> <em>(path, string, required)</em></li>
-          <li><code>authorization</code> <em>(header, string, optional)</em></li>
-        </ul>
-      </div>
-      <div class="endpoint-details-block">
-        <span class="block-title">Responses:</span>
-        <ul class="endpoint-responses-list">
-          <li><strong>204</strong>: Successful Response</li>
-          <li><strong>422</strong>: Validation Error</li>
-        </ul>
-      </div>
-    </article>
-    <article class="endpoint-card method-post">
-      <div class="endpoint-line">
-        <span class="badge-method badge-post">POST</span>
-        <code class="endpoint-path">/v1/admin/retention/run</code>
-        <span class="endpoint-auth-pill">🔒 Requires X-API-Key</span>
-      </div>
-      <div class="endpoint-summary"><strong>Run Retention Sweep</strong></div>
-      <div class="endpoint-description"><p>Run the retention cleanup sweep right now. A key sweeps only its mailboxes.<br/><br/>Pass `force_maintenance=true` to force full database maintenance (VACUUM, REINDEX, ANALYZE, WAL checkpoints, quick_check) immediately regardless of the configured throttling interval.</p></div>
-      <div class="endpoint-details-block">
-        <span class="block-title">Parameters:</span>
-        <ul class="endpoint-params-list">
-          <li><code>force_maintenance</code> <em>(query, boolean, optional)</em></li>
-          <li><code>authorization</code> <em>(header, string, optional)</em></li>
-        </ul>
-      </div>
-      <div class="endpoint-details-block">
-        <span class="block-title">Responses:</span>
-        <ul class="endpoint-responses-list">
-          <li><strong>200</strong>: Successful Response</li>
-          <li><strong>422</strong>: Validation Error</li>
-        </ul>
-      </div>
-    </article>
-    <article class="endpoint-card method-get">
-      <div class="endpoint-line">
-        <span class="badge-method badge-get">GET</span>
-        <code class="endpoint-path">/v1/admin/domain-cache</code>
-        <span class="endpoint-auth-pill">🔒 Requires X-API-Key</span>
-      </div>
-      <div class="endpoint-summary"><strong>Get Domain Cache</strong></div>
-      <div class="endpoint-description"><p>Domain cache settings and per-provider state.</p></div>
-      <div class="endpoint-details-block">
-        <span class="block-title">Parameters:</span>
-        <ul class="endpoint-params-list">
-          <li><code>authorization</code> <em>(header, string, optional)</em></li>
-        </ul>
-      </div>
-      <div class="endpoint-details-block">
-        <span class="block-title">Responses:</span>
-        <ul class="endpoint-responses-list">
-          <li><strong>200</strong>: Successful Response</li>
-          <li><strong>422</strong>: Validation Error</li>
-        </ul>
-      </div>
-    </article>
-    <article class="endpoint-card method-put">
-      <div class="endpoint-line">
-        <span class="badge-method badge-put">PUT</span>
-        <code class="endpoint-path">/v1/admin/domain-cache</code>
-        <span class="endpoint-auth-pill">🔒 Requires X-API-Key</span>
-      </div>
-      <div class="endpoint-summary"><strong>Set Domain Cache</strong></div>
-      <div class="endpoint-description"><p>Update domain cache settings (enabled / interval).</p></div>
-      <div class="endpoint-details-block">
-        <span class="block-title">Parameters:</span>
-        <ul class="endpoint-params-list">
-          <li><code>authorization</code> <em>(header, string, optional)</em></li>
-        </ul>
-      </div>
-      <div class="endpoint-details-block">
-        <span class="block-title">Responses:</span>
-        <ul class="endpoint-responses-list">
-          <li><strong>200</strong>: Successful Response</li>
-          <li><strong>422</strong>: Validation Error</li>
-        </ul>
-      </div>
-    </article>
-    <article class="endpoint-card method-post">
-      <div class="endpoint-line">
-        <span class="badge-method badge-post">POST</span>
-        <code class="endpoint-path">/v1/admin/domain-cache/run</code>
-        <span class="endpoint-auth-pill">🔒 Requires X-API-Key</span>
-      </div>
-      <div class="endpoint-summary"><strong>Run Domain Cache</strong></div>
-      <div class="endpoint-description"><p>Force a domain cache refresh; 502 with a failed list when a provider errors.</p></div>
-      <div class="endpoint-details-block">
-        <span class="block-title">Parameters:</span>
-        <ul class="endpoint-params-list">
-          <li><code>authorization</code> <em>(header, string, optional)</em></li>
-        </ul>
-      </div>
-      <div class="endpoint-details-block">
-        <span class="block-title">Responses:</span>
-        <ul class="endpoint-responses-list">
-          <li><strong>200</strong>: Successful Response</li>
-          <li><strong>422</strong>: Validation Error</li>
-        </ul>
-      </div>
-    </article>
-    <article class="endpoint-card method-get">
-      <div class="endpoint-line">
-        <span class="badge-method badge-get">GET</span>
-        <code class="endpoint-path">/v1/admin/gmail/creds</code>
-        <span class="endpoint-auth-pill">🔒 Requires X-API-Key</span>
-      </div>
-      <div class="endpoint-summary"><strong>Get Gmail Creds</strong></div>
-      <div class="endpoint-description"><p>Current Gmail OAuth credentials (env or the encrypted store).</p></div>
-      <div class="endpoint-details-block">
-        <span class="block-title">Parameters:</span>
-        <ul class="endpoint-params-list">
-          <li><code>authorization</code> <em>(header, string, optional)</em></li>
-        </ul>
-      </div>
-      <div class="endpoint-details-block">
-        <span class="block-title">Responses:</span>
-        <ul class="endpoint-responses-list">
-          <li><strong>200</strong>: Successful Response</li>
-          <li><strong>422</strong>: Validation Error</li>
-        </ul>
-      </div>
-    </article>
-    <article class="endpoint-card method-put">
-      <div class="endpoint-line">
-        <span class="badge-method badge-put">PUT</span>
-        <code class="endpoint-path">/v1/admin/gmail/creds</code>
-        <span class="endpoint-auth-pill">🔒 Requires X-API-Key</span>
-      </div>
-      <div class="endpoint-summary"><strong>Save Gmail Creds</strong></div>
-      <div class="endpoint-description"><p>Save Gmail OAuth credentials to the encrypted store.</p></div>
-      <div class="endpoint-details-block">
-        <span class="block-title">Parameters:</span>
-        <ul class="endpoint-params-list">
-          <li><code>authorization</code> <em>(header, string, optional)</em></li>
-        </ul>
-      </div>
-      <div class="endpoint-details-block">
-        <span class="block-title">Responses:</span>
-        <ul class="endpoint-responses-list">
-          <li><strong>200</strong>: Successful Response</li>
-          <li><strong>422</strong>: Validation Error</li>
-        </ul>
-      </div>
-    </article>
-    <article class="endpoint-card method-delete">
-      <div class="endpoint-line">
-        <span class="badge-method badge-delete">DELETE</span>
-        <code class="endpoint-path">/v1/admin/gmail/creds</code>
-        <span class="endpoint-auth-pill">🔒 Requires X-API-Key</span>
-      </div>
-      <div class="endpoint-summary"><strong>Clear Gmail Creds</strong></div>
-      <div class="endpoint-description"><p>Clear stored Gmail OAuth credentials.</p></div>
-      <div class="endpoint-details-block">
-        <span class="block-title">Parameters:</span>
-        <ul class="endpoint-params-list">
-          <li><code>authorization</code> <em>(header, string, optional)</em></li>
-        </ul>
-      </div>
-      <div class="endpoint-details-block">
-        <span class="block-title">Responses:</span>
-        <ul class="endpoint-responses-list">
-          <li><strong>204</strong>: Successful Response</li>
-          <li><strong>422</strong>: Validation Error</li>
-        </ul>
-      </div>
-    </article>
-  </section>
-  <section class="api-tag-section" id="tag-keys">
-    <h2 class="tag-title">Keys Endpoints (9)</h2>
-    <article class="endpoint-card method-get">
-      <div class="endpoint-line">
-        <span class="badge-method badge-get">GET</span>
-        <code class="endpoint-path">/v1/admin/keys/me</code>
-        <span class="endpoint-auth-pill">🔒 Requires X-API-Key</span>
-      </div>
-      <div class="endpoint-summary"><strong>Current principal</strong></div>
-      <div class="endpoint-description"><p>Any authenticated principal. Root is {is_root: true}; an issued key gets its own row without a secret.</p></div>
-      <div class="endpoint-details-block">
-        <span class="block-title">Parameters:</span>
-        <ul class="endpoint-params-list">
-          <li><code>authorization</code> <em>(header, string, optional)</em></li>
-        </ul>
-      </div>
-      <div class="endpoint-details-block">
-        <span class="block-title">Responses:</span>
-        <ul class="endpoint-responses-list">
-          <li><strong>200</strong>: Successful Response</li>
-          <li><strong>422</strong>: Validation Error</li>
-        </ul>
-      </div>
-    </article>
-    <article class="endpoint-card method-post">
-      <div class="endpoint-line">
-        <span class="badge-method badge-post">POST</span>
-        <code class="endpoint-path">/v1/admin/keys</code>
-        <span class="endpoint-auth-pill">🔒 Requires X-API-Key</span>
-      </div>
-      <div class="endpoint-summary"><strong>Create key</strong></div>
-      <div class="endpoint-description"><p>Root only. Returns the new row plus the secret once.</p></div>
-      <div class="endpoint-details-block">
-        <span class="block-title">Parameters:</span>
-        <ul class="endpoint-params-list">
-          <li><code>authorization</code> <em>(header, string, optional)</em></li>
-        </ul>
-      </div>
-      <div class="endpoint-details-block">
-        <span class="block-title">Responses:</span>
-        <ul class="endpoint-responses-list">
-          <li><strong>200</strong>: Successful Response</li>
-          <li><strong>422</strong>: Validation Error</li>
-        </ul>
-      </div>
-    </article>
-    <article class="endpoint-card method-get">
-      <div class="endpoint-line">
-        <span class="badge-method badge-get">GET</span>
-        <code class="endpoint-path">/v1/admin/keys</code>
-        <span class="endpoint-auth-pill">🔒 Requires X-API-Key</span>
-      </div>
-      <div class="endpoint-summary"><strong>List keys</strong></div>
-      <div class="endpoint-description"><p>Root only. Lists every key without secret material.</p></div>
-      <div class="endpoint-details-block">
-        <span class="block-title">Parameters:</span>
-        <ul class="endpoint-params-list">
-          <li><code>authorization</code> <em>(header, string, optional)</em></li>
-        </ul>
-      </div>
-      <div class="endpoint-details-block">
-        <span class="block-title">Responses:</span>
-        <ul class="endpoint-responses-list">
-          <li><strong>200</strong>: Successful Response</li>
-          <li><strong>422</strong>: Validation Error</li>
-        </ul>
-      </div>
-    </article>
-    <article class="endpoint-card method-get">
-      <div class="endpoint-line">
-        <span class="badge-method badge-get">GET</span>
-        <code class="endpoint-path">/v1/admin/keys/{key_id}</code>
-        <span class="endpoint-auth-pill">🔒 Requires X-API-Key</span>
-      </div>
-      <div class="endpoint-summary"><strong>Get key</strong></div>
-      <div class="endpoint-description"><p>Root only. Returns one key without secret material.</p></div>
-      <div class="endpoint-details-block">
-        <span class="block-title">Parameters:</span>
-        <ul class="endpoint-params-list">
-          <li><code>key_id</code> <em>(path, integer, required)</em></li>
-          <li><code>authorization</code> <em>(header, string, optional)</em></li>
-        </ul>
-      </div>
-      <div class="endpoint-details-block">
-        <span class="block-title">Responses:</span>
-        <ul class="endpoint-responses-list">
-          <li><strong>200</strong>: Successful Response</li>
-          <li><strong>422</strong>: Validation Error</li>
-        </ul>
-      </div>
-    </article>
-    <article class="endpoint-card method-patch">
-      <div class="endpoint-line">
-        <span class="badge-method badge-patch">PATCH</span>
-        <code class="endpoint-path">/v1/admin/keys/{key_id}</code>
-        <span class="endpoint-auth-pill">🔒 Requires X-API-Key</span>
-      </div>
-      <div class="endpoint-summary"><strong>Update key</strong></div>
-      <div class="endpoint-description"><p>Root only. Updates name, expires_at, and scope. Does not change the secret.</p></div>
-      <div class="endpoint-details-block">
-        <span class="block-title">Parameters:</span>
-        <ul class="endpoint-params-list">
-          <li><code>key_id</code> <em>(path, integer, required)</em></li>
-          <li><code>authorization</code> <em>(header, string, optional)</em></li>
-        </ul>
-      </div>
-      <div class="endpoint-details-block">
-        <span class="block-title">Responses:</span>
-        <ul class="endpoint-responses-list">
-          <li><strong>200</strong>: Successful Response</li>
-          <li><strong>422</strong>: Validation Error</li>
-        </ul>
-      </div>
-    </article>
-    <article class="endpoint-card method-delete">
-      <div class="endpoint-line">
-        <span class="badge-method badge-delete">DELETE</span>
-        <code class="endpoint-path">/v1/admin/keys/{key_id}</code>
-        <span class="endpoint-auth-pill">🔒 Requires X-API-Key</span>
-      </div>
-      <div class="endpoint-summary"><strong>Delete key</strong></div>
-      <div class="endpoint-description"><p>Root only. 204, or 409 when the key still owns a live mailbox or gmail account.</p></div>
-      <div class="endpoint-details-block">
-        <span class="block-title">Parameters:</span>
-        <ul class="endpoint-params-list">
-          <li><code>key_id</code> <em>(path, integer, required)</em></li>
-          <li><code>authorization</code> <em>(header, string, optional)</em></li>
-        </ul>
-      </div>
-      <div class="endpoint-details-block">
-        <span class="block-title">Responses:</span>
-        <ul class="endpoint-responses-list">
-          <li><strong>204</strong>: Successful Response</li>
-          <li><strong>422</strong>: Validation Error</li>
-        </ul>
-      </div>
-    </article>
-    <article class="endpoint-card method-get">
-      <div class="endpoint-line">
-        <span class="badge-method badge-get">GET</span>
-        <code class="endpoint-path">/v1/admin/keys/{key_id}/secret</code>
-        <span class="endpoint-auth-pill">🔒 Requires X-API-Key</span>
-      </div>
-      <div class="endpoint-summary"><strong>Reveal secret</strong></div>
-      <div class="endpoint-description"><p>Root only. Decrypts the stored secret. Repeat calls return the same plaintext.</p></div>
-      <div class="endpoint-details-block">
-        <span class="block-title">Parameters:</span>
-        <ul class="endpoint-params-list">
-          <li><code>key_id</code> <em>(path, integer, required)</em></li>
-          <li><code>authorization</code> <em>(header, string, optional)</em></li>
-        </ul>
-      </div>
-      <div class="endpoint-details-block">
-        <span class="block-title">Responses:</span>
-        <ul class="endpoint-responses-list">
-          <li><strong>200</strong>: Successful Response</li>
-          <li><strong>422</strong>: Validation Error</li>
-        </ul>
-      </div>
-    </article>
-    <article class="endpoint-card method-put">
-      <div class="endpoint-line">
-        <span class="badge-method badge-put">PUT</span>
-        <code class="endpoint-path">/v1/admin/keys/{key_id}/retention</code>
-        <span class="endpoint-auth-pill">🔒 Requires X-API-Key</span>
-      </div>
-      <div class="endpoint-summary"><strong>Replace retention</strong></div>
-      <div class="endpoint-description"><p>Root only. Replaces that key&#x27;s key_retention rows.</p></div>
-      <div class="endpoint-details-block">
-        <span class="block-title">Parameters:</span>
-        <ul class="endpoint-params-list">
-          <li><code>key_id</code> <em>(path, integer, required)</em></li>
-          <li><code>authorization</code> <em>(header, string, optional)</em></li>
-        </ul>
-      </div>
-      <div class="endpoint-details-block">
-        <span class="block-title">Responses:</span>
-        <ul class="endpoint-responses-list">
-          <li><strong>200</strong>: Successful Response</li>
-          <li><strong>422</strong>: Validation Error</li>
-        </ul>
-      </div>
-    </article>
-    <article class="endpoint-card method-post">
-      <div class="endpoint-line">
-        <span class="badge-method badge-post">POST</span>
-        <code class="endpoint-path">/v1/admin/keys/{key_id}/rotate</code>
-        <span class="endpoint-auth-pill">🔒 Requires X-API-Key</span>
-      </div>
-      <div class="endpoint-summary"><strong>Rotate secret</strong></div>
-      <div class="endpoint-description"><p>Root only. Returns a new secret once. The key id does not change.</p></div>
-      <div class="endpoint-details-block">
-        <span class="block-title">Parameters:</span>
-        <ul class="endpoint-params-list">
-          <li><code>key_id</code> <em>(path, integer, required)</em></li>
-          <li><code>authorization</code> <em>(header, string, optional)</em></li>
-        </ul>
-      </div>
-      <div class="endpoint-details-block">
-        <span class="block-title">Responses:</span>
-        <ul class="endpoint-responses-list">
-          <li><strong>200</strong>: Successful Response</li>
-          <li><strong>422</strong>: Validation Error</li>
-        </ul>
-      </div>
-    </article>
-  </section>
-</div>
     </div>
   </noscript>
   <div id="redoc-container">
@@ -1612,84 +1775,89 @@ body {
     </div>
   </div>
 
-    <footer class="portal-footer" aria-label="Portal footer">
-      <div class="footer-inner">
-        <!-- Brand & Mission -->
-        <div class="footer-brand">
-          <div class="footer-brand-header">
-            <img src="assets/logo.png" alt="Maily Logo" width="32" height="32" class="footer-logo-img" />
-            <span class="footer-brand-title">Maily</span>
-          </div>
-          <p class="footer-tagline">
-            High-performance, self-hosted temporary email gateway aggregating 8+ disposable mail providers into one unified REST API and async Python SDK.
-          </p>
-          <div class="footer-status-pill">
-            <span class="status-pulse-dot"></span>
-            <span>All upstream systems operational</span>
-          </div>
+  <footer class="portal-footer" aria-label="Portal footer">
+    <div class="footer-inner">
+      <!-- Brand & Mission -->
+      <div class="footer-brand">
+        <div class="footer-brand-header">
+          <img src="assets/logo.png" alt="Maily Logo" width="32" height="32" class="footer-logo-img" />
+          <span class="footer-brand-title">Maily</span>
         </div>
-
-        <!-- Links Columns -->
-        <div class="footer-links-grid">
-          <div class="footer-col">
-            <h4 class="footer-col-title">Documentation</h4>
-            <ul class="footer-nav-list">
-              <li><a href="docs">Getting Started</a></li>
-              <li><a href="docs/python">Python SDK (maily)</a></li>
-              <li><a href="docs/curl">cURL &amp; REST API</a></li>
-              <li><a href="docs/docker">Docker Self-Hosting</a></li>
-              <li><a href="docs/recipes">Testing Recipes &amp; OTP</a></li>
-              <li><a href="docs/architecture">Architecture &amp; Resilience</a></li>
-            </ul>
-          </div>
-
-          <div class="footer-col">
-            <h4 class="footer-col-title">Capabilities</h4>
-            <ul class="footer-nav-list">
-              <li><a href="docs/providers">Provider Matrix &amp; SLAs</a></li>
-              <li><a href="docs/adding-providers">Adding Custom Providers</a></li>
-              <li><a href="analytics">Live Health Analytics</a></li>
-              <li><a href="dev/bench/">Performance Benchmarks ↗</a></li>
-              <li><a href="scalar.html">Scalar API Reference ↗</a></li>
-              <li><a href="swagger.html">Swagger UI Cyberpunk ↗</a></li>
-            </ul>
-          </div>
-
-          <div class="footer-col">
-            <h4 class="footer-col-title">AI &amp; Standards</h4>
-            <ul class="footer-nav-list font-mono">
-              <li><a href="openapi.json" target="_blank" download="openapi.json">openapi.json</a></li>
-              <li><a href="llms.txt" target="_blank">llms.txt</a></li>
-              <li><a href="llms-full.txt" target="_blank">llms-full.txt</a></li>
-              <li><a href="ai-catalog.json" target="_blank">ai-catalog.json</a></li>
-              <li class="github-footer-item">
-                <a href="https://github.com/stormsia/maily" target="_blank" rel="noopener noreferrer">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path>
-                  </svg>
-                  <span>GitHub Repository</span>
-                </a>
-              </li>
-            </ul>
-          </div>
+        <p class="footer-tagline">
+          High-performance, self-hosted temporary email gateway aggregating 8+ disposable mail providers into one
+          unified REST API and async Python SDK.
+        </p>
+        <div class="footer-status-pill">
+          <span class="status-pulse-dot"></span>
+          <span>All upstream systems operational</span>
         </div>
       </div>
 
-      <div class="footer-bottom-bar">
-        <span>© 2026 Maily. Released under the MIT License. Built for developers &amp; QA engineers.</span>
-        <div class="footer-bottom-links">
-          <a href="https://pypi.org/project/maily/" target="_blank" rel="noopener noreferrer">PyPI (maily)</a>
-          <span>·</span>
-          <a href="https://ghcr.io/stormsia/maily" target="_blank" rel="noopener noreferrer">GHCR Container</a>
-          <span>·</span>
-          <a href="https://github.com/stormsia/maily/blob/main/SECURITY.md" target="_blank" rel="noopener noreferrer">Security Policy</a>
+      <!-- Links Columns -->
+      <div class="footer-links-grid">
+        <div class="footer-col">
+          <h4 class="footer-col-title">Documentation</h4>
+          <ul class="footer-nav-list">
+            <li><a href="docs">Getting Started</a></li>
+            <li><a href="docs/python">Python SDK (maily)</a></li>
+            <li><a href="docs/curl">cURL &amp; REST API</a></li>
+            <li><a href="docs/docker">Docker Self-Hosting</a></li>
+            <li><a href="docs/recipes">Testing Recipes &amp; OTP</a></li>
+            <li><a href="docs/architecture">Architecture &amp; Resilience</a></li>
+          </ul>
+        </div>
+
+        <div class="footer-col">
+          <h4 class="footer-col-title">Capabilities</h4>
+          <ul class="footer-nav-list">
+            <li><a href="docs/providers">Provider Matrix &amp; SLAs</a></li>
+            <li><a href="docs/adding-providers">Adding Custom Providers</a></li>
+            <li><a href="analytics">Live Health Analytics</a></li>
+            <li><a href="dev/bench/">Performance Benchmarks ↗</a></li>
+            <li><a href="scalar.html">Scalar API Reference ↗</a></li>
+            <li><a href="swagger.html">Swagger UI Cyberpunk ↗</a></li>
+          </ul>
+        </div>
+
+        <div class="footer-col">
+          <h4 class="footer-col-title">AI &amp; Standards</h4>
+          <ul class="footer-nav-list font-mono">
+            <li><a href="openapi.json" target="_blank" download="openapi.json">openapi.json</a></li>
+            <li><a href="llms.txt" target="_blank">llms.txt</a></li>
+            <li><a href="llms-full.txt" target="_blank">llms-full.txt</a></li>
+            <li><a href="ai-catalog.json" target="_blank">ai-catalog.json</a></li>
+            <li class="github-footer-item">
+              <a href="https://github.com/stormsia/maily" target="_blank" rel="noopener noreferrer">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                  stroke-linecap="round" stroke-linejoin="round">
+                  <path
+                    d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22">
+                  </path>
+                </svg>
+                <span>GitHub Repository</span>
+              </a>
+            </li>
+          </ul>
         </div>
       </div>
-    </footer>
+    </div>
+
+    <div class="footer-bottom-bar">
+      <span>© 2026 Maily. Released under the MIT License. Built for developers &amp; QA engineers.</span>
+      <div class="footer-bottom-links">
+        <a href="https://pypi.org/project/maily-server/" target="_blank" rel="noopener noreferrer">PyPI (maily)</a>
+        <span>·</span>
+        <a href="https://ghcr.io/stormsia/maily" target="_blank" rel="noopener noreferrer">GHCR Container</a>
+        <span>·</span>
+        <a href="https://github.com/stormsia/maily/blob/main/SECURITY.md" target="_blank"
+          rel="noopener noreferrer">Security Policy</a>
+      </div>
+    </div>
+  </footer>
 
   <script src="https://cdn.redoc.ly/redoc/v2.1.5/bundles/redoc.standalone.js"></script>
   <script>
-    (function() {
+    (function () {
       const container = document.getElementById("redoc-container");
       const theme = {
         colors: {
@@ -1762,4 +1930,5 @@ body {
     })();
   </script>
 </body>
+
 </html>

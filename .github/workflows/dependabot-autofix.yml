@@ -12,7 +12,7 @@ permissions:
 
 jobs:
   fix-lockfile:
-    if: (github.actor == 'dependabot[bot]' && github.event.pull_request.user.login == 'dependabot[bot]') || github.event_name == 'workflow_dispatch'
+    if: (github.actor == 'dependabot[bot]' && github.event.pull_request.user.login == 'dependabot[bot]' && !contains(github.event.pull_request.title, 'site')) || github.event_name == 'workflow_dispatch'
     name: Sync uv.lock and auto-merge
     runs-on: ubuntu-latest
     steps:
@@ -40,7 +40,11 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git fetch origin main
-          git merge origin/main --no-edit || true
+          if ! git merge origin/main --no-edit; then
+            echo "::error::Merge conflict with origin/main. Aborting."
+            git merge --abort || true
+            exit 1
+          fi
           uv sync --frozen --all-extras || uv lock
           uv run python scripts/build_client.py
 
@@ -51,7 +55,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add -A
+          git add uv.lock src/maily/standalone_client.py client/
           if ! git diff --staged --quiet; then
             git commit -m "chore(deps): auto-sync uv.lock and standalone client with dependabot bump"
             git push origin "HEAD:$HEAD_REF"
@@ -61,11 +65,11 @@ jobs:
             echo "Lockfile and client are already up to date."
           fi
 
-      - name: Auto-approve and merge Dependabot PR
+      - name: Auto-approve and enable auto-merge for Dependabot PR
         if: github.event_name == 'pull_request_target'
         run: |
-          gh pr review --approve "$PR_URL" || echo "Auto-approve skipped (enable 'Allow GitHub Actions to create and approve pull requests' in repository settings if desired)."
-          gh pr merge --auto --merge --delete-branch "$PR_URL" || gh pr merge --merge --delete-branch "$PR_URL" || true
+          gh pr review --approve "$PR_URL" || echo "Auto-approve skipped."
+          gh pr merge --auto --merge --delete-branch "$PR_URL" || echo "Auto-merge flag skipped."
         env:
           PR_URL: ${{ github.event.pull_request.html_url }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

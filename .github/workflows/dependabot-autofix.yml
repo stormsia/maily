@@ -3,6 +3,7 @@ name: Dependabot uv.lock Auto-Fix
 on:
   pull_request_target:
     types: [opened, synchronize]
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -11,15 +12,15 @@ permissions:
 
 jobs:
   fix-lockfile:
-    if: github.actor == 'dependabot[bot]' && github.event.pull_request.user.login == 'dependabot[bot]'
+    if: (github.actor == 'dependabot[bot]' && github.event.pull_request.user.login == 'dependabot[bot]') || github.event_name == 'workflow_dispatch'
     name: Sync uv.lock and auto-merge
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7
         with:
-          ref: ${{ github.event.pull_request.head.ref }}
-          repository: ${{ github.event.pull_request.head.repo.full_name }}
+          ref: ${{ github.event.pull_request.head.ref || github.ref }}
+          repository: ${{ github.event.pull_request.head.repo.full_name || github.repository }}
           token: ${{ secrets.GITHUB_TOKEN }}
           fetch-depth: 0
 
@@ -45,7 +46,7 @@ jobs:
 
       - name: Commit and push changes if lockfile or client changed
         env:
-          HEAD_REF: ${{ github.event.pull_request.head.ref }}
+          HEAD_REF: ${{ github.event.pull_request.head.ref || github.ref_name }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           git config user.name "github-actions[bot]"
@@ -61,6 +62,7 @@ jobs:
           fi
 
       - name: Auto-approve and merge Dependabot PR
+        if: github.event_name == 'pull_request_target'
         run: |
           gh pr review --approve "$PR_URL" || echo "Auto-approve skipped (enable 'Allow GitHub Actions to create and approve pull requests' in repository settings if desired)."
           gh pr merge --auto --merge --delete-branch "$PR_URL" || gh pr merge --merge --delete-branch "$PR_URL" || true

@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1794707484548,
+  "lastUpdate": 1794707601205,
   "repoUrl": "https://github.com/stormsia/maily",
   "entries": {
     "Benchmark": [
@@ -13452,6 +13452,135 @@ window.BENCHMARK_DATA = {
             "unit": "iter/sec",
             "range": "stddev: 0.00014566607793482114",
             "extra": "mean: 4.844261173184397 msec\nrounds: 179"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "sf_root@outlook.com",
+            "name": "stormsia",
+            "username": "stormsia"
+          },
+          "committer": {
+            "email": "sf_root@outlook.com",
+            "name": "stormsia",
+            "username": "stormsia"
+          },
+          "distinct": true,
+          "id": "93467f43ff0b4024ff9b1df01ea105939441dd59",
+          "message": "refactor(Footer): improve code readability and formatting\n\n- Updated import statements to use double quotes for consistency.\n- Reformatted JSX elements for better readability by adding line breaks.\n- Adjusted text content for improved clarity and presentation.\n- Updated links to reflect changes in package names for PyPI.",
+          "timestamp": "2026-11-15T04:52:41+03:00",
+          "tree_id": "d23066e134f0b2ff8763f0dd62d738f9c0af9de3",
+          "url": "https://github.com/stormsia/maily/commit/93467f43ff0b4024ff9b1df01ea105939441dd59"
+        },
+        "date": 1794707600376,
+        "tool": "pytest",
+        "benches": [
+          {
+            "name": "tests/test_benchmarks.py::test_benchmark_crypto_encrypt_1kb",
+            "value": 90170.52346755666,
+            "unit": "iter/sec",
+            "range": "stddev: 0.0000018538710977801987",
+            "extra": "mean: 11.090098643597203 usec\nrounds: 811"
+          },
+          {
+            "name": "tests/test_benchmarks.py::test_benchmark_crypto_decrypt_1kb",
+            "value": 87088.817979417,
+            "unit": "iter/sec",
+            "range": "stddev: 0.000001410488369465455",
+            "extra": "mean: 11.482530400588798 usec\nrounds: 20345"
+          },
+          {
+            "name": "tests/test_benchmarks.py::test_benchmark_random_string",
+            "value": 100086.11952157653,
+            "unit": "iter/sec",
+            "range": "stddev: 0.000001605195445179295",
+            "extra": "mean: 9.991395458032722 usec\nrounds: 30031"
+          },
+          {
+            "name": "tests/test_benchmarks.py::test_benchmark_random_password",
+            "value": 66910.05494452722,
+            "unit": "iter/sec",
+            "range": "stddev: 0.000001994326660970348",
+            "extra": "mean: 14.945436837991913 usec\nrounds: 40974"
+          },
+          {
+            "name": "tests/test_benchmarks.py::test_benchmark_pydantic_message_detail_parse",
+            "value": 563868.6162367322,
+            "unit": "iter/sec",
+            "range": "stddev: 3.456807409415757e-7",
+            "extra": "mean: 1.7734627734276385 usec\nrounds: 34196"
+          },
+          {
+            "name": "tests/test_benchmarks.py::test_benchmark_pydantic_batch_messages_serialize",
+            "value": 6113.946595008262,
+            "unit": "iter/sec",
+            "range": "stddev: 0.000005402349057060882",
+            "extra": "mean: 163.5604734945593 usec\nrounds: 3886"
+          },
+          {
+            "name": "tests/test_benchmarks.py::test_benchmark_extract_verification_code",
+            "value": 129396.49143258647,
+            "unit": "iter/sec",
+            "range": "stddev: 8.360761647270384e-7",
+            "extra": "mean: 7.728184813426601 usec\nrounds: 57485"
+          },
+          {
+            "name": "tests/test_benchmarks.py::test_benchmark_extract_confirmation_url",
+            "value": 129634.90260726654,
+            "unit": "iter/sec",
+            "range": "stddev: 0.0000015702698989469402",
+            "extra": "mean: 7.713971931074264 usec\nrounds: 55720"
+          },
+          {
+            "name": "tests/test_benchmarks.py::test_benchmark_authz_parse_scope",
+            "value": 272759.1864703059,
+            "unit": "iter/sec",
+            "range": "stddev: 6.178871310475664e-7",
+            "extra": "mean: 3.6662376543232056 usec\nrounds: 26892"
+          },
+          {
+            "name": "tests/test_benchmarks.py::test_benchmark_authz_secret_sha256",
+            "value": 1653367.1704362945,
+            "unit": "iter/sec",
+            "range": "stddev: 3.219743765671408e-7",
+            "extra": "mean: 604.8263313079559 nsec\nrounds: 35585"
+          },
+          {
+            "name": "tests/test_benchmarks.py::test_benchmark_health_endpoint",
+            "value": 464.5839023965835,
+            "unit": "iter/sec",
+            "range": "stddev: 0.0002618395351026522",
+            "extra": "mean: 2.1524637311827655 msec\nrounds: 279"
+          },
+          {
+            "name": "tests/test_benchmarks.py::test_benchmark_domain_cache_settings",
+            "value": 294.15182300509275,
+            "unit": "iter/sec",
+            "range": "stddev: 0.00024113039163507842",
+            "extra": "mean: 3.399604971962682 msec\nrounds: 107"
+          },
+          {
+            "name": "tests/test_benchmarks.py::test_benchmark_mailboxes_list",
+            "value": 434.1552511660891,
+            "unit": "iter/sec",
+            "range": "stddev: 0.00013727988341856386",
+            "extra": "mean: 2.3033235169081094 msec\nrounds: 207"
+          },
+          {
+            "name": "tests/test_benchmarks.py::test_benchmark_admin_keys_list",
+            "value": 348.13687629607466,
+            "unit": "iter/sec",
+            "range": "stddev: 0.0003460538849911252",
+            "extra": "mean: 2.872433425149553 msec\nrounds: 167"
+          },
+          {
+            "name": "tests/test_benchmarks.py::test_benchmark_client_init",
+            "value": 258.4454500608922,
+            "unit": "iter/sec",
+            "range": "stddev: 0.0002935763061518016",
+            "extra": "mean: 3.8692884698275423 msec\nrounds: 232"
           }
         ]
       }

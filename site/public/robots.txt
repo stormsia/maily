@@ -8,6 +8,7 @@ Disallow: /404.html
 # - llms-full.txt: https://stormsia.github.io/maily/llms-full.txt
 # - openapi.json: https://stormsia.github.io/maily/openapi.json
 # - SKILL.md: https://stormsia.github.io/maily/SKILL.md
+# - ard.json: https://stormsia.github.io/maily/.well-known/ard.json
 # - ai-catalog.json: https://stormsia.github.io/maily/.well-known/ai-catalog.json
 # - pricing.md: https://stormsia.github.io/maily/pricing.md
 
@@ -33,6 +34,8 @@ Allow: /llms.txt
 Allow: /llms-full.txt
 Allow: /SKILL.md
 Allow: /openapi.json
+Allow: /.well-known/ard.json
+Allow: /ard.json
 Allow: /.well-known/ai-catalog.json
 Allow: /ai-catalog.json
 Allow: /pricing.md

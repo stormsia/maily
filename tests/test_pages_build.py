@@ -15,9 +15,17 @@ import json
 import re
 from pathlib import Path
 
+import pytest
+
 ROOT = Path(__file__).resolve().parents[1]
 PUBLIC_DIR = ROOT / "public"
 SITE_PUBLIC_DIR = ROOT / "site" / "public"
+
+PORTAL_BUILT = (PUBLIC_DIR / "index.html").is_file()
+skip_if_no_portal = pytest.mark.skipif(
+    not PORTAL_BUILT,
+    reason="Developer portal not built. Run 'npm run build' in site/ to generate public/ artifacts.",
+)
 
 
 def calculate_provider_sla(status: str, failures: int) -> tuple[float, str, str, str]:
@@ -78,6 +86,7 @@ def load_provider_health() -> dict[str, dict]:
     }
 
 
+@skip_if_no_portal
 def test_site_portal_artifacts():
     """Verify that all developer portal static artifacts are present and well-formed."""
     # 1. Jekyll bypass & SEO basics
@@ -174,6 +183,7 @@ def test_calculate_provider_sla():
     assert icon_deliv == "🔴"
 
 
+@skip_if_no_portal
 def test_agent_readiness_and_geo():
     """Verify Agent-Readiness and Generative Engine Optimization standards."""
     # 1. pricing.md
@@ -204,19 +214,38 @@ def test_agent_readiness_and_geo():
     skill_file = PUBLIC_DIR / "SKILL.md"
     assert skill_file.is_file()
 
-    # 5. ai-catalog.json & .well-known/ai-catalog.json
-    for cat_path in [
+    # 5. ard.json, ai-catalog.json & .well-known/ manifests
+    for manifest_path in [
+        PUBLIC_DIR / "ard.json",
+        PUBLIC_DIR / ".well-known" / "ard.json",
         PUBLIC_DIR / "ai-catalog.json",
         PUBLIC_DIR / ".well-known" / "ai-catalog.json",
     ]:
-        assert cat_path.is_file()
-        catalog_data = json.loads(cat_path.read_text(encoding="utf-8"))
-        resource_urls = [r["url"] for r in catalog_data.get("resources", [])]
-        assert "https://stormsia.github.io/maily/pricing.md" in resource_urls
-        assert "https://stormsia.github.io/maily/llms.txt" in resource_urls
-        assert "https://stormsia.github.io/maily/llms-full.txt" in resource_urls
-        assert "https://stormsia.github.io/maily/SKILL.md" in resource_urls
-        assert "https://stormsia.github.io/maily/openapi.json" in resource_urls
+        assert manifest_path.is_file(), f"Missing manifest at {manifest_path}"
+        manifest_data = json.loads(manifest_path.read_text(encoding="utf-8"))
+
+        # Strict ARD Specification requirements
+        assert "entries" in manifest_data, (
+            f"ARD manifest {manifest_path.name} missing 'entries' array"
+        )
+        assert isinstance(manifest_data["entries"], list)
+        assert len(manifest_data["entries"]) > 0
+
+        # Validate each entry structure
+        for entry in manifest_data["entries"]:
+            assert "identifier" in entry and entry["identifier"].startswith("urn:air:")
+            assert "displayName" in entry and len(entry["displayName"]) > 0
+            assert "type" in entry and len(entry["type"]) > 0
+            assert "url" in entry and entry["url"].startswith("https://")
+            assert "representativeQueries" in entry and len(entry["representativeQueries"]) >= 1
+
+        # Check resource URLs
+        entry_urls = [e["url"] for e in manifest_data["entries"]]
+        assert "https://stormsia.github.io/maily/pricing.md" in entry_urls
+        assert "https://stormsia.github.io/maily/llms.txt" in entry_urls
+        assert "https://stormsia.github.io/maily/llms-full.txt" in entry_urls
+        assert "https://stormsia.github.io/maily/SKILL.md" in entry_urls
+        assert "https://stormsia.github.io/maily/openapi.json" in entry_urls
 
     # 6. robots.txt machine discovery comments
     robots_text = (PUBLIC_DIR / "robots.txt").read_text(encoding="utf-8")
@@ -224,10 +253,12 @@ def test_agent_readiness_and_geo():
     assert "# - llms-full.txt:" in robots_text
     assert "# - openapi.json:" in robots_text
     assert "# - SKILL.md:" in robots_text
+    assert "# - ard.json:" in robots_text
     assert "# - ai-catalog.json:" in robots_text
     assert "# - pricing.md:" in robots_text
 
 
+@skip_if_no_portal
 def test_json_ld_structured_data_and_entity_graph():
     """Verify Schema.org JSON-LD graph integrity and entity types in prerendered HTML."""
     target_pages = [

@@ -267,123 +267,214 @@ ${urlEntries.join('\n')}
 </urlset>`;
 }
 
-function generateAiCatalogJson(): object {
+function generateArdManifestJson(): object {
+  const entries = [
+    {
+      identifier: 'urn:air:stormsia.github.io:maily:openapi',
+      displayName: 'OpenAPI 3.1 REST API Specification',
+      type: 'application/vnd.oai.openapi+json',
+      url: `${SITE_URL}/openapi.json`,
+      description: 'Full machine-readable OpenAPI 3.1 REST API specification for temporary email management and OTP code polling.',
+      representativeQueries: [
+        'OpenAPI specification for temporary email',
+        'Maily REST API schema 3.1',
+        'Disposable email swagger openapi json'
+      ]
+    },
+    {
+      identifier: 'urn:air:stormsia.github.io:maily:skill',
+      displayName: 'Agent Testing Skill Manifest',
+      type: 'text/markdown',
+      url: `${SITE_URL}/SKILL.md`,
+      description: 'Agent skill for automated Playwright and Pytest OTP verification with Maily.',
+      representativeQueries: [
+        'Agent skill for temporary email testing',
+        'Playwright disposable mailbox fixtures',
+        'Pytest email OTP verification skill'
+      ]
+    },
+    {
+      identifier: 'urn:air:stormsia.github.io:maily:llms-full',
+      displayName: 'Consolidated Agent Documentation (llms-full.txt)',
+      type: 'text/plain',
+      url: `${SITE_URL}/llms-full.txt`,
+      description: 'Complete consolidated documentation for single-request ingestion and LLM grounding.',
+      representativeQueries: [
+        'Complete Maily documentation in single text file',
+        'Full llms-full.txt for temporary email API',
+        'LLM context ingestion for Maily'
+      ]
+    },
+    {
+      identifier: 'urn:air:stormsia.github.io:maily:llms',
+      displayName: 'Curated Machine Index (llms.txt)',
+      type: 'text/plain',
+      url: `${SITE_URL}/llms.txt`,
+      description: 'Curated machine-readable overview of Maily architecture, features, and endpoints.',
+      representativeQueries: [
+        'llms.txt for disposable email gateway',
+        'Machine index of Maily temporary email'
+      ]
+    },
+    {
+      identifier: 'urn:air:stormsia.github.io:maily:pricing',
+      displayName: 'Pricing & Licensing Declaration',
+      type: 'text/markdown',
+      url: `${SITE_URL}/pricing.md`,
+      description: '$0 FOSS MIT license declaration and unlimited self-hosted usage limits.',
+      representativeQueries: [
+        'Maily pricing and licensing',
+        'Is Maily temporary email free and open source?',
+        'Self-hosted temporary mail gateway license'
+      ]
+    },
+    {
+      identifier: 'urn:air:stormsia.github.io:maily:docs',
+      displayName: 'Developer Documentation Hub',
+      type: 'text/html',
+      url: `${SITE_URL}/docs`,
+      description: 'Comprehensive developer documentation, architecture overview, and quickstarts.',
+      representativeQueries: [
+        'Maily developer documentation hub',
+        'Quickstart guide for temporary email gateway'
+      ]
+    },
+    {
+      identifier: 'urn:air:stormsia.github.io:maily:python-sdk',
+      displayName: 'Python Async SDK Guide',
+      type: 'text/html',
+      url: `${SITE_URL}/docs/python`,
+      description: 'Developer guide for maily-client: Pydantic v2 schemas, async context managers, and OTP helpers.',
+      representativeQueries: [
+        'Python async SDK for temporary email',
+        'maily-client guide and Pydantic models',
+        'Extract verification code in Python async'
+      ]
+    },
+    {
+      identifier: 'urn:air:stormsia.github.io:maily:curl',
+      displayName: 'cURL & Universal REST API',
+      type: 'text/html',
+      url: `${SITE_URL}/docs/curl`,
+      description: 'HTTP/1.1 REST endpoints, authentication headers, SSE message streaming, and examples.',
+      representativeQueries: [
+        'cURL commands for disposable email API',
+        'REST endpoints for creating temporary mailbox'
+      ]
+    },
+    {
+      identifier: 'urn:air:stormsia.github.io:maily:docker',
+      displayName: 'Docker & Self-Hosting Guide',
+      type: 'text/html',
+      url: `${SITE_URL}/docs/docker`,
+      description: 'Hermetic self-hosted Docker deployment, Compose specification, and SQLite WAL volumes.',
+      representativeQueries: [
+        'Docker compose self-hosted temporary email',
+        'Run disposable email gateway in docker'
+      ]
+    },
+    {
+      identifier: 'urn:air:stormsia.github.io:maily:providers',
+      displayName: 'Provider Capabilities Matrix',
+      type: 'text/html',
+      url: `${SITE_URL}/docs/providers`,
+      description: 'Unified provider fleet matrix, domain rotation pool, and attachment capabilities.',
+      representativeQueries: [
+        'Disposable email provider capability matrix',
+        'Mailtm and tempmail alternative comparison'
+      ]
+    },
+    {
+      identifier: 'urn:air:stormsia.github.io:maily:recipes',
+      displayName: 'Playwright & Pytest Testing Recipes',
+      type: 'text/html',
+      url: `${SITE_URL}/docs/recipes`,
+      description: 'Complete Playwright, Cypress, and Pytest automation fixtures and OTP extraction recipes.',
+      representativeQueries: [
+        'Playwright email verification testing recipe',
+        'Pytest fixture for OTP code extraction'
+      ]
+    },
+    {
+      identifier: 'urn:air:stormsia.github.io:maily:architecture',
+      displayName: 'Security Architecture & Threat Model',
+      type: 'text/html',
+      url: `${SITE_URL}/docs/architecture`,
+      description: 'Inbound-only architecture, Fernet-256 token cryptography, and SQLite WAL design.',
+      representativeQueries: [
+        'Maily security architecture and threat model',
+        'Inbound-only email gateway security'
+      ]
+    },
+    {
+      identifier: 'urn:air:stormsia.github.io:maily:analytics',
+      displayName: 'Security & Provider Health Telemetry',
+      type: 'text/html',
+      url: `${SITE_URL}/analytics`,
+      description: 'Live SLA and availability monitoring for upstream disposable email providers.',
+      representativeQueries: [
+        'Provider health and SLA monitoring',
+        'Disposable email service uptime telemetry'
+      ]
+    },
+    {
+      identifier: 'urn:air:stormsia.github.io:maily:benchmarks',
+      displayName: 'Continuous Performance Benchmarks Portal',
+      type: 'text/html',
+      url: `${SITE_URL}/dev/bench/`,
+      description: 'Microsecond SQLite WAL and cryptographic execution benchmarks history.',
+      representativeQueries: [
+        'Maily SQLite WAL write latency benchmarks',
+        'Performance benchmarks for temp mail API'
+      ]
+    },
+    {
+      identifier: 'urn:air:stormsia.github.io:maily:scalar',
+      displayName: 'Scalar Interactive API Reference',
+      type: 'text/html',
+      url: `${SITE_URL}/scalar.html`,
+      description: 'Canonical interactive API reference and OpenAPI playground.',
+      representativeQueries: [
+        'Scalar interactive API reference Maily',
+        'Test temporary email API in browser'
+      ]
+    },
+    {
+      identifier: 'urn:air:stormsia.github.io:maily:swagger',
+      displayName: 'Swagger UI Cyberpunk Explorer',
+      type: 'text/html',
+      url: `${SITE_URL}/swagger.html`,
+      description: 'Interactive Swagger UI documentation sandbox.',
+      representativeQueries: [
+        'Swagger UI Maily API explorer'
+      ]
+    },
+    {
+      identifier: 'urn:air:stormsia.github.io:maily:redoc',
+      displayName: 'ReDoc Clean API Specification',
+      type: 'text/html',
+      url: `${SITE_URL}/redoc.html`,
+      description: 'Responsive clean ReDoc API specification.',
+      representativeQueries: [
+        'ReDoc documentation for Maily'
+      ]
+    }
+  ];
+
   return {
+    $schema: 'https://agenticresourcediscovery.org/schemas/v1/manifest.json',
     name: 'Maily',
     version: APP_VERSION,
     description: 'Universal temporary email gateway aggregating 8+ disposable mail providers into one unified REST API and async Python SDK with sub-second OTP extraction.',
     homepage: `${SITE_URL}/`,
     documentation: `${SITE_URL}/llms-full.txt`,
-    resources: [
-      {
-        name: 'llms.txt',
-        type: 'agent-index',
-        url: `${SITE_URL}/llms.txt`,
-        description: 'Curated machine-readable overview of Maily architecture, features, and endpoints'
-      },
-      {
-        name: 'llms-full.txt',
-        type: 'full-documentation',
-        url: `${SITE_URL}/llms-full.txt`,
-        description: 'Complete consolidated documentation for single-request ingestion and LLM grounding'
-      },
-      {
-        name: 'Pricing & Licensing Declaration',
-        type: 'pricing-manifest',
-        url: `${SITE_URL}/pricing.md`,
-        description: '$0 FOSS MIT license declaration and unlimited self-hosted usage limits'
-      },
-      {
-        name: 'OpenAPI Specification',
-        type: 'openapi-spec',
-        url: `${SITE_URL}/openapi.json`,
-        description: 'Full machine-readable OpenAPI 3.1 REST API specification'
-      },
-      {
-        name: 'Testing Skill Manifest',
-        type: 'agent-skill',
-        url: `${SITE_URL}/SKILL.md`,
-        description: 'Agent skill for automated Playwright and Pytest OTP verification with Maily'
-      },
-      {
-        name: 'Developer Documentation Hub',
-        type: 'documentation-hub',
-        url: `${SITE_URL}/docs`,
-        description: 'Comprehensive developer documentation, architecture overview, and quickstarts'
-      },
-      {
-        name: 'Python Async SDK Guide',
-        type: 'documentation-guide',
-        url: `${SITE_URL}/docs/python`,
-        description: 'Developer guide for maily-client: Pydantic v2 schemas, async context managers, and OTP helpers'
-      },
-      {
-        name: 'cURL & Universal REST API',
-        type: 'documentation-guide',
-        url: `${SITE_URL}/docs/curl`,
-        description: 'HTTP/1.1 REST endpoints, authentication headers, SSE message streaming, and examples'
-      },
-      {
-        name: 'Docker & Self-Hosting Guide',
-        type: 'documentation-guide',
-        url: `${SITE_URL}/docs/docker`,
-        description: 'Hermetic self-hosted Docker deployment, Compose specification, and SQLite WAL volumes'
-      },
-      {
-        name: 'Provider Capabilities Matrix',
-        type: 'documentation-guide',
-        url: `${SITE_URL}/docs/providers`,
-        description: 'Unified provider fleet matrix, domain rotation pool, and attachment capabilities'
-      },
-      {
-        name: 'Custom Provider Extension Guide',
-        type: 'documentation-guide',
-        url: `${SITE_URL}/docs/adding-providers`,
-        description: 'Step-by-step developer tutorial for implementing custom disposable email adapters'
-      },
-      {
-        name: 'Playwright & Pytest Recipes',
-        type: 'documentation-guide',
-        url: `${SITE_URL}/docs/recipes`,
-        description: 'Complete Playwright, Cypress, and Pytest automation fixtures and OTP extraction recipes'
-      },
-      {
-        name: 'Security Architecture & Threat Model',
-        type: 'documentation-guide',
-        url: `${SITE_URL}/docs/architecture`,
-        description: 'Inbound-only architecture, Fernet-256 token cryptography, and SQLite WAL design'
-      },
-      {
-        name: 'Security & Health Analytics',
-        type: 'telemetry-dashboard',
-        url: `${SITE_URL}/analytics`,
-        description: 'Live SLA and availability monitoring for upstream disposable email providers'
-      },
-      {
-        name: 'Performance Benchmarks Portal',
-        type: 'performance-metrics',
-        url: `${SITE_URL}/dev/bench/`,
-        description: 'Microsecond SQLite WAL and cryptographic execution benchmarks history'
-      },
-      {
-        name: 'Scalar API Reference',
-        type: 'api-reference',
-        url: `${SITE_URL}/scalar.html`,
-        description: 'Canonical interactive API reference and OpenAPI playground'
-      },
-      {
-        name: 'Swagger UI',
-        type: 'api-reference',
-        url: `${SITE_URL}/swagger.html`,
-        description: 'Interactive Swagger UI documentation sandbox'
-      },
-      {
-        name: 'ReDoc UI',
-        type: 'api-reference',
-        url: `${SITE_URL}/redoc.html`,
-        description: 'Responsive clean ReDoc API specification'
-      }
-    ]
+    entries,
+    resources: entries.map((e) => ({
+      name: e.displayName,
+      type: e.type,
+      url: e.url,
+      description: e.description
+    }))
   };
 }
 
@@ -454,6 +545,9 @@ async function prerender() {
       `<link rel="service-desc" type="application/vnd.oai.openapi+json" href="${cleanBase}/openapi.json" />`,
       `<link rel="alternate" type="text/plain" href="${cleanBase}/llms.txt" title="LLMs.txt" />`,
       `<link rel="alternate" type="text/plain" href="${cleanBase}/llms-full.txt" title="LLMs-full.txt" />`,
+      `<link rel="ard" type="application/json" href="${cleanBase}/.well-known/ard.json" title="Agentic Resource Discovery" />`,
+      `<link rel="ard" type="application/json" href="${cleanBase}/ard.json" title="Agentic Resource Discovery" />`,
+      `<link rel="ai-catalog" type="application/json" href="${cleanBase}/.well-known/ai-catalog.json" />`,
       `<link rel="ai-catalog" type="application/json" href="${cleanBase}/ai-catalog.json" />`,
       `<link rel="help" type="text/markdown" href="${cleanBase}/SKILL.md" title="Agent Testing Skill" />`,
       `<link rel="agent-skill" type="text/markdown" href="${cleanBase}/SKILL.md" title="Agent Testing Skill" />`,
@@ -543,17 +637,33 @@ async function prerender() {
   fs.writeFileSync(path.resolve(PUBLIC_DIR, 'sitemap.xml'), sitemapXml, 'utf-8');
   console.log('[SSG] Generated clean sitemap.xml with 0 legacy .html URLs');
 
-  // Generate and sync ai-catalog.json and .well-known/ai-catalog.json
-  const aiCatalogData = JSON.stringify(generateAiCatalogJson(), null, 2);
-  fs.writeFileSync(path.resolve(PUBLIC_DIR, 'ai-catalog.json'), aiCatalogData, 'utf-8');
+  // Generate and sync ard.json, ai-catalog.json and .well-known/
+  const ardManifestData = JSON.stringify(generateArdManifestJson(), null, 2);
+  fs.writeFileSync(path.resolve(PUBLIC_DIR, 'ard.json'), ardManifestData, 'utf-8');
+  fs.writeFileSync(path.resolve(PUBLIC_DIR, 'ai-catalog.json'), ardManifestData, 'utf-8');
   const wellKnownDir = path.resolve(PUBLIC_DIR, '.well-known');
   fs.mkdirSync(wellKnownDir, { recursive: true });
-  fs.writeFileSync(path.resolve(wellKnownDir, 'ai-catalog.json'), aiCatalogData, 'utf-8');
-  console.log('[SSG] Generated synchronized clean ai-catalog.json and .well-known/ai-catalog.json');
+  fs.writeFileSync(path.resolve(wellKnownDir, 'ard.json'), ardManifestData, 'utf-8');
+  fs.writeFileSync(path.resolve(wellKnownDir, 'ai-catalog.json'), ardManifestData, 'utf-8');
 
-  // Verify openapi.json exists
+  // Also persist to site/public/ for repository tracking
+  if (fs.existsSync(sitePublicDir)) {
+    fs.writeFileSync(path.resolve(sitePublicDir, 'ard.json'), ardManifestData, 'utf-8');
+    fs.writeFileSync(path.resolve(sitePublicDir, 'ai-catalog.json'), ardManifestData, 'utf-8');
+    const siteWellKnownDir = path.resolve(sitePublicDir, '.well-known');
+    fs.mkdirSync(siteWellKnownDir, { recursive: true });
+    fs.writeFileSync(path.resolve(siteWellKnownDir, 'ard.json'), ardManifestData, 'utf-8');
+    fs.writeFileSync(path.resolve(siteWellKnownDir, 'ai-catalog.json'), ardManifestData, 'utf-8');
+  }
+  console.log('[SSG] Generated synchronized clean ARD manifests (ard.json, ai-catalog.json, and .well-known/)');
+
+  // Verify or copy openapi.json
   const openapiSrc = path.resolve(PUBLIC_DIR, 'openapi.json');
-  if (fs.existsSync(openapiSrc)) {
+  const openapiSite = path.resolve(sitePublicDir, 'openapi.json');
+  if (!fs.existsSync(openapiSrc) && fs.existsSync(openapiSite)) {
+    fs.copyFileSync(openapiSite, openapiSrc);
+    console.log('[SSG] Copied openapi.json from site/public to public/');
+  } else if (fs.existsSync(openapiSrc)) {
     console.log('[SSG] Verified public/openapi.json is present.');
   }
 

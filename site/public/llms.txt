@@ -21,6 +21,7 @@
 - [Scalar Interactive Reference](https://stormsia.github.io/maily/scalar.html): Interactive OpenAPI testing sandbox.
 - [LLMs Full Documentation](https://stormsia.github.io/maily/llms-full.txt): Complete concatenated documentation with all 43 REST endpoints.
 - [Agent E2E Testing Skill](https://stormsia.github.io/maily/SKILL.md): Standard instruction file for Claude Code, Cursor, and Windsurf.
-- [AI Catalog Index](https://stormsia.github.io/maily/.well-known/ai-catalog.json): Machine-readable capability catalog.
+- [Agentic Resource Discovery (ARD)](https://stormsia.github.io/maily/.well-known/ard.json): Standard ARD capability catalog.
+- [AI Catalog Index](https://stormsia.github.io/maily/.well-known/ai-catalog.json): Machine-readable capability catalog (legacy format).
 - [Continuous Benchmarks](https://stormsia.github.io/maily/dev/bench/): Microsecond engine latencies and SQLite WAL telemetry.
 - [Security & Quality Dashboard](https://stormsia.github.io/maily/analytics): Live provider fleet uptime and composite SLA metrics.

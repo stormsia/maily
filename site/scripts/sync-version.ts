@@ -54,7 +54,7 @@ export function syncVersion(): string {
       }
     }
 
-    for (const catName of ['ai-catalog.json', '.well-known/ai-catalog.json']) {
+    for (const catName of ['ard.json', '.well-known/ard.json', 'ai-catalog.json', '.well-known/ai-catalog.json']) {
       const catFile = path.join(publicDir, catName);
       if (fs.existsSync(catFile)) {
         try {

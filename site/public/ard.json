@@ -1,0 +1,304 @@
+{
+  "$schema": "https://agenticresourcediscovery.org/schemas/v1/manifest.json",
+  "name": "Maily",
+  "version": "0.9.1",
+  "description": "Universal temporary email gateway aggregating 8+ disposable mail providers into one unified REST API and async Python SDK with sub-second OTP extraction.",
+  "homepage": "https://stormsia.github.io/maily/",
+  "documentation": "https://stormsia.github.io/maily/llms-full.txt",
+  "entries": [
+    {
+      "identifier": "urn:air:stormsia.github.io:maily:openapi",
+      "displayName": "OpenAPI 3.1 REST API Specification",
+      "type": "application/vnd.oai.openapi+json",
+      "url": "https://stormsia.github.io/maily/openapi.json",
+      "description": "Full machine-readable OpenAPI 3.1 REST API specification for temporary email management and OTP code polling.",
+      "representativeQueries": [
+        "OpenAPI specification for temporary email",
+        "Maily REST API schema 3.1",
+        "Disposable email swagger openapi json"
+      ]
+    },
+    {
+      "identifier": "urn:air:stormsia.github.io:maily:skill",
+      "displayName": "Agent Testing Skill Manifest",
+      "type": "text/markdown",
+      "url": "https://stormsia.github.io/maily/SKILL.md",
+      "description": "Agent skill for automated Playwright and Pytest OTP verification with Maily.",
+      "representativeQueries": [
+        "Agent skill for temporary email testing",
+        "Playwright disposable mailbox fixtures",
+        "Pytest email OTP verification skill"
+      ]
+    },
+    {
+      "identifier": "urn:air:stormsia.github.io:maily:llms-full",
+      "displayName": "Consolidated Agent Documentation (llms-full.txt)",
+      "type": "text/plain",
+      "url": "https://stormsia.github.io/maily/llms-full.txt",
+      "description": "Complete consolidated documentation for single-request ingestion and LLM grounding.",
+      "representativeQueries": [
+        "Complete Maily documentation in single text file",
+        "Full llms-full.txt for temporary email API",
+        "LLM context ingestion for Maily"
+      ]
+    },
+    {
+      "identifier": "urn:air:stormsia.github.io:maily:llms",
+      "displayName": "Curated Machine Index (llms.txt)",
+      "type": "text/plain",
+      "url": "https://stormsia.github.io/maily/llms.txt",
+      "description": "Curated machine-readable overview of Maily architecture, features, and endpoints.",
+      "representativeQueries": [
+        "llms.txt for disposable email gateway",
+        "Machine index of Maily temporary email"
+      ]
+    },
+    {
+      "identifier": "urn:air:stormsia.github.io:maily:pricing",
+      "displayName": "Pricing & Licensing Declaration",
+      "type": "text/markdown",
+      "url": "https://stormsia.github.io/maily/pricing.md",
+      "description": "$0 FOSS MIT license declaration and unlimited self-hosted usage limits.",
+      "representativeQueries": [
+        "Maily pricing and licensing",
+        "Is Maily temporary email free and open source?",
+        "Self-hosted temporary mail gateway license"
+      ]
+    },
+    {
+      "identifier": "urn:air:stormsia.github.io:maily:docs",
+      "displayName": "Developer Documentation Hub",
+      "type": "text/html",
+      "url": "https://stormsia.github.io/maily/docs",
+      "description": "Comprehensive developer documentation, architecture overview, and quickstarts.",
+      "representativeQueries": [
+        "Maily developer documentation hub",
+        "Quickstart guide for temporary email gateway"
+      ]
+    },
+    {
+      "identifier": "urn:air:stormsia.github.io:maily:python-sdk",
+      "displayName": "Python Async SDK Guide",
+      "type": "text/html",
+      "url": "https://stormsia.github.io/maily/docs/python",
+      "description": "Developer guide for maily-client: Pydantic v2 schemas, async context managers, and OTP helpers.",
+      "representativeQueries": [
+        "Python async SDK for temporary email",
+        "maily-client guide and Pydantic models",
+        "Extract verification code in Python async"
+      ]
+    },
+    {
+      "identifier": "urn:air:stormsia.github.io:maily:curl",
+      "displayName": "cURL & Universal REST API",
+      "type": "text/html",
+      "url": "https://stormsia.github.io/maily/docs/curl",
+      "description": "HTTP/1.1 REST endpoints, authentication headers, SSE message streaming, and examples.",
+      "representativeQueries": [
+        "cURL commands for disposable email API",
+        "REST endpoints for creating temporary mailbox"
+      ]
+    },
+    {
+      "identifier": "urn:air:stormsia.github.io:maily:docker",
+      "displayName": "Docker & Self-Hosting Guide",
+      "type": "text/html",
+      "url": "https://stormsia.github.io/maily/docs/docker",
+      "description": "Hermetic self-hosted Docker deployment, Compose specification, and SQLite WAL volumes.",
+      "representativeQueries": [
+        "Docker compose self-hosted temporary email",
+        "Run disposable email gateway in docker"
+      ]
+    },
+    {
+      "identifier": "urn:air:stormsia.github.io:maily:providers",
+      "displayName": "Provider Capabilities Matrix",
+      "type": "text/html",
+      "url": "https://stormsia.github.io/maily/docs/providers",
+      "description": "Unified provider fleet matrix, domain rotation pool, and attachment capabilities.",
+      "representativeQueries": [
+        "Disposable email provider capability matrix",
+        "Mailtm and tempmail alternative comparison"
+      ]
+    },
+    {
+      "identifier": "urn:air:stormsia.github.io:maily:recipes",
+      "displayName": "Playwright & Pytest Testing Recipes",
+      "type": "text/html",
+      "url": "https://stormsia.github.io/maily/docs/recipes",
+      "description": "Complete Playwright, Cypress, and Pytest automation fixtures and OTP extraction recipes.",
+      "representativeQueries": [
+        "Playwright email verification testing recipe",
+        "Pytest fixture for OTP code extraction"
+      ]
+    },
+    {
+      "identifier": "urn:air:stormsia.github.io:maily:architecture",
+      "displayName": "Security Architecture & Threat Model",
+      "type": "text/html",
+      "url": "https://stormsia.github.io/maily/docs/architecture",
+      "description": "Inbound-only architecture, Fernet-256 token cryptography, and SQLite WAL design.",
+      "representativeQueries": [
+        "Maily security architecture and threat model",
+        "Inbound-only email gateway security"
+      ]
+    },
+    {
+      "identifier": "urn:air:stormsia.github.io:maily:analytics",
+      "displayName": "Security & Provider Health Telemetry",
+      "type": "text/html",
+      "url": "https://stormsia.github.io/maily/analytics",
+      "description": "Live SLA and availability monitoring for upstream disposable email providers.",
+      "representativeQueries": [
+        "Provider health and SLA monitoring",
+        "Disposable email service uptime telemetry"
+      ]
+    },
+    {
+      "identifier": "urn:air:stormsia.github.io:maily:benchmarks",
+      "displayName": "Continuous Performance Benchmarks Portal",
+      "type": "text/html",
+      "url": "https://stormsia.github.io/maily/dev/bench/",
+      "description": "Microsecond SQLite WAL and cryptographic execution benchmarks history.",
+      "representativeQueries": [
+        "Maily SQLite WAL write latency benchmarks",
+        "Performance benchmarks for temp mail API"
+      ]
+    },
+    {
+      "identifier": "urn:air:stormsia.github.io:maily:scalar",
+      "displayName": "Scalar Interactive API Reference",
+      "type": "text/html",
+      "url": "https://stormsia.github.io/maily/scalar.html",
+      "description": "Canonical interactive API reference and OpenAPI playground.",
+      "representativeQueries": [
+        "Scalar interactive API reference Maily",
+        "Test temporary email API in browser"
+      ]
+    },
+    {
+      "identifier": "urn:air:stormsia.github.io:maily:swagger",
+      "displayName": "Swagger UI Cyberpunk Explorer",
+      "type": "text/html",
+      "url": "https://stormsia.github.io/maily/swagger.html",
+      "description": "Interactive Swagger UI documentation sandbox.",
+      "representativeQueries": [
+        "Swagger UI Maily API explorer"
+      ]
+    },
+    {
+      "identifier": "urn:air:stormsia.github.io:maily:redoc",
+      "displayName": "ReDoc Clean API Specification",
+      "type": "text/html",
+      "url": "https://stormsia.github.io/maily/redoc.html",
+      "description": "Responsive clean ReDoc API specification.",
+      "representativeQueries": [
+        "ReDoc documentation for Maily"
+      ]
+    }
+  ],
+  "resources": [
+    {
+      "name": "OpenAPI 3.1 REST API Specification",
+      "type": "application/vnd.oai.openapi+json",
+      "url": "https://stormsia.github.io/maily/openapi.json",
+      "description": "Full machine-readable OpenAPI 3.1 REST API specification for temporary email management and OTP code polling."
+    },
+    {
+      "name": "Agent Testing Skill Manifest",
+      "type": "text/markdown",
+      "url": "https://stormsia.github.io/maily/SKILL.md",
+      "description": "Agent skill for automated Playwright and Pytest OTP verification with Maily."
+    },
+    {
+      "name": "Consolidated Agent Documentation (llms-full.txt)",
+      "type": "text/plain",
+      "url": "https://stormsia.github.io/maily/llms-full.txt",
+      "description": "Complete consolidated documentation for single-request ingestion and LLM grounding."
+    },
+    {
+      "name": "Curated Machine Index (llms.txt)",
+      "type": "text/plain",
+      "url": "https://stormsia.github.io/maily/llms.txt",
+      "description": "Curated machine-readable overview of Maily architecture, features, and endpoints."
+    },
+    {
+      "name": "Pricing & Licensing Declaration",
+      "type": "text/markdown",
+      "url": "https://stormsia.github.io/maily/pricing.md",
+      "description": "$0 FOSS MIT license declaration and unlimited self-hosted usage limits."
+    },
+    {
+      "name": "Developer Documentation Hub",
+      "type": "text/html",
+      "url": "https://stormsia.github.io/maily/docs",
+      "description": "Comprehensive developer documentation, architecture overview, and quickstarts."
+    },
+    {
+      "name": "Python Async SDK Guide",
+      "type": "text/html",
+      "url": "https://stormsia.github.io/maily/docs/python",
+      "description": "Developer guide for maily-client: Pydantic v2 schemas, async context managers, and OTP helpers."
+    },
+    {
+      "name": "cURL & Universal REST API",
+      "type": "text/html",
+      "url": "https://stormsia.github.io/maily/docs/curl",
+      "description": "HTTP/1.1 REST endpoints, authentication headers, SSE message streaming, and examples."
+    },
+    {
+      "name": "Docker & Self-Hosting Guide",
+      "type": "text/html",
+      "url": "https://stormsia.github.io/maily/docs/docker",
+      "description": "Hermetic self-hosted Docker deployment, Compose specification, and SQLite WAL volumes."
+    },
+    {
+      "name": "Provider Capabilities Matrix",
+      "type": "text/html",
+      "url": "https://stormsia.github.io/maily/docs/providers",
+      "description": "Unified provider fleet matrix, domain rotation pool, and attachment capabilities."
+    },
+    {
+      "name": "Playwright & Pytest Testing Recipes",
+      "type": "text/html",
+      "url": "https://stormsia.github.io/maily/docs/recipes",
+      "description": "Complete Playwright, Cypress, and Pytest automation fixtures and OTP extraction recipes."
+    },
+    {
+      "name": "Security Architecture & Threat Model",
+      "type": "text/html",
+      "url": "https://stormsia.github.io/maily/docs/architecture",
+      "description": "Inbound-only architecture, Fernet-256 token cryptography, and SQLite WAL design."
+    },
+    {
+      "name": "Security & Provider Health Telemetry",
+      "type": "text/html",
+      "url": "https://stormsia.github.io/maily/analytics",
+      "description": "Live SLA and availability monitoring for upstream disposable email providers."
+    },
+    {
+      "name": "Continuous Performance Benchmarks Portal",
+      "type": "text/html",
+      "url": "https://stormsia.github.io/maily/dev/bench/",
+      "description": "Microsecond SQLite WAL and cryptographic execution benchmarks history."
+    },
+    {
+      "name": "Scalar Interactive API Reference",
+      "type": "text/html",
+      "url": "https://stormsia.github.io/maily/scalar.html",
+      "description": "Canonical interactive API reference and OpenAPI playground."
+    },
+    {
+      "name": "Swagger UI Cyberpunk Explorer",
+      "type": "text/html",
+      "url": "https://stormsia.github.io/maily/swagger.html",
+      "description": "Interactive Swagger UI documentation sandbox."
+    },
+    {
+      "name": "ReDoc Clean API Specification",
+      "type": "text/html",
+      "url": "https://stormsia.github.io/maily/redoc.html",
+      "description": "Responsive clean ReDoc API specification."
+    }
+  ]
+}

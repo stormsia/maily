@@ -121,6 +121,15 @@ jobs:
         run: |
           npx --yes htmlhint src/maily/static/*.html
 
+      - name: Build & validate React SSG Developer Portal
+        run: |
+          uv run python scripts/export_openapi.py
+          cd site
+          npm ci
+          npm run build
+          cd ..
+          uv run pytest tests/test_pages_build.py
+
   type-check:
     name: Type Check (mypy)
     runs-on: ubuntu-latest

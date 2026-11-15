@@ -68,7 +68,12 @@ export const APP_VERSION_TAG = `v${{APP_VERSION}}`;
                 txt = re.sub(r"(?i)version:\s*[0-9\.]+", f"version: {ver}", txt)
                 md_file.write_text(txt, encoding="utf-8")
 
-        for cat_name in ["ai-catalog.json", ".well-known/ai-catalog.json"]:
+        for cat_name in [
+            "ard.json",
+            ".well-known/ard.json",
+            "ai-catalog.json",
+            ".well-known/ai-catalog.json",
+        ]:
             cat_file = public_dir / cat_name
             if cat_file.exists():
                 try:

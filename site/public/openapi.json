@@ -1,0 +1,3990 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "maily",
+    "description": "Local multi-provider temporary-email API. Most endpoints require the `X-API-Key` header (see Admin \u2192 API key in the dashboard).",
+    "version": "0.9.1"
+  },
+  "paths": {
+    "/health": {
+      "get": {
+        "tags": [
+          "System"
+        ],
+        "summary": "Health",
+        "description": "Brief liveness + degradation view for monitoring.\n\n`status` mirrors the previous shape; `domain_cache` reports per-provider\nlast refresh time, cached domain count and the latest refresh error.",
+        "operationId": "health_health_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Health Health Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/config": {
+      "get": {
+        "tags": [
+          "System"
+        ],
+        "summary": "Config",
+        "description": "Non-secret server facts for the dashboard and the standalone client.\n\nThis router is auth-free: `client_version` lets a pip-installed client\ndetect it should run `python -m client update`.",
+        "operationId": "config_v1_config_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Config V1 Config Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/updates/check": {
+      "get": {
+        "tags": [
+          "System"
+        ],
+        "summary": "Check Updates",
+        "description": "Check if a new version is available on GitHub.",
+        "operationId": "check_updates_v1_updates_check_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Check Updates V1 Updates Check Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/gmail/oauth/callback": {
+      "get": {
+        "tags": [
+          "Gmail"
+        ],
+        "summary": "Oauth Callback",
+        "description": "OAuth redirect target (browser flow). Not for direct use.",
+        "operationId": "oauth_callback_v1_gmail_oauth_callback_get",
+        "parameters": [
+          {
+            "name": "code",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "",
+              "title": "Code"
+            }
+          },
+          {
+            "name": "state",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "",
+              "title": "State"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Gmail"
+        ],
+        "summary": "Oauth Callback Post",
+        "description": "Manually complete OAuth when browser callback is unreachable (e.g. behind proxy).",
+        "operationId": "oauth_callback_post_v1_gmail_oauth_callback_post",
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OAuthCallbackIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GmailAccountOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/providers": {
+      "get": {
+        "tags": [
+          "Providers"
+        ],
+        "summary": "List Providers",
+        "description": "List enabled providers and their kind (api/token or domain-based).",
+        "operationId": "list_providers_v1_providers_get",
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ProviderOut"
+                  },
+                  "title": "Response List Providers V1 Providers Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/targets": {
+      "get": {
+        "tags": [
+          "Providers"
+        ],
+        "summary": "List Targets",
+        "description": "List usable posting targets, optionally filtered by provider slug.",
+        "operationId": "list_targets_v1_targets_get",
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "provider",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Provider"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/TargetOut"
+                  },
+                  "title": "Response List Targets V1 Targets Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/gmail/oauth/start": {
+      "post": {
+        "tags": [
+          "Gmail"
+        ],
+        "summary": "Oauth Start",
+        "operationId": "oauth_start_v1_gmail_oauth_start_post",
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OAuthStartOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/gmail/oauth/exchange": {
+      "post": {
+        "tags": [
+          "Gmail"
+        ],
+        "summary": "Oauth Callback Post",
+        "description": "Manually complete OAuth when browser callback is unreachable (e.g. behind proxy).",
+        "operationId": "oauth_callback_post_v1_gmail_oauth_exchange_post",
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OAuthCallbackIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GmailAccountOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/gmail/accounts/import": {
+      "post": {
+        "tags": [
+          "Gmail"
+        ],
+        "summary": "Import Account",
+        "operationId": "import_account_v1_gmail_accounts_import_post",
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ImportGmailIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GmailAccountOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/gmail/accounts": {
+      "get": {
+        "tags": [
+          "Gmail"
+        ],
+        "summary": "List Accounts",
+        "description": "List connected Gmail accounts (expired ones included for reconnection).",
+        "operationId": "list_accounts_v1_gmail_accounts_get",
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/GmailAccountOut"
+                  },
+                  "title": "Response List Accounts V1 Gmail Accounts Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/gmail/accounts/{parent_id}": {
+      "delete": {
+        "tags": [
+          "Gmail"
+        ],
+        "summary": "Delete Account",
+        "description": "Disconnect a linked Gmail account the caller owns.",
+        "operationId": "delete_account_v1_gmail_accounts__parent_id__delete",
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "parent_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Parent Id"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/gmail/accounts/{parent_id}/sync": {
+      "post": {
+        "tags": [
+          "Gmail"
+        ],
+        "summary": "Sync Account",
+        "description": "Refresh profile/token state for a linked Gmail account the caller owns.",
+        "operationId": "sync_account_v1_gmail_accounts__parent_id__sync_post",
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "parent_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Parent Id"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GmailAccountOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/mailboxes": {
+      "post": {
+        "tags": [
+          "Mailboxes"
+        ],
+        "summary": "Create",
+        "description": "Create a disposable mailbox on a provider (optionally with a specific address/password).",
+        "operationId": "create_v1_mailboxes_post",
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateMailboxIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MailboxOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Mailboxes"
+        ],
+        "summary": "List Mailboxes",
+        "description": "List mailboxes with optional provider/status filtering, address search and pagination.",
+        "operationId": "list_mailboxes_v1_mailboxes_get",
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "provider",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Provider"
+            }
+          },
+          {
+            "name": "active",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": true,
+              "title": "Active"
+            }
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Substring filter on the full address",
+              "title": "Q"
+            },
+            "description": "Substring filter on the full address"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "maximum": 500,
+                  "minimum": 1
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Max rows to return (default 500)",
+              "title": "Limit"
+            },
+            "description": "Max rows to return (default 500)"
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Row offset",
+              "title": "Offset"
+            },
+            "description": "Row offset"
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/MailboxOut"
+                  },
+                  "title": "Response List Mailboxes V1 Mailboxes Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/mailboxes/by-address/{email}": {
+      "get": {
+        "tags": [
+          "Mailboxes"
+        ],
+        "summary": "By Address",
+        "description": "Look up a mailbox by its full email address.",
+        "operationId": "by_address_v1_mailboxes_by_address__email__get",
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "email",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Email"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MailboxOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/mailboxes/{mailbox_id}": {
+      "get": {
+        "tags": [
+          "Mailboxes"
+        ],
+        "summary": "Get One",
+        "description": "Fetch a single mailbox by id.",
+        "operationId": "get_one_v1_mailboxes__mailbox_id__get",
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "mailbox_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Mailbox Id"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MailboxOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Mailboxes"
+        ],
+        "summary": "Delete One",
+        "description": "Deactivate and mark a mailbox deleted (also deletes it upstream).",
+        "operationId": "delete_one_v1_mailboxes__mailbox_id__delete",
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "mailbox_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Mailbox Id"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/mailboxes/{mailbox_id}/messages": {
+      "get": {
+        "tags": [
+          "Messages"
+        ],
+        "summary": "List Messages",
+        "description": "List a mailbox's messages (fetches one page from the provider and caches it).",
+        "operationId": "list_messages_v1_mailboxes__mailbox_id__messages_get",
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "mailbox_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Mailbox Id"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 1,
+              "title": "Page"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/MessageOut"
+                  },
+                  "title": "Response List Messages V1 Mailboxes  Mailbox Id  Messages Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/mailboxes/{mailbox_id}/messages/{msg_id}": {
+      "get": {
+        "tags": [
+          "Messages"
+        ],
+        "summary": "Get Message",
+        "description": "Fetch a single message with its full text and HTML bodies.",
+        "operationId": "get_message_v1_mailboxes__mailbox_id__messages__msg_id__get",
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "mailbox_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Mailbox Id"
+            }
+          },
+          {
+            "name": "msg_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Msg Id"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MessageDetailOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Messages"
+        ],
+        "summary": "Delete Message",
+        "description": "Delete a message (upstream and local cache).",
+        "operationId": "delete_message_v1_mailboxes__mailbox_id__messages__msg_id__delete",
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "mailbox_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Mailbox Id"
+            }
+          },
+          {
+            "name": "msg_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Msg Id"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/mailboxes/{mailbox_id}/messages/{msg_id}/read": {
+      "post": {
+        "tags": [
+          "Messages"
+        ],
+        "summary": "Mark Read",
+        "description": "Mark a message as read (both upstream and locally).",
+        "operationId": "mark_read_v1_mailboxes__mailbox_id__messages__msg_id__read_post",
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "mailbox_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Mailbox Id"
+            }
+          },
+          {
+            "name": "msg_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Msg Id"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MessageOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/mailboxes/{mailbox_id}/messages/{msg_id}/source": {
+      "get": {
+        "tags": [
+          "Messages"
+        ],
+        "summary": "Get Source",
+        "description": "Download the raw message source (.eml payload).",
+        "operationId": "get_source_v1_mailboxes__mailbox_id__messages__msg_id__source_get",
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "mailbox_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Mailbox Id"
+            }
+          },
+          {
+            "name": "msg_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Msg Id"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SourceOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/admin/stats": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Stats",
+        "description": "Dashboard stats: mailbox/message totals, provider split, 7-day trend,\nand a 10-day activity history that also covers retention-deleted items.",
+        "operationId": "stats_v1_admin_stats_get",
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "type": "object",
+                      "additionalProperties": true
+                    },
+                    {
+                      "$ref": "#/components/schemas/ScopedStats"
+                    }
+                  ],
+                  "title": "Response Stats V1 Admin Stats Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/admin/retention": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "List Retention",
+        "description": "List active TTL retention rules. Root reads the global table.",
+        "operationId": "list_retention_v1_admin_retention_get",
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/RetentionOut"
+                  },
+                  "title": "Response List Retention V1 Admin Retention Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/admin/retention/{provider}": {
+      "put": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Set Retention",
+        "description": "Create or update TTL retention for a provider (at least one TTL required).",
+        "operationId": "set_retention_v1_admin_retention__provider__put",
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "provider",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Provider"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RetentionIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RetentionOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Remove Retention",
+        "description": "Disable retention rules for a provider.",
+        "operationId": "remove_retention_v1_admin_retention__provider__delete",
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "provider",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Provider"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/admin/retention/run": {
+      "post": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Run Retention Sweep",
+        "description": "Run the retention cleanup sweep right now. A key sweeps only its mailboxes.\n\nPass `force_maintenance=true` to force full database maintenance (VACUUM,\nREINDEX, ANALYZE, WAL checkpoints, quick_check) immediately regardless of the\nconfigured throttling interval.",
+        "operationId": "run_retention_sweep_v1_admin_retention_run_post",
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "force_maintenance",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false,
+              "title": "Force Maintenance"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Run Retention Sweep V1 Admin Retention Run Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/admin/domain-cache": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Get Domain Cache",
+        "description": "Domain cache settings and per-provider state.",
+        "operationId": "get_domain_cache_v1_admin_domain_cache_get",
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DomainCacheOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Set Domain Cache",
+        "description": "Update domain cache settings (enabled / interval).",
+        "operationId": "set_domain_cache_v1_admin_domain_cache_put",
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DomainCacheIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DomainCacheOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/admin/domain-cache/run": {
+      "post": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Run Domain Cache",
+        "description": "Force a domain cache refresh; 502 with a failed list when a provider errors.",
+        "operationId": "run_domain_cache_v1_admin_domain_cache_run_post",
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/admin/gmail/creds": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Get Gmail Creds",
+        "description": "Current Gmail OAuth credentials (env or the encrypted store).",
+        "operationId": "get_gmail_creds_v1_admin_gmail_creds_get",
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GmailCredsOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Save Gmail Creds",
+        "description": "Save Gmail OAuth credentials to the encrypted store.",
+        "operationId": "save_gmail_creds_v1_admin_gmail_creds_put",
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GmailCredsIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GmailCredsOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Clear Gmail Creds",
+        "description": "Clear stored Gmail OAuth credentials.",
+        "operationId": "clear_gmail_creds_v1_admin_gmail_creds_delete",
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/admin/keys/me": {
+      "get": {
+        "tags": [
+          "Keys"
+        ],
+        "summary": "Current principal",
+        "description": "Any authenticated principal. Root is {is_root: true}; an issued key gets its own row without a secret.",
+        "operationId": "me_v1_admin_keys_me_get",
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/RootMeOut"
+                    },
+                    {
+                      "$ref": "#/components/schemas/IssuedMeOut"
+                    }
+                  ],
+                  "title": "Response Me V1 Admin Keys Me Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/admin/keys": {
+      "post": {
+        "tags": [
+          "Keys"
+        ],
+        "summary": "Create key",
+        "description": "Root only. Returns the new row plus the secret once.",
+        "operationId": "create_key_v1_admin_keys_post",
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/KeyCreateIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreatedKeyOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Keys"
+        ],
+        "summary": "List keys",
+        "description": "Root only. Lists every key without secret material.",
+        "operationId": "list_keys_v1_admin_keys_get",
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/KeyOut"
+                  },
+                  "title": "Response List Keys V1 Admin Keys Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/admin/keys/{key_id}": {
+      "get": {
+        "tags": [
+          "Keys"
+        ],
+        "summary": "Get key",
+        "description": "Root only. Returns one key without secret material.",
+        "operationId": "get_key_v1_admin_keys__key_id__get",
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "key_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Key Id"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KeyOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "Keys"
+        ],
+        "summary": "Update key",
+        "description": "Root only. Updates name, expires_at, and scope. Does not change the secret.",
+        "operationId": "update_key_v1_admin_keys__key_id__patch",
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "key_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Key Id"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/KeyUpdateIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KeyOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Keys"
+        ],
+        "summary": "Delete key",
+        "description": "Root only. 204, or 409 when the key still owns a live mailbox or gmail account.",
+        "operationId": "delete_key_v1_admin_keys__key_id__delete",
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "key_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Key Id"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/admin/keys/{key_id}/secret": {
+      "get": {
+        "tags": [
+          "Keys"
+        ],
+        "summary": "Reveal secret",
+        "description": "Root only. Decrypts the stored secret. Repeat calls return the same plaintext.",
+        "operationId": "reveal_secret_v1_admin_keys__key_id__secret_get",
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "key_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Key Id"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SecretOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/admin/keys/{key_id}/retention": {
+      "put": {
+        "tags": [
+          "Keys"
+        ],
+        "summary": "Replace retention",
+        "description": "Root only. Replaces that key's key_retention rows.",
+        "operationId": "replace_retention_v1_admin_keys__key_id__retention_put",
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "key_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Key Id"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/KeyRetentionIn"
+                },
+                "title": "Body"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/KeyRetentionOut"
+                  },
+                  "title": "Response Replace Retention V1 Admin Keys  Key Id  Retention Put"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/admin/keys/{key_id}/rotate": {
+      "post": {
+        "tags": [
+          "Keys"
+        ],
+        "summary": "Rotate secret",
+        "description": "Root only. Returns a new secret once. The key id does not change.",
+        "operationId": "rotate_key_v1_admin_keys__key_id__rotate_post",
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "key_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Key Id"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreatedKeyOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "CreateMailboxIn": {
+        "properties": {
+          "provider": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Provider"
+          },
+          "domain": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Domain"
+          },
+          "parent_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parent Id"
+          },
+          "address": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Address"
+          },
+          "password": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Password"
+          }
+        },
+        "type": "object",
+        "title": "CreateMailboxIn"
+      },
+      "CreatedKeyOut": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "prefix": {
+            "type": "string",
+            "title": "Prefix"
+          },
+          "scope": {
+            "$ref": "#/components/schemas/KeyScopeIn"
+          },
+          "expires_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expires At"
+          },
+          "created_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created At"
+          },
+          "updated_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Updated At"
+          },
+          "key_retention": {
+            "items": {
+              "$ref": "#/components/schemas/KeyRetentionOut"
+            },
+            "type": "array",
+            "title": "Key Retention"
+          },
+          "secret": {
+            "type": "string",
+            "title": "Secret"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "prefix",
+          "scope",
+          "secret"
+        ],
+        "title": "CreatedKeyOut",
+        "description": "Create or rotate result. secret is present only on these responses."
+      },
+      "DomainCacheIn": {
+        "properties": {
+          "enabled": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Enabled"
+          },
+          "interval_seconds": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Interval Seconds"
+          }
+        },
+        "type": "object",
+        "title": "DomainCacheIn"
+      },
+      "DomainCacheOut": {
+        "properties": {
+          "enabled": {
+            "title": "Enabled"
+          },
+          "interval_seconds": {
+            "title": "Interval Seconds"
+          },
+          "providers": {
+            "title": "Providers"
+          }
+        },
+        "type": "object",
+        "title": "DomainCacheOut"
+      },
+      "DomainCacheProviderOut": {
+        "properties": {
+          "provider": {
+            "title": "Provider"
+          },
+          "kind": {
+            "title": "Kind"
+          },
+          "domains_count": {
+            "title": "Domains Count"
+          },
+          "updated_at": {
+            "title": "Updated At"
+          },
+          "error": {
+            "title": "Error"
+          }
+        },
+        "type": "object",
+        "required": [
+          "provider"
+        ],
+        "title": "DomainCacheProviderOut"
+      },
+      "EventCounts": {
+        "properties": {
+          "mailbox_created": {
+            "type": "integer",
+            "title": "Mailbox Created"
+          },
+          "mailbox_deleted": {
+            "type": "integer",
+            "title": "Mailbox Deleted"
+          },
+          "message_received": {
+            "type": "integer",
+            "title": "Message Received"
+          },
+          "message_deleted": {
+            "type": "integer",
+            "title": "Message Deleted"
+          }
+        },
+        "type": "object",
+        "required": [
+          "mailbox_created",
+          "mailbox_deleted",
+          "message_received",
+          "message_deleted"
+        ],
+        "title": "EventCounts"
+      },
+      "GmailAccountOut": {
+        "properties": {
+          "id": {
+            "title": "Id"
+          },
+          "email": {
+            "title": "Email"
+          },
+          "status": {
+            "title": "Status"
+          },
+          "send_as": {
+            "title": "Send As"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "email",
+          "status"
+        ],
+        "title": "GmailAccountOut"
+      },
+      "GmailCounts": {
+        "properties": {
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          },
+          "active": {
+            "type": "integer",
+            "title": "Active"
+          }
+        },
+        "type": "object",
+        "required": [
+          "total",
+          "active"
+        ],
+        "title": "GmailCounts"
+      },
+      "GmailCredsIn": {
+        "properties": {
+          "client_id": {
+            "type": "string",
+            "title": "Client Id"
+          },
+          "client_secret": {
+            "type": "string",
+            "title": "Client Secret"
+          },
+          "redirect_uri": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Redirect Uri"
+          }
+        },
+        "type": "object",
+        "required": [
+          "client_id",
+          "client_secret"
+        ],
+        "title": "GmailCredsIn"
+      },
+      "GmailCredsOut": {
+        "properties": {
+          "configured": {
+            "title": "Configured"
+          },
+          "source": {
+            "title": "Source"
+          },
+          "client_id": {
+            "title": "Client Id"
+          },
+          "redirect_uri": {
+            "title": "Redirect Uri"
+          }
+        },
+        "type": "object",
+        "required": [
+          "configured",
+          "source"
+        ],
+        "title": "GmailCredsOut"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "HistoryDay": {
+        "properties": {
+          "date": {
+            "type": "string",
+            "title": "Date"
+          },
+          "mailbox_created": {
+            "type": "integer",
+            "title": "Mailbox Created"
+          },
+          "mailbox_deleted": {
+            "type": "integer",
+            "title": "Mailbox Deleted"
+          },
+          "message_received": {
+            "type": "integer",
+            "title": "Message Received"
+          },
+          "message_deleted": {
+            "type": "integer",
+            "title": "Message Deleted"
+          }
+        },
+        "type": "object",
+        "required": [
+          "date",
+          "mailbox_created",
+          "mailbox_deleted",
+          "message_received",
+          "message_deleted"
+        ],
+        "title": "HistoryDay"
+      },
+      "HistoryView": {
+        "properties": {
+          "window_days": {
+            "type": "integer",
+            "title": "Window Days"
+          },
+          "days": {
+            "items": {
+              "$ref": "#/components/schemas/HistoryDay"
+            },
+            "type": "array",
+            "title": "Days"
+          },
+          "totals": {
+            "$ref": "#/components/schemas/EventCounts"
+          },
+          "by_provider": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/EventCounts"
+            },
+            "type": "object",
+            "title": "By Provider"
+          },
+          "by_domain": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/EventCounts"
+            },
+            "type": "object",
+            "title": "By Domain"
+          }
+        },
+        "type": "object",
+        "required": [
+          "window_days",
+          "days",
+          "totals",
+          "by_provider",
+          "by_domain"
+        ],
+        "title": "HistoryView"
+      },
+      "ImportGmailIn": {
+        "properties": {
+          "refresh_token": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Refresh Token"
+          },
+          "access_token": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Access Token"
+          },
+          "expires_at": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expires At"
+          },
+          "token_json": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Token Json"
+          }
+        },
+        "type": "object",
+        "title": "ImportGmailIn"
+      },
+      "IssuedMeOut": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "expires_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expires At"
+          },
+          "scope": {
+            "$ref": "#/components/schemas/KeyScopeIn"
+          },
+          "key_retention": {
+            "items": {
+              "$ref": "#/components/schemas/KeyRetentionOut"
+            },
+            "type": "array",
+            "title": "Key Retention"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "scope",
+          "key_retention"
+        ],
+        "title": "IssuedMeOut",
+        "description": "GET /me for an issued key. No secret and no secret_enc."
+      },
+      "KeyCreateIn": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "expires_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expires At"
+          },
+          "scope": {
+            "$ref": "#/components/schemas/KeyScopeIn"
+          },
+          "retention": {
+            "items": {
+              "$ref": "#/components/schemas/KeyRetentionIn"
+            },
+            "type": "array",
+            "title": "Retention"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "name",
+          "scope"
+        ],
+        "title": "KeyCreateIn",
+        "description": "POST /v1/admin/keys body. root_key is filled by the router, not the client."
+      },
+      "KeyOut": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "prefix": {
+            "type": "string",
+            "title": "Prefix"
+          },
+          "scope": {
+            "$ref": "#/components/schemas/KeyScopeIn"
+          },
+          "expires_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expires At"
+          },
+          "created_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created At"
+          },
+          "updated_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Updated At"
+          },
+          "key_retention": {
+            "items": {
+              "$ref": "#/components/schemas/KeyRetentionOut"
+            },
+            "type": "array",
+            "title": "Key Retention"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "prefix",
+          "scope"
+        ],
+        "title": "KeyOut",
+        "description": "Key row without secret or secret_enc."
+      },
+      "KeyRetentionIn": {
+        "properties": {
+          "provider": {
+            "type": "string",
+            "title": "Provider"
+          },
+          "mailbox_ttl_hours": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mailbox Ttl Hours"
+          },
+          "message_ttl_hours": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Message Ttl Hours"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "provider"
+        ],
+        "title": "KeyRetentionIn",
+        "description": "One key_retention row in a full replacement list."
+      },
+      "KeyRetentionOut": {
+        "properties": {
+          "provider": {
+            "type": "string",
+            "title": "Provider"
+          },
+          "mailbox_ttl_hours": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mailbox Ttl Hours"
+          },
+          "message_ttl_hours": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Message Ttl Hours"
+          }
+        },
+        "type": "object",
+        "required": [
+          "provider"
+        ],
+        "title": "KeyRetentionOut",
+        "description": "One stored key_retention row. No secret material."
+      },
+      "KeyScopeIn": {
+        "properties": {
+          "providers": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Providers"
+          },
+          "parent_ids": {
+            "items": {
+              "type": "integer"
+            },
+            "type": "array",
+            "title": "Parent Ids"
+          },
+          "actions": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Actions"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "providers",
+          "parent_ids",
+          "actions"
+        ],
+        "title": "KeyScopeIn",
+        "description": "Write-time scope. Unknown parent ids are stored, not checked."
+      },
+      "KeyUpdateIn": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "expires_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expires At"
+          },
+          "scope": {
+            "$ref": "#/components/schemas/KeyScopeIn"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "name",
+          "scope"
+        ],
+        "title": "KeyUpdateIn",
+        "description": "PATCH body. Does not include the secret or retention rows."
+      },
+      "MailboxCounts": {
+        "properties": {
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          },
+          "active": {
+            "type": "integer",
+            "title": "Active"
+          },
+          "deleted": {
+            "type": "integer",
+            "title": "Deleted"
+          }
+        },
+        "type": "object",
+        "required": [
+          "total",
+          "active",
+          "deleted"
+        ],
+        "title": "MailboxCounts"
+      },
+      "MailboxOut": {
+        "properties": {
+          "id": {
+            "title": "Id"
+          },
+          "provider": {
+            "title": "Provider"
+          },
+          "address": {
+            "title": "Address"
+          },
+          "parent_id": {
+            "title": "Parent Id"
+          },
+          "is_active": {
+            "title": "Is Active"
+          },
+          "created_at": {
+            "title": "Created At"
+          },
+          "parent_status": {
+            "title": "Parent Status"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "provider",
+          "address",
+          "is_active"
+        ],
+        "title": "MailboxOut"
+      },
+      "MessageCounts": {
+        "properties": {
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          },
+          "deleted": {
+            "type": "integer",
+            "title": "Deleted"
+          }
+        },
+        "type": "object",
+        "required": [
+          "total",
+          "deleted"
+        ],
+        "title": "MessageCounts"
+      },
+      "MessageDetailOut": {
+        "properties": {
+          "id": {
+            "title": "Id"
+          },
+          "message_api_id": {
+            "title": "Message Api Id"
+          },
+          "subject": {
+            "title": "Subject"
+          },
+          "from_address": {
+            "title": "From Address"
+          },
+          "from_name": {
+            "title": "From Name"
+          },
+          "seen": {
+            "title": "Seen"
+          },
+          "has_attachments": {
+            "title": "Has Attachments"
+          },
+          "size": {
+            "title": "Size"
+          },
+          "received_at": {
+            "title": "Received At"
+          },
+          "text": {
+            "title": "Text"
+          },
+          "html": {
+            "title": "Html"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "message_api_id"
+        ],
+        "title": "MessageDetailOut"
+      },
+      "MessageOut": {
+        "properties": {
+          "id": {
+            "title": "Id"
+          },
+          "message_api_id": {
+            "title": "Message Api Id"
+          },
+          "subject": {
+            "title": "Subject"
+          },
+          "from_address": {
+            "title": "From Address"
+          },
+          "from_name": {
+            "title": "From Name"
+          },
+          "seen": {
+            "title": "Seen"
+          },
+          "has_attachments": {
+            "title": "Has Attachments"
+          },
+          "size": {
+            "title": "Size"
+          },
+          "received_at": {
+            "title": "Received At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "message_api_id"
+        ],
+        "title": "MessageOut"
+      },
+      "OAuthCallbackIn": {
+        "properties": {
+          "url_or_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Url Or Code"
+          },
+          "code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Code"
+          },
+          "state": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "State"
+          },
+          "redirect_uri": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Redirect Uri"
+          }
+        },
+        "type": "object",
+        "title": "OAuthCallbackIn"
+      },
+      "OAuthStartOut": {
+        "properties": {
+          "auth_url": {
+            "title": "Auth Url"
+          },
+          "state": {
+            "title": "State"
+          }
+        },
+        "type": "object",
+        "required": [
+          "auth_url",
+          "state"
+        ],
+        "title": "OAuthStartOut"
+      },
+      "ProviderCapabilitiesOut": {
+        "properties": {
+          "can_choose_username": {
+            "title": "Can Choose Username"
+          },
+          "can_choose_domain": {
+            "title": "Can Choose Domain"
+          },
+          "can_set_password": {
+            "title": "Can Set Password"
+          },
+          "supports_delete_mailbox": {
+            "title": "Supports Delete Mailbox"
+          },
+          "supports_delete_message": {
+            "title": "Supports Delete Message"
+          },
+          "supports_mark_read": {
+            "title": "Supports Mark Read"
+          },
+          "supports_source": {
+            "title": "Supports Source"
+          },
+          "supports_attachments": {
+            "title": "Supports Attachments"
+          }
+        },
+        "type": "object",
+        "title": "ProviderCapabilitiesOut"
+      },
+      "ProviderCounts": {
+        "properties": {
+          "mailboxes_total": {
+            "type": "integer",
+            "title": "Mailboxes Total"
+          },
+          "mailboxes_active": {
+            "type": "integer",
+            "title": "Mailboxes Active"
+          },
+          "mailboxes_deleted": {
+            "type": "integer",
+            "title": "Mailboxes Deleted"
+          },
+          "messages_total": {
+            "type": "integer",
+            "title": "Messages Total"
+          }
+        },
+        "type": "object",
+        "required": [
+          "mailboxes_total",
+          "mailboxes_active",
+          "mailboxes_deleted",
+          "messages_total"
+        ],
+        "title": "ProviderCounts"
+      },
+      "ProviderOut": {
+        "properties": {
+          "slug": {
+            "title": "Slug"
+          },
+          "kind": {
+            "title": "Kind"
+          },
+          "capabilities": {}
+        },
+        "type": "object",
+        "required": [
+          "slug",
+          "kind"
+        ],
+        "title": "ProviderOut"
+      },
+      "RetentionIn": {
+        "properties": {
+          "mailbox_ttl_hours": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mailbox Ttl Hours"
+          },
+          "message_ttl_hours": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Message Ttl Hours"
+          }
+        },
+        "type": "object",
+        "title": "RetentionIn"
+      },
+      "RetentionOut": {
+        "properties": {
+          "provider": {
+            "title": "Provider"
+          },
+          "mailbox_ttl_hours": {
+            "title": "Mailbox Ttl Hours"
+          },
+          "message_ttl_hours": {
+            "title": "Message Ttl Hours"
+          }
+        },
+        "type": "object",
+        "required": [
+          "provider"
+        ],
+        "title": "RetentionOut"
+      },
+      "RootMeOut": {
+        "properties": {
+          "is_root": {
+            "type": "boolean",
+            "title": "Is Root",
+            "default": true
+          }
+        },
+        "type": "object",
+        "title": "RootMeOut",
+        "description": "GET /me for the env root key."
+      },
+      "ScopedStats": {
+        "properties": {
+          "mailboxes": {
+            "$ref": "#/components/schemas/MailboxCounts"
+          },
+          "messages": {
+            "$ref": "#/components/schemas/MessageCounts"
+          },
+          "by_provider": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/ProviderCounts"
+            },
+            "type": "object",
+            "title": "By Provider"
+          },
+          "gmail_accounts": {
+            "$ref": "#/components/schemas/GmailCounts"
+          },
+          "messages_last_7_days": {
+            "items": {
+              "$ref": "#/components/schemas/TrendPoint"
+            },
+            "type": "array",
+            "title": "Messages Last 7 Days"
+          },
+          "history": {
+            "$ref": "#/components/schemas/HistoryView"
+          }
+        },
+        "type": "object",
+        "required": [
+          "mailboxes",
+          "messages",
+          "by_provider",
+          "gmail_accounts",
+          "messages_last_7_days",
+          "history"
+        ],
+        "title": "ScopedStats"
+      },
+      "SecretOut": {
+        "properties": {
+          "secret": {
+            "type": "string",
+            "title": "Secret"
+          }
+        },
+        "type": "object",
+        "required": [
+          "secret"
+        ],
+        "title": "SecretOut",
+        "description": "GET /{id}/secret body."
+      },
+      "SourceOut": {
+        "properties": {
+          "id": {
+            "title": "Id"
+          },
+          "data": {
+            "title": "Data"
+          },
+          "download_url": {
+            "title": "Download Url"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "data"
+        ],
+        "title": "SourceOut"
+      },
+      "TargetOut": {
+        "properties": {
+          "id": {
+            "title": "Id"
+          },
+          "kind": {
+            "title": "Kind"
+          },
+          "provider": {
+            "title": "Provider"
+          },
+          "label": {
+            "title": "Label"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "kind",
+          "provider",
+          "label"
+        ],
+        "title": "TargetOut"
+      },
+      "TrendPoint": {
+        "properties": {
+          "date": {
+            "type": "string",
+            "title": "Date"
+          },
+          "count": {
+            "type": "integer",
+            "title": "Count"
+          }
+        },
+        "type": "object",
+        "required": [
+          "date",
+          "count"
+        ],
+        "title": "TrendPoint"
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "ctx": {
+            "type": "object",
+            "title": "Context"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      }
+    },
+    "securitySchemes": {
+      "APIKeyHeader": {
+        "type": "apiKey",
+        "description": "API key (required only when the server runs with MAILY_API_KEY set).",
+        "in": "header",
+        "name": "X-API-Key"
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "System",
+      "description": "Liveness, readiness and client-facing configuration."
+    },
+    {
+      "name": "Providers",
+      "description": "Enabled temp-mail providers and their usable posting targets."
+    },
+    {
+      "name": "Mailboxes",
+      "description": "Create, list, look up and delete disposable mailboxes."
+    },
+    {
+      "name": "Messages",
+      "description": "Read, mark, delete and download messages for a mailbox."
+    },
+    {
+      "name": "Gmail",
+      "description": "Import Gmail accounts, OAuth pairing and per-account sync."
+    },
+    {
+      "name": "Admin",
+      "description": "Operational controls: retention TTLs, domain cache and Gmail credentials."
+    },
+    {
+      "name": "Keys",
+      "description": "Issued API keys are root-only except GET /me."
+    }
+  ],
+  "servers": [
+    {
+      "url": "http://127.0.0.1:8477",
+      "description": "Default local Maily gateway"
+    }
+  ]
+}

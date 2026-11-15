@@ -1,0 +1,26 @@
+# Maily — Universal Temporary Email Gateway
+
+> Universal temporary email gateway aggregating 8+ disposable mail providers into one unified REST API and async Python SDK with sub-second OTP extraction for Playwright and Pytest.
+
+## Pricing & Licensing
+- [Pricing & Licensing Declaration](https://stormsia.github.io/maily/pricing.md): $0 / 100% Free Open Source Software (FOSS) MIT declaration and self-hosted unlimited usage policy.
+
+## Core Documentation
+- [Developer Portal](https://stormsia.github.io/maily/): Interactive gateway overview, live benchmarks, and feature highlights.
+- [Documentation Catalog](https://stormsia.github.io/maily/docs): Complete documentation hub index.
+- [Playwright & Pytest Recipes](https://stormsia.github.io/maily/docs/recipes): Production test fixtures and 1-line OTP code extraction.
+- [Python Async SDK](https://stormsia.github.io/maily/docs/python): 100% typed maily-client library guide and Pydantic models.
+- [Docker Deployment](https://stormsia.github.io/maily/docs/docker): Hermetic self-hosted Docker deployment with embedded SQLite WAL.
+- [Providers Matrix](https://stormsia.github.io/maily/docs/providers): Fleet capability matrix of 8+ providers and 40+ rotating domains.
+- [Adding Custom Providers](https://stormsia.github.io/maily/docs/adding-providers): Extensible adapter architecture protocol.
+- [cURL & Auth Cheat Sheet](https://stormsia.github.io/maily/docs/curl): Direct REST API authentication and endpoints guide.
+- [Security & Architecture](https://stormsia.github.io/maily/docs/architecture): Threat model, in-memory isolation, and zero outbound SMTP.
+
+## Machine Endpoints & AI Tooling
+- [OpenAPI 3.1 Specification](https://stormsia.github.io/maily/openapi.json): Machine-readable REST API schema for agent tool use.
+- [Scalar Interactive Reference](https://stormsia.github.io/maily/scalar.html): Interactive OpenAPI testing sandbox.
+- [LLMs Full Documentation](https://stormsia.github.io/maily/llms-full.txt): Complete concatenated documentation with all 43 REST endpoints.
+- [Agent E2E Testing Skill](https://stormsia.github.io/maily/SKILL.md): Standard instruction file for Claude Code, Cursor, and Windsurf.
+- [AI Catalog Index](https://stormsia.github.io/maily/.well-known/ai-catalog.json): Machine-readable capability catalog.
+- [Continuous Benchmarks](https://stormsia.github.io/maily/dev/bench/): Microsecond engine latencies and SQLite WAL telemetry.
+- [Security & Quality Dashboard](https://stormsia.github.io/maily/analytics): Live provider fleet uptime and composite SLA metrics.

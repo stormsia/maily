@@ -8,8 +8,12 @@ env/
 venv/
 .venv/
 # Build & Documentation artifacts
-public/
-site/
+/public/
+node_modules/
+site/node_modules/
+site/dist/
+site/.vite/
+.vite/
 dist/
 build/
 develop-eggs/

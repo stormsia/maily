@@ -66,6 +66,19 @@ def extract_manifest_version(path: Path) -> str:
     return str(version).strip()
 
 
+def extract_package_json_version(path: Path) -> str:
+    """Extract version from package.json."""
+    import json
+
+    if not path.is_file():
+        raise FileNotFoundError(f"File not found: {path}")
+    data = json.loads(path.read_text(encoding="utf-8"))
+    version = data.get("version")
+    if not version:
+        raise ValueError(f"Could not find 'version' in {path}")
+    return str(version).strip()
+
+
 def main() -> int:
     if hasattr(sys.stdout, "reconfigure"):
         with contextlib.suppress(Exception):
@@ -108,7 +121,7 @@ def main() -> int:
         ),
         "client/maily_client.py": (repo_root / "client" / "maily_client.py", "python"),
         "client/pyproject.toml": (repo_root / "client" / "pyproject.toml", "toml"),
-        "scripts/build_pages_site.py": (repo_root / "scripts" / "build_pages_site.py", "python"),
+        "site/package.json": (repo_root / "site" / "package.json", "npm"),
         ".release-please-manifest.json": (repo_root / ".release-please-manifest.json", "json"),
     }
 
@@ -121,6 +134,8 @@ def main() -> int:
                 ver = extract_pyproject_version(path)
             elif kind == "json":
                 ver = extract_manifest_version(path)
+            elif kind == "npm":
+                ver = extract_package_json_version(path)
             else:
                 ver = extract_version_from_file(path)
             versions[name] = ver

@@ -64,8 +64,13 @@
         "client/pyproject.toml",
         "src/maily/static/index.html",
         "src/maily/static/js/app.js",
-        "scripts/build_pages_site.py",
-        "uv.lock"
+        "uv.lock",
+        "site/src/data/version.ts",
+        {
+          "type": "json",
+          "path": "site/package.json",
+          "jsonpath": "$.version"
+        }
       ]
     }
   }

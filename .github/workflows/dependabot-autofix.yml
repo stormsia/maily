@@ -1,4 +1,4 @@
-name: Dependabot uv.lock Auto-Fix
+name: Dependabot Auto-Fix & Auto-Merge
 
 on:
   pull_request_target:
@@ -11,9 +11,9 @@ permissions:
   actions: write
 
 jobs:
-  fix-lockfile:
+  sync-python-lockfile:
     if: (github.actor == 'dependabot[bot]' && github.event.pull_request.user.login == 'dependabot[bot]' && !contains(github.event.pull_request.title, 'site')) || github.event_name == 'workflow_dispatch'
-    name: Sync uv.lock and auto-merge
+    name: Sync uv.lock and regenerate client
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -65,11 +65,16 @@ jobs:
             echo "Lockfile and client are already up to date."
           fi
 
-      - name: Auto-approve and enable auto-merge for Dependabot PR
-        if: github.event_name == 'pull_request_target'
-        run: |
-          gh pr review --approve "$PR_URL" || echo "Auto-approve skipped."
-          gh pr merge --auto --merge --delete-branch "$PR_URL" || echo "Auto-merge flag skipped."
+  auto-approve-and-merge:
+    name: Auto-approve and enable auto-merge
+    needs: [sync-python-lockfile]
+    if: always() && github.actor == 'dependabot[bot]' && github.event_name == 'pull_request_target' && (needs.sync-python-lockfile.result == 'success' || needs.sync-python-lockfile.result == 'skipped')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Approve and enable auto-merge
         env:
           PR_URL: ${{ github.event.pull_request.html_url }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh pr review --approve "$PR_URL" || echo "Auto-approve skipped."
+          gh pr merge --auto --squash --delete-branch "$PR_URL" || gh pr merge --auto --merge --delete-branch "$PR_URL" || echo "Auto-merge flag skipped."

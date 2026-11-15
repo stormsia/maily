@@ -6,15 +6,16 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
-  pull-requests: write
-  actions: write
+  contents: read
 
 jobs:
   sync-python-lockfile:
     if: (github.actor == 'dependabot[bot]' && github.event.pull_request.user.login == 'dependabot[bot]' && !contains(github.event.pull_request.title, 'site')) || github.event_name == 'workflow_dispatch'
     name: Sync uv.lock and regenerate client
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      actions: write
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7
@@ -70,6 +71,9 @@ jobs:
     needs: [sync-python-lockfile]
     if: always() && github.actor == 'dependabot[bot]' && github.event_name == 'pull_request_target' && (needs.sync-python-lockfile.result == 'success' || needs.sync-python-lockfile.result == 'skipped')
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
     steps:
       - name: Approve and enable auto-merge
         env:

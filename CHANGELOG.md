@@ -7,6 +7,37 @@ All notable changes to the **Maily** ecosystem ([`maily-server`](https://pypi.or
 > - **Python Server Package (PyPI):** `pip install -U maily-server`
 > - **Docker Container (GHCR):** `docker pull ghcr.io/stormsia/maily:latest`
 
+## [0.10.0](https://github.com/stormsia/maily/compare/v0.9.1...v0.10.0) (2026-11-15)
+
+
+### Features
+
+* **deploy:** add Portainer app template v3 schema ([ddf7f26](https://github.com/stormsia/maily/commit/ddf7f264bc5438fdecd69ce69fc89201c9beaf15))
+* **docs:** update translation links in README files and add documentation section ([cb7c593](https://github.com/stormsia/maily/commit/cb7c5939232a506e19ee3a9bd6b75fbe97f2b6c5))
+* **portal:** migrate developer portal to React SSG and retire legacy python builder ([fd758d8](https://github.com/stormsia/maily/commit/fd758d87b4c3c7781d93e50600f1e7503ff37652))
+* **seo:** add google-site-verification meta tag and enable manual dependabot dispatch ([76b7dc3](https://github.com/stormsia/maily/commit/76b7dc365a3d17aa8ac7cf33d6c85eab0bef55bc))
+
+
+### Bug Fixes
+
+* **ci:** conform to ARD spec, fix portal tests and gitleaks allowlist ([e33d4e0](https://github.com/stormsia/maily/commit/e33d4e043268c690567534acaf209ee6ed4fda5c))
+* **portainer:** set MAILY_API_KEY default env in template ([d22b7ec](https://github.com/stormsia/maily/commit/d22b7ec9b6988df07302f9f7019b1694af78ca96))
+* **site:** resolve package.json merge conflicts and disable npm in dependabot ([61deab0](https://github.com/stormsia/maily/commit/61deab0cfab313204f7e05ce19a8dd15311ea972))
+
+
+### Dependencies
+
+* **site:** bump @types/node from 22.20.5 to 26.6.6 in /site ([87e4606](https://github.com/stormsia/maily/commit/87e4606abf1b5359dd46af675976d1032d5da119))
+* **site:** bump @vitejs/plugin-react from 4.7.0 to 6.3.0 in /site ([70c1154](https://github.com/stormsia/maily/commit/70c11547d4d0cdc8c92877349f98ee433e2b9e77))
+* **site:** bump the site-dependencies group in /site with 4 updates ([35d8c55](https://github.com/stormsia/maily/commit/35d8c5541490e33e06ebbe0e24cb57da2398419e))
+* **site:** bump typescript from 5.9.3 to 7.0.2 in /site ([c3942dc](https://github.com/stormsia/maily/commit/c3942dccadc3fea52076ae6c8cd756b8e8b51220))
+* **site:** bump vite from 6.4.6 to 8.3.8 in /site ([090d109](https://github.com/stormsia/maily/commit/090d109e3f6b0f1958cad423333b91a4e6006820))
+
+
+### Code Refactoring
+
+* **Footer:** improve code readability and formatting ([93467f4](https://github.com/stormsia/maily/commit/93467f43ff0b4024ff9b1df01ea105939441dd59))
+
 ## [0.9.1](https://github.com/stormsia/maily/compare/v0.9.0...v0.9.1) (2026-11-13)
 
 

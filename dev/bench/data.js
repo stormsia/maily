@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1795168216670,
+  "lastUpdate": 1795253133335,
   "repoUrl": "https://github.com/stormsia/maily",
   "entries": {
     "Benchmark": [
@@ -14859,6 +14859,133 @@ window.BENCHMARK_DATA = {
             "unit": "iter/sec",
             "range": "stddev: 0.00020991363874818498",
             "extra": "mean: 4.722813505318505 msec\nrounds: 188"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "name": "dependabot[bot]",
+            "username": "dependabot[bot]",
+            "email": "49699333+dependabot[bot]@users.noreply.github.com"
+          },
+          "committer": {
+            "name": "GitHub",
+            "username": "web-flow",
+            "email": "noreply@github.com"
+          },
+          "id": "bece65c9daa7982ac773ade2dcc635c04be38dc5",
+          "message": "deps(site): bump lucide-react from 1.73.0 to 1.75.0 in /site in the site-dependencies group (#48)\n\nBumps the site-dependencies group in /site with 1 update:\n[lucide-react](https://github.com/lucide-icons/lucide/tree/HEAD/packages/lucide-react).\n\nUpdates `lucide-react` from 1.73.0 to 1.75.0\n<details>\n<summary>Release notes</summary>\n<p><em>Sourced from <a\nhref=\"https://github.com/lucide-icons/lucide/releases\">lucide-react's\nreleases</a>.</em></p>\n<blockquote>\n<h2>Version 1.75.0</h2>\n<h2>What's Changed</h2>\n<ul>\n<li>fix(icons): changed <code>spray-can</code> icon by <a\nhref=\"https://github.com/karsa-mistmere\"><code>@​karsa-mistmere</code></a>\nin <a\nhref=\"https://redirect.github.com/lucide-icons/lucide/pull/5248\">lucide-icons/lucide#5248</a></li>\n<li>fix(lucide): return string[] from getClassNames to prevent character\nspreading by <a\nhref=\"https://github.com/klnmurthi12345\"><code>@​klnmurthi12345</code></a>\nin <a\nhref=\"https://redirect.github.com/lucide-icons/lucide/pull/5242\">lucide-icons/lucide#5242</a></li>\n<li>fix(shared): token-based deduplication in mergeClasses by <a\nhref=\"https://github.com/klnmurthi12345\"><code>@​klnmurthi12345</code></a>\nin <a\nhref=\"https://redirect.github.com/lucide-icons/lucide/pull/5240\">lucide-icons/lucide#5240</a></li>\n<li>fix(shared): handle nullish input, undefined values, and prototypes\nsafely in hasA11yProp by <a\nhref=\"https://github.com/grzdev\"><code>@​grzdev</code></a> in <a\nhref=\"https://redirect.github.com/lucide-icons/lucide/pull/5208\">lucide-icons/lucide#5208</a></li>\n<li>feat(docs|site): Add MCP waitlist page by <a\nhref=\"https://github.com/ericfennis\"><code>@​ericfennis</code></a> in <a\nhref=\"https://redirect.github.com/lucide-icons/lucide/pull/5249\">lucide-icons/lucide#5249</a></li>\n<li>feat(icons): added <code>jacket</code> icon by <a\nhref=\"https://github.com/Flaig82\"><code>@​Flaig82</code></a> in <a\nhref=\"https://redirect.github.com/lucide-icons/lucide/pull/3803\">lucide-icons/lucide#3803</a></li>\n<li>feat(icons): added <code>paint-gun</code> icon by <a\nhref=\"https://github.com/abdul-karim-mia\"><code>@​abdul-karim-mia</code></a>\nin <a\nhref=\"https://redirect.github.com/lucide-icons/lucide/pull/5225\">lucide-icons/lucide#5225</a></li>\n</ul>\n<h2>New Contributors</h2>\n<ul>\n<li><a\nhref=\"https://github.com/klnmurthi12345\"><code>@​klnmurthi12345</code></a>\nmade their first contribution in <a\nhref=\"https://redirect.github.com/lucide-icons/lucide/pull/5242\">lucide-icons/lucide#5242</a></li>\n<li><a\nhref=\"https://github.com/abdul-karim-mia\"><code>@​abdul-karim-mia</code></a>\nmade their first contribution in <a\nhref=\"https://redirect.github.com/lucide-icons/lucide/pull/5225\">lucide-icons/lucide#5225</a></li>\n</ul>\n<p><strong>Full Changelog</strong>: <a\nhref=\"https://github.com/lucide-icons/lucide/compare/1.74.0...1.75.0\">https://github.com/lucide-icons/lucide/compare/1.74.0...1.75.0</a></p>\n<h2>Version 1.74.0</h2>\n<h2>What's Changed</h2>\n<ul>\n<li>chore(deps-dev): bump the svelte-deps group with 4 updates by <a\nhref=\"https://github.com/dependabot\"><code>@​dependabot</code></a>[bot]\nin <a\nhref=\"https://redirect.github.com/lucide-icons/lucide/pull/5221\">lucide-icons/lucide#5221</a></li>\n<li>chore(deps-dev): bump <code>@​vitejs/plugin-react</code> from 6.1.2\nto 6.3.0 in the react-deps group by <a\nhref=\"https://github.com/dependabot\"><code>@​dependabot</code></a>[bot]\nin <a\nhref=\"https://redirect.github.com/lucide-icons/lucide/pull/5218\">lucide-icons/lucide#5218</a></li>\n<li>chore(deps): bump the vue-deps group across 1 directory with 2\nupdates by <a\nhref=\"https://github.com/dependabot\"><code>@​dependabot</code></a>[bot]\nin <a\nhref=\"https://redirect.github.com/lucide-icons/lucide/pull/5220\">lucide-icons/lucide#5220</a></li>\n<li>feat(icons): moved to <code>axis</code> from <code>centerline</code>\nby <a\nhref=\"https://github.com/karsa-mistmere\"><code>@​karsa-mistmere</code></a>\nin <a\nhref=\"https://redirect.github.com/lucide-icons/lucide/pull/5219\">lucide-icons/lucide#5219</a></li>\n<li>fix(lucide-static): add icon aliases to the SVG sprite by <a\nhref=\"https://github.com/ericfennis\"><code>@​ericfennis</code></a> in <a\nhref=\"https://redirect.github.com/lucide-icons/lucide/pull/5200\">lucide-icons/lucide#5200</a></li>\n<li>chore(deps-dev): bump the solid-deps group across 1 directory with 3\nupdates by <a\nhref=\"https://github.com/dependabot\"><code>@​dependabot</code></a>[bot]\nin <a\nhref=\"https://redirect.github.com/lucide-icons/lucide/pull/5222\">lucide-icons/lucide#5222</a></li>\n<li>feat(icons): added <code>naira</code> icon by <a\nhref=\"https://github.com/adshine\"><code>@​adshine</code></a> in <a\nhref=\"https://redirect.github.com/lucide-icons/lucide/pull/3739\">lucide-icons/lucide#3739</a></li>\n<li>feat(icons): renamed <code>naira</code> to\n<code>nigerian-naira</code> by <a\nhref=\"https://github.com/karsa-mistmere\"><code>@​karsa-mistmere</code></a>\nin <a\nhref=\"https://redirect.github.com/lucide-icons/lucide/pull/5226\">lucide-icons/lucide#5226</a></li>\n<li>fix(icons): changed <code>loader-pinwheel</code> icon by <a\nhref=\"https://github.com/jguddas\"><code>@​jguddas</code></a> in <a\nhref=\"https://redirect.github.com/lucide-icons/lucide/pull/5217\">lucide-icons/lucide#5217</a></li>\n<li>chore(deps-dev): bump the astro-deps group across 1 directory with 2\nupdates by <a\nhref=\"https://github.com/dependabot\"><code>@​dependabot</code></a>[bot]\nin <a\nhref=\"https://redirect.github.com/lucide-icons/lucide/pull/5223\">lucide-icons/lucide#5223</a></li>\n<li>feat(categories): add AI category by <a\nhref=\"https://github.com/ericfennis\"><code>@​ericfennis</code></a> in <a\nhref=\"https://redirect.github.com/lucide-icons/lucide/pull/5229\">lucide-icons/lucide#5229</a></li>\n<li>feat(categories): add Logistics category by <a\nhref=\"https://github.com/ericfennis\"><code>@​ericfennis</code></a> in <a\nhref=\"https://redirect.github.com/lucide-icons/lucide/pull/5231\">lucide-icons/lucide#5231</a></li>\n<li>feat(categories): add Education category by <a\nhref=\"https://github.com/ericfennis\"><code>@​ericfennis</code></a> in <a\nhref=\"https://redirect.github.com/lucide-icons/lucide/pull/5230\">lucide-icons/lucide#5230</a></li>\n<li>chore(categories): remove Seasons category by <a\nhref=\"https://github.com/ericfennis\"><code>@​ericfennis</code></a> in <a\nhref=\"https://redirect.github.com/lucide-icons/lucide/pull/5232\">lucide-icons/lucide#5232</a></li>\n<li>chore(deps): Update depedencies by <a\nhref=\"https://github.com/ericfennis\"><code>@​ericfennis</code></a> in <a\nhref=\"https://redirect.github.com/lucide-icons/lucide/pull/5228\">lucide-icons/lucide#5228</a></li>\n<li>feat(lab): added <code>airplane-small</code> icon by <a\nhref=\"https://github.com/roygommer\"><code>@​roygommer</code></a> in <a\nhref=\"https://redirect.github.com/lucide-icons/lucide/pull/3833\">lucide-icons/lucide#3833</a></li>\n<li>perf(site): cache related icon names and reuse search indexes by <a\nhref=\"https://github.com/RentnerKev\"><code>@​RentnerKev</code></a> in <a\nhref=\"https://redirect.github.com/lucide-icons/lucide/pull/5123\">lucide-icons/lucide#5123</a></li>\n<li>feat(icons): added <code>stroke-width</code> icon by <a\nhref=\"https://github.com/surfinzap\"><code>@​surfinzap</code></a> in <a\nhref=\"https://redirect.github.com/lucide-icons/lucide/pull/5234\">lucide-icons/lucide#5234</a></li>\n<li>feat(icons): added <code>doghouse</code> icon by <a\nhref=\"https://github.com/jarbasaraujojr\"><code>@​jarbasaraujojr</code></a>\nin <a\nhref=\"https://redirect.github.com/lucide-icons/lucide/pull/3907\">lucide-icons/lucide#3907</a></li>\n<li>feat(icons): added <code>cinema</code> icon by <a\nhref=\"https://github.com/tectonicpluto\"><code>@​tectonicpluto</code></a>\nin <a\nhref=\"https://redirect.github.com/lucide-icons/lucide/pull/4252\">lucide-icons/lucide#4252</a></li>\n<li>feat(icons): added <code>bot-check</code>, <code>bot-minus</code>,\n<code>bot-plus</code> and 1 more icons by <a\nhref=\"https://github.com/ericfennis\"><code>@​ericfennis</code></a> in <a\nhref=\"https://redirect.github.com/lucide-icons/lucide/pull/5233\">lucide-icons/lucide#5233</a></li>\n<li>feat(icons): added <code>hand-truck</code> icon by <a\nhref=\"https://github.com/ericfennis\"><code>@​ericfennis</code></a> in <a\nhref=\"https://redirect.github.com/lucide-icons/lucide/pull/5227\">lucide-icons/lucide#5227</a></li>\n<li>feat(icons): added <code>circle-bounce</code> icon by <a\nhref=\"https://github.com/ericfennis\"><code>@​ericfennis</code></a> in <a\nhref=\"https://redirect.github.com/lucide-icons/lucide/pull/5205\">lucide-icons/lucide#5205</a></li>\n<li>feat(icons): added <code>warehouse-waves</code> icon by <a\nhref=\"https://github.com/Carl-Lambert\"><code>@​Carl-Lambert</code></a>\nin <a\nhref=\"https://redirect.github.com/lucide-icons/lucide/pull/5175\">lucide-icons/lucide#5175</a></li>\n<li>feat(icons): added <code>circle-person-arms-spread</code> icon by <a\nhref=\"https://github.com/ericfennis\"><code>@​ericfennis</code></a> in <a\nhref=\"https://redirect.github.com/lucide-icons/lucide/pull/5201\">lucide-icons/lucide#5201</a></li>\n<li>feat(icons): added <code>house-arrow-left</code>,\n<code>house-arrow-right</code> icons by <a\nhref=\"https://github.com/ericfennis\"><code>@​ericfennis</code></a> in <a\nhref=\"https://redirect.github.com/lucide-icons/lucide/pull/5032\">lucide-icons/lucide#5032</a></li>\n<li>fix(metadata): update doghouse.json by <a\nhref=\"https://github.com/karsa-mistmere\"><code>@​karsa-mistmere</code></a>\nin <a\nhref=\"https://redirect.github.com/lucide-icons/lucide/pull/5246\">lucide-icons/lucide#5246</a></li>\n</ul>\n<h2>New Contributors</h2>\n<ul>\n<li><a href=\"https://github.com/adshine\"><code>@​adshine</code></a> made\ntheir first contribution in <a\nhref=\"https://redirect.github.com/lucide-icons/lucide/pull/3739\">lucide-icons/lucide#3739</a></li>\n<li><a\nhref=\"https://github.com/RentnerKev\"><code>@​RentnerKev</code></a> made\ntheir first contribution in <a\nhref=\"https://redirect.github.com/lucide-icons/lucide/pull/5123\">lucide-icons/lucide#5123</a></li>\n<li><a href=\"https://github.com/surfinzap\"><code>@​surfinzap</code></a>\nmade their first contribution in <a\nhref=\"https://redirect.github.com/lucide-icons/lucide/pull/5234\">lucide-icons/lucide#5234</a></li>\n</ul>\n<!-- raw HTML omitted -->\n</blockquote>\n<p>... (truncated)</p>\n</details>\n<details>\n<summary>Commits</summary>\n<ul>\n<li><a\nhref=\"https://github.com/lucide-icons/lucide/commit/160b6ea78784152aa5a39f282cec3fcd4d937c18\"><code>160b6ea</code></a>\nchore(deps-dev): bump <code>@​vitejs/plugin-react</code> (<a\nhref=\"https://github.com/lucide-icons/lucide/tree/HEAD/packages/lucide-react/issues/5218\">#5218</a>)</li>\n<li>See full diff in <a\nhref=\"https://github.com/lucide-icons/lucide/commits/1.75.0/packages/lucide-react\">compare\nview</a></li>\n</ul>\n</details>\n<br />\n\n\n[![Dependabot compatibility\nscore](https://dependabot-badges.githubapp.com/badges/compatibility_score?dependency-name=lucide-react&package-manager=npm_and_yarn&previous-version=1.73.0&new-version=1.75.0)](https://docs.github.com/en/github/managing-security-vulnerabilities/about-dependabot-security-updates#about-compatibility-scores)\n\nDependabot will resolve any conflicts with this PR as long as you don't\nalter it yourself. You can also trigger a rebase manually by commenting\n`@dependabot rebase`.\n\n[//]: # (dependabot-automerge-start)\n[//]: # (dependabot-automerge-end)\n\n---\n\n<details>\n<summary>Dependabot commands and options</summary>\n<br />\n\nYou can trigger Dependabot actions by commenting on this PR:\n- `@dependabot rebase` will rebase this PR\n- `@dependabot recreate` will recreate this PR, overwriting any edits\nthat have been made to it\n- `@dependabot show <dependency name> ignore conditions` will show all\nof the ignore conditions of the specified dependency\n- `@dependabot ignore <dependency name> major version` will close this\ngroup update PR and stop Dependabot creating any more for the specific\ndependency's major version (unless you unignore this specific\ndependency's major version or upgrade to it yourself)\n- `@dependabot ignore <dependency name> minor version` will close this\ngroup update PR and stop Dependabot creating any more for the specific\ndependency's minor version (unless you unignore this specific\ndependency's minor version or upgrade to it yourself)\n- `@dependabot ignore <dependency name>` will close this group update PR\nand stop Dependabot creating any more for the specific dependency\n(unless you unignore this specific dependency or upgrade to it yourself)\n- `@dependabot unignore <dependency name>` will remove all of the ignore\nconditions of the specified dependency\n- `@dependabot unignore <dependency name> <ignore condition>` will\nremove the ignore condition of the specified dependency and ignore\nconditions\n\n\n</details>\n\nSigned-off-by: dependabot[bot] <support@github.com>\nCo-authored-by: dependabot[bot] <49699333+dependabot[bot]@users.noreply.github.com>",
+          "timestamp": "2026-11-21T09:23:37Z",
+          "url": "https://github.com/stormsia/maily/commit/bece65c9daa7982ac773ade2dcc635c04be38dc5"
+        },
+        "date": 1795253132880,
+        "tool": "pytest",
+        "benches": [
+          {
+            "name": "tests/test_benchmarks.py::test_benchmark_crypto_encrypt_1kb",
+            "value": 60118.56362265559,
+            "unit": "iter/sec",
+            "range": "stddev: 0.0000027985509283592996",
+            "extra": "mean: 16.633797278934846 usec\nrounds: 735"
+          },
+          {
+            "name": "tests/test_benchmarks.py::test_benchmark_crypto_decrypt_1kb",
+            "value": 59408.13524268723,
+            "unit": "iter/sec",
+            "range": "stddev: 0.000002708251975623579",
+            "extra": "mean: 16.832711478233 usec\nrounds: 10533"
+          },
+          {
+            "name": "tests/test_benchmarks.py::test_benchmark_random_string",
+            "value": 69754.86696905376,
+            "unit": "iter/sec",
+            "range": "stddev: 0.0000024095004223165383",
+            "extra": "mean: 14.335917240637025 usec\nrounds: 26861"
+          },
+          {
+            "name": "tests/test_benchmarks.py::test_benchmark_random_password",
+            "value": 46793.44889667506,
+            "unit": "iter/sec",
+            "range": "stddev: 0.000003035777432452887",
+            "extra": "mean: 21.37051282986443 usec\nrounds: 32931"
+          },
+          {
+            "name": "tests/test_benchmarks.py::test_benchmark_pydantic_message_detail_parse",
+            "value": 458379.1955770176,
+            "unit": "iter/sec",
+            "range": "stddev: 5.047529428470848e-7",
+            "extra": "mean: 2.181599884220702 usec\nrounds: 32823"
+          },
+          {
+            "name": "tests/test_benchmarks.py::test_benchmark_pydantic_batch_messages_serialize",
+            "value": 4725.608591318014,
+            "unit": "iter/sec",
+            "range": "stddev: 0.000009185805197711195",
+            "extra": "mean: 211.61295538467164 usec\nrounds: 3250"
+          },
+          {
+            "name": "tests/test_benchmarks.py::test_benchmark_extract_verification_code",
+            "value": 98358.34935843821,
+            "unit": "iter/sec",
+            "range": "stddev: 0.0000012185335938383467",
+            "extra": "mean: 10.166905062180259 usec\nrounds: 52013"
+          },
+          {
+            "name": "tests/test_benchmarks.py::test_benchmark_extract_confirmation_url",
+            "value": 100946.04149159284,
+            "unit": "iter/sec",
+            "range": "stddev: 0.000004824019179351729",
+            "extra": "mean: 9.906282457676003 usec\nrounds: 44481"
+          },
+          {
+            "name": "tests/test_benchmarks.py::test_benchmark_authz_parse_scope",
+            "value": 217007.89845476564,
+            "unit": "iter/sec",
+            "range": "stddev: 9.070348163998936e-7",
+            "extra": "mean: 4.6081272023766715 usec\nrounds: 24292"
+          },
+          {
+            "name": "tests/test_benchmarks.py::test_benchmark_authz_secret_sha256",
+            "value": 1223636.0388156245,
+            "unit": "iter/sec",
+            "range": "stddev: 3.914615708626889e-7",
+            "extra": "mean: 817.2364725118056 nsec\nrounds: 37738"
+          },
+          {
+            "name": "tests/test_benchmarks.py::test_benchmark_health_endpoint",
+            "value": 300.8081544396931,
+            "unit": "iter/sec",
+            "range": "stddev: 0.0004354350601877831",
+            "extra": "mean: 3.3243779639640154 msec\nrounds: 222"
+          },
+          {
+            "name": "tests/test_benchmarks.py::test_benchmark_domain_cache_settings",
+            "value": 194.18692061550493,
+            "unit": "iter/sec",
+            "range": "stddev: 0.0006530023786215084",
+            "extra": "mean: 5.149677418182173 msec\nrounds: 165"
+          },
+          {
+            "name": "tests/test_benchmarks.py::test_benchmark_mailboxes_list",
+            "value": 280.2618850969006,
+            "unit": "iter/sec",
+            "range": "stddev: 0.0005038486795134013",
+            "extra": "mean: 3.568091321637439 msec\nrounds: 171"
+          },
+          {
+            "name": "tests/test_benchmarks.py::test_benchmark_admin_keys_list",
+            "value": 222.14423556537412,
+            "unit": "iter/sec",
+            "range": "stddev: 0.0006993910551359538",
+            "extra": "mean: 4.501579784210575 msec\nrounds: 190"
+          },
+          {
+            "name": "tests/test_benchmarks.py::test_benchmark_client_init",
+            "value": 184.1059106345987,
+            "unit": "iter/sec",
+            "range": "stddev: 0.0006031758452212856",
+            "extra": "mean: 5.431656140495859 msec\nrounds: 121"
           }
         ]
       }

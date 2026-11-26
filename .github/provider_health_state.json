@@ -1,24 +1,24 @@
 {
   "providers": {
     "anonymmail.net": {
-      "consecutive_failures": 1,
+      "consecutive_failures": 0,
       "issue_number": null,
-      "last_status": "degraded"
+      "last_status": "operational"
     },
     "dispoemail.org": {
-      "consecutive_failures": 1,
+      "consecutive_failures": 0,
       "issue_number": null,
-      "last_status": "degraded"
+      "last_status": "operational"
     },
     "mail.tm": {
-      "consecutive_failures": 1,
+      "consecutive_failures": 0,
       "issue_number": null,
-      "last_status": "degraded"
+      "last_status": "operational"
     },
     "noopmail.org": {
-      "consecutive_failures": 2,
+      "consecutive_failures": 0,
       "issue_number": null,
-      "last_status": "degraded"
+      "last_status": "operational"
     },
     "temp-mail.io": {
       "consecutive_failures": 0,

@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1795776003641,
+  "lastUpdate": 1795859897341,
   "repoUrl": "https://github.com/stormsia/maily",
   "entries": {
     "Benchmark": [
@@ -15748,6 +15748,133 @@ window.BENCHMARK_DATA = {
             "unit": "iter/sec",
             "range": "stddev: 0.00013183800843325096",
             "extra": "mean: 3.848845560870203 msec\nrounds: 230"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "name": "dependabot[bot]",
+            "username": "dependabot[bot]",
+            "email": "49699333+dependabot[bot]@users.noreply.github.com"
+          },
+          "committer": {
+            "name": "GitHub",
+            "username": "web-flow",
+            "email": "noreply@github.com"
+          },
+          "id": "c6119b94f5eddce1e3b8a3c77647d3dc09f2d7dc",
+          "message": "ci(actions): bump anchore/sbom-action from 0.24.3 to 0.24.4 in the github-actions group (#50)\n\nBumps the github-actions group with 1 update:\n[anchore/sbom-action](https://github.com/anchore/sbom-action).\n\nUpdates `anchore/sbom-action` from 0.24.3 to 0.24.4\n<details>\n<summary>Release notes</summary>\n<p><em>Sourced from <a\nhref=\"https://github.com/anchore/sbom-action/releases\">anchore/sbom-action's\nreleases</a>.</em></p>\n<blockquote>\n<h2>v0.24.4</h2>\n<h3>Additional Changes</h3>\n<ul>\n<li>update Syft to v1.57.2 [PR <a\nhref=\"https://redirect.github.com/anchore/sbom-action/pull/751\">#751</a>\n<a\nhref=\"https://github.com/anchore-oss-update-bot\"><code>@​anchore-oss-update-bot</code></a>]</li>\n</ul>\n<h3>Dependencies</h3>\n<p>41 dependency changes (26 updated, 8 added, 7 removed). 12\nvulnerabilities remediated.</p>\n<p>• Updated (26 packages)\n• <code>@​actions/artifact</code> 6.2.1 → 6.3.1\n• <code>@​actions/github</code> 9.0.0 → 9.1.1\n• <code>@​actions/http-client</code> 4.0.0 → 4.0.1\n• <code>@​nodable/entities</code> 3.0.0 → 3.1.0\n• <code>@​octokit/core</code> 7.0.6 → 7.0.8\n• <code>@​octokit/endpoint</code> 11.0.2 → 11.0.5\n• <code>@​octokit/graphql</code> 9.0.3 → 9.0.5\n• <code>@​octokit/openapi-types</code> 27.0.0 → 29.0.1\n• <code>@​octokit/plugin-retry</code> 8.1.0 → 8.1.1\n• <code>@​octokit/request</code> 10.0.7 → 10.0.16\n• <code>@​octokit/request-error</code> 7.1.0 → 7.1.2\n• <code>@​octokit/types</code> 16.0.0 → 18.0.0\n• ansi-regex 6.2.2 → 6.6.0\n• b4a 1.8.0 → 1.9.0\n• bare-events 2.8.2 → 2.9.2\n• brace-expansion 2.1.4 → 2.1.8 (:large_green_circle: remediated\nGHSA-6j4f-fj2g-mc7p, GHSA-q2hr-2g5m-vwhr, GHSA-qhr7-859c-m2p7)\n• fast-xml-builder 1.3.1 → 1.3.2\n• fast-xml-parser 5.11.0 → 5.12.1 (:large_green_circle: remediated\nGHSA-474x-hrwr-fgx4)\n• is-unsafe 2.0.2 → 2.0.3\n• lru-cache 10.2.2 → 10.4.3\n• readable-stream 4.7.0 → 4.8.0\n• streamx 2.23.0 → 2.28.1\n• strip-ansi 7.1.2 → 7.2.0\n• strnum 2.4.2 → 2.5.1\n• tar-stream 3.1.7 → 3.2.2\n• undici 6.28.0 → 6.29.1 (:large_green_circle: remediated\nGHSA-2m5v-pch6-74hx, GHSA-3wwx-pv8p-q78v, GHSA-4qv8-2p9j-2685,\nGHSA-9fm3-97px-rjf6, GHSA-qrxm-fqhp-jwvm, GHSA-r53p-7pc4-xj5r,\nGHSA-rfgv-xxqx-mfg5, GHSA-xjj6-f33q-929c)\n• Added (8 packages)\n• bare-buffer 3.7.2\n• bare-fs 4.8.4\n• bare-path 3.1.3\n• bare-stream 2.13.4\n• bare-url 2.5.7\n• content-type 3.1.1\n• json-with-bigint 3.5.12\n• teex 1.0.1\n• Removed (7 packages)\n• <code>@​bufbuild/protobuf</code> 2.11.0\n• <code>@​bufbuild/protoplugin</code> 2.11.0\n• <code>@​protobuf-ts/plugin</code> 2.11.1\n• <code>@​protobuf-ts/protoc</code> 2.11.1</p>\n<!-- raw HTML omitted -->\n</blockquote>\n<p>... (truncated)</p>\n</details>\n<details>\n<summary>Commits</summary>\n<ul>\n<li><a\nhref=\"https://github.com/anchore/sbom-action/commit/dfcb83b97731532d72be422cbc51ee64adb6fd56\"><code>dfcb83b</code></a>\nchore(deps-dev): bump prettier from 3.8.5 to 3.10.1 (<a\nhref=\"https://redirect.github.com/anchore/sbom-action/issues/786\">#786</a>)</li>\n<li><a\nhref=\"https://github.com/anchore/sbom-action/commit/0b0130846e7e914292afe741e7a57044d9d3ec91\"><code>0b01308</code></a>\nchore(deps): update Syft to latest release (<a\nhref=\"https://redirect.github.com/anchore/sbom-action/issues/751\">#751</a>)</li>\n<li><a\nhref=\"https://github.com/anchore/sbom-action/commit/9932cccf7d1905e9debf4c07b7cd8871e1711709\"><code>9932ccc</code></a>\nchore(deps-dev): bump typescript-eslint from 8.72.1 to 8.72.2 (<a\nhref=\"https://redirect.github.com/anchore/sbom-action/issues/787\">#787</a>)</li>\n<li><a\nhref=\"https://github.com/anchore/sbom-action/commit/73fc65f9f613b4bb1305b6957eddd1217aa991ff\"><code>73fc65f</code></a>\nchore(deps): bump zizmorcore/zizmor-action from 0.8.0 to 0.8.1 (<a\nhref=\"https://redirect.github.com/anchore/sbom-action/issues/785\">#785</a>)</li>\n<li><a\nhref=\"https://github.com/anchore/sbom-action/commit/fc0a57ec1384109c4213df12887d140ef1206b20\"><code>fc0a57e</code></a>\nchore(deps): bump github.com/anchore/go-make in /.make (<a\nhref=\"https://redirect.github.com/anchore/sbom-action/issues/782\">#782</a>)</li>\n<li><a\nhref=\"https://github.com/anchore/sbom-action/commit/fe4947172972f9fdd76dab04b2dde7e7e6262f1d\"><code>fe49471</code></a>\nchore(deps): bump anchore/go-make/.github/actions/setup (<a\nhref=\"https://redirect.github.com/anchore/sbom-action/issues/783\">#783</a>)</li>\n<li><a\nhref=\"https://github.com/anchore/sbom-action/commit/8554c4f7628c49383d6e67d7818d9e3e4d5ef51c\"><code>8554c4f</code></a>\nchore(deps-dev): bump typescript-eslint from 8.72.0 to 8.72.1 (<a\nhref=\"https://redirect.github.com/anchore/sbom-action/issues/779\">#779</a>)</li>\n<li><a\nhref=\"https://github.com/anchore/sbom-action/commit/0be0a1bf70eafd135292ddaa60f5b4f63657f730\"><code>0be0a1b</code></a>\nchore(deps-dev): bump eslint from 10.13.0 to 10.14.0 (<a\nhref=\"https://redirect.github.com/anchore/sbom-action/issues/780\">#780</a>)</li>\n<li><a\nhref=\"https://github.com/anchore/sbom-action/commit/a73747d0a3c3fd4bcdaa9ec259acd4861a449ef7\"><code>a73747d</code></a>\nchore(deps-dev): bump <code>@​types/node</code> from 26.6.5 to 26.6.6\n(<a\nhref=\"https://redirect.github.com/anchore/sbom-action/issues/781\">#781</a>)</li>\n<li><a\nhref=\"https://github.com/anchore/sbom-action/commit/2ed2d2006fea5d582c257dbad4532b1e4cbc8b83\"><code>2ed2d20</code></a>\nchore(deps): bump anchore/go-make/.github/actions/setup (<a\nhref=\"https://redirect.github.com/anchore/sbom-action/issues/776\">#776</a>)</li>\n<li>Additional commits viewable in <a\nhref=\"https://github.com/anchore/sbom-action/compare/v0.24.3...v0.24.4\">compare\nview</a></li>\n</ul>\n</details>\n<br />\n\n\n[![Dependabot compatibility\nscore](https://dependabot-badges.githubapp.com/badges/compatibility_score?dependency-name=anchore/sbom-action&package-manager=github_actions&previous-version=0.24.3&new-version=0.24.4)](https://docs.github.com/en/github/managing-security-vulnerabilities/about-dependabot-security-updates#about-compatibility-scores)\n\nDependabot will resolve any conflicts with this PR as long as you don't\nalter it yourself. You can also trigger a rebase manually by commenting\n`@dependabot rebase`.\n\n[//]: # (dependabot-automerge-start)\n[//]: # (dependabot-automerge-end)\n\n---\n\n<details>\n<summary>Dependabot commands and options</summary>\n<br />\n\nYou can trigger Dependabot actions by commenting on this PR:\n- `@dependabot rebase` will rebase this PR\n- `@dependabot recreate` will recreate this PR, overwriting any edits\nthat have been made to it\n- `@dependabot show <dependency name> ignore conditions` will show all\nof the ignore conditions of the specified dependency\n- `@dependabot ignore <dependency name> major version` will close this\ngroup update PR and stop Dependabot creating any more for the specific\ndependency's major version (unless you unignore this specific\ndependency's major version or upgrade to it yourself)\n- `@dependabot ignore <dependency name> minor version` will close this\ngroup update PR and stop Dependabot creating any more for the specific\ndependency's minor version (unless you unignore this specific\ndependency's minor version or upgrade to it yourself)\n- `@dependabot ignore <dependency name>` will close this group update PR\nand stop Dependabot creating any more for the specific dependency\n(unless you unignore this specific dependency or upgrade to it yourself)\n- `@dependabot unignore <dependency name>` will remove all of the ignore\nconditions of the specified dependency\n- `@dependabot unignore <dependency name> <ignore condition>` will\nremove the ignore condition of the specified dependency and ignore\nconditions\n\n\n</details>\n\nSigned-off-by: dependabot[bot] <support@github.com>\nCo-authored-by: dependabot[bot] <49699333+dependabot[bot]@users.noreply.github.com>",
+          "timestamp": "2026-11-28T09:28:25Z",
+          "url": "https://github.com/stormsia/maily/commit/c6119b94f5eddce1e3b8a3c77647d3dc09f2d7dc"
+        },
+        "date": 1795859896521,
+        "tool": "pytest",
+        "benches": [
+          {
+            "name": "tests/test_benchmarks.py::test_benchmark_crypto_encrypt_1kb",
+            "value": 89057.43109939611,
+            "unit": "iter/sec",
+            "range": "stddev: 0.0000015412821156034856",
+            "extra": "mean: 11.228709245878763 usec\nrounds: 822"
+          },
+          {
+            "name": "tests/test_benchmarks.py::test_benchmark_crypto_decrypt_1kb",
+            "value": 84742.45316049163,
+            "unit": "iter/sec",
+            "range": "stddev: 0.0000021150379771238024",
+            "extra": "mean: 11.800460839930194 usec\nrounds: 20263"
+          },
+          {
+            "name": "tests/test_benchmarks.py::test_benchmark_random_string",
+            "value": 96894.10583935562,
+            "unit": "iter/sec",
+            "range": "stddev: 0.0000018591479314414645",
+            "extra": "mean: 10.320545211056878 usec\nrounds: 33598"
+          },
+          {
+            "name": "tests/test_benchmarks.py::test_benchmark_random_password",
+            "value": 66084.50216006841,
+            "unit": "iter/sec",
+            "range": "stddev: 0.0000022677874396440042",
+            "extra": "mean: 15.132140930377629 usec\nrounds: 35663"
+          },
+          {
+            "name": "tests/test_benchmarks.py::test_benchmark_pydantic_message_detail_parse",
+            "value": 566703.6370528041,
+            "unit": "iter/sec",
+            "range": "stddev: 3.59640478154543e-7",
+            "extra": "mean: 1.7645907571735284 usec\nrounds: 31419"
+          },
+          {
+            "name": "tests/test_benchmarks.py::test_benchmark_pydantic_batch_messages_serialize",
+            "value": 6121.318473871698,
+            "unit": "iter/sec",
+            "range": "stddev: 0.000004113966470442351",
+            "extra": "mean: 163.3634982836477 usec\nrounds: 3787"
+          },
+          {
+            "name": "tests/test_benchmarks.py::test_benchmark_extract_verification_code",
+            "value": 127721.36690905085,
+            "unit": "iter/sec",
+            "range": "stddev: 0.0000012072149253530826",
+            "extra": "mean: 7.829543514924096 usec\nrounds: 58164"
+          },
+          {
+            "name": "tests/test_benchmarks.py::test_benchmark_extract_confirmation_url",
+            "value": 131525.30535611024,
+            "unit": "iter/sec",
+            "range": "stddev: 9.264895997015496e-7",
+            "extra": "mean: 7.603099626284527 usec\nrounds: 55658"
+          },
+          {
+            "name": "tests/test_benchmarks.py::test_benchmark_authz_parse_scope",
+            "value": 273019.1763823289,
+            "unit": "iter/sec",
+            "range": "stddev: 6.076047908933055e-7",
+            "extra": "mean: 3.6627463801283544 usec\nrounds: 26106"
+          },
+          {
+            "name": "tests/test_benchmarks.py::test_benchmark_authz_secret_sha256",
+            "value": 1633780.4173679263,
+            "unit": "iter/sec",
+            "range": "stddev: 6.705513225530357e-7",
+            "extra": "mean: 612.0773571340956 nsec\nrounds: 35446"
+          },
+          {
+            "name": "tests/test_benchmarks.py::test_benchmark_health_endpoint",
+            "value": 445.1598356842406,
+            "unit": "iter/sec",
+            "range": "stddev: 0.0003714139066426143",
+            "extra": "mean: 2.246384152026952 msec\nrounds: 296"
+          },
+          {
+            "name": "tests/test_benchmarks.py::test_benchmark_domain_cache_settings",
+            "value": 295.66570999385067,
+            "unit": "iter/sec",
+            "range": "stddev: 0.0003130593626166568",
+            "extra": "mean: 3.382198091286265 msec\nrounds: 241"
+          },
+          {
+            "name": "tests/test_benchmarks.py::test_benchmark_mailboxes_list",
+            "value": 414.88554862611886,
+            "unit": "iter/sec",
+            "range": "stddev: 0.00035799052708997386",
+            "extra": "mean: 2.4103032831860984 msec\nrounds: 226"
+          },
+          {
+            "name": "tests/test_benchmarks.py::test_benchmark_admin_keys_list",
+            "value": 352.19160312178883,
+            "unit": "iter/sec",
+            "range": "stddev: 0.00044237607121044354",
+            "extra": "mean: 2.8393635485233224 msec\nrounds: 237"
+          },
+          {
+            "name": "tests/test_benchmarks.py::test_benchmark_client_init",
+            "value": 260.76147548085186,
+            "unit": "iter/sec",
+            "range": "stddev: 0.00011025611807175646",
+            "extra": "mean: 3.8349223103450014 msec\nrounds: 232"
           }
         ]
       }

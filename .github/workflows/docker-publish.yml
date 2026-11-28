@@ -120,7 +120,7 @@ jobs:
           cache-to: type=gha,mode=max
 
       - name: Generate SPDX SBOM for Container
-        uses: anchore/sbom-action@v0.24.3
+        uses: anchore/sbom-action@v0.24.4
         continue-on-error: true
         with:
           image: ${{ env.IMAGE_NAME }}:${{ github.ref_name }}
